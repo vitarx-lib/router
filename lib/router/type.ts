@@ -183,7 +183,7 @@ export function generateRouteIndex(routes: Route[]): { paths: string[]; names: s
   // 递归遍历路由，拼接路径
   function traverse(route: Route, parentPath: string = '') {
     // 如果是路由组，拼接路径并继续遍历子路由
-    const fullPath = formatPath(`${parentPath}/${route.path}`)
+    const fullPath = formatPath(parentPath ? `${parentPath}/${route.path}` : route.path)
 
     // 如果有widget，记录路径
     if (route.widget) {
