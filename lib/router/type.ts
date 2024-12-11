@@ -86,9 +86,9 @@ export interface RouteRequest {
    */
   name: string
   /**
-   * 路由query参数
+   * 路由search参数
    */
-  query: Record<string, any>
+  search: Record<string, any>
   /**
    * 路由参数
    */
@@ -151,9 +151,9 @@ export interface RouteTarget {
    */
   index: RouteIndex
   /**
-   * 路由query参数
+   * 路由search参数
    */
-  query?: Record<string, any>
+  search?: Record<string, any>
   /**
    * 路由参数，对应path中的动态路由
    */
