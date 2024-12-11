@@ -111,5 +111,5 @@ export function createDynamicPattern(
  */
 export function formatPath(path: string): RoutePath {
   if (path === '/') return path
-  return path.replace(/\s+/g, '').replace(/\/+/g, '/').replace(/\/$/, '') as RoutePath
+  return `/${path}`.replace(/\s+/g, '').replace(/\/+/g, '/').replace(/\/$/, '') as RoutePath
 }
