@@ -9,10 +9,17 @@ export type InjectProps =
   | ((request: RouteRequest) => Record<string, any>)
 
 /**
+ * 路由元数据
+ */
+export interface RouteMeta {
+  [key: string]: any
+}
+
+/**
  * 路由路线配置
  */
 export interface Route {
-  path: string
+  path: RoutePath
   /**
    * 动态路由参数匹配规则
    *
@@ -26,7 +33,7 @@ export interface Route {
    *
    * 必须全局保持唯一！
    */
-  name?: string
+  name?: RouteName
   /**
    * 要展示的Widget
    *
@@ -47,7 +54,7 @@ export interface Route {
    *
    * 存储一些自定义的数据，不会影响路由匹配
    */
-  meta?: Record<string, any>
+  meta?: RouteMeta
   /**
    * 将路由参数注入到小部件实例的props中
    *
@@ -120,15 +127,35 @@ export interface RouterOptions {
 }
 
 /**
+ * 路由路径
+ */
+export type RoutePath = `/${string}`
+
+/**
+ * 命名路由
+ */
+export type RouteName = string
+
+/**
  * 路由索引
  */
-export type RouteIndex = { path: string } | { name: string }
+export type RouteIndex = RoutePath | RouteName
 
 /**
  * 路由跳转目标
  */
-export type RouteTarget = RouteIndex & {
+export interface RouteTarget {
+  /**
+   * 索引，/开头为路径，否则为名称
+   */
+  index: RouteIndex
+  /**
+   * 路由query参数
+   */
   query?: Record<string, any>
+  /**
+   * 路由参数，对应path中的动态路由
+   */
   params?: Record<string, any>
 }
 
