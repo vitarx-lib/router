@@ -23,7 +23,7 @@ export function isVariablePath(path: string): boolean {
  * @param path
  */
 export function isOptionalVariablePath(path: string): boolean {
-  return /\/{[^}?]+\?}/.test(path)
+  return /\{[^}?]+\?}/.test(path)
 }
 
 /**
