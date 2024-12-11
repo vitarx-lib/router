@@ -11,7 +11,7 @@ export type InjectProps =
 /**
  * 路由路线配置
  */
-export interface Route<TMeta = Record<string, any>> {
+export interface Route {
   path: string
   /**
    * 动态路由参数匹配规则
@@ -20,7 +20,7 @@ export interface Route<TMeta = Record<string, any>> {
    * path:`/user/[id]`
    * pattern:{id:'\d+'}
    */
-  pattern?: Record<string, string | RegExp>
+  pattern?: Record<string, RegExp>
   /**
    * 路由名称
    *
@@ -30,33 +30,24 @@ export interface Route<TMeta = Record<string, any>> {
   /**
    * 要展示的Widget
    *
-   * 支持三种形式：
-   *  1. lazyLoader: `()=>import('./YourWidget')` 懒加载小部件，它会自动被LazyWidget包裹。
-   *  2. widget: `YourWidget` 可以是函数式小部件，也可以是类小部件
-   *  3. undefined: 自身不展示任何ui，仅做为父路由，使children继承父路由的配置。
+   * 支持两种类型：
+   *  1. WidgetType: `YourWidget` 可以是函数式小部件，也可以是类小部件
+   *  2. undefined: 自身不展示任何ui，仅做为父路由，使children继承父路由的`path`和`pattern`。
+   *  3. LazyLoader: `() => import('./YourWidget')` 代码分块，懒加载，它会自动被LazyWidget包裹。
    */
-  widget?: LazyLoader<WidgetType> | WidgetType
+  widget?: WidgetType | LazyLoader<WidgetType>
   /**
    * 子路由
    *
    * 子路由path不要以父路由path开头，内部会自动拼接。
    */
-  children?: Route<TMeta>[]
-  /**
-   * 是否预加载
-   *
-   * 如果启用，它会预先渲染元素（触发 onBeforeMount 钩子），
-   * 在路由被正在访问时才会触发onMounted钩子。
-   *
-   * @default false
-   */
-  preload?: boolean
+  children?: Route[]
   /**
    * 路由元数据
    *
    * 存储一些自定义的数据，不会影响路由匹配
    */
-  meta?: TMeta
+  meta?: Record<string, any>
   /**
    * 将路由参数注入到小部件实例的props中
    *
@@ -64,6 +55,11 @@ export interface Route<TMeta = Record<string, any>> {
    */
   injectProps?: InjectProps
 }
+
+/**
+ * 分组路由
+ */
+export type RouteGroup = MakeRequired<Route, 'children'>
 
 /**
  * 路由请求对象
@@ -98,7 +94,7 @@ export interface RouteRequest {
 /**
  * 路由器配置
  */
-export interface RouterOptions<TRoute extends Route = Route> {
+export interface RouterOptions {
   /**
    * 根路径
    *
@@ -118,12 +114,28 @@ export interface RouterOptions<TRoute extends Route = Route> {
   /**
    * 路由表
    *
-   * 路由表的第一个路由为默认路由。
+   * @note 注意：路由表传入过后，不应该在外部进行修改，如需修改需使用`Router.removeRoute`或`Router.addRoute`方法。
    */
-  routes: TRoute[]
+  routes: Route[]
 }
 
-export type RouteTarget = ({ path: string } | { name: string }) & {
+/**
+ * 路由索引
+ */
+export type RouteIndex = { path: string } | { name: string }
+
+/**
+ * 路由跳转目标
+ */
+export type RouteTarget = RouteIndex & {
   query?: Record<string, any>
   params?: Record<string, any>
+}
+
+/**
+ * 动态路由记录
+ */
+export interface DynamicRouteRecord {
+  regex: RegExp
+  route: Route
 }
