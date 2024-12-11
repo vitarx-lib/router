@@ -1,6 +1,14 @@
 // noinspection JSUnusedGlobalSymbols
 
-import type { DynamicRouteRecord, Route, RouteGroup, RouterOptions, RouteTarget } from './type.js'
+import type {
+  DynamicRouteRecord,
+  Route,
+  RouteGroup,
+  RouteIndex,
+  RoutePath,
+  RouterOptions,
+  RouteTarget
+} from './type.js'
 import {
   createDynamicPattern,
   formatPath,
@@ -74,9 +82,9 @@ export abstract class Router {
 
   abstract forward(): void
 
-  abstract replace(path: RouteTarget): void
+  abstract replace(target: RouteTarget): void
 
-  abstract push(path: RouteTarget): void
+  abstract push(target: RouteTarget): void
 
   /**
    * 删除路由
@@ -84,7 +92,7 @@ export abstract class Router {
    * @param {string} index 路由索引，如果/开头则匹配path，其他匹配name
    * @param {boolean} isRemoveFromRoutes 是否从路由表中移除，内部递归时传递的参数，无需外部传入！
    */
-  public removeRoute(index: string, isRemoveFromRoutes: boolean = true): void {
+  public removeRoute(index: RouteIndex, isRemoveFromRoutes: boolean = true): void {
     const deleteRoute = this.getRoute(index)
 
     if (!deleteRoute) return
@@ -132,7 +140,7 @@ export abstract class Router {
    *
    * @param {string} index - 路由索引，如果/开头则匹配path，其他匹配name
    */
-  public getRoute(index: string): Route | undefined {
+  public getRoute(index: RouteIndex): Route | undefined {
     return index.startsWith('/') ? this.pathRoutes.get(index) : this.namedRoutes.get(index)
   }
 
@@ -151,15 +159,18 @@ export abstract class Router {
    *
    *
    * @param {string} path - 路径
+   *
+   * @return {{route: Route, params: Record<string, string> | null} | null} - 路由对象和参数，如果匹配失败则返回null
    */
-  public matchRoute(path: string): {
+  protected matchRoute(path: RoutePath): {
     route: Route
     params: Record<string, string | undefined> | null
   } | null {
     // 转换为小写
     if (!this.options.strict) {
-      path = path.toLowerCase()
+      path = path.toLowerCase() as RoutePath
     }
+
     // 格式化path
     path = formatPath(path)
 
@@ -292,12 +303,13 @@ export abstract class Router {
    * @protected
    */
   protected registerRoute(route: Route, group?: RouteGroup) {
-    // 规范化路由路径，去除空格
-    route.path = formatPath(route.path)
     if (group) {
       // 处理路径拼接，避免多余的斜杠
-      route.path = `${group.path}/${route.path}`.replace(/\/+/g, '/').replace(/\/$/, '')
+      route.path = formatPath(`${group.path}/${route.path}`)
       this.parentRoute.set(route, group) // 记录当前路由于父路由的映射关系
+    } else {
+      // 规范化路由路径，去除空格
+      route.path = formatPath(route.path)
     }
 
     if (isRouteGroup(route)) {
