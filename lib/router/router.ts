@@ -323,7 +323,12 @@ export abstract class Router {
         this.registerRoute(child, route) // 递归注册子路由
       }
     } else {
-      // 普通路由注册
+      if (typeof route.widget !== 'function') {
+        throw new TypeError(
+          `[Vitarx.Router][ERROR]：路由${route.path}的widget配置无效，${route.widget}`
+        )
+      }
+      // 记录路由
       this.recordRoute(route)
     }
   }
@@ -359,7 +364,7 @@ export abstract class Router {
 
     // 添加路由path映射
     this.pathRoutes.set(path, route)
-    console.log(isVariablePath(route.path), route.path)
+
     // 添加动态路由
     if (isVariablePath(route.path)) {
       this.recordDynamicRoute(route)
