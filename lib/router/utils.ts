@@ -1,4 +1,4 @@
-import type { Route, RouteGroup } from './type.js'
+import type { Route, RouteGroup, RoutePath } from './type.js'
 
 /**
  * 判断path是否包含变量
@@ -109,7 +109,7 @@ export function createDynamicPattern(
  * @param {string} path - 路径字符串
  * @return {string} - 格式化后的路径字符串
  */
-export function formatPath(path: string): string {
+export function formatPath(path: string): RoutePath {
   if (path === '/') return path
-  return path.replace(/\s+/g, '').replace(/\/$/, '')
+  return path.replace(/\s+/g, '').replace(/\/+/g, '/').replace(/\/$/, '') as RoutePath
 }
