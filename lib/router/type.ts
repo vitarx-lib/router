@@ -1,4 +1,5 @@
 import type { LazyLoader, WidgetType } from 'vitarx'
+import { formatPath } from './utils.js'
 
 /**
  * 路由参数注入
@@ -19,7 +20,7 @@ export interface RouteMeta {
  * 路由路线配置
  */
 export interface Route {
-  path: RoutePath
+  path: string
   /**
    * 动态路由参数匹配规则
    *
@@ -33,7 +34,7 @@ export interface Route {
    *
    * 必须全局保持唯一！
    */
-  name?: RouteName
+  name?: string
   /**
    * 要展示的Widget
    *
@@ -165,4 +166,43 @@ export interface RouteTarget {
 export interface DynamicRouteRecord {
   regex: RegExp
   route: Route
+}
+
+/**
+ * 根据路由表生成路由索引
+ *
+ * 该函数提供给node脚本使用，生成对应的`RoutePath`和`RouteName`类型，优化类型推断
+ *
+ * @param {Route[]} routes - 路由表
+ * @return {{ paths: string[], names: string[] }} - 路由索引对象，包含所有路由路径和名称
+ */
+export function generateRouteIndex(routes: Route[]): { paths: string[]; names: string[] } {
+  const paths: string[] = []
+  const names: string[] = []
+
+  // 递归遍历路由，拼接路径
+  function traverse(route: Route, parentPath: string = '') {
+    // 如果是路由组，拼接路径并继续遍历子路由
+    const fullPath = formatPath(`${parentPath}/${route.path}`)
+
+    // 如果有widget，记录路径
+    if (route.widget) {
+      paths.push(fullPath)
+    }
+    // 如果有name，记录name
+    if (route.name) {
+      names.push(route.name)
+    }
+    // 如果有子路由，递归遍历
+    if (route.children && route.children.length > 0) {
+      route.children.forEach(childRoute => traverse(childRoute, fullPath))
+    }
+  }
+
+  // 遍历所有的根路由
+  routes.forEach(route => traverse(route))
+  return {
+    paths,
+    names
+  }
 }
