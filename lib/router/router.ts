@@ -392,3 +392,25 @@ export abstract class Router {
     if (isOptional) addToLengthMap(length - 1)
   }
 }
+
+/**
+ * 定义路由表
+ *
+ * 使用defineRoutes定义路由表可以获得更好的代码提示。
+ *
+ * @param {Route[]} routes - 路由配置表
+ */
+export function defineRoutes(...routes: Route[]): Route[] {
+  return routes
+}
+
+/**
+ * 定义路由
+ *
+ * 使用defineRoute定义路由可以获得更好的代码提示。
+ *
+ * @param {Route} route - 路由配置
+ */
+export function defineRoute(route: Route): Route {
+  return route
+}
