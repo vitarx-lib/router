@@ -1,4 +1,8 @@
-import type { Route, RouteGroup, RoutePath } from './type.js'
+import type { LazyLoad, Route, RouteGroup, RoutePath } from './type.js'
+import type { LazyLoader, WidgetType } from 'vitarx'
+
+export const LAZY_LOADER_SYMBOL = Symbol('LazyLoader')
+export type LAZY_LOADER_SYMBOL = typeof LAZY_LOADER_SYMBOL
 
 /**
  * 判断path是否包含变量
@@ -112,4 +116,63 @@ export function createDynamicPattern(
 export function formatPath(path: string): RoutePath {
   if (path === '/') return path
   return `/${path}`.replace(/\s+/g, '').replace(/\/+/g, '/').replace(/\/$/, '') as RoutePath
+}
+
+/**
+ * 生成路由路径
+ *
+ * @param {string} path - 路径字符串
+ * @param {Record<string, string>} params - 路径参数对象
+ */
+export function generateRoutePath(path: string, params: Record<string, string>): string {
+  const oldPath = path
+  // 处理必填参数和可选参数
+  path = path.replace(/{([^}]+)\?*}/g, (match, paramName) => {
+    // 判断是否为可选参数
+    const isOptional = match.includes('?')
+
+    // 如果是可选参数并且 params 中没有对应值，跳过替换
+    if (isOptional && params[paramName] === undefined) {
+      return '' // 返回空字符串，跳过可选参数
+    }
+
+    // 如果是必填参数且 params 中没有对应值，抛出错误
+    if (!isOptional && params[paramName] === undefined) {
+      throw new TypeError(
+        `[Vitarx.Router.generateRoutePath] 访问路由${oldPath}时缺少参数：${paramName}`
+      )
+    }
+
+    // 返回对应的参数值
+    return String(params[paramName])
+  })
+
+  return path
+}
+
+/**
+ * ## 标记延迟加载
+ *
+ * 由于直接定义`() => import('./xxx.js')`会导致类型与函数式组件冲突，
+ * 在未执行函数之前难以有效判断其类型，所以这里使用Symbol标记懒加载器。
+ *
+ * @example
+ * lazy(() => import('./xxx.js'))
+ *
+ * @template T - WidgetType
+ * @param {LazyLoader<T>} lazyLoader - 函数返回的import即是惰性加载器
+ */
+export function lazy<T extends WidgetType>(lazyLoader: LazyLoader<T>): LazyLoad<T> {
+  ;(lazyLoader as any)[LAZY_LOADER_SYMBOL] = true
+  return lazyLoader as LazyLoad<T>
+}
+
+/**
+ * ## 判断一个函数是否为延迟加载器
+ *
+ * @param lazyLoader
+ * @return {boolean}
+ */
+export function isLazyLoad(lazyLoader: any): lazyLoader is LazyLoad<WidgetType> {
+  return typeof lazyLoader === 'function' && lazyLoader[LAZY_LOADER_SYMBOL]
 }
