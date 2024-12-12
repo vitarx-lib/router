@@ -3,6 +3,7 @@
 import type {
   DynamicRouteRecord,
   Route,
+  RouteData,
   RouteGroup,
   RouteIndex,
   RoutePath,
@@ -16,6 +17,12 @@ import {
   isRouteGroup,
   isVariablePath
 } from './utils.js'
+
+// 路由匹配结果
+type MatchResult = {
+  route: Route
+  params: Record<string, string | undefined> | null
+} | null
 
 /**
  * 路由器基类
@@ -31,11 +38,21 @@ export abstract class Router {
   private readonly pathRoutes = new Map<string, Route>()
   // 父路由映射
   private readonly parentRoute = new WeakMap<Route, RouteGroup>()
+  // 当前路由
+  private currentRoute: RouteData = {
+    index: '/',
+    params: {},
+    search: {},
+    matched: null
+  }
+  // 路由历史
+  private history: Array<RouteData> = [this.currentRoute]
 
   protected constructor(options: RouterOptions) {
     this.options = {
       base: '/',
       strict: false,
+      beforeEach: () => void 0,
       ...options
     }
     this.initialize()
@@ -76,15 +93,82 @@ export abstract class Router {
     return this.options.routes
   }
 
-  abstract go(delta: number): void
+  /**
+   * 当前路由数据
+   *
+   * @return {RouteData | null} - 路由数据
+   */
+  get currentRouteData(): RouteData {
+    return this.currentRoute
+  }
 
-  abstract back(): void
+  /**
+   * 跳转指定的历史记录位置
+   *
+   * @param {number} delta - 跳转的步数（正数为前进，负数为后退）
+   */
+  go(delta: number = 1): void {
+    const targetIndex = this.history.length - 1 + (delta || 0)
 
-  abstract forward(): void
+    // 如果目标索引在有效范围内
+    if (targetIndex >= 0 && targetIndex < this.history.length) {
+      this.currentRoute = this.history[targetIndex]
+    }
+  }
 
-  abstract replace(target: RouteTarget): void
+  /**
+   * 后退到上一个历史记录
+   */
+  back(): void {
+    this.go(-1) // 后退1步
+  }
 
-  abstract push(target: RouteTarget): void
+  /**
+   * 前进到下一个历史记录
+   */
+  forward(): void {
+    this.go(1) // 前进1步
+  }
+
+  /**
+   * 替换当前页面
+   *
+   * @param {RouteTarget} target - 目标
+   */
+  replace(target: RouteTarget): void {
+    this.navigate(target, true)
+  }
+
+  /**
+   * 跳转到新的页面
+   *
+   * @param {RouteTarget} target - 目标
+   */
+  push(target: RouteTarget): void {
+    this.navigate(target, false)
+  }
+
+  /**
+   * 重定向
+   *
+   * 和`replace`方法相同。
+   *
+   * @param target
+   */
+  redirect(target: RouteTarget): void {
+    return this.replace(target)
+  }
+
+  /**
+   * 路由前置守卫
+   *
+   * @param {RouteData} to - 路由目标对象
+   * @param {RouteData} from - 前路由对象
+   * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
+   */
+  onBeforeEach(to: RouteData, from: RouteData): boolean | RouteTarget | void {
+    return this.options.beforeEach.call(this, to, from)
+  }
 
   /**
    * 删除路由
@@ -155,6 +239,20 @@ export abstract class Router {
   }
 
   /**
+   * 添加历史记录
+   *
+   *
+   * @param data
+   * @protected
+   */
+  protected pushHistory(data: RouteData): void {
+    if (!data.matched) {
+      throw new Error(`[Vitarx.Router.replace][ERROR]：路由${data.index}不存在`)
+    }
+    this.history.push(data)
+  }
+
+  /**
    * 路由匹配
    *
    *
@@ -162,10 +260,7 @@ export abstract class Router {
    *
    * @return {{route: Route, params: Record<string, string> | null} | null} - 路由对象和参数，如果匹配失败则返回null
    */
-  protected matchRoute(path: RoutePath): {
-    route: Route
-    params: Record<string, string | undefined> | null
-  } | null {
+  protected matchRoute(path: RoutePath): MatchResult {
     // 转换为小写
     if (!this.options.strict) {
       path = path.toLowerCase() as RoutePath
@@ -201,7 +296,6 @@ export abstract class Router {
         return { route, params }
       }
     }
-
     return null
   }
 
@@ -296,13 +390,52 @@ export abstract class Router {
   }
 
   /**
+   * 路由跳转的通用方法
+   *
+   * @param {RouteTarget} target - 目标
+   * @param {boolean} isReplace - 是否替换当前历史记录
+   */
+  private navigate(target: RouteTarget, isReplace: boolean): void {
+    const { index, search = {}, params = {} } = target
+
+    if (!index) {
+      throw new TypeError(`[Vitarx.Router.navigate]：target.index无效，index:${index}`)
+    }
+
+    const route = this.getRoute(index) ?? null
+
+    // 如果当前路由就是目标路由，则不处理
+    if (this.currentRouteData.matched && this.currentRouteData.matched === route) return
+
+    const to: RouteData = {
+      index,
+      params: params,
+      search: search,
+      matched: route
+    }
+
+    const from: RouteData = this.currentRouteData
+    const result = this.onBeforeEach(to, from)
+
+    if (result === false) return
+
+    if (typeof result === 'object' && result.index !== target.index) {
+      // 如果跳转结果有修改，则递归调用导航方法
+      this.navigate(result, isReplace)
+    } else {
+      // 根据 isReplace 来决定是替换历史记录还是推入新历史记录
+      isReplace ? this.replaceHistory(to) : this.pushHistory(to)
+    }
+  }
+
+  /**
    * 注册路由
    *
    * @param {Route} route - 路由对象
    * @param {RouteGroup} group - 路由所在的分组
    * @protected
    */
-  protected registerRoute(route: Route, group?: RouteGroup) {
+  private registerRoute(route: Route, group?: RouteGroup) {
     if (group) {
       // 处理路径拼接，避免多余的斜杠
       route.path = formatPath(`${group.path}/${route.path}`)
@@ -339,7 +472,7 @@ export abstract class Router {
    * @param {Route} route - 路由对象
    * @protected
    */
-  protected recordRoute(route: Route) {
+  private recordRoute(route: Route) {
     if (route.name) {
       if (route.name.startsWith('/')) {
         route.name = route.name.replace(/^\//, '')
@@ -390,6 +523,20 @@ export abstract class Router {
     }
     addToLengthMap(length)
     if (isOptional) addToLengthMap(length - 1)
+  }
+
+  /**
+   * 替换历史记录
+   *
+   * @param {RouteData} data - 目标路由
+   * @private
+   */
+  private replaceHistory(data: RouteData): void {
+    if (!data.matched) {
+      throw new Error(`[Vitarx.Router.replace][ERROR]：路由${data.index}不存在`)
+    }
+    const index = this.history.lastIndexOf(this.currentRouteData)
+    this.history[index] = data
   }
 }
 
