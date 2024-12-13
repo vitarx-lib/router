@@ -1,5 +1,15 @@
-import type { LazyLoader, WidgetType } from 'vitarx'
-import { formatPath } from './utils.js'
+import type { WidgetType } from 'vitarx'
+import { formatPath, type LAZY_LOADER_SYMBOL } from './utils.js'
+import type { Router } from './router.js'
+
+/**
+ * 延迟加载/惰性加载
+ */
+export interface LazyLoad<T> {
+  [LAZY_LOADER_SYMBOL]: boolean
+
+  (): Promise<{ default: T }>
+}
 
 /**
  * 路由参数注入
@@ -7,7 +17,7 @@ import { formatPath } from './utils.js'
 export type InjectProps =
   | boolean
   | Record<string, any>
-  | ((request: RouteRequest) => Record<string, any>)
+  | ((params: Record<string, any> | null) => Record<string, any>)
 
 /**
  * 路由元数据
@@ -43,7 +53,7 @@ export interface Route {
    *  2. undefined: 自身不展示任何ui，仅做为父路由，使children继承父路由的`path`和`pattern`。
    *  3. LazyLoader: `() => import('./YourWidget')` 代码分块，懒加载，它会自动被LazyWidget包裹。
    */
-  widget?: WidgetType | LazyLoader<WidgetType>
+  widget?: WidgetType | LazyLoad<WidgetType>
   /**
    * 子路由
    *
@@ -70,34 +80,55 @@ export interface Route {
 export type RouteGroup = MakeRequired<Route, 'children'>
 
 /**
- * 路由请求对象
+ * 路由数据
  */
-export interface RouteRequest {
+export interface RouteData {
+  index: RouteIndex
   /**
-   * 路由路径
+   * 完整的path
    */
-  path: string
+  fullPath: string
   /**
-   * 路由hash
+   * hash
+   *
+   * 空字符串代表没有hash，如果有值时以#开头
    */
   hash: string
   /**
-   * 路由名称
+   * 跳转链接
+   *
+   * `${fullPath}${query}${hash}`
    */
-  name: string
+  href: string
   /**
    * 路由search参数
    */
-  search: Record<string, any>
+  query: Record<string, string>
   /**
    * 路由参数
    */
-  params: Record<string, any>
+  params: Record<string, string>
   /**
-   * 路由完整路径
+   * 匹配的路由对象
+   *
+   * 如果没有匹配到路由，match为null
    */
-  fullPath: string
+  matched: Route | null
 }
+
+/**
+ * 路由前置钩子
+ *
+ * @this {Router} - 路由器实例
+ * @param {RouteData} to - 跳转目标
+ * @param {RouteData} from - 从哪个路由跳转过来
+ * @returns {boolean | RouteTarget | void} - 返回false表示阻止路由跳转，返回{@link RouteTarget}重定向目标
+ */
+export type BeforeEach = (
+  this: Router,
+  to: RouteData,
+  from: RouteData
+) => boolean | RouteTarget | void
 
 /**
  * 路由器配置
@@ -110,7 +141,7 @@ export interface RouterOptions {
    *
    * @default '/'
    */
-  base?: string
+  base?: `/${string}`
   /**
    * 是否严格匹配路由
    *
@@ -125,6 +156,10 @@ export interface RouterOptions {
    * @note 注意：路由表传入过后，不应该在外部进行修改，如需修改需使用`Router.removeRoute`或`Router.addRoute`方法。
    */
   routes: Route[]
+  /**
+   * 全局路由前置钩子
+   */
+  beforeEach?: BeforeEach
 }
 
 /**
@@ -143,7 +178,7 @@ export type RouteName = string
 export type RouteIndex = RoutePath | RouteName
 
 /**
- * 路由跳转目标
+ * 路由目标
  */
 export interface RouteTarget {
   /**
@@ -151,9 +186,13 @@ export interface RouteTarget {
    */
   index: RouteIndex
   /**
-   * 路由search参数
+   * hash
    */
-  search?: Record<string, any>
+  hash?: string
+  /**
+   * 路由query参数
+   */
+  query?: Record<string, any>
   /**
    * 路由参数，对应path中的动态路由
    */
@@ -167,6 +206,11 @@ export interface DynamicRouteRecord {
   regex: RegExp
   route: Route
 }
+
+/**
+ * 路由模式
+ */
+export type WebHistoryPathMode = 'hash' | 'path'
 
 /**
  * 根据路由表生成路由索引
