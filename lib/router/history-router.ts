@@ -1,5 +1,5 @@
 import Router from './router.js'
-import type { RouteData } from './type.js'
+import type { NavigateData } from './type.js'
 import { extractUrlData, formatPath } from './utils.js'
 
 /**
@@ -12,7 +12,7 @@ import { extractUrlData, formatPath } from './utils.js'
  * - `path` 路由模式：使用`window.location.pathname`作为路由标识，例如：`/page1`
  */
 export default class HistoryRouter extends Router {
-  private _currentRoute: RouteData = {
+  private _currentRoute: NavigateData = {
     index: '/',
     fullPath: '/',
     hash: '',
@@ -21,7 +21,8 @@ export default class HistoryRouter extends Router {
     query: {},
     matched: null
   }
-  get currentRoute(): Readonly<RouteData> {
+
+  get currentNavigateData(): Readonly<NavigateData> {
     return this._currentRoute
   }
 
@@ -63,14 +64,14 @@ export default class HistoryRouter extends Router {
   /**
    * @inheritDoc
    */
-  protected pushHistory(data: RouteData): void {
+  protected pushHistory(data: NavigateData): void {
     this.webHistory.pushState(this.createState(data), '', data.href)
   }
 
   /**
    * @inheritDoc
    */
-  protected replaceHistory(data: RouteData): void {
+  protected replaceHistory(data: NavigateData): void {
     this.webHistory.replaceState(this.createState(data), '', data.href)
   }
 
@@ -88,10 +89,10 @@ export default class HistoryRouter extends Router {
    *
    * @private
    */
-  protected initializeRoute(): boolean {
+  protected initializeRoute() {
     const { path } = extractUrlData(window.location, this.mode as 'path', this.basePath)
     // 替换路由
-    return this.replace(path)
+    this.replace(path).then()
   }
 
   /**
@@ -101,7 +102,7 @@ export default class HistoryRouter extends Router {
    *
    * @private
    */
-  private createState(data: RouteData): Omit<RouteData, 'matched'> {
+  private createState(data: NavigateData): Omit<NavigateData, 'matched'> {
     const { matched, ...state } = data
     return state
   }
