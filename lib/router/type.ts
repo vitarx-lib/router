@@ -1,6 +1,6 @@
 import type { WidgetType } from 'vitarx'
 import { formatPath, type LAZY_LOADER_SYMBOL } from './utils.js'
-import type { Router } from './router.js'
+import type Router from './router.js'
 
 /**
  * 延迟加载/惰性加载
@@ -50,8 +50,8 @@ export interface Route {
    *
    * 支持两种类型：
    *  1. WidgetType: `YourWidget` 可以是函数式小部件，也可以是类小部件
-   *  2. undefined: 自身不展示任何ui，仅做为父路由，使children继承父路由的`path`和`pattern`。
-   *  3. LazyLoader: `() => import('./YourWidget')` 代码分块，懒加载，它会自动被LazyWidget包裹。
+   *  2. LazyLoad: `() => import('./YourWidget')` 代码分块，懒加载，它会自动被LazyWidget包裹。
+   *  3. undefined: 自身不展示任何ui，仅做为父路由，使children继承父路由的`path`和`pattern`。
    */
   widget?: WidgetType | LazyLoad<WidgetType>
   /**
@@ -83,6 +83,9 @@ export type RouteGroup = MakeRequired<Route, 'children'>
  * 路由数据
  */
 export interface RouteData {
+  /**
+   * 路由索引，调用`push`|`replace`时传入的index
+   */
   index: RouteIndex
   /**
    * 完整的path
@@ -129,6 +132,10 @@ export type BeforeEach = (
   to: RouteData,
   from: RouteData
 ) => boolean | RouteTarget | void
+/**
+ * 路由模式
+ */
+export type HistoryMode = 'hash' | 'path' | 'memory'
 
 /**
  * 路由器配置
@@ -142,6 +149,18 @@ export interface RouterOptions {
    * @default '/'
    */
   base?: `/${string}`
+  /**
+   * 历史记录模式
+   *
+   * 可选值如下：
+   * 1. path模式：使用path值作为路由标识，如：`/page1`
+   * 2. hash模式：使用hash值作为路由标识，如：`/#/page1`
+   * 3. memory模式：内存模式，用于非浏览器端，或不需要使用浏览器回退和前进功能时使用。
+   *
+   * @note 使用memory模式需在路由器实例化完成后使用replace替换掉初始的伪路由，另外两种模式是浏览器端使用的，会自动完成这个操作！
+   * @default 'path' 默认视为是浏览器端
+   */
+  mode?: HistoryMode
   /**
    * 是否严格匹配路由
    *
@@ -162,6 +181,10 @@ export interface RouterOptions {
   beforeEach?: BeforeEach
 }
 
+/**
+ * 已初始化的路由配置
+ */
+export type InitializedRouterOptions = Readonly<Required<RouterOptions>>
 /**
  * 路由路径
  */
@@ -197,6 +220,10 @@ export interface RouteTarget {
    * 路由参数，对应path中的动态路由
    */
   params?: Record<string, any>
+  /**
+   * 是否替换当前路由
+   */
+  isReplace?: boolean
 }
 
 /**
@@ -206,11 +233,6 @@ export interface DynamicRouteRecord {
   regex: RegExp
   route: Route
 }
-
-/**
- * 路由模式
- */
-export type WebHistoryPathMode = 'hash' | 'path'
 
 /**
  * 根据路由表生成路由索引
