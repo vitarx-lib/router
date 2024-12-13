@@ -1,16 +1,17 @@
 // noinspection JSUnusedGlobalSymbols
 
-import type {
-  DynamicRouteRecord,
-  HistoryMode,
-  InitializedRouterOptions,
-  Route,
-  RouteData,
-  RouteGroup,
-  RouteIndex,
-  RoutePath,
-  RouterOptions,
-  RouteTarget
+import {
+  type DynamicRouteRecord,
+  type HistoryMode,
+  type InitializedRouterOptions,
+  type NavigateData,
+  NavigateResult,
+  type Route,
+  type RouteGroup,
+  type RouteIndex,
+  type RoutePath,
+  type RouterOptions,
+  type RouteTarget
 } from './type.js'
 import {
   createDynamicPattern,
@@ -47,6 +48,8 @@ export default abstract class Router {
   private readonly pathRoutes = new Map<string, Route>()
   // 父路由映射
   private readonly parentRoute = new WeakMap<Route, RouteGroup>()
+  private currentTaskId: number | null = null // 当前任务 ID
+  private taskCounter = 0 // 用于生成唯一任务 ID
 
   constructor(options: RouterOptions) {
     if (Router.#instance) {
@@ -134,9 +137,9 @@ export default abstract class Router {
   /**
    * 获取当前路由数据
    *
-   * @return {Readonly<RouteData>} - 当前路由数据对象
+   * @return {Readonly<NavigateData>} - 当前路由数据对象
    */
-  abstract get currentRoute(): Readonly<RouteData>
+  abstract get currentNavigateData(): Readonly<NavigateData>
 
   /**
    * 判断路由器是否初始化完成
@@ -179,7 +182,7 @@ export default abstract class Router {
    * @param {RouteTarget} target - 目标
    * @return {boolean} - 是否跳转成功，非内存模式始终返回true
    */
-  public replace(target: RouteTarget | RouteIndex): boolean {
+  public replace(target: RouteTarget | RouteIndex): Promise<NavigateResult> {
     if (typeof target === 'string') {
       return this.navigate({ index: target, isReplace: true })
     }
@@ -193,7 +196,7 @@ export default abstract class Router {
    * @param {RouteTarget} target - 目标
    * @return {boolean} - 是否跳转成功，非内存模式始终返回true
    */
-  public push(target: RouteTarget | RouteIndex): boolean {
+  public push(target: RouteTarget | RouteIndex): Promise<NavigateResult> {
     if (typeof target === 'string') {
       return this.navigate({ index: target, isReplace: false })
     }
@@ -204,11 +207,11 @@ export default abstract class Router {
   /**
    * 路由前置守卫
    *
-   * @param {RouteData} to - 路由目标对象
-   * @param {RouteData} from - 前路由对象
+   * @param {NavigateData} to - 路由目标对象
+   * @param {NavigateData} from - 前路由对象
    * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
-  onBeforeEach(to: RouteData, from: RouteData): boolean | RouteTarget | void {
+  onBeforeEach(to: NavigateData, from: NavigateData): boolean | RouteTarget | void {
     return this.#options.beforeEach.call(this, to, from)
   }
 
@@ -440,45 +443,67 @@ export default abstract class Router {
    * @param data
    * @protected
    */
-  protected abstract pushHistory(data: RouteData): void
+  protected abstract pushHistory(data: NavigateData): void
 
   /**
    * 替换历史记录
    *
    * 子类必须重写实现该方法
    *
-   * @param {RouteData} data - 目标路由
+   * @param {NavigateData} data - 目标路由
    * @protected
    */
-  protected abstract replaceHistory(data: RouteData): void
+  protected abstract replaceHistory(data: NavigateData): void
 
   /**
    * 路由跳转的通用方法
    *
    * @param {RouteTarget} target - 目标
-   * @return {boolean} - 是否导航成功
+   * @return {Promise<NavigateResult>} - 是否导航成功
    */
-  protected navigate(target: RouteTarget): boolean {
-    const to: RouteData = this.createRouteData(target)
-    const from: RouteData = this.currentRoute
-    const result = this.onBeforeEach(to, from)
+  protected navigate(target: RouteTarget): Promise<NavigateResult> {
+    const taskId = ++this.taskCounter // 生成唯一任务 ID
+    this.currentTaskId = taskId // 更新当前任务
+    const isCurrentTask = () => this.currentTaskId === taskId // 检查任务是否被取消
+    const performNavigation = (target: RouteTarget): Promise<NavigateResult> => {
+      return new Promise<NavigateResult>(resolve => {
+        const to: NavigateData = this.createNavigateData(target)
+        if (to.matched === this.currentNavigateData.matched) {
+          return resolve(NavigateResult.duplicated)
+        }
 
-    if (result === false) return false
+        const from: NavigateData = this.currentNavigateData
+        const result = this.onBeforeEach(to, from)
 
-    if (typeof result === 'object' && result.index !== target.index) {
-      if (result.isReplace !== true) result.isReplace = false
-      // 如果跳转结果有修改，则递归调用导航方法
-      return this.navigate(result)
+        if (result === false) return resolve(NavigateResult.aborted)
+
+        if (typeof result === 'object' && result.index !== target.index) {
+          if (result.isReplace !== true) result.isReplace = false
+          // 递归调用导航方法，传递当前任务 ID
+          return performNavigation(result).then(resolve)
+        }
+
+        // 路由未匹配
+        if (!to.matched) return resolve(NavigateResult.not_matched)
+
+        // 检测任务是否已被取消
+        if (!isCurrentTask()) return resolve(NavigateResult.cancelled)
+
+        // 根据 isReplace 决定是替换历史记录还是推入新历史记录
+        target.isReplace ? this.replaceHistory(to) : this.pushHistory(to)
+        return resolve(NavigateResult.success)
+      })
     }
-    if (!to.matched) {
-      throw new Error(`[Vitarx.Router][ERROR]：路由${to.index}不存在`)
-    }
-    // 根据 isReplace 来决定是替换历史记录还是推入新历史记录
-    target.isReplace ? this.replaceHistory(to) : this.pushHistory(to)
-    return true
+    return performNavigation(target)
   }
 
-  protected createRouteData(target: RouteTarget): RouteData {
+  /**
+   * 根据路由目标创建导航数据
+   *
+   * @param target
+   * @protected
+   */
+  protected createNavigateData(target: RouteTarget): NavigateData {
     const { index, query = {}, params = {}, hash = '' } = target
     if (!index) {
       throw new TypeError(`[Vitarx.Router.navigate]：target.index无效，index:${index}`)
