@@ -120,6 +120,19 @@ export interface NavigateData {
 }
 
 /**
+ * 路由前置钩子返回值
+ *
+ * 1. 返回false表示阻止路由跳转，true表示继续路由跳转
+ * 2. 返回{@link RouteTarget}重定向目标
+ * 3. 返回void表示继续路由跳转
+ * @note 如果返回promise，则promise resolve的值会被作为返回值
+ */
+export type BeforeEachCallbackResult =
+  | boolean
+  | RouteTarget
+  | void
+  | Promise<boolean | RouteTarget | void>
+/**
  * 路由前置钩子
  *
  * @this {Router} - 路由器实例
@@ -127,11 +140,11 @@ export interface NavigateData {
  * @param {NavigateData} from - 从哪个路由跳转过来
  * @returns {boolean | RouteTarget | void} - 返回false表示阻止路由跳转，返回{@link RouteTarget}重定向目标
  */
-export type BeforeEach = (
+export type BeforeEachCallback = (
   this: Router,
   to: NavigateData,
   from: NavigateData
-) => boolean | RouteTarget | void
+) => BeforeEachCallbackResult
 
 /**
  * 路由模式
@@ -179,7 +192,7 @@ export interface RouterOptions {
   /**
    * 全局路由前置钩子
    */
-  beforeEach?: BeforeEach
+  beforeEach?: BeforeEachCallback
 }
 
 /**
@@ -238,7 +251,35 @@ export interface DynamicRouteRecord {
 /**
  * 导航结果
  */
-export enum NavigateResult {
+export interface NavigateResult {
+  /**
+   * 状态
+   *
+   * 枚举值：
+   * 0. success: 导航成功
+   * 1. aborted: 导航被阻止
+   * 2. cancelled: 导航被取消
+   * 3. duplicated: 重复导航
+   * 4. not_matched: 路由未匹配
+   * 5. exception: 捕获到异常
+   *
+   * @see NavigateStatus
+   */
+  status: NavigateStatus
+  /**
+   * 状态描述
+   */
+  message: string
+  /**
+   * 捕获到的异常
+   */
+  error?: unknown
+}
+
+/**
+ * 导航结果
+ */
+export enum NavigateStatus {
   /**
    * 导航成功
    */
@@ -260,7 +301,11 @@ export enum NavigateResult {
   /**
    * 路由未匹配
    */
-  not_matched
+  not_matched,
+  /**
+   * 捕获到异常
+   */
+  exception
 }
 
 /**
