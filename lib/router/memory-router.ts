@@ -1,14 +1,14 @@
 import Router from './router.js'
 import { createUniqueIdGenerator, formatPath } from './utils.js'
-import type { RouteData, RouterOptions } from './type.js'
+import type { NavigateData, RouterOptions } from './type.js'
 
 export default class MemoryRouter extends Router {
   // 生成唯一id
   private uniqueId: () => string = createUniqueIdGenerator()
   // 路由历史唯一键映射
-  private _historyMap = new Map<string, RouteData>()
+  private _historyMap = new Map<string, NavigateData>()
   // 当前路由
-  private _currentRouteId: string = ''
+  private _currentNavigateId: string = ''
 
   constructor(options: RouterOptions) {
     super(options)
@@ -18,8 +18,8 @@ export default class MemoryRouter extends Router {
   /**
    * @inheritDoc
    */
-  override get currentRoute() {
-    return this._historyMap.get(this._currentRouteId)!
+  override get currentNavigateData() {
+    return this._historyMap.get(this._currentNavigateId)!
   }
 
   /**
@@ -30,7 +30,7 @@ export default class MemoryRouter extends Router {
 
     // 如果目标索引在有效范围内
     if (targetIndex >= 0 && targetIndex < this._historyMap.size) {
-      this._currentRouteId = this._historyMap.keys().next(targetIndex).value!
+      this._currentNavigateId = this._historyMap.keys().next(targetIndex).value!
       return true
     }
 
@@ -70,21 +70,21 @@ export default class MemoryRouter extends Router {
    * @param data
    * @private
    */
-  protected override pushHistory(data: RouteData): void {
+  protected override pushHistory(data: NavigateData): void {
     const id = this.uniqueId()
     this._historyMap.set(id, data)
-    this._currentRouteId = id
+    this._currentNavigateId = id
   }
 
   /**
    * 替换历史记录
    *
-   * @param {RouteData} data - 目标路由
+   * @param {NavigateData} data - 目标路由
    * @private
    */
-  protected replaceHistory(data: RouteData): void {
+  protected replaceHistory(data: NavigateData): void {
     // 记录映射
-    this._historyMap.set(this._currentRouteId, data)
+    this._historyMap.set(this._currentNavigateId, data)
   }
 
   /**
@@ -104,6 +104,6 @@ export default class MemoryRouter extends Router {
       matched: null
     }
     this._historyMap.set(data.id, data)
-    this._currentRouteId = data.id
+    this._currentNavigateId = data.id
   }
 }
