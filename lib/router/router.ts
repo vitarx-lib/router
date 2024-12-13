@@ -1,11 +1,13 @@
 // noinspection JSUnusedGlobalSymbols
 
 import {
+  type BeforeEachCallbackResult,
   type DynamicRouteRecord,
   type HistoryMode,
   type InitializedRouterOptions,
   type NavigateData,
-  NavigateResult,
+  type NavigateResult,
+  NavigateStatus,
   type Route,
   type RouteGroup,
   type RouteIndex,
@@ -41,15 +43,17 @@ export default abstract class Router {
   // 配置
   readonly #options: Required<RouterOptions>
   // 命名路由映射
-  private readonly namedRoutes = new Map<string, Route>()
+  private readonly _namedRoutes = new Map<string, Route>()
   // 动态路由正则，按长度分组
-  private readonly dynamicRoutes = new Map<number, DynamicRouteRecord[]>()
+  private readonly _dynamicRoutes = new Map<number, DynamicRouteRecord[]>()
   // 路由path映射
-  private readonly pathRoutes = new Map<string, Route>()
+  private readonly _pathRoutes = new Map<string, Route>()
   // 父路由映射
-  private readonly parentRoute = new WeakMap<Route, RouteGroup>()
-  private currentTaskId: number | null = null // 当前任务 ID
-  private taskCounter = 0 // 用于生成唯一任务 ID
+  private readonly _parentRoute = new WeakMap<Route, RouteGroup>()
+  // 当前任务 ID
+  private _currentTaskId: number | null = null
+  // 用于生成唯一任务 ID
+  private _taskCounter = 0
 
   constructor(options: RouterOptions) {
     if (Router.#instance) {
@@ -100,7 +104,7 @@ export default abstract class Router {
    * @return {Map<string, Route>}
    */
   get routeMaps(): ReadonlyMap<string, Route> {
-    return this.pathRoutes
+    return this._pathRoutes
   }
 
   /**
@@ -111,7 +115,7 @@ export default abstract class Router {
    * @return {Map<string, Route>}
    */
   get namedRouteMaps(): ReadonlyMap<string, Route> {
-    return this.namedRoutes
+    return this._namedRoutes
   }
 
   /**
@@ -211,7 +215,7 @@ export default abstract class Router {
    * @param {NavigateData} from - 前路由对象
    * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
-  onBeforeEach(to: NavigateData, from: NavigateData): boolean | RouteTarget | void {
+  onBeforeEach(to: NavigateData, from: NavigateData): BeforeEachCallbackResult {
     return this.#options.beforeEach.call(this, to, from)
   }
 
@@ -234,9 +238,9 @@ export default abstract class Router {
     }
 
     // 删除通用映射关系
-    this.pathRoutes.delete(deleteRoute.path)
+    this._pathRoutes.delete(deleteRoute.path)
     if (deleteRoute.name) {
-      this.namedRoutes.delete(deleteRoute.name)
+      this._namedRoutes.delete(deleteRoute.name)
     }
 
     // 删除动态路由
@@ -276,12 +280,12 @@ export default abstract class Router {
       )
     }
     if (index.startsWith('/')) {
-      const route = this.pathRoutes.get(this.strictPath(index))
+      const route = this._pathRoutes.get(this.strictPath(index))
       if (route) return route
       const matched = this.matchRoute(index as RoutePath)
       if (matched) return matched.route
     }
-    return this.namedRoutes.get(index)
+    return this._namedRoutes.get(index)
   }
 
   /**
@@ -312,7 +316,7 @@ export default abstract class Router {
    * @return {RouteGroup | undefined}
    */
   protected getParentRoute(route: Route): RouteGroup | undefined {
-    return this.parentRoute.get(route)
+    return this._parentRoute.get(route)
   }
 
   /**
@@ -333,8 +337,8 @@ export default abstract class Router {
     path = formatPath(path)
 
     // 优先匹配静态路由
-    if (this.pathRoutes.has(path)) {
-      return { route: this.pathRoutes.get(path)!, params: null }
+    if (this._pathRoutes.has(path)) {
+      return { route: this._pathRoutes.get(path)!, params: null }
     }
 
     // 动态路由匹配
@@ -342,7 +346,7 @@ export default abstract class Router {
     // 路径段长度
     const length = segments.length
     // 动态路由列表
-    const candidates = this.dynamicRoutes.get(length) || []
+    const candidates = this._dynamicRoutes.get(length) || []
     // 添加尾部斜杠 兼容可选参数 路径匹配
     path = `${path}/`
     // 遍历动态路由
@@ -401,7 +405,7 @@ export default abstract class Router {
      * @param key 动态路径的长度
      */
     const removeRouteFromRecords = (key: number) => {
-      const records = this.dynamicRoutes.get(key)
+      const records = this._dynamicRoutes.get(key)
       if (records) {
         for (let i = 0; i < records.length; i++) {
           if (records[i].route.path === path) {
@@ -462,36 +466,63 @@ export default abstract class Router {
    * @return {Promise<NavigateResult>} - 是否导航成功
    */
   protected navigate(target: RouteTarget): Promise<NavigateResult> {
-    const taskId = ++this.taskCounter // 生成唯一任务 ID
-    this.currentTaskId = taskId // 更新当前任务
-    const isCurrentTask = () => this.currentTaskId === taskId // 检查任务是否被取消
+    const taskId = ++this._taskCounter // 生成唯一任务 ID
+    this._currentTaskId = taskId // 更新当前任务
+    const isCurrentTask = () => this._currentTaskId === taskId // 检查任务是否被取消
     const performNavigation = (target: RouteTarget): Promise<NavigateResult> => {
-      return new Promise<NavigateResult>(resolve => {
+      return new Promise<NavigateResult>(async resolve => {
         const to: NavigateData = this.createNavigateData(target)
         if (to.matched === this.currentNavigateData.matched) {
-          return resolve(NavigateResult.duplicated)
+          return resolve({
+            status: NavigateStatus.duplicated,
+            message: '重复导航到相同的路由，被系统阻止！'
+          })
         }
 
         const from: NavigateData = this.currentNavigateData
-        const result = this.onBeforeEach(to, from)
+        try {
+          const result = await this.onBeforeEach(to, from)
 
-        if (result === false) return resolve(NavigateResult.aborted)
+          if (result === false)
+            return resolve({
+              status: NavigateStatus.aborted,
+              message: '导航被前置守卫钩子取消'
+            })
 
-        if (typeof result === 'object' && result.index !== target.index) {
-          if (result.isReplace !== true) result.isReplace = false
-          // 递归调用导航方法，传递当前任务 ID
-          return performNavigation(result).then(resolve)
+          if (typeof result === 'object' && result.index !== target.index) {
+            if (result.isReplace !== true) result.isReplace = false
+            // 递归调用导航方法，传递当前任务 ID
+            return performNavigation(result).then(resolve)
+          }
+
+          // 路由未匹配
+          if (!to.matched)
+            return resolve({
+              status: NavigateStatus.not_matched,
+              message: '导航目标路由未匹配到任何路由规则，被系统阻止！'
+            })
+
+          // 检测任务是否已被取消
+          if (!isCurrentTask())
+            return resolve({
+              status: NavigateStatus.cancelled,
+              message: '导航请求已被更新的导航请求替代，取消此次导航！'
+            })
+
+          // 根据 isReplace 决定是替换历史记录还是推入新历史记录
+          target.isReplace ? this.replaceHistory(to) : this.pushHistory(to)
+          return resolve({
+            status: NavigateStatus.success,
+            message: '导航成功'
+          })
+        } catch (error) {
+          // 如果发生错误，则导航被取消
+          return resolve({
+            status: NavigateStatus.exception,
+            message: '导航时发生异常',
+            error
+          })
         }
-
-        // 路由未匹配
-        if (!to.matched) return resolve(NavigateResult.not_matched)
-
-        // 检测任务是否已被取消
-        if (!isCurrentTask()) return resolve(NavigateResult.cancelled)
-
-        // 根据 isReplace 决定是替换历史记录还是推入新历史记录
-        target.isReplace ? this.replaceHistory(to) : this.pushHistory(to)
-        return resolve(NavigateResult.success)
       })
     }
     return performNavigation(target)
@@ -557,7 +588,7 @@ export default abstract class Router {
     if (group) {
       // 处理路径拼接，避免多余的斜杠
       route.path = formatPath(`${group.path}/${route.path}`)
-      this.parentRoute.set(route, group) // 记录当前路由于父路由的映射关系
+      this._parentRoute.set(route, group) // 记录当前路由于父路由的映射关系
     } else {
       // 规范化路由路径，去除空格
       route.path = formatPath(route.path)
@@ -609,22 +640,22 @@ export default abstract class Router {
         )
       }
 
-      if (this.namedRoutes.has(route.name)) {
+      if (this._namedRoutes.has(route.name)) {
         throw new Error(`[Vitarx.Router][ERROR]：检测到重复的路由名称(name): ${route.name}`)
       }
 
       // 添加命名路由
-      this.namedRoutes.set(route.name, route)
+      this._namedRoutes.set(route.name, route)
     }
 
     const path = this.strictPath(route.path)
 
-    if (this.pathRoutes.has(path)) {
+    if (this._pathRoutes.has(path)) {
       throw new Error(`[Vitarx.Router][ERROR]：检测到重复的路由路径(path): ${route.path}`)
     }
 
     // 添加路由path映射
-    this.pathRoutes.set(path, route)
+    this._pathRoutes.set(path, route)
 
     // 添加动态路由
     if (isVariablePath(route.path)) {
@@ -644,10 +675,10 @@ export default abstract class Router {
       this.#options.strict
     )
     const addToLengthMap = (len: number) => {
-      if (!this.dynamicRoutes.has(len)) {
-        this.dynamicRoutes.set(len, [])
+      if (!this._dynamicRoutes.has(len)) {
+        this._dynamicRoutes.set(len, [])
       }
-      this.dynamicRoutes.get(len)!.push({ regex, route })
+      this._dynamicRoutes.get(len)!.push({ regex, route })
     }
     addToLengthMap(length)
     if (isOptional) addToLengthMap(length - 1)
