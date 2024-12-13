@@ -80,9 +80,9 @@ export interface Route {
 export type RouteGroup = MakeRequired<Route, 'children'>
 
 /**
- * 路由数据
+ * 导航数据
  */
-export interface RouteData {
+export interface NavigateData {
   /**
    * 路由索引，调用`push`|`replace`时传入的index
    */
@@ -114,7 +114,7 @@ export interface RouteData {
   /**
    * 匹配的路由对象
    *
-   * 如果没有匹配到路由，match为null
+   * 如果没有匹配到路由，matched为null
    */
   matched: Route | null
 }
@@ -123,15 +123,16 @@ export interface RouteData {
  * 路由前置钩子
  *
  * @this {Router} - 路由器实例
- * @param {RouteData} to - 跳转目标
- * @param {RouteData} from - 从哪个路由跳转过来
+ * @param {NavigateData} to - 要跳转的目标路由
+ * @param {NavigateData} from - 从哪个路由跳转过来
  * @returns {boolean | RouteTarget | void} - 返回false表示阻止路由跳转，返回{@link RouteTarget}重定向目标
  */
 export type BeforeEach = (
   this: Router,
-  to: RouteData,
-  from: RouteData
+  to: NavigateData,
+  from: NavigateData
 ) => boolean | RouteTarget | void
+
 /**
  * 路由模式
  */
@@ -232,6 +233,34 @@ export interface RouteTarget {
 export interface DynamicRouteRecord {
   regex: RegExp
   route: Route
+}
+
+/**
+ * 导航结果
+ */
+export enum NavigateResult {
+  /**
+   * 导航成功
+   */
+  success,
+  /**
+   * 导航被阻止
+   */
+  aborted,
+  /**
+   * 导航被取消
+   *
+   * 正在等待中间件处理结果时又触发了新的导航请求
+   */
+  cancelled,
+  /**
+   * 重复导航
+   */
+  duplicated,
+  /**
+   * 路由未匹配
+   */
+  not_matched
 }
 
 /**
