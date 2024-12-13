@@ -23,7 +23,7 @@ export function isVariablePath(path: string): boolean {
  * @example
  *  isOptionalVariablePath('/{id?}') // true
  *  isOptionalVariablePath('/{id}') // false
- *  isOptionalVariablePath('/home') // false
+ *  isOptionalVariablePath('/*') // false
  * @param path
  */
 export function isOptionalVariablePath(path: string): boolean {
@@ -175,4 +175,52 @@ export function lazy<T extends WidgetType>(lazyLoader: LazyLoader<T>): LazyLoad<
  */
 export function isLazyLoad(lazyLoader: any): lazyLoader is LazyLoad<WidgetType> {
   return typeof lazyLoader === 'function' && lazyLoader[LAZY_LOADER_SYMBOL]
+}
+
+/**
+ * 格式化hash
+ *
+ * @param {any} hash - hash
+ * @param {boolean} addHashPrefix - 是否添加 # 前缀
+ */
+export function formatHash(hash: any, addHashPrefix: boolean): string {
+  if (typeof hash !== 'string') return ''
+  // 如果 hash 有值且不以 # 开头，添加 # 前缀
+  if (!hash) return hash
+  if (addHashPrefix) {
+    return hash.startsWith('#') ? hash : `#${hash}`
+  } else {
+    return hash.startsWith('#') ? hash.slice(1) : hash
+  }
+}
+
+/**
+ * 将 query 字符串转为对象
+ *
+ * @param {string} queryString - 查询字符串（如 ?key1=value1&key2=value2）
+ * @return {Record<string, string>} - 转换后的对象
+ */
+export function queryStringToObject(queryString: string): Record<string, string> {
+  // 去除前导的 "?" 符号，分割为键值对
+  const params = new URLSearchParams(
+    queryString.startsWith('?') ? queryString.substring(1) : queryString
+  )
+  const obj: Record<string, string> = {}
+
+  // 遍历每一对键值并添加到对象中
+  params.forEach((value, key) => (obj[key] = value))
+
+  return obj
+}
+
+/**
+ * 将对象转换为 query 字符串
+ *
+ * @param {Record<string, string>} obj - 要转换的对象
+ * @return {string} 转换后的查询字符串（如 ?key1=value1&key2=value2）
+ */
+export function objectToQueryString(obj: Record<string, string>): string {
+  const queryString = new URLSearchParams(obj).toString()
+  // 如果对象为空或没有任何有效查询参数，返回空字符串
+  return queryString ? `?${queryString}` : ''
 }
