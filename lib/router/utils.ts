@@ -115,7 +115,8 @@ export function createDynamicPattern(
  */
 export function formatPath(path: string): RoutePath {
   if (path === '/') return path
-  return `/${path}`.replace(/\s+/g, '').replace(/\/+/g, '/').replace(/\/$/, '') as RoutePath
+  // 重复的// 替换为/ 去除结尾/
+  return `/${path}`.replace(/\/+/g, '/').replace(/\s+/g, '') as RoutePath
 }
 
 /**
@@ -186,7 +187,7 @@ export function isLazyLoad(lazyLoader: any): lazyLoader is LazyLoad<WidgetType> 
 export function formatHash(hash: any, addHashPrefix: boolean): string {
   if (typeof hash !== 'string') return ''
   // 如果 hash 有值且不以 # 开头，添加 # 前缀
-  if (!hash) return hash
+  if (!hash) return ''
   if (addHashPrefix) {
     return hash.startsWith('#') ? hash : `#${hash}`
   } else {
@@ -219,8 +220,87 @@ export function queryStringToObject(queryString: string): Record<string, string>
  * @param {Record<string, string>} obj - 要转换的对象
  * @return {string} 转换后的查询字符串（如 ?key1=value1&key2=value2）
  */
-export function objectToQueryString(obj: Record<string, string>): string {
+export function objectToQueryString(obj: Record<string, string>): `?${string}` | '' {
   const queryString = new URLSearchParams(obj).toString()
   // 如果对象为空或没有任何有效查询参数，返回空字符串
   return queryString ? `?${queryString}` : ''
+}
+
+/**
+ * 创建一个唯一id生成器函数，用于生成唯一的字符串。
+ * 优化：防止在同一毫秒内生成相同的ID。
+ */
+export function createUniqueIdGenerator(): () => string {
+  let counter = 0 // 计数器封装在闭包内
+  let lastTimestamp = 0 // 上次生成 ID 时的时间戳
+
+  return function unique_id() {
+    const timestamp = Math.floor(Date.now() / 1000) // 获取当前时间戳
+
+    // 如果当前时间戳和上次生成 ID 的时间戳相同，则递增 counter
+    if (timestamp === lastTimestamp) {
+      counter++
+    } else {
+      counter = 0 // 如果时间戳变化，重置 counter
+      lastTimestamp = timestamp // 更新上次生成 ID 时的时间戳
+    }
+
+    const counterStr = counter.toString().padStart(6, '0')
+    return `${timestamp}${counterStr}` // 组合时间戳和计数器生成唯一ID
+  }
+}
+
+/**
+ * 从 URL 对象中提取 path、hash 和 query
+ *
+ * @param {URL} url - 当前的 URL 对象
+ * @param {string} mode - 路由模式 ('path' 或 'hash')
+ * @param {string} base - 路由的根路径
+ * @returns {object} - 包含 path、hash 和 query 的对象
+ */
+export function extractUrlData(
+  url: URL | Location,
+  mode: 'path' | 'hash',
+  base: string
+): {
+  /**
+   * 完整的路由路径
+   */
+  path: RoutePath
+  /**
+   * 不带#前缀的路由标识
+   */
+  hash: string
+  /**
+   * 查询参数对象
+   */
+  query: Record<string, string>
+} {
+  let path: RoutePath = '/'
+  let hash: string = ''
+  let query: Record<string, string> = queryStringToObject(url.search)
+  if (mode === 'path') {
+    // 去除 basePath
+    if (url.pathname.startsWith(base)) {
+      path = formatPath(url.pathname.slice(base.length))
+    } else {
+      // 使用 pathname 来获取 path
+      path = formatPath(url.pathname) // 去除结尾/
+    }
+    // 提取 hash
+    hash = formatHash(url.hash, false) // 去掉 # 前缀
+  } else {
+    // 使用 hash 来获取 path 和 hash
+    const hashIndex = url.hash.indexOf('#')
+    if (hashIndex !== -1) {
+      // 从 hash 中分离出路径和锚点
+      const hashPart = url.hash.slice(1) // 去掉前缀 #
+      const [pathInHash, anchor] = hashPart.split('#')
+
+      // 设置 path 和 hash
+      path = pathInHash as RoutePath
+      hash = anchor || '' // 如果有锚点，赋值给 hash
+    }
+  }
+  return { path, hash, query }
 }
