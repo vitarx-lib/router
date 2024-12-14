@@ -1,4 +1,4 @@
-import type { NavigateData, RouterOptions, RouteTarget } from './type.js'
+import { type NavigateData, NavigateStatus, type RouterOptions, type RouteTarget } from './type.js'
 import { urlToRouteTarget } from './utils.js'
 import MemoryRouter from './memory-router.js'
 
@@ -50,6 +50,7 @@ export default class HashRouter extends MemoryRouter {
   protected override initializeRouter(): void {
     window.addEventListener('hashchange', this.onHashChange.bind(this))
     this.replace(this.currentRouteTarget).then()
+    console.log('初始化路由')
   }
 
   /**
@@ -102,7 +103,12 @@ export default class HashRouter extends MemoryRouter {
     const newTarget = urlToRouteTarget(new URL(newURL), 'hash', this.basePath)
     // 路径改变
     if (newTarget.index !== current.path) {
-      this.push(newTarget).then()
+      // 跳转到新页面
+      this.push(newTarget).then(res => {
+        if (res.status === NavigateStatus.success) {
+          this.completeNavigation(res.data)
+        }
+      })
       return
     }
     // hash 改变
