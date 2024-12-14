@@ -1,5 +1,5 @@
 import Router from './router.js'
-import { createUniqueIdGenerator, formatPath } from './utils.js'
+import { createUniqueIdGenerator } from './utils.js'
 import type { NavigateData, RouterOptions } from './type.js'
 
 export default class MemoryRouter extends Router {
@@ -49,18 +49,6 @@ export default class MemoryRouter extends Router {
    */
   public override forward(): boolean {
     return this.go(1) // 前进1步
-  }
-
-  /**
-   * 创建完整路径
-   *
-   * @protected
-   * @param path - 路径
-   * @param query - ?查询参数
-   * @param hash - #哈希值
-   */
-  protected override makeFullPath(path: string, query: string, hash: string): `${string}` {
-    return formatPath(`${this.basePath}${path}${query}${hash}`)
   }
 
   /**
