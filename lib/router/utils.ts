@@ -1,4 +1,4 @@
-import type { LazyLoad, Route, RouteGroup, RoutePath } from './type.js'
+import type { LazyLoad, Route, RouteGroup, RoutePath, RouteTarget } from './type.js'
 import type { LazyLoader, WidgetType } from 'vitarx'
 
 export const LAZY_LOADER_SYMBOL = Symbol('LazyLoader')
@@ -182,8 +182,19 @@ export function isLazyLoad(lazyLoader: any): lazyLoader is LazyLoad<WidgetType> 
  * 格式化hash
  *
  * @param {any} hash - hash
- * @param {boolean} addHashPrefix - 是否添加 # 前缀
+ * @param {true} addHashPrefix - 添加#前缀
+ * @return {string} - 格式化后的hash带有#
  */
+export function formatHash(hash: any, addHashPrefix: true): `#${string}` | ''
+
+/**
+ * 格式化hash
+ *
+ * @param {any} hash - hash
+ * @param {false} addHashPrefix - 去除#前缀
+ * @return {string} - 格式化后的hash，不带#前缀
+ */
+export function formatHash(hash: any, addHashPrefix: false): string
 export function formatHash(hash: any, addHashPrefix: boolean): string {
   if (typeof hash !== 'string') return ''
   // 如果 hash 有值且不以 # 开头，添加 # 前缀
@@ -259,28 +270,16 @@ export function createUniqueIdGenerator(): () => string {
  * @param {string} base - 路由的根路径
  * @returns {object} - 包含 path、hash 和 query 的对象
  */
-export function extractUrlData(
+export function urlToRouteTarget(
   url: URL | Location,
   mode: 'path' | 'hash',
   base: string
-): {
-  /**
-   * 完整的路由路径
-   */
-  path: RoutePath
-  /**
-   * 不带#前缀的路由标识
-   */
-  hash: string
-  /**
-   * 查询参数对象
-   */
-  query: Record<string, string>
-} {
+): MakeRequired<RouteTarget, 'query' | 'hash'> {
   let path: RoutePath = decodeURIComponent(url.pathname) as RoutePath
   let hash: string = decodeURIComponent(url.hash)
-  const query: Record<string, string> = queryStringToObject(url.search)
+  let query: Record<string, string>
   if (mode === 'path') {
+    query = queryStringToObject(url.search)
     // 去除 basePath
     if (path.startsWith(base)) {
       path = formatPath(path.slice(base.length))
@@ -288,19 +287,21 @@ export function extractUrlData(
       // 使用 pathname 来获取 path
       path = formatPath(path) // 去除结尾/
     }
-    // 提取 hash
-    hash = formatHash(hash, false) // 去掉 # 前缀
-  } else {
-    // 使用 hash 来获取 path 和 hash
-    if (hash.includes('#')) {
-      // 从 hash 中分离出路径和锚点
-      const hashPart = hash.slice(1) // 去掉前缀 #
-      const [pathInHash, anchor] = hashPart.split('#')
-
-      // 设置 path 和 hash
-      path = pathInHash as RoutePath
-      hash = anchor || '' // 如果有锚点，赋值给 hash
-    }
+    return { index: path, hash, query }
   }
-  return { path, hash, query }
+  if (hash.includes('#')) {
+    // 使用 hash 来获取 path 和 hash
+    const hashPart = hash.slice(1) // 去掉前缀 #
+    const [fullPath, anchor] = hashPart.split('#') // 分离路径和锚点
+    // 分离 path 和查询参数
+    const [pathInHash, queryString] = fullPath.split('?')
+    path = formatPath(pathInHash || '') as RoutePath // 提取并格式化路径
+    hash = anchor ? `#${anchor}` : ''
+    // 提取查询参数
+    query = queryStringToObject(queryString || '') // 安全处理无查询参数的情况
+  } else {
+    path = '/'
+    query = queryStringToObject(url.search)
+  }
+  return { index: path, hash, query }
 }
