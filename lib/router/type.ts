@@ -137,6 +137,9 @@ export type BeforeEachCallbackResult =
 /**
  * 路由前置钩子
  *
+ * > 注意：`from`参数受守卫过程中重定向影响，假设你在守卫过程中返回了新的`RouteTarget`，
+ * 从新进入守卫时`from`参数则是上一次的`to`。
+ *
  * @this {Router} - 路由器实例
  * @param {NavigateData} to - 要跳转的目标路由
  * @param {NavigateData} from - 从哪个路由跳转过来
@@ -193,6 +196,8 @@ export interface RouterOptions {
   routes: Route[]
   /**
    * 全局路由前置钩子
+   *
+   * @see BeforeEachCallback
    */
   beforeEach?: BeforeEachCallback
 }
@@ -272,6 +277,12 @@ export interface NavigateResult {
    * 状态描述
    */
   message: string
+  /**
+   * 最终的导航数据
+   *
+   * 它和守卫钩子`to`参数一致，常用于判断是否在守卫过程中被重定向。
+   */
+  data: Readonly<NavigateData>
   /**
    * 捕获到的异常
    */
