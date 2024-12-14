@@ -55,6 +55,18 @@ export default abstract class Router {
   private _currentTaskId: number | null = null
   // 用于生成唯一任务 ID
   private _taskCounter = 0
+  /**
+   * 是否正在执行 replace 操作
+   *
+   * @private
+   */
+  private _pendingReplace: NavigateData | null = null
+  /**
+   * 是否正在执行 push 操作
+   *
+   * @private
+   */
+  private _pendingPush: NavigateData | null = null
 
   constructor(options: RouterOptions) {
     if (Router.#instance) {
@@ -95,9 +107,9 @@ export default abstract class Router {
   private _currentNavigateData: NavigateData
 
   /**
-   * 获取当前路由数据
+   * 获取当前导航数据
    *
-   * @return {Readonly<NavigateData>} - 当前路由数据对象
+   * @return {Readonly<NavigateData>} - 当前导航数据对象
    */
   get currentNavigateData(): Readonly<NavigateData> {
     return this._currentNavigateData
@@ -168,6 +180,15 @@ export default abstract class Router {
    */
   get initialized(): boolean {
     return Router.#instance !== undefined
+  }
+
+  /**
+   * 是否处于等待状态
+   *
+   * @protected
+   */
+  protected get isPendingNavigation(): boolean {
+    return Boolean(this._pendingPush || this._pendingReplace)
   }
 
   /**
@@ -332,15 +353,44 @@ export default abstract class Router {
   }
 
   /**
-   * 更新当前导航数据
+   * 完成导航
    *
-   * 所有子类在完成导航过后都需要调用该方法设置新的导航数据
+   * 所有子类在完成导航的后续处理过后必须调用该方法！
    *
-   * @param data
    * @protected
    */
-  protected updateCurrentNavigateData(data: NavigateData) {
-    this._currentNavigateData = data
+  protected completeNavigation(data?: NavigateData) {
+    if (this._pendingReplace) {
+      this._currentNavigateData = this._pendingReplace
+      this._pendingReplace = null
+    } else if (this._pendingPush) {
+      this._currentNavigateData = this._pendingPush
+      this._pendingPush = null
+    } else if (data) {
+      this._currentNavigateData = data
+    } else {
+      throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
+    }
+  }
+
+  /**
+   * 更新当前导航数据中的query参数
+   *
+   * @param {Record<string, string>} query - 新的query参数对象
+   * @protected
+   */
+  protected updateQuery(query: Record<string, string>) {
+    this._currentNavigateData.query = query
+  }
+
+  /**
+   * 更新当前导航数据中的hash参数
+   *
+   * @param {`#${string}` | ''} hash - 新的hash参数，如果为空则表示无hash
+   * @protected
+   */
+  protected updateHash(hash: `#${string}` | '') {
+    this._currentNavigateData.hash = hash
   }
 
   /**
@@ -562,7 +612,13 @@ export default abstract class Router {
               message: '导航请求已被更新的导航请求替代，取消此次导航！'
             })
           }
-
+          if (target.isReplace) {
+            this._pendingReplace = to
+            this.replaceHistory(to)
+          } else {
+            this._pendingPush = to
+            this.pushHistory(to)
+          }
           // 根据 isReplace 决定是替换历史记录还是推入新历史记录
           target.isReplace ? this.replaceHistory(to) : this.pushHistory(to)
           return resolve({
@@ -597,12 +653,12 @@ export default abstract class Router {
     }
 
     const route = this.getRoute(index) ?? null
-    const path = route ? generateRoutePath(route.path, params) : index
+    const path = route ? generateRoutePath(route.path, params) : formatPath(index)
     const hashStr = formatHash(hash, true)
     const fullPath = route ? this.makeFullPath(path, query, hashStr) : index
     return {
       index,
-      path: route ? formatPath(this.basePath + path) : index,
+      path,
       hash: hashStr,
       fullPath: fullPath,
       params: params,
