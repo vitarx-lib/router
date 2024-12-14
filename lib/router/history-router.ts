@@ -49,7 +49,7 @@ export default class HistoryRouter extends Router {
    */
   protected pushHistory(data: NavigateData): void {
     this.webHistory.pushState(this.createState(data), '', data.fullPath)
-    this.updateCurrentNavigateData(data)
+    this.completeNavigation(data)
   }
 
   /**
@@ -57,7 +57,7 @@ export default class HistoryRouter extends Router {
    */
   protected replaceHistory(data: NavigateData): void {
     this.webHistory.replaceState(this.createState(data), '', data.fullPath)
-    this.updateCurrentNavigateData(data)
+    this.completeNavigation(data)
   }
 
   /**
@@ -78,7 +78,7 @@ export default class HistoryRouter extends Router {
   private onPopState(event: PopStateEvent) {
     if (event.state?.index) {
       const route = this.getRoute(event.state?.index)
-      this.updateCurrentNavigateData({
+      this.completeNavigation({
         ...event.state,
         matched: route || null
       })
@@ -91,7 +91,6 @@ export default class HistoryRouter extends Router {
       window.history.replaceState(this.currentNavigateData, '', window.location.href.toString())
       // 调用状态改变方法 更新query查询参数，以及hash
     } else {
-      console.log('路由地址变化', routeTarget, this.currentNavigateData)
       // path不一致 调用push方法完成路由跳转，通常不会执行到这里。
       this.push(routeTarget).then()
     }
