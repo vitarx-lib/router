@@ -47,6 +47,9 @@ export default class HistoryRouter extends Router {
    * @inheritDoc
    */
   protected pushHistory(data: NavigateData): void {
+    // 保存滚动位置
+    this.saveCurrentScrollPosition()
+    // 跳转到新路由
     this.webHistory.pushState(this.createState(data), '', data.fullPath)
     this.completeNavigation(data)
   }
@@ -57,6 +60,27 @@ export default class HistoryRouter extends Router {
   protected replaceHistory(data: NavigateData): void {
     this.webHistory.replaceState(this.createState(data), '', data.fullPath)
     this.completeNavigation(data)
+  }
+
+  /**
+   * 保存当前页面滚动位置
+   *
+   * @private
+   */
+  private saveCurrentScrollPosition() {
+    const scrollPosition: ScrollToOptions = {
+      left: window.scrollX,
+      top: window.scrollY,
+      behavior: this.behavior
+    }
+    this.webHistory.replaceState(
+      {
+        ...this.webHistory.state,
+        scrollPosition
+      },
+      '',
+      window.location.href
+    )
   }
 
   /**
