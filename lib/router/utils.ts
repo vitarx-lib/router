@@ -202,6 +202,7 @@ export function formatHash(hash: any, addHashPrefix: boolean): string {
  * @return {Record<string, string>} - 转换后的对象
  */
 export function queryStringToObject(queryString: string): Record<string, string> {
+  queryString = decodeURIComponent(queryString)
   // 去除前导的 "?" 符号，分割为键值对
   const params = new URLSearchParams(
     queryString.startsWith('?') ? queryString.substring(1) : queryString
@@ -276,25 +277,24 @@ export function extractUrlData(
    */
   query: Record<string, string>
 } {
-  let path: RoutePath = '/'
-  let hash: string = ''
-  let query: Record<string, string> = queryStringToObject(url.search)
+  let path: RoutePath = decodeURIComponent(url.pathname) as RoutePath
+  let hash: string = decodeURIComponent(url.hash)
+  const query: Record<string, string> = queryStringToObject(url.search)
   if (mode === 'path') {
     // 去除 basePath
-    if (url.pathname.startsWith(base)) {
-      path = formatPath(url.pathname.slice(base.length))
+    if (path.startsWith(base)) {
+      path = formatPath(path.slice(base.length))
     } else {
       // 使用 pathname 来获取 path
-      path = formatPath(url.pathname) // 去除结尾/
+      path = formatPath(path) // 去除结尾/
     }
     // 提取 hash
-    hash = formatHash(url.hash, false) // 去掉 # 前缀
+    hash = formatHash(hash, false) // 去掉 # 前缀
   } else {
     // 使用 hash 来获取 path 和 hash
-    const hashIndex = url.hash.indexOf('#')
-    if (hashIndex !== -1) {
+    if (hash.includes('#')) {
       // 从 hash 中分离出路径和锚点
-      const hashPart = url.hash.slice(1) // 去掉前缀 #
+      const hashPart = hash.slice(1) // 去掉前缀 #
       const [pathInHash, anchor] = hashPart.split('#')
 
       // 设置 path 和 hash
