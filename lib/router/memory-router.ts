@@ -13,7 +13,7 @@ export default class MemoryRouter extends Router {
 
     // 如果目标索引在有效范围内
     if (targetIndex >= 0 && targetIndex < this._history.length) {
-      this.updateCurrentNavigateData(this._history[targetIndex])
+      this.completeNavigation(this._history[targetIndex])
       return true
     }
 
@@ -29,7 +29,7 @@ export default class MemoryRouter extends Router {
    */
   protected override pushHistory(data: NavigateData): void {
     this._history.push(data)
-    this.updateCurrentNavigateData(data)
+    this.completeNavigation()
   }
 
   /**
@@ -42,6 +42,6 @@ export default class MemoryRouter extends Router {
     // 记录映射
     const index = this._history.indexOf(this.currentNavigateData)
     this._history[index] = data
-    this.updateCurrentNavigateData(data)
+    this.completeNavigation()
   }
 }
