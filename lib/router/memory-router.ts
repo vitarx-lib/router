@@ -3,7 +3,7 @@ import type { NavigateData } from './type.js'
 
 export default class MemoryRouter extends Router {
   // 路由历史记录数组
-  protected _history: NavigateData[] = []
+  protected _history: NavigateData[] = [this.currentNavigateData]
 
   /**
    * @inheritDoc
@@ -18,13 +18,6 @@ export default class MemoryRouter extends Router {
     }
 
     return false
-  }
-
-  /**
-   * @inheritDoc
-   */
-  protected initializeRouter() {
-    this._history.push(this.currentNavigateData)
   }
 
   /**
