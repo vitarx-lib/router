@@ -142,9 +142,6 @@ export type BeforeEachCallbackResult =
 /**
  * 路由前置钩子
  *
- * > 注意：`from`参数受守卫过程中重定向影响，假设你在守卫过程中返回了新的`RouteTarget`，
- * 从新进入守卫时`from`参数则是上一次的`to`。
- *
  * @this {Router} - 路由器实例
  * @param {NavigateData} to - 要跳转的目标路由
  * @param {NavigateData} from - 从哪个路由跳转过来
