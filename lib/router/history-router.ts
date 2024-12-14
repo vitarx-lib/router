@@ -1,29 +1,29 @@
 import Router from './router.js'
-import type { NavigateData } from './type.js'
-import { extractUrlData, formatPath } from './utils.js'
+import type { NavigateData, RouteTarget } from './type.js'
+import { urlToRouteTarget } from './utils.js'
 
 /**
  * 基于`window.history`实现的路由器
  *
  * 支持前进、后退、跳转等操作
- *
- * 两种url路由模式：
- * - `hash` 路由模式：使用`window.location.hash`作为路由标识，例如：`/#/page1`
- * - `path` 路由模式：使用`window.location.pathname`作为路由标识，例如：`/page1`
  */
 export default class HistoryRouter extends Router {
-  private _currentRoute: NavigateData = {
-    index: '/',
-    path: '/',
-    hash: '',
-    fullPath: '/',
-    params: {},
-    query: {},
-    matched: null
+  /**
+   * 当前路由目标
+   *
+   * @returns {RouteTarget} - 包含 index、hash 和 query 的对象
+   */
+  protected get currentRouteTarget(): MakeRequired<RouteTarget, 'query' | 'hash'> {
+    return urlToRouteTarget(window.location, 'path', this.basePath)
   }
 
-  get currentNavigateData(): Readonly<NavigateData> {
-    return this._currentRoute
+  /**
+   * window.history
+   *
+   * @private
+   */
+  private get webHistory() {
+    return window.history
   }
 
   /**
@@ -37,28 +37,11 @@ export default class HistoryRouter extends Router {
   /**
    * @inheritDoc
    */
-  public override initialize() {
-    if (!this.initialized) {
-      super.initialize()
-      // 初始化当前路由
-      this.initializeRoute()
-      // 初始化时监听 popstate 事件，处理历史记录返回时的路由恢复
-      window.addEventListener('popstate', this.onPopState.bind(this))
-    }
-    return this
-  }
-
-  /**
-   * @inheritDoc
-   */
-  protected override makeFullPath(
-    path: string,
-    query: `?${string}` | '',
-    hash: `#${string}` | ''
-  ): `/${string}` {
-    return this.mode === 'hash'
-      ? formatPath(`${this.basePath}/#${path}${query}${hash}`)
-      : formatPath(`${this.basePath}${path}${query}${hash}`)
+  protected override initializeRouter() {
+    // 初始化时监听 popstate 事件，处理历史记录返回时的路由恢复
+    window.addEventListener('popstate', this.onPopState.bind(this))
+    // 替换路由
+    this.replace(this.currentRouteTarget).then()
   }
 
   /**
@@ -66,6 +49,7 @@ export default class HistoryRouter extends Router {
    */
   protected pushHistory(data: NavigateData): void {
     this.webHistory.pushState(this.createState(data), '', data.fullPath)
+    this.updateCurrentNavigateData(data)
   }
 
   /**
@@ -73,26 +57,7 @@ export default class HistoryRouter extends Router {
    */
   protected replaceHistory(data: NavigateData): void {
     this.webHistory.replaceState(this.createState(data), '', data.fullPath)
-  }
-
-  /**
-   * window.history
-   *
-   * @private
-   */
-  private get webHistory() {
-    return window.history
-  }
-
-  /**
-   * 初始化第一个路由
-   *
-   * @private
-   */
-  protected initializeRoute() {
-    const { path } = extractUrlData(window.location, this.mode as 'path', this.basePath)
-    // 替换路由
-    this.replace(path).then()
+    this.updateCurrentNavigateData(data)
   }
 
   /**
@@ -111,12 +76,24 @@ export default class HistoryRouter extends Router {
    * 处理浏览器历史记录的返回/前进事件
    */
   private onPopState(event: PopStateEvent) {
-    console.log('路由地址变化', event.state)
     if (event.state?.index) {
-      // 状态
-      // const state = event.state as WebHistoryState
+      const route = this.getRoute(event.state?.index)
+      this.updateCurrentNavigateData({
+        ...event.state,
+        matched: route || null
+      })
+      return
+    }
+    const routeTarget = this.currentRouteTarget
+    // 处理锚点变化
+    if (routeTarget.index === this.currentNavigateData.path) {
+      // 锚点或hash发生变化，替换状态
+      window.history.replaceState(this.currentNavigateData, '', window.location.href.toString())
+      // 调用状态改变方法 更新query查询参数，以及hash
     } else {
-      console.error('[Vitarx.WebHistoryRouter.onPopState]：state is undefined')
+      console.log('路由地址变化', routeTarget, this.currentNavigateData)
+      // path不一致 调用push方法完成路由跳转，通常不会执行到这里。
+      this.push(routeTarget).then()
     }
   }
 }
