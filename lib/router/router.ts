@@ -24,7 +24,7 @@ import {
   isRouteGroup,
   isVariablePath,
   objectToQueryString
-} from './utils.js' // 路由匹配结果
+} from './utils.js'
 
 // 路由匹配结果
 type MatchResult = {
@@ -54,6 +54,8 @@ export default abstract class Router {
   private _currentTaskId: number | null = null
   // 用于生成唯一任务 ID
   private _taskCounter = 0
+  // 活跃的路由列表
+  // #activeRoutes = shallowRef<MakeRequired<Route, 'widget'>[]>([])
 
   constructor(options: RouterOptions) {
     if (Router.#instance) {
@@ -215,7 +217,7 @@ export default abstract class Router {
    * @param {NavigateData} from - 前路由对象
    * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
-  onBeforeEach(to: NavigateData, from: NavigateData): BeforeEachCallbackResult {
+  public onBeforeEach(to: NavigateData, from: NavigateData): BeforeEachCallbackResult {
     return this.#options.beforeEach.call(this, to, from)
   }
 
@@ -332,10 +334,8 @@ export default abstract class Router {
     if (!this.#options.strict) {
       path = path.toLowerCase() as RoutePath
     }
-
     // 格式化path
     path = formatPath(path)
-
     // 优先匹配静态路由
     if (this._pathRoutes.has(path)) {
       return { route: this._pathRoutes.get(path)!, params: null }
@@ -433,7 +433,7 @@ export default abstract class Router {
    * @param query - ?查询参数
    * @param hash - #哈希值
    */
-  protected abstract makeHref(
+  protected abstract makeFullPath(
     path: string,
     query: `?${string}` | '',
     hash: `#${string}` | ''
@@ -543,14 +543,14 @@ export default abstract class Router {
     const route = this.getRoute(index) ?? null
 
     const path = route ? generateRoutePath(route.path, params) : index
-    const href = route
-      ? this.makeHref(path, objectToQueryString(query), formatHash(hash, true) as `#${string}`)
+    const fullPath = route
+      ? this.makeFullPath(path, objectToQueryString(query), formatHash(hash, true) as `#${string}`)
       : index
     return {
       index,
-      fullPath: route ? formatPath(this.basePath + path) : index,
+      path: route ? formatPath(this.basePath + path) : index,
       hash: formatHash(hash, false),
-      href: href,
+      fullPath: fullPath,
       params: params,
       query: query,
       matched: route
