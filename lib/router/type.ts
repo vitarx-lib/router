@@ -159,6 +159,36 @@ export type BeforeEachCallback = (
  * 路由模式
  */
 export type HistoryMode = 'hash' | 'path' | 'memory'
+/**
+ * 滚动行为
+ *
+ * 1. auto: 默认值，浏览器会自动决定滚动行为
+ * 2. instant: 立即滚动到目标位置，不考虑动画效果
+ * 3. smooth: 平滑滚动到目标位置，考虑动画效果
+ */
+export type _ScrollBehavior = 'auto' | 'instant' | 'smooth'
+
+/**
+ * 滚动配置
+ *
+ * @see https://developer.mozilla.org/zh-CN/docs/Web/API/Window/scrollTo
+ */
+export interface _ScrollToOptions {
+  /**
+   * 滚动到目标位置的X坐标
+   */
+  left?: number
+  /**
+   * 滚动到目标位置的Y坐标
+   */
+  top?: number
+  /**
+   * 滚动行为
+   *
+   * @see ScrollBehavior
+   */
+  behavior?: _ScrollBehavior
+}
 
 /**
  * 全局路由后置钩子
@@ -170,6 +200,17 @@ export type HistoryMode = 'hash' | 'path' | 'memory'
  * @param {NavigateData} from - 从哪个路由跳转过来
  */
 type AfterEachCallback = (this: Router, to: NavigateData, from: NavigateData) => void
+
+/**
+ * 滚动行为处理器
+ *
+ * 仅浏览器环境有效。
+ */
+export type ScrollBehaviorHandler = (
+  to: RouteTarget,
+  from: RouteTarget,
+  savedPosition: _ScrollToOptions
+) => _ScrollToOptions | Promise<_ScrollToOptions>
 
 /**
  * 路由器配置
@@ -221,6 +262,14 @@ export interface RouterOptions {
    * @see AfterEachCallback
    */
   afterEach?: AfterEachCallback
+  /**
+   * 滚动行为
+   *
+   * 可以传入`ScrollBehavior`或`ScrollBehaviorHandler`函数自定义滚动行为。
+   *
+   * @default 'smooth'
+   */
+  scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
 }
 
 /**
@@ -286,14 +335,6 @@ export interface NavigateResult {
   /**
    * 状态
    *
-   * 枚举值：
-   * 0. success: 导航成功
-   * 1. aborted: 导航被阻止
-   * 2. cancelled: 导航被取消
-   * 3. duplicated: 重复导航
-   * 4. not_matched: 路由未匹配
-   * 5. exception: 捕获到异常
-   *
    * @see NavigateStatus
    */
   status: NavigateStatus
@@ -315,6 +356,14 @@ export interface NavigateResult {
 
 /**
  * 导航结果
+ *
+ * 枚举值：
+ * 0. success: 导航成功
+ * 1. aborted: 导航被阻止
+ * 2. cancelled: 导航被取消
+ * 3. duplicated: 重复导航
+ * 4. not_matched: 路由未匹配
+ * 5. exception: 捕获到异常
  */
 export enum NavigateStatus {
   /**
