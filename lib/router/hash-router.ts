@@ -3,19 +3,6 @@ import { urlToRouteTarget } from './utils.js'
 import MemoryRouter from './memory-router.js'
 
 export default class HashRouter extends MemoryRouter {
-  /**
-   * 是否正在执行 replace 操作
-   *
-   * @private
-   */
-  private _pendingReplace: NavigateData | null = null
-  /**
-   * 是否正在执行 push 操作
-   *
-   * @private
-   */
-  private _pendingPush: NavigateData | null = null
-
   constructor(options: RouterOptions) {
     super(options)
     this.ensureHash()
@@ -42,7 +29,6 @@ export default class HashRouter extends MemoryRouter {
    * @inheritDoc
    */
   protected pushHistory(data: NavigateData) {
-    this._pendingPush = data
     window.location.replace(data.fullPath)
   }
 
@@ -50,20 +36,42 @@ export default class HashRouter extends MemoryRouter {
    * @inheritDoc
    */
   protected replaceHistory(data: NavigateData) {
-    this._pendingReplace = data
     window.location.replace(data.fullPath)
   }
 
+  /**
+   * 处理 hashchange 事件
+   *
+   * @param event
+   * @private
+   */
   private onHashChange(event: HashChangeEvent) {
-    if (this._pendingPush) {
-      return super.pushHistory(this._pendingPush)
+    // 替换完成
+    if (this.isPendingNavigation) {
+      this.completeNavigation()
+      return
     }
-    if (this._pendingReplace) {
-      return super.replaceHistory(this._pendingReplace)
+    // 新的url
+    const { newURL } = event
+    // 当前导航数据
+    const current = this.currentNavigateData
+    // 新的路由目标
+    const newTarget = urlToRouteTarget(new URL(newURL), 'hash', this.basePath)
+    // 路径改变
+    if (newTarget.index !== current.path) {
+      return this.push(newTarget)
     }
-    const { newURL, oldURL } = event
-    console.log(this.currentNavigateData)
-    console.log('hash变化了', newURL, oldURL)
+    // hash 改变
+    if (newTarget.hash !== current.hash) {
+      return this.updateHash(newTarget.hash)
+    }
+    // query 改变
+    if (newTarget.query !== current.query) {
+      return this.updateQuery(newTarget.query)
+    }
+    console.error(
+      `[Vitarx.HashRouter.onHashChange][ERROR]：未能处理HashChangeEvent事件新newURL:${newURL},oldURL:${event.oldURL}`
+    )
   }
 
   /**
