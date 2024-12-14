@@ -92,7 +92,8 @@ export interface NavigateData {
   /**
    * 完整的path，包含了query和hash
    *
-   * `${path}${query}${hash}`
+   * 1. path|memory模式：`${base}${path}${query}${hash}`
+   * 2. hash模式：`${base}/#${path}${query}${hash}`
    */
   fullPath: string
   /**
@@ -104,7 +105,7 @@ export interface NavigateData {
    *
    * 带有#前缀，空字符串代表没有hash。
    */
-  hash: string
+  hash: `#${string}` | ''
   /**
    * search参数
    */
