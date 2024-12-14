@@ -102,15 +102,15 @@ export interface NavigateData {
   /**
    * hash
    *
-   * 没有#前缀！，空字符串代表没有hash。
+   * 带有#前缀，空字符串代表没有hash。
    */
   hash: string
   /**
-   * 路由search参数
+   * search参数
    */
   query: Record<string, string>
   /**
-   * 路由参数
+   * 动态路由path匹配的参数，包括调用`push`|`replace`时传入的params
    */
   params: Record<string, string>
   /**
