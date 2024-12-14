@@ -2,6 +2,7 @@ import type { Route, RouterOptions } from './type.js'
 import Router from './router.js'
 import HistoryRouter from './history-router.js'
 import MemoryRouter from './memory-router.js'
+import HashRouter from './hash-router.js'
 
 /**
  * 定义路由表
@@ -37,6 +38,14 @@ export function defineRoute(route: Route): Route {
  */
 export function createRouter(options: RouterOptions & { mode: 'memory' }): MemoryRouter
 /**
+ * 创建Hash路由器
+ *
+ *
+ * @param {RouterOptions} options - 配置
+ * @return {HashRouter} - hash路由器实例
+ */
+export function createRouter(options: RouterOptions & { mode: 'hash' }): HashRouter
+/**
  * 创建History路由器
  *
  * 基于History API实现路由功能，支持浏览器前进后退、刷新等操作。
@@ -47,9 +56,25 @@ export function createRouter(options: RouterOptions & { mode: 'memory' }): Memor
  * @param {RouterOptions} options - 路由配置
  * @return {HistoryRouter} - HistoryRouter实例
  */
-export function createRouter(options: RouterOptions): HistoryRouter
+export function createRouter(
+  options:
+    | RouterOptions
+    | (RouterOptions & {
+        mode: 'path'
+      })
+): HistoryRouter
 export function createRouter(options: RouterOptions): Router {
-  const router = options.mode === 'memory' ? new MemoryRouter(options) : new HistoryRouter(options)
+  let router: Router
+  switch (options.mode) {
+    case 'memory':
+      router = new MemoryRouter(options)
+      break
+    case 'hash':
+      router = new HashRouter(options)
+      break
+    default:
+      return new HistoryRouter(options)
+  }
   return router.initialize()
 }
 
