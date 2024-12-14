@@ -11,6 +11,7 @@ import {
   type Route,
   type RouteGroup,
   type RouteIndex,
+  type RouteName,
   type RoutePath,
   type RouterOptions,
   type RouteTarget
@@ -273,7 +274,10 @@ export default abstract class Router {
   /**
    * 获取路由
    *
+   * 传入的是`path`则会调用`matchRoute`方法，传入的是`name`则会调用`getNamedRoute`方法
+   *
    * @param {string} index - 路由索引，如果/开头则匹配path，其他匹配name
+   * @return {Readonly<Route> | undefined} - 路由对象，如果不存在则返回undefined
    */
   public getRoute(index: RouteIndex): Readonly<Route> | undefined {
     if (typeof index !== 'string') {
@@ -281,13 +285,18 @@ export default abstract class Router {
         `[Vitarx.Router.getRoute][ERROR]：路由索引${index}类型错误，必须给定字符串类型`
       )
     }
-    if (index.startsWith('/')) {
-      const route = this._pathRoutes.get(this.strictPath(index))
-      if (route) return route
-      const matched = this.matchRoute(index as RoutePath)
-      if (matched) return matched.route
-    }
-    return this._namedRoutes.get(index)
+    return index.startsWith('/')
+      ? this.matchRoute(index as RoutePath)?.route
+      : this.getNamedRoute(index)
+  }
+
+  /**
+   * 获取命名路由
+   *
+   * @param {string} name - 路由名称
+   */
+  public getNamedRoute(name: RouteName): Readonly<Route> | undefined {
+    return this._namedRoutes.get(name)
   }
 
   /**
@@ -433,11 +442,17 @@ export default abstract class Router {
    * @param query - ?查询参数
    * @param hash - #哈希值
    */
-  protected abstract makeFullPath(
+  protected makeFullPath(
     path: string,
-    query: `?${string}` | '',
+    query: `?${string}` | '' | Record<string, string>,
     hash: `#${string}` | ''
-  ): `${string}`
+  ): `${string}` {
+    if (hash && !hash.startsWith('#')) hash = `#${hash}`
+    if (typeof query === 'object') query = objectToQueryString(query)
+    return this.mode === 'hash'
+      ? formatPath(`${this.basePath}/#${path}${query}${hash}`)
+      : formatPath(`${this.basePath}${path}${query}${hash}`)
+  }
 
   /**
    * 添加历史记录
@@ -541,15 +556,13 @@ export default abstract class Router {
     }
 
     const route = this.getRoute(index) ?? null
-
     const path = route ? generateRoutePath(route.path, params) : index
-    const fullPath = route
-      ? this.makeFullPath(path, objectToQueryString(query), formatHash(hash, true) as `#${string}`)
-      : index
+    const hashStr = formatHash(hash, true)
+    const fullPath = route ? this.makeFullPath(path, query, hashStr) : index
     return {
       index,
       path: route ? formatPath(this.basePath + path) : index,
-      hash: formatHash(hash, false),
+      hash: hashStr,
       fullPath: fullPath,
       params: params,
       query: query,
