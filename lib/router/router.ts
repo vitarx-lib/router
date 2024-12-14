@@ -3,6 +3,7 @@
 import {
   type BeforeEachCallbackResult,
   type DynamicRouteRecord,
+  type HashStr,
   type HistoryMode,
   type InitializedRouterOptions,
   type NavigateData,
@@ -195,25 +196,20 @@ export default abstract class Router {
    * 跳转指定的历史记录位置
    *
    * @param {number} [delta=1] - 跳转的步数（正数为前进，负数为后退）
-   * @return {boolean} - 如果存在记录，返回true，否则返回false，非内存模式始终返回true
    */
-  public abstract go(delta?: number): boolean
+  public abstract go(delta?: number): void
 
   /**
    * 后退到上一个历史记录
-   *
-   * @return {boolean} - 如果存在记录，返回true，否则返回false，非内存模式始终返回true
    */
-  public back(): boolean {
+  public back(): void {
     return this.go(-1) // 后退1步
   }
 
   /**
    * 前进到下一个历史记录
-   *
-   * @return {boolean} -如果存在记录，返回true，否则返回false，非内存模式始终返回true
    */
-  public forward(): boolean {
+  public forward(): void {
     return this.go(1) // 前进1步
   }
 
@@ -357,6 +353,8 @@ export default abstract class Router {
    *
    * 所有子类在完成导航的后续处理过后必须调用该方法！
    *
+   * @param {NavigateData} [data] - 如果是由`replace`或`push`方法发起的导航则无需传入此参数。
+   *
    * @protected
    */
   protected completeNavigation(data?: NavigateData) {
@@ -371,6 +369,7 @@ export default abstract class Router {
     } else {
       throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
     }
+    // TODO 待完成视图渲染相关逻辑，以及触发后置钩子
   }
 
   /**
@@ -527,7 +526,7 @@ export default abstract class Router {
   protected makeFullPath(
     path: string,
     query: `?${string}` | '' | Record<string, string>,
-    hash: `#${string}` | ''
+    hash: HashStr
   ): `${string}` {
     if (hash && !hash.startsWith('#')) hash = `#${hash}`
     if (typeof query === 'object') query = objectToQueryString(query)
@@ -566,10 +565,7 @@ export default abstract class Router {
     const taskId = ++this._taskCounter // 生成唯一任务 ID
     this._currentTaskId = taskId // 更新当前任务
     const isCurrentTask = () => this._currentTaskId === taskId // 检查任务是否被取消
-    const performNavigation = (
-      target: RouteTarget,
-      from: NavigateData
-    ): Promise<NavigateResult> => {
+    const performNavigation = (target: RouteTarget): Promise<NavigateResult> => {
       return new Promise<NavigateResult>(async resolve => {
         const to: NavigateData = this.createNavigateData(target)
         if (to.matched === this.currentNavigateData.matched) {
@@ -580,7 +576,7 @@ export default abstract class Router {
           })
         }
         try {
-          const result = await this.onBeforeEach(to, from)
+          const result = await this.onBeforeEach(to, this.currentNavigateData)
 
           if (result === false) {
             return resolve({
@@ -592,7 +588,7 @@ export default abstract class Router {
           if (typeof result === 'object' && result.index !== target.index) {
             if (result.isReplace !== true) result.isReplace = false
             // 递归调用导航方法，传递当前任务 ID
-            return performNavigation(result, to).then(resolve)
+            return performNavigation(result).then(resolve)
           }
 
           // 路由未匹配
@@ -600,7 +596,7 @@ export default abstract class Router {
             return resolve({
               status: NavigateStatus.not_matched,
               data: to,
-              message: '导航目标路由未匹配到任何路由规则，被系统阻止！'
+              message: '未匹配到任何路由规则，被系统阻止！请检测目标索引是否正确。'
             })
           }
 
@@ -637,7 +633,7 @@ export default abstract class Router {
         }
       })
     }
-    return performNavigation(target, this.currentNavigateData)
+    return performNavigation(target)
   }
 
   /**
