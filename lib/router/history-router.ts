@@ -14,9 +14,9 @@ import { extractUrlData, formatPath } from './utils.js'
 export default class HistoryRouter extends Router {
   private _currentRoute: NavigateData = {
     index: '/',
-    fullPath: '/',
+    path: '/',
     hash: '',
-    href: '/',
+    fullPath: '/',
     params: {},
     query: {},
     matched: null
@@ -51,7 +51,7 @@ export default class HistoryRouter extends Router {
   /**
    * @inheritDoc
    */
-  protected override makeHref(
+  protected override makeFullPath(
     path: string,
     query: `?${string}` | '',
     hash: `#${string}` | ''
@@ -65,14 +65,14 @@ export default class HistoryRouter extends Router {
    * @inheritDoc
    */
   protected pushHistory(data: NavigateData): void {
-    this.webHistory.pushState(this.createState(data), '', data.href)
+    this.webHistory.pushState(this.createState(data), '', data.fullPath)
   }
 
   /**
    * @inheritDoc
    */
   protected replaceHistory(data: NavigateData): void {
-    this.webHistory.replaceState(this.createState(data), '', data.href)
+    this.webHistory.replaceState(this.createState(data), '', data.fullPath)
   }
 
   /**
