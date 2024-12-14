@@ -43,7 +43,10 @@ export default abstract class Router {
    */
   static #instance: Router | undefined
   // 配置
-  readonly #options: Required<RouterOptions>
+  readonly #options: MakeRequired<
+    RouterOptions,
+    Exclude<keyof RouterOptions, 'beforeEach' | 'afterEach'>
+  >
   // 命名路由映射
   private readonly _namedRoutes = new Map<string, Route>()
   // 动态路由正则，按长度分组
@@ -76,7 +79,6 @@ export default abstract class Router {
     this.#options = {
       base: '/',
       strict: false,
-      beforeEach: () => void 0,
       mode: 'path',
       ...options
     }
@@ -119,9 +121,9 @@ export default abstract class Router {
   /**
    * 获取配置
    *
-   * @return {InitializedRouterOptions} - 初始化配置
+   * @return {Readonly<InitializedRouterOptions>} - 初始化配置
    */
-  get options(): InitializedRouterOptions {
+  get options(): Readonly<InitializedRouterOptions> {
     return this.#options
   }
 
@@ -249,7 +251,17 @@ export default abstract class Router {
    * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
   public onBeforeEach(to: NavigateData, from: NavigateData): BeforeEachCallbackResult {
-    return this.#options.beforeEach.call(this, to, from)
+    return this.#options.beforeEach?.call(this, to, from)
+  }
+
+  /**
+   * 路由后置守卫
+   *
+   * @param {NavigateData} to - 路由目标对象
+   * @param {NavigateData} from - 前路由对象
+   */
+  public onAfterEach(to: NavigateData, from: NavigateData): void {
+    return this.#options.afterEach?.call(this, to, from)
   }
 
   /**
@@ -358,6 +370,7 @@ export default abstract class Router {
    * @protected
    */
   protected completeNavigation(data?: NavigateData) {
+    const from = this._currentNavigateData
     if (this._pendingReplace) {
       this._currentNavigateData = this._pendingReplace
       this._pendingReplace = null
@@ -369,7 +382,8 @@ export default abstract class Router {
     } else {
       throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
     }
-    // TODO 待完成视图渲染相关逻辑，以及触发后置钩子
+    // TODO 待完成视图渲染相关逻辑
+    this.onAfterEach(this._currentNavigateData, from)
   }
 
   /**
