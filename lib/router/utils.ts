@@ -273,7 +273,7 @@ export function createUniqueIdGenerator(): () => string {
 export function urlToRouteTarget(
   url: URL | Location,
   mode: 'path' | 'hash',
-  base: string
+  base: `/${string}`
 ): MakeRequired<RouteTarget, 'query' | 'hash'> {
   let path: RoutePath = decodeURIComponent(url.pathname) as RoutePath
   let hash: string = decodeURIComponent(url.hash)
@@ -300,7 +300,7 @@ export function urlToRouteTarget(
     // 提取查询参数
     query = queryStringToObject(queryString || '') // 安全处理无查询参数的情况
   } else {
-    path = '/'
+    path = base as RoutePath
     query = queryStringToObject(url.search)
   }
   return { index: path, hash, query }
