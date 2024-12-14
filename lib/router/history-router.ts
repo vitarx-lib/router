@@ -1,5 +1,5 @@
 import Router from './router.js'
-import type { NavigateData, RouteTarget } from './type.js'
+import { type NavigateData, NavigateStatus, type RouteTarget } from './type.js'
 import { urlToRouteTarget } from './utils.js'
 
 /**
@@ -119,8 +119,15 @@ export default class HistoryRouter extends Router {
         return this.updateQuery(newTarget.query)
       }
     } else {
-      // path不一致 调用push方法完成路由跳转，通常不会执行到这里。
-      this.push(newTarget).then()
+      // path不一致，一般都不会执行到这里
+      this.push(newTarget).then(res => {
+        if (res.status === NavigateStatus.success) {
+          // 保存状态
+          this.webHistory.replaceState(this.createState(res.data), '', res.data.fullPath)
+          // 完成导航
+          this.completeNavigation(res.data)
+        }
+      })
     }
   }
 }
