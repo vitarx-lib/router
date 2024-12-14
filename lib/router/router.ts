@@ -346,11 +346,11 @@ export default abstract class Router {
   /**
    * 初始化路由器
    *
-   * 子类实现此方法以完成路由器的初始化
+   * 子类可重写此方法以完成路由器的初始化
    *
    * @private
    */
-  protected abstract initializeRouter(): void
+  protected initializeRouter(): void {}
 
   /**
    * 获取路由的父路由
