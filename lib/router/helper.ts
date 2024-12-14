@@ -69,6 +69,7 @@ export function createRouter(options: RouterOptions): Router {
   // 如果非浏览器端，强制使用内存模式路由
   if (!window?.location && options.mode !== 'memory') {
     console.warn('当前环境非浏览器端，强制使用内存模式路由')
+    options.mode = 'memory'
     return new MemoryRouter(options).initialize()
   }
   switch (options.mode) {
@@ -82,6 +83,7 @@ export function createRouter(options: RouterOptions): Router {
       // 如果浏览器不支持history API，则强制使用hash模式路由
       if (!window.history) {
         console.warn('当前浏览器不支持history API，将使用hash模式路由')
+        options.mode = 'hash'
         router = new HashRouter(options).initialize()
       } else {
         router = new HistoryRouter(options)
