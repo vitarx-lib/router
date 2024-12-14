@@ -1,6 +1,6 @@
 import Router from './router.js'
 import { createUniqueIdGenerator } from './utils.js'
-import type { NavigateData, RouterOptions } from './type.js'
+import type { NavigateData } from './type.js'
 
 export default class MemoryRouter extends Router {
   // 生成唯一id
@@ -9,18 +9,6 @@ export default class MemoryRouter extends Router {
   private _historyMap = new Map<string, NavigateData>()
   // 当前路由
   private _currentNavigateId: string = ''
-
-  constructor(options: RouterOptions) {
-    super(options)
-    this.setupDefaultRoute()
-  }
-
-  /**
-   * @inheritDoc
-   */
-  override get currentNavigateData() {
-    return this._historyMap.get(this._currentNavigateId)!
-  }
 
   /**
    * @inheritDoc
@@ -52,6 +40,15 @@ export default class MemoryRouter extends Router {
   }
 
   /**
+   * @inheritDoc
+   */
+  protected initializeRouter() {
+    const id = this.uniqueId()
+    this._historyMap.set(id, this.currentNavigateData)
+    this._currentNavigateId = id
+  }
+
+  /**
    * 添加历史记录
    *
    *
@@ -62,6 +59,7 @@ export default class MemoryRouter extends Router {
     const id = this.uniqueId()
     this._historyMap.set(id, data)
     this._currentNavigateId = id
+    this.updateCurrentNavigateData(data)
   }
 
   /**
@@ -73,25 +71,6 @@ export default class MemoryRouter extends Router {
   protected replaceHistory(data: NavigateData): void {
     // 记录映射
     this._historyMap.set(this._currentNavigateId, data)
-  }
-
-  /**
-   * 初始化设置当前路由
-   *
-   * @protected
-   */
-  private setupDefaultRoute() {
-    const id = this.uniqueId()
-    const data: NavigateData = {
-      index: this.basePath,
-      fullPath: this.basePath,
-      path: this.basePath,
-      hash: '',
-      params: {},
-      query: {},
-      matched: null
-    }
-    this._historyMap.set(id, data)
-    this._currentNavigateId = id
+    this.updateCurrentNavigateData(data)
   }
 }
