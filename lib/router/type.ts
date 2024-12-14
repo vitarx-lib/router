@@ -81,6 +81,8 @@ export type RouteGroup = MakeRequired<Route, 'children'>
 
 /**
  * 导航数据
+ *
+ * 所有和url相关的数据都已`decodeURIComponent`解码
  */
 export interface NavigateData {
   /**
@@ -88,21 +90,21 @@ export interface NavigateData {
    */
   index: RouteIndex
   /**
-   * 完整的path
+   * 完整的path，包含了query和hash
+   *
+   * `${path}${query}${hash}`
    */
   fullPath: string
   /**
+   * pathname
+   */
+  path: string
+  /**
    * hash
    *
-   * 空字符串代表没有hash，如果有值时以#开头
+   * 没有#前缀！，空字符串代表没有hash。
    */
   hash: string
-  /**
-   * 跳转链接
-   *
-   * `${fullPath}${query}${hash}`
-   */
-  href: string
   /**
    * 路由search参数
    */
