@@ -1,6 +1,7 @@
 export * from './type.js'
 export { default as Router } from './router.js'
-export { default as WebHistoryRouter } from './history-router.js'
+export { default as HistoryRouter } from './history-router.js'
+export { default as HashRouter } from './hash-router.js'
 export { default as MemoryRouter } from './memory-router.js'
 export * from './utils.js'
 export * from './helper.js'
