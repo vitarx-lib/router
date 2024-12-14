@@ -5,7 +5,7 @@ import { urlToRouteTarget } from './utils.js'
 /**
  * 基于`window.history`实现的路由器
  *
- * 支持前进、后退、跳转等操作
+ * 支持浏览器前进、后退、跳转等操作
  */
 export default class HistoryRouter extends Router {
   /**
@@ -29,9 +29,8 @@ export default class HistoryRouter extends Router {
   /**
    * @inheritDoc
    */
-  public override go(delta?: number): boolean {
+  public override go(delta?: number): void {
     this.webHistory.go(delta)
-    return true
   }
 
   /**
@@ -84,15 +83,20 @@ export default class HistoryRouter extends Router {
       })
       return
     }
-    const routeTarget = this.currentRouteTarget
+    const newTarget = this.currentRouteTarget
     // 处理锚点变化
-    if (routeTarget.index === this.currentNavigateData.path) {
+    if (newTarget.index === this.currentNavigateData.path) {
       // 锚点或hash发生变化，替换状态
       window.history.replaceState(this.currentNavigateData, '', window.location.href.toString())
-      // 调用状态改变方法 更新query查询参数，以及hash
+      if (this.currentRouteTarget.hash !== newTarget.hash) {
+        return this.updateHash(newTarget.hash)
+      }
+      if (this.currentRouteTarget.query !== newTarget.query) {
+        return this.updateQuery(newTarget.query)
+      }
     } else {
       // path不一致 调用push方法完成路由跳转，通常不会执行到这里。
-      this.push(routeTarget).then()
+      this.push(newTarget).then()
     }
   }
 }
