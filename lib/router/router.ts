@@ -55,8 +55,6 @@ export default abstract class Router {
   private _currentTaskId: number | null = null
   // 用于生成唯一任务 ID
   private _taskCounter = 0
-  // 活跃的路由列表
-  // #activeRoutes = shallowRef<MakeRequired<Route, 'widget'>[]>([])
 
   constructor(options: RouterOptions) {
     if (Router.#instance) {
@@ -68,6 +66,16 @@ export default abstract class Router {
       beforeEach: () => void 0,
       mode: 'path',
       ...options
+    }
+    this.#options.base = `/${this.#options.base.replace(/^\/+|\/+$/g, '')}`
+    this._currentNavigateData = {
+      index: this.#options.base,
+      path: this.#options.base,
+      hash: '',
+      fullPath: this.#options.base,
+      params: {},
+      query: {},
+      matched: null
     }
   }
 
@@ -81,6 +89,18 @@ export default abstract class Router {
       throw new Error(`[Vitarx.Router.instance]：路由器实例未初始化`)
     }
     return Router.#instance
+  }
+
+  // 当前导航数据
+  private _currentNavigateData: NavigateData
+
+  /**
+   * 获取当前路由数据
+   *
+   * @return {Readonly<NavigateData>} - 当前路由数据对象
+   */
+  get currentNavigateData(): Readonly<NavigateData> {
+    return this._currentNavigateData
   }
 
   /**
@@ -140,13 +160,6 @@ export default abstract class Router {
   get basePath(): `/${string}` {
     return this.#options.base
   }
-
-  /**
-   * 获取当前路由数据
-   *
-   * @return {Readonly<NavigateData>} - 当前路由数据对象
-   */
-  abstract get currentNavigateData(): Readonly<NavigateData>
 
   /**
    * 判断路由器是否初始化完成
@@ -310,15 +323,34 @@ export default abstract class Router {
    */
   public initialize(): this {
     if (Router.#instance) return this
-    const { base, routes } = this.#options
-    // 初始化基础路径
-    this.setupBasePath(base)
     // 初始化路由表
-    this.setupRoutes(routes)
+    this.setupRoutes(this.#options.routes)
+    this.initializeRouter()
     // 记录单例
     Router.#instance = this
     return this
   }
+
+  /**
+   * 更新当前导航数据
+   *
+   * 所有子类在完成导航过后都需要调用该方法设置新的导航数据
+   *
+   * @param data
+   * @protected
+   */
+  protected updateCurrentNavigateData(data: NavigateData) {
+    this._currentNavigateData = data
+  }
+
+  /**
+   * 初始化路由器
+   *
+   * 子类实现此方法以完成路由器的初始化
+   *
+   * @private
+   */
+  protected abstract initializeRouter(): void
 
   /**
    * 获取路由的父路由
@@ -484,63 +516,72 @@ export default abstract class Router {
     const taskId = ++this._taskCounter // 生成唯一任务 ID
     this._currentTaskId = taskId // 更新当前任务
     const isCurrentTask = () => this._currentTaskId === taskId // 检查任务是否被取消
-    const performNavigation = (target: RouteTarget): Promise<NavigateResult> => {
+    const performNavigation = (
+      target: RouteTarget,
+      from: NavigateData
+    ): Promise<NavigateResult> => {
       return new Promise<NavigateResult>(async resolve => {
         const to: NavigateData = this.createNavigateData(target)
         if (to.matched === this.currentNavigateData.matched) {
           return resolve({
             status: NavigateStatus.duplicated,
+            data: to,
             message: '重复导航到相同的路由，被系统阻止！'
           })
         }
-
-        const from: NavigateData = this.currentNavigateData
         try {
           const result = await this.onBeforeEach(to, from)
 
-          if (result === false)
+          if (result === false) {
             return resolve({
               status: NavigateStatus.aborted,
+              data: to,
               message: '导航被前置守卫钩子取消'
             })
-
+          }
           if (typeof result === 'object' && result.index !== target.index) {
             if (result.isReplace !== true) result.isReplace = false
             // 递归调用导航方法，传递当前任务 ID
-            return performNavigation(result).then(resolve)
+            return performNavigation(result, to).then(resolve)
           }
 
           // 路由未匹配
-          if (!to.matched)
+          if (!to.matched) {
             return resolve({
               status: NavigateStatus.not_matched,
+              data: to,
               message: '导航目标路由未匹配到任何路由规则，被系统阻止！'
             })
+          }
 
           // 检测任务是否已被取消
-          if (!isCurrentTask())
+          if (!isCurrentTask()) {
             return resolve({
               status: NavigateStatus.cancelled,
+              data: to,
               message: '导航请求已被更新的导航请求替代，取消此次导航！'
             })
+          }
 
           // 根据 isReplace 决定是替换历史记录还是推入新历史记录
           target.isReplace ? this.replaceHistory(to) : this.pushHistory(to)
           return resolve({
             status: NavigateStatus.success,
+            data: to,
             message: '导航成功'
           })
         } catch (error) {
           // 如果发生错误，则导航被取消
           return resolve({
             status: NavigateStatus.exception,
-            message: '导航时发生异常',
+            data: to,
+            message: '导航时捕获到了异常',
             error
           })
         }
       })
     }
-    return performNavigation(target)
+    return performNavigation(target, this.currentNavigateData)
   }
 
   /**
@@ -568,15 +609,6 @@ export default abstract class Router {
       query: query,
       matched: route
     }
-  }
-
-  /**
-   * 设置基础路径
-   *
-   * @param base
-   */
-  private setupBasePath(base: string) {
-    this.#options.base = `/${base.replace(/^\/+|\/+$/g, '')}`
   }
 
   /**
