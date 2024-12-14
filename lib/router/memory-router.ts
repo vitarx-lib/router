@@ -59,7 +59,7 @@ export default class MemoryRouter extends Router {
    * @param query - ?查询参数
    * @param hash - #哈希值
    */
-  protected override makeHref(path: string, query: string, hash: string): `${string}` {
+  protected override makeFullPath(path: string, query: string, hash: string): `${string}` {
     return formatPath(`${this.basePath}${path}${query}${hash}`)
   }
 
@@ -93,17 +93,17 @@ export default class MemoryRouter extends Router {
    * @protected
    */
   private setupDefaultRoute() {
-    const data = {
-      id: this.uniqueId(),
+    const id = this.uniqueId()
+    const data: NavigateData = {
       index: this.basePath,
       fullPath: this.basePath,
+      path: this.basePath,
       hash: '',
-      href: this.basePath,
       params: {},
       query: {},
       matched: null
     }
-    this._historyMap.set(data.id, data)
-    this._currentNavigateId = data.id
+    this._historyMap.set(id, data)
+    this._currentNavigateId = id
   }
 }
