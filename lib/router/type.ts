@@ -140,7 +140,9 @@ export type BeforeEachCallbackResult =
   | void
   | Promise<boolean | RouteTarget | void>
 /**
- * 路由前置钩子
+ * 全局路由前置钩子
+ *
+ * 此时路由导航还未正式开始，此钩子常用于鉴权，如果不符合条件，可以返回false阻止路由，亦可以返回重定向目标。
  *
  * @this {Router} - 路由器实例
  * @param {NavigateData} to - 要跳转的目标路由
@@ -157,6 +159,17 @@ export type BeforeEachCallback = (
  * 路由模式
  */
 export type HistoryMode = 'hash' | 'path' | 'memory'
+
+/**
+ * 全局路由后置钩子
+ *
+ * 此时视图已经渲染完成，可以做一些操作，如：修改页面标题等。
+ *
+ * @this {Router} - 路由器实例
+ * @param {NavigateData} to - 当前路由数据
+ * @param {NavigateData} from - 从哪个路由跳转过来
+ */
+type AfterEachCallback = (this: Router, to: NavigateData, from: NavigateData) => void
 
 /**
  * 路由器配置
@@ -202,12 +215,21 @@ export interface RouterOptions {
    * @see BeforeEachCallback
    */
   beforeEach?: BeforeEachCallback
+  /**
+   * 全局路由后置钩子
+   *
+   * @see AfterEachCallback
+   */
+  afterEach?: AfterEachCallback
 }
 
 /**
  * 已初始化的路由配置
  */
-export type InitializedRouterOptions = Readonly<Required<RouterOptions>>
+export type InitializedRouterOptions = MakeRequired<
+  RouterOptions,
+  Exclude<keyof RouterOptions, 'beforeEach' | 'afterEach'>
+>
 /**
  * 路由路径
  */
