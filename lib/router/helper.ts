@@ -40,6 +40,7 @@ export function createRouter(options: RouterOptions & { mode: 'memory' }): Memor
 /**
  * 创建Hash路由器
  *
+ * 与`HashRouter`路由器相似，它的URL地址模式为hash，例如：`http://localhost:8080/#/home`，它在所有浏览器中都能够正常运行。
  *
  * @param {RouterOptions} options - 配置
  * @return {HashRouter} - hash路由器实例
@@ -65,6 +66,11 @@ export function createRouter(
 ): HistoryRouter
 export function createRouter(options: RouterOptions): Router {
   let router: Router
+  // 如果非浏览器端，强制使用内存模式路由
+  if (!window?.location && options.mode !== 'memory') {
+    console.warn('当前环境非浏览器端，强制使用内存模式路由')
+    return new MemoryRouter(options).initialize()
+  }
   switch (options.mode) {
     case 'memory':
       router = new MemoryRouter(options)
@@ -73,7 +79,13 @@ export function createRouter(options: RouterOptions): Router {
       router = new HashRouter(options)
       break
     default:
-      return new HistoryRouter(options)
+      // 如果浏览器不支持history API，则强制使用hash模式路由
+      if (!window.history) {
+        console.warn('当前浏览器不支持history API，将使用hash模式路由')
+        router = new HashRouter(options).initialize()
+      } else {
+        router = new HistoryRouter(options)
+      }
   }
   return router.initialize()
 }
