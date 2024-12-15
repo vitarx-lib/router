@@ -158,7 +158,7 @@ export type BeforeEachCallback = (
 /**
  * 路由模式
  */
-export type HistoryMode = 'hash' | 'path' | 'memory'
+export type HistoryMode = 'hash' | 'history' | 'memory'
 /**
  * 滚动行为
  *
@@ -228,7 +228,7 @@ export interface RouterOptions {
    * 历史记录模式
    *
    * 可选值如下：
-   * 1. path模式：使用path值作为路由标识，如：`/page1`
+   * 1. history模式：使用path值作为路由标识，如：`/page1`
    * 2. hash模式：使用hash值作为路由标识，如：`/#/page1`
    * 3. memory模式：内存模式，用于非浏览器端，或不需要使用浏览器回退和前进功能时使用。
    *
