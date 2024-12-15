@@ -156,6 +156,17 @@ export type BeforeEachCallback = (
 ) => BeforeEachCallbackResult
 
 /**
+ * 全局路由后置钩子
+ *
+ * 此时视图已经渲染完成，可以做一些操作，如：修改页面标题等。
+ *
+ * @this {Router} - 路由器实例
+ * @param {NavigateData} to - 当前路由数据
+ * @param {NavigateData} from - 从哪个路由跳转过来
+ */
+type AfterEachCallback = (this: Router, to: NavigateData, from: NavigateData) => void
+
+/**
  * 路由模式
  */
 export type HistoryMode = 'hash' | 'history' | 'memory'
@@ -185,28 +196,19 @@ export interface _ScrollToOptions {
   /**
    * 滚动行为
    *
-   * @see ScrollBehavior
+   * @see _ScrollBehavior
    */
   behavior?: _ScrollBehavior
 }
 
-/**
- * 全局路由后置钩子
- *
- * 此时视图已经渲染完成，可以做一些操作，如：修改页面标题等。
- *
- * @this {Router} - 路由器实例
- * @param {NavigateData} to - 当前路由数据
- * @param {NavigateData} from - 从哪个路由跳转过来
- */
-type AfterEachCallback = (this: Router, to: NavigateData, from: NavigateData) => void
+export interface _ScrollIntoViewOptions extends ScrollIntoViewOptions {
+  el: Element | `#${string}` | string
+}
 
 /**
  * 滚动目标
  */
-export interface ScrollTarget extends _ScrollToOptions {
-  el?: Element | `#${string}`
-}
+export type ScrollTarget = _ScrollToOptions | _ScrollIntoViewOptions
 
 /**
  * 滚动结果
@@ -219,15 +221,15 @@ type ScrollResult = ScrollTarget | false
  *
  * 仅浏览器环境有效。
  *
- * @param to - 要跳转的目标路由
- * @param from - 从哪个路由跳转过来
- * @param savedPosition - 保存滚动位置
+ * @param {NavigateData} to - 要跳转的目标路由
+ * @param {NavigateData} from - 从哪个路由跳转过来
+ * @param {_ScrollToOptions|undefined} savedPosition - 保存滚动位置，仅`history`模式前进或后退时有效
  * @returns {ScrollResult} - 返回滚动结果，由内部程序完成滚动
  */
 export type ScrollBehaviorHandler = (
   to: RouteTarget,
   from: RouteTarget,
-  savedPosition: _ScrollToOptions
+  savedPosition: _ScrollToOptions | undefined
 ) => ScrollResult | Promise<ScrollResult>
 
 /**
