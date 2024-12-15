@@ -2,6 +2,7 @@
 
 import {
   type _ScrollBehavior,
+  type _ScrollToOptions,
   type BeforeEachCallbackResult,
   type DynamicRouteRecord,
   type HashStr,
@@ -26,7 +27,8 @@ import {
   isOptionalVariablePath,
   isRouteGroup,
   isVariablePath,
-  objectToQueryString
+  objectToQueryString,
+  shallowEqual
 } from './utils.js'
 
 // 路由匹配结果
@@ -203,7 +205,25 @@ export default abstract class Router {
    * @protected
    */
   protected get isPendingNavigation(): boolean {
-    return Boolean(this._pendingPush || this._pendingReplace)
+    return Boolean(this._pendingReplace || this._pendingPush)
+  }
+
+  /**
+   * 等待替换完成的数据
+   *
+   * @protected
+   */
+  protected get pendingReplaceData(): NavigateData | null {
+    return this._pendingReplace
+  }
+
+  /**
+   * 等待跳转完成的数据
+   *
+   * @protected
+   */
+  protected get pendingPushData(): NavigateData | null {
+    return this._pendingPush
   }
 
   /**
@@ -253,27 +273,6 @@ export default abstract class Router {
     }
     target.isReplace = false
     return this.navigate(target)
-  }
-
-  /**
-   * 路由前置守卫
-   *
-   * @param {NavigateData} to - 路由目标对象
-   * @param {NavigateData} from - 前路由对象
-   * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
-   */
-  public onBeforeEach(to: NavigateData, from: NavigateData): BeforeEachCallbackResult {
-    return this.#options.beforeEach?.call(this, to, from)
-  }
-
-  /**
-   * 路由后置守卫
-   *
-   * @param {NavigateData} to - 路由目标对象
-   * @param {NavigateData} from - 前路由对象
-   */
-  public onAfterEach(to: NavigateData, from: NavigateData): void {
-    return this.#options.afterEach?.call(this, to, from)
   }
 
   /**
@@ -379,11 +378,11 @@ export default abstract class Router {
    *
    * 所有子类在完成导航的后续处理过后必须调用该方法！
    *
-   * @param {NavigateData} [data] - 如果是由`replace`或`push`方法发起的导航则无需传入此参数。
-   *
+   * @param {NavigateData} data - 如果是由`replace`或`push`方法发起的导航则无需传入此参数。
+   * @param {_ScrollToOptions} savedPosition - 保存的滚动位置信息，用于恢复滚动位置
    * @protected
    */
-  protected completeNavigation(data?: NavigateData) {
+  protected completeNavigation(data?: NavigateData, savedPosition?: _ScrollToOptions) {
     const from = this._currentNavigateData
     if (data) {
       this._currentNavigateData = data
@@ -396,7 +395,7 @@ export default abstract class Router {
     }
     this._pendingReplace = null
     this._pendingPush = null
-    console.log('完成导航', this._currentNavigateData)
+    console.log('完成导航', this._currentNavigateData, savedPosition)
     // TODO 待完成视图渲染相关逻辑
     this.onAfterEach(this._currentNavigateData, from)
   }
@@ -404,21 +403,44 @@ export default abstract class Router {
   /**
    * 更新当前导航数据中的query参数
    *
+   * 会同步更新`fullPath`
+   *
    * @param {Record<string, string>} query - 新的query参数对象
    * @protected
    */
   protected updateQuery(query: Record<string, string>) {
-    this._currentNavigateData.query = query
+    if (!shallowEqual(this._currentNavigateData.query, query)) {
+      this._currentNavigateData.query = query
+      this._currentNavigateData.fullPath = this.makeFullPath(
+        this._currentNavigateData.path,
+        query,
+        this._currentNavigateData.hash
+      )
+    }
   }
 
   /**
    * 更新当前导航数据中的hash参数
    *
+   * 会同步更新`fullPath`
+   *
    * @param {`#${string}` | ''} hash - 新的hash参数，如果为空则表示无hash
    * @protected
    */
   protected updateHash(hash: `#${string}` | '') {
-    this._currentNavigateData.hash = hash
+    if (typeof hash !== 'string') {
+      console.warn(`[Vitarx.Router.updateHash][WARN]：hash值只能是字符串类型，给定${hash}`)
+    }
+    const newHash = formatHash(hash, true)
+    if (newHash !== this._currentNavigateData.hash) {
+      this._currentNavigateData.hash = newHash
+      // 更新完整的path
+      this._currentNavigateData.fullPath = this.makeFullPath(
+        this._currentNavigateData.path,
+        this._currentNavigateData.query,
+        newHash
+      )
+    }
   }
 
   /**
@@ -585,6 +607,17 @@ export default abstract class Router {
   protected abstract replaceHistory(data: NavigateData): void
 
   /**
+   * 判断是否相同的导航请求
+   *
+   * @param to
+   * @param from
+   * @protected
+   */
+  protected isSameNavigate(to: NavigateData, from: NavigateData): boolean {
+    return shallowEqual(to, from)
+  }
+
+  /**
    * 路由跳转的通用方法
    *
    * @param {RouteTarget} target - 目标
@@ -593,76 +626,79 @@ export default abstract class Router {
   protected navigate(target: RouteTarget): Promise<NavigateResult> {
     const taskId = ++this._taskCounter // 生成唯一任务 ID
     this._currentTaskId = taskId // 更新当前任务
+
     const isCurrentTask = () => this._currentTaskId === taskId // 检查任务是否被取消
-    const performNavigation = (target: RouteTarget): Promise<NavigateResult> => {
-      return new Promise<NavigateResult>(async resolve => {
-        const to: NavigateData = this.createNavigateData(target)
-        if (to.matched === this.currentNavigateData.matched) {
-          return resolve({
-            status: NavigateStatus.duplicated,
-            data: to,
-            message: '重复导航到相同的路由，被系统阻止！'
-          })
-        }
-        try {
-          const result = await this.onBeforeEach(to, this.currentNavigateData)
 
-          // 前置守卫钩子返回 false 则导航被取消
-          if (result === false) {
-            return resolve({
-              status: NavigateStatus.aborted,
-              data: to,
-              message: '导航被前置守卫钩子取消'
-            })
-          }
-          // 前置守卫钩子返回对象则导航被重定向
-          if (typeof result === 'object' && result.index !== target.index) {
-            if (result.isReplace !== true) result.isReplace = false
-            // 递归调用导航方法，传递当前任务 ID
-            return performNavigation(result).then(resolve)
-          }
-
-          // 路由未匹配
-          if (!to.matched) {
-            return resolve({
-              status: NavigateStatus.not_matched,
-              data: to,
-              message: '未匹配到任何路由规则，被系统阻止！请检测目标索引是否正确。'
-            })
-          }
-
-          // 检测任务是否已被取消
-          if (!isCurrentTask()) {
-            return resolve({
-              status: NavigateStatus.cancelled,
-              data: to,
-              message: '导航请求已被更新的导航请求替代，取消此次导航！'
-            })
-          }
-          // 根据 isReplace 决定是替换历史记录还是推入新历史记录
-          if (target.isReplace) {
-            this._pendingReplace = to
-            this.replaceHistory(to)
-          } else {
-            this._pendingPush = to
-            this.pushHistory(to)
-          }
-          return resolve({
-            status: NavigateStatus.success,
-            data: to,
-            message: '导航成功'
-          })
-        } catch (error) {
-          // 如果发生错误，则导航被取消
-          return resolve({
-            status: NavigateStatus.exception,
-            data: to,
-            message: '导航时捕获到了异常',
-            error
-          })
-        }
+    const performNavigation = async (target: RouteTarget): Promise<NavigateResult> => {
+      const to = this.createNavigateData(target)
+      const createNavigateResult = (overrides: Partial<NavigateResult> = {}): NavigateResult => ({
+        from: this.currentNavigateData,
+        to: to,
+        status: NavigateStatus.success,
+        message: '导航成功',
+        ...overrides
       })
+
+      if (this.isSameNavigate(to, this.currentNavigateData)) {
+        return createNavigateResult({
+          status: NavigateStatus.duplicated,
+          message: '导航到相同的路由，被系统阻止！'
+        })
+      }
+
+      try {
+        const result = await this.onBeforeEach(to, this.currentNavigateData)
+
+        // 前置守卫钩子返回 false，则导航被取消
+        if (result === false) {
+          return createNavigateResult({
+            status: NavigateStatus.aborted,
+            message: '导航被前置守卫钩子阻止'
+          })
+        }
+
+        // 前置守卫钩子返回对象，则导航被重定向
+        if (typeof result === 'object' && result.index !== target.index) {
+          result.isReplace ??= false // 确保 isReplace 有默认值
+          return performNavigation(result)
+        }
+
+        // 路由未匹配
+        if (!to.matched) {
+          return createNavigateResult({
+            status: NavigateStatus.not_matched,
+            message: '未匹配到任何路由规则，被系统阻止！请检测目标索引是否正确。'
+          })
+        }
+
+        // 检测任务是否已被取消
+        if (!isCurrentTask()) {
+          return createNavigateResult({
+            status: NavigateStatus.cancelled,
+            message: '已被新的导航请求替代，取消此次导航！'
+          })
+        }
+
+        // 更新路由历史
+        if (target.isReplace) {
+          this._pendingReplace = to
+          this.replaceHistory(to)
+        } else {
+          this._pendingPush = to
+          this.pushHistory(to)
+        }
+
+        return createNavigateResult()
+      } catch (error) {
+        console.error('[Vitarx.Router.navigate][ERROR]：在导航时捕获到了异常', error)
+        return createNavigateResult({
+          status: NavigateStatus.exception,
+          message: '导航时捕获到了异常',
+          error
+        })
+      }
     }
+
     return performNavigation(target)
   }
 
@@ -691,6 +727,27 @@ export default abstract class Router {
       query: query,
       matched: route
     }
+  }
+
+  /**
+   * 触发路由前置守卫
+   *
+   * @param {NavigateData} to - 路由目标对象
+   * @param {NavigateData} from - 前路由对象
+   * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
+   */
+  protected onBeforeEach(to: NavigateData, from: NavigateData): BeforeEachCallbackResult {
+    return this.#options.beforeEach?.call(this, to, from)
+  }
+
+  /**
+   * 触发路由后置守卫
+   *
+   * @param {NavigateData} to - 路由目标对象
+   * @param {NavigateData} from - 前路由对象
+   */
+  protected onAfterEach(to: NavigateData, from: NavigateData): void {
+    return this.#options.afterEach?.call(this, to, from)
   }
 
   /**
