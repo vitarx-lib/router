@@ -42,8 +42,8 @@ export default class HashRouter extends MemoryRouter {
     const target = this.currentRouteTarget
     const fullPath = this.currentLocationFullPath
     this.replace(target).then(res => {
-      // 兼容初始化时path没有变化的情况
-      if (fullPath === res.to.fullPath) {
+      // 兼容path没有变化的情况
+      if (res.status === NavigateStatus.success && fullPath === res.to.fullPath) {
         super.replaceHistory(res.to)
       }
     })
