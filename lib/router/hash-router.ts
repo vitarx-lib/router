@@ -11,7 +11,7 @@ import MemoryRouter from './memory-router.js'
  * 例如 `window.history.*`、`window.location.*`，以及`a`标签默认跳转等，可能会导致`go`方法导航异常，匹配不准确等问题。
  */
 export default class HashRouter extends MemoryRouter {
-  constructor(options: RouterOptions) {
+  constructor(options: RouterOptions & { mode: 'hash' }) {
     super(options)
     this.ensureHash()
   }
@@ -109,7 +109,7 @@ export default class HashRouter extends MemoryRouter {
           const anchorId = res.to.index.slice(1)
           const element = window.document.getElementById(anchorId)
           if (element) {
-            element.scrollIntoView({ behavior: this.behavior })
+            element.scrollIntoView({ behavior: this.scrollBehavior })
           }
           // 更新hash记录值
           this.updateHash(`#${anchorId}`)
