@@ -1,5 +1,5 @@
 import Router from './router.js'
-import type { NavigateData } from './type.js'
+import type { NavigateData, RouterOptions } from './type.js'
 
 /**
  * 基于内存实现的路由器
@@ -9,6 +9,10 @@ import type { NavigateData } from './type.js'
 export default class MemoryRouter extends Router {
   // 路由历史记录数组
   protected _history: NavigateData[] = [this.currentNavigateData]
+
+  constructor(options: RouterOptions) {
+    super(options)
+  }
 
   /**
    * @inheritDoc
