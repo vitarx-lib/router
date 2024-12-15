@@ -299,8 +299,8 @@ export interface RouterOptions {
    * 1. 通配符：`*`：支持所有后缀名
    * 2. 字符串类型：`html`：支持html后缀名
    * 3. 数组：`['html','md']`：同时支持html和md后缀名
-   * 4. false：不做任何处理，直接进行匹配。
-   * @default *
+   * 4. false：不做任何处理，硬性匹配。
+   * @default false
    */
   suffix?: '*' | string | string[] | false
 }
