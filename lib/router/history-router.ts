@@ -1,5 +1,5 @@
 import Router from './router.js'
-import { type NavigateData, NavigateStatus, type RouteTarget } from './type.js'
+import { type HashStr, type NavigateData, NavigateStatus, type RouteTarget } from './type.js'
 import { urlToRouteTarget } from './utils.js'
 
 /**
@@ -58,8 +58,10 @@ export default class HistoryRouter extends Router {
    * @inheritDoc
    */
   protected replaceHistory(data: NavigateData): void {
+    // 还原滚动位置 this.webHistory.state 存在则是回退或前进所触发的替换状态
+    const scrollPosition = this.webHistory.state?.scrollPosition
     this.webHistory.replaceState(this.createState(data), '', data.fullPath)
-    this.completeNavigation(data)
+    this.completeNavigation(data, scrollPosition)
   }
 
   /**
@@ -88,10 +90,23 @@ export default class HistoryRouter extends Router {
    *
    * 用于在浏览器历史记录中存储路由信息，以支持前进、后退等操作。
    *
+   * @param data - 路由数据
+   * @param hash - 要替换的哈希值
+   * @param query - 要替换的查询参数
    * @private
    */
-  private createState(data: NavigateData): Omit<NavigateData, 'matched'> {
+  private createState(
+    data: NavigateData,
+    hash?: HashStr,
+    query?: Record<string, string>
+  ): Omit<NavigateData, 'matched'> {
     const { matched, ...state } = data
+    if (typeof hash === 'string') {
+      state.hash = hash
+    }
+    if (typeof query === 'object') {
+      state.query = query
+    }
     return state
   }
 
@@ -99,35 +114,21 @@ export default class HistoryRouter extends Router {
    * 处理浏览器历史记录的返回/前进事件
    */
   private onPopState(event: PopStateEvent) {
+    let newTarget: RouteTarget
     if (event.state?.index) {
-      const route = this.getRoute(event.state?.index)
-      this.completeNavigation({
-        ...event.state,
-        matched: route || null
-      })
-      return
-    }
-    const newTarget = this.currentRouteTarget
-    // 处理锚点变化
-    if (newTarget.index === this.currentNavigateData.path) {
-      // 锚点或hash发生变化，替换状态
-      window.history.replaceState(this.currentNavigateData, '', window.location.href.toString())
-      if (this.currentRouteTarget.hash !== newTarget.hash) {
-        return this.updateHash(newTarget.hash)
-      }
-      if (this.currentRouteTarget.query !== newTarget.query) {
-        return this.updateQuery(newTarget.query)
+      newTarget = {
+        index: event.state.index,
+        hash: event.state.hash,
+        query: event.state.query
       }
     } else {
-      // path不一致，一般都不会执行到这里
-      this.push(newTarget).then(res => {
-        if (res.status === NavigateStatus.success) {
-          // 保存状态
-          this.webHistory.replaceState(this.createState(res.data), '', res.data.fullPath)
-          // 完成导航
-          this.completeNavigation(res.data)
-        }
-      })
+      newTarget = this.currentRouteTarget
     }
+    this.replace(newTarget).then(res => {
+      // 如果失败了，则回到之前的路由
+      if (res.status !== NavigateStatus.success) {
+        this.webHistory.replaceState(this.createState(res.from), '', res.from.fullPath)
+      }
+    })
   }
 }
