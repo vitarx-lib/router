@@ -290,6 +290,19 @@ export interface RouterOptions {
    * @default 'smooth'
    */
   scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
+  /**
+   * 支持的后缀名，如：.html、.md等。
+   *
+   * 默认支持所有后缀名进行匹配，如：`/page.html`、`/page.md`等。
+   *
+   * 可选值类型：
+   * 1. 通配符：`*`：支持所有后缀名
+   * 2. 字符串类型：`html`：支持html后缀名
+   * 3. 数组：`['html','md']`：同时支持html和md后缀名
+   * 4. false：不做任何处理，直接进行匹配。
+   * @default *
+   */
+  suffix?: '*' | string | string[] | false
 }
 
 /**
@@ -387,18 +400,20 @@ export interface NavigateResult {
 /**
  * 路由匹配结果
  */
-export type MatchResult = {
-  /**
-   * 匹配的路由对象
-   */
-  route: Route
-  /**
-   * path参数
-   *
-   * 非动态路由path，值固定为undefined
-   */
-  params: Record<string, string> | undefined
-} | null
+export type MatchResult =
+  | {
+      /**
+       * 匹配的路由对象
+       */
+      route: Route
+      /**
+       * path参数
+       *
+       * 非动态路由path，值固定为undefined
+       */
+      params: Record<string, string> | undefined
+    }
+  | undefined
 
 /**
  * 导航结果

@@ -31,7 +31,8 @@ import {
   isRouteGroup,
   isVariablePath,
   mergePathParams,
-  objectToQueryString
+  objectToQueryString,
+  splitPathAndSuffix
 } from './utils.js'
 
 /**
@@ -83,6 +84,7 @@ export default abstract class Router {
       strict: false,
       mode: 'history',
       scrollBehavior: 'smooth',
+      suffix: '*',
       ...options
     }
     this._options.base = `/${this._options.base.replace(/^\/+|\/+$/g, '')}`
@@ -206,6 +208,13 @@ export default abstract class Router {
    */
   get initialized(): boolean {
     return Router.#instance !== undefined
+  }
+
+  /**
+   * 受支持的`path`后缀名
+   */
+  get suffix(): NonNullable<RouterOptions['suffix']> {
+    return this._options.suffix
   }
 
   /**
@@ -511,9 +520,26 @@ export default abstract class Router {
    *
    * @param {string} path - 路径
    *
-   * @return {{route: Route, params: Record<string, string> | null} | null} - 路由对象和参数，如果匹配失败则返回null
+   * @return {MatchResult} 如果匹配失败则返回undefined
    */
   protected matchRoute(path: RoutePath): MatchResult {
+    // this.suffix 是受支持的后缀，类型为'*' | string | string[] | false, *为通配
+    if (this.suffix) {
+      const { path: realPath, suffix } = splitPathAndSuffix(path)
+      // 如果路径中有后缀
+      if (suffix) {
+        // 如果后缀不匹配，直接返回 undefined
+        if (
+          this.suffix !== '*' &&
+          this.suffix !== suffix &&
+          !(Array.isArray(this.suffix) && this.suffix.includes(suffix))
+        ) {
+          return undefined // 后缀不匹配，返回 undefined
+        }
+        // 更新路径为去掉后缀后的路径
+        path = realPath as RoutePath
+      }
+    }
     // 转换为小写
     if (!this._options.strict) {
       path = path.toLowerCase() as RoutePath
@@ -547,7 +573,7 @@ export default abstract class Router {
         return { route, params }
       }
     }
-    return null
+    return undefined
   }
 
   /**
