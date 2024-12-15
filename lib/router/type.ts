@@ -373,6 +373,10 @@ export interface NavigateResult {
    */
   from: Readonly<NavigateData>
   /**
+   * 是否被守卫钩子重定向
+   */
+  isRedirect: boolean
+  /**
    * 捕获到的异常
    */
   error?: unknown
