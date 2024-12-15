@@ -128,7 +128,7 @@ export default class HashRouter extends MemoryRouter {
     const { pathname, search, hash } = window.location
     if (!pathname.startsWith(this.basePath)) {
       // 如果路径不是以 basePath 开头，直接重定向到 `/#/path`
-      const path = `/#${pathname}${search}${hash}`
+      const path = `${this.basePath}/#${pathname}${search}${hash}`
       return window.location.replace(path)
     }
   }
