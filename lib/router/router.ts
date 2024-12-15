@@ -523,7 +523,11 @@ export default abstract class Router {
    * @return {MatchResult} 如果匹配失败则返回undefined
    */
   protected matchRoute(path: RoutePath): MatchResult {
-    // this.suffix 是受支持的后缀，类型为'*' | string | string[] | false, *为通配
+    // 格式化path
+    path = formatPath(path)
+    // 转换为小写
+    if (!this._options.strict) path = path.toLowerCase() as RoutePath
+    // 后缀支持
     if (this.suffix) {
       const { path: realPath, suffix } = splitPathAndSuffix(path)
       // 如果路径中有后缀
@@ -540,17 +544,10 @@ export default abstract class Router {
         path = realPath as RoutePath
       }
     }
-    // 转换为小写
-    if (!this._options.strict) {
-      path = path.toLowerCase() as RoutePath
-    }
-    // 格式化path
-    path = formatPath(path)
     // 优先匹配静态路由
     if (this._pathRoutes.has(path)) {
       return { route: this._pathRoutes.get(path)!, params: undefined }
     }
-
     // 动态路由匹配
     const segments = path.split('/').filter(Boolean)
     // 路径段长度
@@ -668,21 +665,6 @@ export default abstract class Router {
             message: '导航被前置守卫钩子阻止'
           })
         }
-
-        // 前置守卫钩子返回对象，则导航被重定向
-        if (typeof result === 'object' && result.index !== target.index) {
-          result.isReplace ??= false // 确保 isReplace 有默认值
-          return performNavigation(result, true)
-        }
-
-        // 路由未匹配
-        if (!to.matched) {
-          return createNavigateResult({
-            status: NavigateStatus.not_matched,
-            message: '未匹配到任何路由规则，被系统阻止！请检测目标索引是否正确。'
-          })
-        }
-
         // 检测任务是否已被取消
         if (!isCurrentTask()) {
           return createNavigateResult({
@@ -690,7 +672,18 @@ export default abstract class Router {
             message: '已被新的导航请求替代，取消此次导航！'
           })
         }
-
+        // 前置守卫钩子返回对象，则导航被重定向
+        if (typeof result === 'object' && result.index !== target.index) {
+          result.isReplace ??= false // 确保 isReplace 有默认值
+          return performNavigation(result, true)
+        }
+        // 路由未匹配
+        if (!to.matched) {
+          return createNavigateResult({
+            status: NavigateStatus.not_matched,
+            message: '未匹配到任何路由规则，被系统阻止！请检测目标索引是否正确。'
+          })
+        }
         // 更新路由历史
         if (target.isReplace) {
           this._pendingReplace = to
@@ -724,11 +717,12 @@ export default abstract class Router {
     if (!index) {
       throw new TypeError(`[Vitarx.Router.navigate]：target.index无效，index:${index}`)
     }
-
     const route = this.getRoute(index) ?? null
     const path = route ? mergePathParams(route.path, params) : formatPath(index)
     const hashStr = formatHash(hash, true)
-    const fullPath = route ? this.makeFullPath(path, query, hashStr) : index
+    const fullPath = route
+      ? this.makeFullPath(path, query, hashStr)
+      : this.makeFullPath(index, query, hash)
     return {
       index,
       path,
