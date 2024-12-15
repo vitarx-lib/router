@@ -1,6 +1,7 @@
 // noinspection JSUnusedGlobalSymbols
 
 import {
+  type _ScrollBehavior,
   type BeforeEachCallbackResult,
   type DynamicRouteRecord,
   type HashStr,
@@ -79,7 +80,8 @@ export default abstract class Router {
     this.#options = {
       base: '/',
       strict: false,
-      mode: 'path',
+      mode: 'history',
+      scrollBehavior: 'smooth',
       ...options
     }
     this.#options.base = `/${this.#options.base.replace(/^\/+|\/+$/g, '')}`
@@ -104,6 +106,16 @@ export default abstract class Router {
       throw new Error(`[Vitarx.Router.instance]：路由器实例未初始化`)
     }
     return Router.#instance
+  }
+
+  // 滚动行为
+  private _behavior: _ScrollBehavior = 'auto'
+
+  /**
+   * 滚动行为
+   */
+  get behavior(): _ScrollBehavior {
+    return this._behavior
   }
 
   // 当前导航数据
@@ -354,6 +366,8 @@ export default abstract class Router {
     if (Router.#instance) return this
     // 初始化路由表
     this.setupRoutes(this.#options.routes)
+    this._behavior =
+      typeof this.options.scrollBehavior === 'string' ? this.options.scrollBehavior : 'auto'
     this.initializeRouter()
     // 记录单例
     Router.#instance = this
@@ -371,17 +385,18 @@ export default abstract class Router {
    */
   protected completeNavigation(data?: NavigateData) {
     const from = this._currentNavigateData
-    if (this._pendingReplace) {
+    if (data) {
+      this._currentNavigateData = data
+    } else if (this._pendingReplace) {
       this._currentNavigateData = this._pendingReplace
-      this._pendingReplace = null
     } else if (this._pendingPush) {
       this._currentNavigateData = this._pendingPush
-      this._pendingPush = null
-    } else if (data) {
-      this._currentNavigateData = data
     } else {
       throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
     }
+    this._pendingReplace = null
+    this._pendingPush = null
+    console.log('完成导航', this._currentNavigateData)
     // TODO 待完成视图渲染相关逻辑
     this.onAfterEach(this._currentNavigateData, from)
   }
@@ -592,6 +607,7 @@ export default abstract class Router {
         try {
           const result = await this.onBeforeEach(to, this.currentNavigateData)
 
+          // 前置守卫钩子返回 false 则导航被取消
           if (result === false) {
             return resolve({
               status: NavigateStatus.aborted,
@@ -599,6 +615,7 @@ export default abstract class Router {
               message: '导航被前置守卫钩子取消'
             })
           }
+          // 前置守卫钩子返回对象则导航被重定向
           if (typeof result === 'object' && result.index !== target.index) {
             if (result.isReplace !== true) result.isReplace = false
             // 递归调用导航方法，传递当前任务 ID
@@ -622,6 +639,7 @@ export default abstract class Router {
               message: '导航请求已被更新的导航请求替代，取消此次导航！'
             })
           }
+          // 根据 isReplace 决定是替换历史记录还是推入新历史记录
           if (target.isReplace) {
             this._pendingReplace = to
             this.replaceHistory(to)
@@ -629,8 +647,6 @@ export default abstract class Router {
             this._pendingPush = to
             this.pushHistory(to)
           }
-          // 根据 isReplace 决定是替换历史记录还是推入新历史记录
-          target.isReplace ? this.replaceHistory(to) : this.pushHistory(to)
           return resolve({
             status: NavigateStatus.success,
             data: to,
