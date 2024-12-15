@@ -12,8 +12,6 @@ import MemoryRouter from './memory-router.js'
  * 如果你使用这些原生路由功能进行路由跳转，而不是使用的`HashRouter`实例所提供的api可能会导致历史记录错乱，导航异常。
  */
 export default class HashRouter extends MemoryRouter {
-  private _paddingGo: NavigateData | null = null
-
   constructor(options: RouterOptions) {
     super(options)
     this.ensureHash()
@@ -31,40 +29,23 @@ export default class HashRouter extends MemoryRouter {
   /**
    * @inheritDoc
    */
-  override go(delta: number = 1): void {
-    const targetIndex = this._history.length - 1 + (delta || 0)
-    if (targetIndex >= 0 && targetIndex < this._history.length) {
-      const targetPath = this.fullPathToHash(this._history[targetIndex].fullPath)
-      if (window.location.hash !== targetPath) {
-        this._paddingGo = this._history[targetIndex]
-        window.location.hash = targetPath
-      } else {
-        this.completeNavigation(this._history[targetIndex])
-      }
-    }
-  }
-
-  /**
-   * @inheritDoc
-   */
   protected override initializeRouter(): void {
     window.addEventListener('hashchange', this.onHashChange.bind(this))
     this.replace(this.currentRouteTarget).then()
-    console.log('初始化路由')
   }
 
   /**
    * @inheritDoc
    */
   protected pushHistory(data: NavigateData): void {
-    window.location.replace(data.fullPath)
+    window.location.hash = this.fullPathToHash(data.fullPath)
   }
 
   /**
    * @inheritDoc
    */
   protected replaceHistory(data: NavigateData): void {
-    window.location.hash = this.fullPathToHash(data.fullPath)
+    window.location.replace(data.fullPath)
   }
 
   /**
@@ -74,7 +55,7 @@ export default class HashRouter extends MemoryRouter {
    * @private
    */
   private fullPathToHash(fullPath: string): string {
-    return fullPath.slice(this.basePath.length)
+    return fullPath.slice(this.basePath.length).replace(/^\//, '')
   }
 
   /**
@@ -84,44 +65,52 @@ export default class HashRouter extends MemoryRouter {
    * @private
    */
   private onHashChange(event: HashChangeEvent): void {
+    console.log('监听到EVENTChange' + this.isPendingNavigation, event)
     // 完成上一次导航
     if (this.isPendingNavigation) {
-      this._paddingGo = null // 清理 _paddingGo，避免并发状态引起重复的完成导航
-      return this.completeNavigation()
+      if (this.pendingPushData) {
+        return super.pushHistory(this.pendingPushData)
+      }
+      return super.replaceHistory(this.pendingReplaceData!)
     }
-    // 完成go操作
-    if (this._paddingGo) {
-      this.completeNavigation(this._paddingGo)
-      this._paddingGo = null
+    // 新的url对象
+    const newURL = new URL(event.newURL)
+    // 兼容导航失败回滚情况
+    if (this.currentNavigateData.fullPath.slice(1) === newURL.hash) {
+      console.log('兼容错误回滚')
       return
     }
-    // 新的url
-    const { newURL } = event
-    // 当前导航数据
-    const current = this.currentNavigateData
     // 新的路由目标
-    const newTarget = urlToRouteTarget(new URL(newURL), 'hash', this.basePath)
-    // 路径改变
-    if (newTarget.index !== current.path) {
-      // 跳转到新页面
-      this.push(newTarget).then(res => {
-        if (res.status === NavigateStatus.success) {
-          this.completeNavigation(res.data)
+    const newTarget = urlToRouteTarget(newURL, 'hash', this.basePath)
+    console.log('新的路由目标', newTarget)
+    // 兼容未使用路由器方法切换路由的情况
+    this.push(newTarget).then(res => {
+      // 如果被取消，则不处理
+      if (res.status === NavigateStatus.cancelled) return
+      // 如果重复，则不处理
+      if (res.status === NavigateStatus.duplicated) return
+      // 路由匹配成功，且未被重定向则完成导航
+      if (res.status === NavigateStatus.success) {
+        // 如果被重定向则会触发新的`HashChangeEvent`事件,所以无需在此处理
+        if (res.to.index === newTarget.index) {
+          this.completeNavigation(res.to)
         }
-      })
-      return
-    }
-    // hash 改变
-    if (newTarget.hash !== current.hash) {
-      return this.updateHash(newTarget.hash)
-    }
-    // query 改变
-    if (newTarget.query !== current.query) {
-      return this.updateQuery(newTarget.query)
-    }
-    console.error(
-      `[Vitarx.HashRouter.onHashChange][ERROR]：未能处理HashChangeEvent事件新newURL:${newURL},oldURL:${event.oldURL}`
-    )
+        return
+      }
+      // 未匹配到路由时兼容`a`标签默认事件导致的锚点跳转
+      if (res.status === NavigateStatus.not_matched) {
+        if (res.to.index.startsWith('/')) {
+          const anchorId = res.to.index.slice(1)
+          const element = window.document.getElementById(anchorId)
+          if (element) {
+            element.scrollIntoView({ behavior: this.behavior })
+          }
+          // 更新hash记录值
+          this.updateHash(`#${anchorId}`)
+        }
+      }
+      window.location.replace(res.from.fullPath)
+    })
   }
 
   /**
