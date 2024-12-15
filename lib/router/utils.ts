@@ -120,35 +120,29 @@ export function formatPath(path: string): RoutePath {
 }
 
 /**
- * 生成路由路径
+ * 合并路径参数
  *
  * @param {string} path - 路径字符串
  * @param {Record<string, string>} params - 路径参数对象
  */
-export function generateRoutePath(path: string, params: Record<string, string>): RoutePath {
+export function mergePathParams(path: RoutePath, params: Record<string, string>): RoutePath {
+  if (!isVariablePath(path)) return path
   const oldPath = path
   // 处理必填参数和可选参数
   path = path.replace(/{([^}]+)\?*}/g, (match, paramName) => {
     // 判断是否为可选参数
     const isOptional = match.includes('?')
-
-    // 如果是可选参数并且 params 中没有对应值，跳过替换
-    if (isOptional && params[paramName] === undefined) {
-      return '' // 返回空字符串，跳过可选参数
-    }
-
-    // 如果是必填参数且 params 中没有对应值，抛出错误
-    if (!isOptional && params[paramName] === undefined) {
+    if (params[paramName] === undefined) {
+      // 如果是可选参数并且 params 中没有对应值，跳过替换
+      if (isOptional) return ''
       throw new TypeError(
-        `[Vitarx.Router.generateRoutePath] 访问路由${oldPath}时缺少参数：${paramName}`
+        `[Vitarx.Router.mergePathParams] 访问路由${oldPath}时缺少参数：${paramName}`
       )
     }
-
     // 返回对应的参数值
     return String(params[paramName])
-  })
-
-  return path as RoutePath
+  }) as RoutePath
+  return path
 }
 
 /**
