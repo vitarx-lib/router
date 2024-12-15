@@ -7,9 +7,8 @@ import MemoryRouter from './memory-router.js'
  *
  * 支持浏览器前进、后退、跳转等操作。
  *
- * > 注意：使用此模式的路由器，务必不要使用其他原生路由功能改变路由。
- * 例如 `window.history.pushState`、`window.history.replaceState`、`window.location.assign`，以及`a`标签默认跳转等。
- * 如果你使用这些原生路由功能进行路由跳转，而不是使用的`HashRouter`实例所提供的api可能会导致历史记录错乱，导航异常。
+ * > 注意：使用此模式的路由器，务必不要使用其他原生api改变路由。
+ * 例如 `window.history.*`、`window.location.*`，以及`a`标签默认跳转等，可能会导致`go`方法导航异常，匹配不准确等问题。
  */
 export default class HashRouter extends MemoryRouter {
   constructor(options: RouterOptions) {
