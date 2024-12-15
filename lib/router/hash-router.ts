@@ -27,11 +27,27 @@ export default class HashRouter extends MemoryRouter {
   }
 
   /**
+   * 获取当前浏览器地址栏中的完整路径
+   *
+   * @private
+   */
+  private get currentLocationFullPath(): string {
+    return window.location.href.slice(window.location.origin.length)
+  }
+
+  /**
    * @inheritDoc
    */
   protected override initializeRouter(): void {
     window.addEventListener('hashchange', this.onHashChange.bind(this))
-    this.replace(this.currentRouteTarget).then()
+    const target = this.currentRouteTarget
+    const fullPath = this.currentLocationFullPath
+    this.replace(target).then(res => {
+      // 兼容初始化时path没有变化的情况
+      if (fullPath === res.to.fullPath) {
+        super.replaceHistory(res.to)
+      }
+    })
   }
 
   /**
@@ -65,7 +81,8 @@ export default class HashRouter extends MemoryRouter {
    * @private
    */
   private onHashChange(event: HashChangeEvent): void {
-    console.log('监听到EVENTChange' + this.isPendingNavigation, event)
+    // 兼容导航失败回滚造成的事件
+    if (this.currentNavigateData.fullPath === this.currentLocationFullPath) return
     // 完成上一次导航
     if (this.isPendingNavigation) {
       if (this.pendingPushData) {
@@ -73,16 +90,8 @@ export default class HashRouter extends MemoryRouter {
       }
       return super.replaceHistory(this.pendingReplaceData!)
     }
-    // 新的url对象
-    const newURL = new URL(event.newURL)
-    // 兼容导航失败回滚情况
-    if (this.currentNavigateData.fullPath.slice(1) === newURL.hash) {
-      console.log('兼容错误回滚')
-      return
-    }
     // 新的路由目标
-    const newTarget = urlToRouteTarget(newURL, 'hash', this.basePath)
-    console.log('新的路由目标', newTarget)
+    const newTarget = urlToRouteTarget(new URL(event.newURL), 'hash', this.basePath)
     // 兼容未使用路由器方法切换路由的情况
     this.push(newTarget).then(res => {
       // 如果被取消，则不处理
@@ -92,9 +101,7 @@ export default class HashRouter extends MemoryRouter {
       // 路由匹配成功，且未被重定向则完成导航
       if (res.status === NavigateStatus.success) {
         // 如果被重定向则会触发新的`HashChangeEvent`事件,所以无需在此处理
-        if (res.to.index === newTarget.index) {
-          this.completeNavigation(res.to)
-        }
+        if (!res.isRedirect) this.completeNavigation(res.to)
         return
       }
       // 未匹配到路由时兼容`a`标签默认事件导致的锚点跳转
