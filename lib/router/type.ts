@@ -202,15 +202,33 @@ export interface _ScrollToOptions {
 type AfterEachCallback = (this: Router, to: NavigateData, from: NavigateData) => void
 
 /**
+ * 滚动目标
+ */
+export interface ScrollTarget extends _ScrollToOptions {
+  el?: Element | `#${string}`
+}
+
+/**
+ * 滚动结果
+ *
+ * false表示不滚动，否则内部会根据`ScrollTarget`滚动到指定的位置
+ */
+type ScrollResult = ScrollTarget | false
+/**
  * 滚动行为处理器
  *
  * 仅浏览器环境有效。
+ *
+ * @param to - 要跳转的目标路由
+ * @param from - 从哪个路由跳转过来
+ * @param savedPosition - 保存滚动位置
+ * @returns {ScrollResult} - 返回滚动结果，由内部程序完成滚动
  */
 export type ScrollBehaviorHandler = (
   to: RouteTarget,
   from: RouteTarget,
   savedPosition: _ScrollToOptions
-) => _ScrollToOptions | Promise<_ScrollToOptions>
+) => ScrollResult | Promise<ScrollResult>
 
 /**
  * 路由器配置
@@ -345,9 +363,15 @@ export interface NavigateResult {
   /**
    * 最终的导航数据
    *
-   * 它和守卫钩子`to`参数一致，常用于判断是否在守卫过程中被重定向。
+   * 它和守卫钩子`to`参数一致。
    */
-  data: Readonly<NavigateData>
+  to: Readonly<NavigateData>
+  /**
+   * 从哪里跳转过来
+   *
+   * 它和守卫钩子`from`参数一致。
+   */
+  from: Readonly<NavigateData>
   /**
    * 捕获到的异常
    */
