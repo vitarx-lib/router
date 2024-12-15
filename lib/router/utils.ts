@@ -308,15 +308,17 @@ export function urlToRouteTarget(
 }
 
 /**
- * 浅对比两个变量是否一致
+ * 深度比较两个变量是否相等
  *
- * @param var1
- * @param var2
+ * @param {any} var1 - 要比较的第一个变量
+ * @param {any} var2 - 要比较的第二个变量
+ * @returns {boolean} - 如果两个变量完全相等，则返回 true；否则返回 false
  */
-export function shallowEqual(var1: any, var2: any): boolean {
-  if (Object.is(var1, var2)) return true // 精确比较两个值是否相同（处理 NaN 等特殊情况）
+export function deepEqual(var1: any, var2: any): boolean {
+  // 精确比较两个值是否相同
+  if (Object.is(var1, var2)) return true
 
-  // 如果不是对象或其中一个为 null，则直接返回 false
+  // 如果类型不相等或者有一个是 null，返回 false
   if (typeof var1 !== 'object' || typeof var2 !== 'object' || var1 === null || var2 === null) {
     return false
   }
@@ -326,17 +328,20 @@ export function shallowEqual(var1: any, var2: any): boolean {
 
   if (keys1.length !== keys2.length) return false // 键数量不同
 
-  // 检查每个键是否存在且值相等
   for (const key of keys1) {
+    // 递归比较嵌套对象
+    const value1 = var1[key]
+    const value2 = var2[key]
+
     if (
       !Object.prototype.hasOwnProperty.call(var2, key) ||
-      !Object.is(var1[key], var2[key]) // 使用 Object.is 处理精确相等
+      !deepEqual(value1, value2) // 对比基本类型
     ) {
-      return false
+      return false // 键值不一致，立即返回 false
     }
   }
 
-  return true // 所有键和值都相等
+  return true // 所有键和值一致
 }
 
 /**
