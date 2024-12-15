@@ -8,6 +8,7 @@ import {
   type HashStr,
   type HistoryMode,
   type InitializedRouterOptions,
+  type MatchResult,
   type NavigateData,
   type NavigateResult,
   NavigateStatus,
@@ -32,12 +33,6 @@ import {
   mergePathParams,
   objectToQueryString
 } from './utils.js'
-
-// 路由匹配结果
-type MatchResult = {
-  route: Route
-  params: Record<string, string> | null
-} | null
 
 /**
  * 路由器基类
@@ -527,7 +522,7 @@ export default abstract class Router {
     path = formatPath(path)
     // 优先匹配静态路由
     if (this._pathRoutes.has(path)) {
-      return { route: this._pathRoutes.get(path)!, params: null }
+      return { route: this._pathRoutes.get(path)!, params: undefined }
     }
 
     // 动态路由匹配

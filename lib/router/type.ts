@@ -385,6 +385,22 @@ export interface NavigateResult {
 }
 
 /**
+ * 路由匹配结果
+ */
+export type MatchResult = {
+  /**
+   * 匹配的路由对象
+   */
+  route: Route
+  /**
+   * path参数
+   *
+   * 非动态路由path，值固定为undefined
+   */
+  params: Record<string, string> | undefined
+} | null
+
+/**
  * 导航结果
  *
  * 枚举值：
