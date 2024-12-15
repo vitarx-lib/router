@@ -17,7 +17,9 @@ import {
   type RouteName,
   type RoutePath,
   type RouterOptions,
-  type RouteTarget
+  type RouteTarget,
+  type ScrollBehaviorHandler,
+  type ScrollTarget
 } from './type.js'
 import {
   createDynamicPattern,
@@ -46,7 +48,7 @@ export default abstract class Router {
    */
   static #instance: Router | undefined
   // 配置
-  readonly #options: MakeRequired<
+  private readonly _options: MakeRequired<
     RouterOptions,
     Exclude<keyof RouterOptions, 'beforeEach' | 'afterEach'>
   >
@@ -74,24 +76,26 @@ export default abstract class Router {
    * @private
    */
   private _pendingPush: NavigateData | null = null
+  // 滚动行为处理器
+  private _scrollBehaviorHandler: ScrollBehaviorHandler | undefined = undefined
 
-  constructor(options: RouterOptions) {
+  protected constructor(options: RouterOptions) {
     if (Router.#instance) {
       throw new Error(`[Vitarx.Router.constructor]：路由器实例已存在，不能创建多个实例`)
     }
-    this.#options = {
+    this._options = {
       base: '/',
       strict: false,
       mode: 'history',
       scrollBehavior: 'smooth',
       ...options
     }
-    this.#options.base = `/${this.#options.base.replace(/^\/+|\/+$/g, '')}`
+    this._options.base = `/${this._options.base.replace(/^\/+|\/+$/g, '')}`
     this._currentNavigateData = {
-      index: this.#options.base,
-      path: this.#options.base,
+      index: this._options.base,
+      path: this._options.base,
       hash: '',
-      fullPath: this.#options.base,
+      fullPath: this._options.base,
       params: {},
       query: {},
       matched: null
@@ -110,14 +114,24 @@ export default abstract class Router {
     return Router.#instance
   }
 
+  // 是否运行在浏览器端
+  private _isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined'
+
+  /**
+   * 是否运行在浏览器端
+   */
+  get isBrowser(): boolean {
+    return this._isBrowser
+  }
+
   // 滚动行为
-  private _behavior: _ScrollBehavior = 'auto'
+  private _scrollBehavior: _ScrollBehavior = 'auto'
 
   /**
    * 滚动行为
    */
-  get behavior(): _ScrollBehavior {
-    return this._behavior
+  get scrollBehavior(): _ScrollBehavior {
+    return this._scrollBehavior
   }
 
   // 当前导航数据
@@ -138,14 +152,14 @@ export default abstract class Router {
    * @return {Readonly<InitializedRouterOptions>} - 初始化配置
    */
   get options(): Readonly<InitializedRouterOptions> {
-    return this.#options
+    return this._options
   }
 
   /**
    * 路由器模式
    */
   get mode(): HistoryMode {
-    return this.#options.mode
+    return this._options.mode
   }
 
   /**
@@ -180,14 +194,14 @@ export default abstract class Router {
    * @return {Route[]}
    */
   get routes(): ReadonlyArray<Route> {
-    return this.#options.routes
+    return this._options.routes
   }
 
   /**
    * 基本路径
    */
   get basePath(): `/${string}` {
-    return this.#options.base
+    return this._options.base
   }
 
   /**
@@ -320,7 +334,7 @@ export default abstract class Router {
       this.registerRoute(route, parentRoute as RouteGroup)
     } else {
       this.registerRoute(route)
-      this.#options.routes.push(route)
+      this._options.routes.push(route)
     }
   }
 
@@ -364,13 +378,46 @@ export default abstract class Router {
   public initialize(): this {
     if (Router.#instance) return this
     // 初始化路由表
-    this.setupRoutes(this.#options.routes)
-    this._behavior =
-      typeof this.options.scrollBehavior === 'string' ? this.options.scrollBehavior : 'auto'
+    this.setupRoutes(this._options.routes)
+    if (typeof this.options.scrollBehavior === 'function') {
+      this._scrollBehaviorHandler = this.options.scrollBehavior
+    } else {
+      this._scrollBehavior = this.options.scrollBehavior
+    }
+
     this.initializeRouter()
     // 记录单例
     Router.#instance = this
     return this
+  }
+
+  /**
+   * 此方法用于浏览器端滚动到指定位置
+   *
+   * @param scrollTarget
+   * @protected
+   */
+  public scrollTo(scrollTarget: ScrollTarget | undefined): void {
+    if (this.isBrowser || !scrollTarget) return
+    if ('el' in scrollTarget) {
+      const { el, ...rest } = scrollTarget
+      const element = typeof el === 'string' ? document.querySelector(el) : el
+      if (element && element instanceof Element) {
+        if (element.scrollIntoView) {
+          element.scrollIntoView({ behavior: this.scrollBehavior, ...rest })
+        } else {
+          window.scrollTo({
+            behavior: this.scrollBehavior,
+            top: element.getBoundingClientRect().top + window.scrollY, // 获取元素位置并滚动
+            left: element.getBoundingClientRect().left + window.scrollX
+          })
+        }
+      } else {
+        console.warn(`[Vitarx.Router.scrollTo][WARN]：元素${el}不存在，无法完成滚动到目标元素操作`)
+      }
+      return
+    }
+    window.scrollTo({ behavior: this.scrollBehavior, ...scrollTarget })
   }
 
   /**
@@ -397,6 +444,7 @@ export default abstract class Router {
     this._pendingPush = null
     console.log('完成导航', this._currentNavigateData, savedPosition)
     // TODO 待完成视图渲染相关逻辑
+    this.onScrollBehavior(this._currentNavigateData, from, savedPosition).then()
     this.onAfterEach(this._currentNavigateData, from)
   }
 
@@ -472,7 +520,7 @@ export default abstract class Router {
    */
   protected matchRoute(path: RoutePath): MatchResult {
     // 转换为小写
-    if (!this.#options.strict) {
+    if (!this._options.strict) {
       path = path.toLowerCase() as RoutePath
     }
     // 格式化path
@@ -508,65 +556,6 @@ export default abstract class Router {
   }
 
   /**
-   * 从源路由表中删除路由
-   *
-   * @param route
-   * @protected
-   */
-  protected removedFromRoutes(route: Route) {
-    const parent = this.getParentRoute(route)
-    if (parent?.children) {
-      const index = parent.children.indexOf(route)
-      if (index !== -1) {
-        parent.children.splice(index, 1)
-      }
-    } else {
-      const index = this.#options.routes.indexOf(route)
-      if (index !== -1) {
-        this.#options.routes.splice(index, 1)
-      }
-    }
-  }
-
-  /**
-   * 删除动态路由映射
-   *
-   * @param path
-   * @protected
-   */
-  protected removeDynamicRoute(path: string): void {
-    if (!isVariablePath(path)) return
-
-    const segments = path.split('/').filter(Boolean)
-    const length = segments.length
-
-    /**
-     * 根据动态路径长度删除匹配的记录
-     *
-     * @param key 动态路径的长度
-     */
-    const removeRouteFromRecords = (key: number) => {
-      const records = this._dynamicRoutes.get(key)
-      if (records) {
-        for (let i = 0; i < records.length; i++) {
-          if (records[i].route.path === path) {
-            records.splice(i, 1) // 删除匹配的记录
-            break // 找到后立即停止循环
-          }
-        }
-      }
-    }
-
-    // 删除匹配路径的动态路由
-    removeRouteFromRecords(length)
-
-    // 如果是可选参数路由，删除对应短路径的路由
-    if (isOptionalVariablePath(path)) {
-      removeRouteFromRecords(length - 1)
-    }
-  }
-
-  /**
    * 创建完整路径
    *
    * @protected
@@ -589,7 +578,7 @@ export default abstract class Router {
   /**
    * 添加历史记录
    *
-   * 子类必须重写实现该方法
+   * 子类必须实现该方法
    *
    * @param data
    * @protected
@@ -599,7 +588,7 @@ export default abstract class Router {
   /**
    * 替换历史记录
    *
-   * 子类必须重写实现该方法
+   * 子类必须实现该方法
    *
    * @param {NavigateData} data - 目标路由
    * @protected
@@ -738,7 +727,7 @@ export default abstract class Router {
    * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
   protected onBeforeEach(to: NavigateData, from: NavigateData): BeforeEachCallbackResult {
-    return this.#options.beforeEach?.call(this, to, from)
+    return this._options.beforeEach?.call(this, to, from)
   }
 
   /**
@@ -748,7 +737,87 @@ export default abstract class Router {
    * @param {NavigateData} from - 前路由对象
    */
   protected onAfterEach(to: NavigateData, from: NavigateData): void {
-    return this.#options.afterEach?.call(this, to, from)
+    return this._options.afterEach?.call(this, to, from)
+  }
+
+  /**
+   * 触发滚动行为
+   *
+   * @param {NavigateData} to - 目标导航数据对象
+   * @param {NavigateData} from - 前导航数据对象
+   * @param {_ScrollToOptions | undefined} savedPosition - 保存的滚动位置
+   * @private
+   */
+  private async onScrollBehavior(
+    to: NavigateData,
+    from: NavigateData,
+    savedPosition: _ScrollToOptions | undefined
+  ): Promise<void> {
+    if (this._scrollBehaviorHandler) {
+      const scrollTarget = await this._scrollBehaviorHandler(to, from, savedPosition)
+      if (scrollTarget) this.scrollTo(scrollTarget)
+    } else {
+      this.scrollTo(savedPosition)
+    }
+  }
+
+  /**
+   * 从源路由表中删除路由
+   *
+   * @param route
+   * @protected
+   */
+  private removedFromRoutes(route: Route) {
+    const parent = this.getParentRoute(route)
+    if (parent?.children) {
+      const index = parent.children.indexOf(route)
+      if (index !== -1) {
+        parent.children.splice(index, 1)
+      }
+    } else {
+      const index = this._options.routes.indexOf(route)
+      if (index !== -1) {
+        this._options.routes.splice(index, 1)
+      }
+    }
+  }
+
+  /**
+   * 删除动态路由映射
+   *
+   * @param path
+   * @protected
+   */
+  private removeDynamicRoute(path: string): void {
+    if (!isVariablePath(path)) return
+
+    const segments = path.split('/').filter(Boolean)
+    const length = segments.length
+
+    /**
+     * 根据动态路径长度删除匹配的记录
+     *
+     * @param key 动态路径的长度
+     */
+    const removeRouteFromRecords = (key: number) => {
+      const records = this._dynamicRoutes.get(key)
+      if (records) {
+        for (let i = 0; i < records.length; i++) {
+          if (records[i].route.path === path) {
+            records.splice(i, 1) // 删除匹配的记录
+            break // 找到后立即停止循环
+          }
+        }
+      }
+    }
+
+    // 删除匹配路径的动态路由
+    removeRouteFromRecords(length)
+
+    // 如果是可选参数路由，删除对应短路径的路由
+    if (isOptionalVariablePath(path)) {
+      removeRouteFromRecords(length - 1)
+    }
   }
 
   /**
@@ -807,7 +876,7 @@ export default abstract class Router {
    * @private
    */
   private strictPath(path: string): RoutePath {
-    return (this.#options.strict ? path : path.toLowerCase()) as RoutePath
+    return (this._options.strict ? path : path.toLowerCase()) as RoutePath
   }
 
   /**
@@ -857,7 +926,7 @@ export default abstract class Router {
     const { regex, length, isOptional } = createDynamicPattern(
       route.path,
       route.pattern,
-      this.#options.strict
+      this._options.strict
     )
     const addToLengthMap = (len: number) => {
       if (!this._dynamicRoutes.has(len)) {
