@@ -77,16 +77,17 @@ export function createRouter(options: RouterOptions): Router {
       router = new MemoryRouter(options)
       break
     case 'hash':
-      router = new HashRouter(options)
+      router = new HashRouter(options as RouterOptions & { mode: 'hash' })
       break
     default:
       // 如果浏览器不支持history API，则强制使用hash模式路由
       if (!window.history) {
         console.warn('当前浏览器不支持history API，将使用hash模式路由')
         options.mode = 'hash'
-        router = new HashRouter(options)
+        router = new HashRouter(options as RouterOptions & { mode: 'hash' })
       } else {
-        router = new HistoryRouter(options)
+        options.mode = 'history'
+        router = new HistoryRouter(options as RouterOptions & { mode: 'history' })
       }
   }
   return router.initialize()
