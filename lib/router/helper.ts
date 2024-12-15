@@ -61,7 +61,7 @@ export function createRouter(
   options:
     | RouterOptions
     | (RouterOptions & {
-        mode: 'path'
+        mode: 'history'
       })
 ): HistoryRouter
 export function createRouter(options: RouterOptions): Router {
@@ -84,7 +84,7 @@ export function createRouter(options: RouterOptions): Router {
       if (!window.history) {
         console.warn('当前浏览器不支持history API，将使用hash模式路由')
         options.mode = 'hash'
-        router = new HashRouter(options).initialize()
+        router = new HashRouter(options)
       } else {
         router = new HistoryRouter(options)
       }
