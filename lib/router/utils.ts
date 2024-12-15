@@ -339,6 +339,27 @@ export function deepEqual(var1: any, var2: any): boolean {
 }
 
 /**
+ * 拆分路径和后缀
+ *
+ * @param path
+ */
+export function splitPathAndSuffix(path: string) {
+  // 正则匹配路径末尾以文件后缀结尾的情况
+  const match = path.match(/^(.*?)(\.[a-zA-Z0-9]+)$/)
+  if (match) {
+    return {
+      path: match[1], // 提取路径部分
+      suffix: match[2].slice(1) // 提取文件扩展名，去掉前面的点（.）
+    }
+  } else {
+    return {
+      path: path, // 如果没有文件后缀，路径就为原路径
+      suffix: null // 没有后缀
+    }
+  }
+}
+
+/**
  * 根据路由表生成路由索引
  *
  * 该函数提供给node脚本使用，生成对应的`RoutePath`和`RouteName`类型，优化类型推断
