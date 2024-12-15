@@ -21,14 +21,14 @@ import {
 } from './type.js'
 import {
   createDynamicPattern,
+  deepEqual,
   formatHash,
   formatPath,
   generateRoutePath,
   isOptionalVariablePath,
   isRouteGroup,
   isVariablePath,
-  objectToQueryString,
-  shallowEqual
+  objectToQueryString
 } from './utils.js'
 
 // 路由匹配结果
@@ -409,7 +409,7 @@ export default abstract class Router {
    * @protected
    */
   protected updateQuery(query: Record<string, string>) {
-    if (!shallowEqual(this._currentNavigateData.query, query)) {
+    if (!deepEqual(this._currentNavigateData.query, query)) {
       this._currentNavigateData.query = query
       this._currentNavigateData.fullPath = this.makeFullPath(
         this._currentNavigateData.path,
@@ -614,7 +614,7 @@ export default abstract class Router {
    * @protected
    */
   protected isSameNavigate(to: NavigateData, from: NavigateData): boolean {
-    return shallowEqual(to, from)
+    return deepEqual(to, from)
   }
 
   /**
@@ -629,16 +629,19 @@ export default abstract class Router {
 
     const isCurrentTask = () => this._currentTaskId === taskId // 检查任务是否被取消
 
-    const performNavigation = async (target: RouteTarget): Promise<NavigateResult> => {
+    const performNavigation = async (
+      target: RouteTarget,
+      isRedirect: boolean = false
+    ): Promise<NavigateResult> => {
       const to = this.createNavigateData(target)
       const createNavigateResult = (overrides: Partial<NavigateResult> = {}): NavigateResult => ({
         from: this.currentNavigateData,
         to: to,
         status: NavigateStatus.success,
         message: '导航成功',
+        isRedirect,
         ...overrides
       })
-
       if (this.isSameNavigate(to, this.currentNavigateData)) {
         return createNavigateResult({
           status: NavigateStatus.duplicated,
@@ -648,7 +651,6 @@ export default abstract class Router {
 
       try {
         const result = await this.onBeforeEach(to, this.currentNavigateData)
-
         // 前置守卫钩子返回 false，则导航被取消
         if (result === false) {
           return createNavigateResult({
@@ -660,7 +662,7 @@ export default abstract class Router {
         // 前置守卫钩子返回对象，则导航被重定向
         if (typeof result === 'object' && result.index !== target.index) {
           result.isReplace ??= false // 确保 isReplace 有默认值
-          return performNavigation(result)
+          return performNavigation(result, true)
         }
 
         // 路由未匹配
@@ -687,7 +689,6 @@ export default abstract class Router {
           this._pendingPush = to
           this.pushHistory(to)
         }
-
         return createNavigateResult()
       } catch (error) {
         console.error('[Vitarx.Router.navigate][ERROR]：在导航时捕获到了异常', error)
