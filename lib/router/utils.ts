@@ -307,6 +307,38 @@ export function urlToRouteTarget(
 }
 
 /**
+ * 浅对比两个变量是否一致
+ *
+ * @param var1
+ * @param var2
+ */
+export function shallowEqual(var1: any, var2: any): boolean {
+  if (Object.is(var1, var2)) return true // 精确比较两个值是否相同（处理 NaN 等特殊情况）
+
+  // 如果不是对象或其中一个为 null，则直接返回 false
+  if (typeof var1 !== 'object' || typeof var2 !== 'object' || var1 === null || var2 === null) {
+    return false
+  }
+
+  const keys1 = Reflect.ownKeys(var1)
+  const keys2 = Reflect.ownKeys(var2)
+
+  if (keys1.length !== keys2.length) return false // 键数量不同
+
+  // 检查每个键是否存在且值相等
+  for (const key of keys1) {
+    if (
+      !Object.prototype.hasOwnProperty.call(var2, key) ||
+      !Object.is(var1[key], var2[key]) // 使用 Object.is 处理精确相等
+    ) {
+      return false
+    }
+  }
+
+  return true // 所有键和值都相等
+}
+
+/**
  * 根据路由表生成路由索引
  *
  * 该函数提供给node脚本使用，生成对应的`RoutePath`和`RouteName`类型，优化类型推断
