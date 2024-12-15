@@ -125,6 +125,10 @@ export default class HistoryRouter extends Router {
       newTarget = this.currentRouteTarget
     }
     this.replace(newTarget).then(res => {
+      // 如果被取消，则不处理
+      if (res.status === NavigateStatus.cancelled) return
+      // 如果重复，则不处理
+      if (res.status === NavigateStatus.duplicated) return
       // 如果失败了，则回到之前的路由
       if (res.status !== NavigateStatus.success) {
         this.webHistory.replaceState(this.createState(res.from), '', res.from.fullPath)
