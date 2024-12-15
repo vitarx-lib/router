@@ -18,7 +18,13 @@ export default class MemoryRouter extends Router {
 
     // 如果目标索引在有效范围内
     if (targetIndex >= 0 && targetIndex < this._history.length) {
-      this.completeNavigation(this._history[targetIndex])
+      const target = this._history[targetIndex]
+      this.replace({
+        index: target.index,
+        hash: target.hash,
+        query: target.query,
+        params: target.params
+      }).then()
     }
   }
 
