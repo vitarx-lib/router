@@ -360,6 +360,18 @@ export function splitPathAndSuffix(path: string) {
 }
 
 /**
+ * 获取路径后缀
+ *
+ * @param path
+ * @return {string} 有则返回`.${string}`无则返回空字符串
+ */
+export function getPathSuffix(path: string): `.${string}` | '' {
+  const match = path.match(/^(.*?)(\.[a-zA-Z0-9]+)$/)
+  if (match) return match[2] as `.${string}`
+  return ''
+}
+
+/**
  * 根据路由表生成路由索引
  *
  * 该函数提供给node脚本使用，生成对应的`RoutePath`和`RouteName`类型，优化类型推断
