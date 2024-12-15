@@ -26,10 +26,10 @@ import {
   deepEqual,
   formatHash,
   formatPath,
-  generateRoutePath,
   isOptionalVariablePath,
   isRouteGroup,
   isVariablePath,
+  mergePathParams,
   objectToQueryString
 } from './utils.js'
 
@@ -384,7 +384,7 @@ export default abstract class Router {
     } else {
       this._scrollBehavior = this.options.scrollBehavior
     }
-
+    // 初始化路由器
     this.initializeRouter()
     // 记录单例
     Router.#instance = this
@@ -705,7 +705,7 @@ export default abstract class Router {
     }
 
     const route = this.getRoute(index) ?? null
-    const path = route ? generateRoutePath(route.path, params) : formatPath(index)
+    const path = route ? mergePathParams(route.path, params) : formatPath(index)
     const hashStr = formatHash(hash, true)
     const fullPath = route ? this.makeFullPath(path, query, hashStr) : index
     return {
