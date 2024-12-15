@@ -27,6 +27,7 @@ import {
   deepEqual,
   formatHash,
   formatPath,
+  getPathSuffix,
   isOptionalVariablePath,
   isRouteGroup,
   isVariablePath,
@@ -84,7 +85,7 @@ export default abstract class Router {
       strict: false,
       mode: 'history',
       scrollBehavior: 'smooth',
-      suffix: '*',
+      suffix: false,
       ...options
     }
     this._options.base = `/${this._options.base.replace(/^\/+|\/+$/g, '')}`
@@ -718,11 +719,19 @@ export default abstract class Router {
       throw new TypeError(`[Vitarx.Router.navigate]：target.index无效，index:${index}`)
     }
     const route = this.getRoute(index) ?? null
-    const path = route ? mergePathParams(route.path, params) : formatPath(index)
+    let path: RoutePath
+    if (route) {
+      let suffix = getPathSuffix(index)
+      if (this.suffix && suffix) {
+        path = mergePathParams((route.path + suffix) as RoutePath, params)
+      } else {
+        path = mergePathParams(route.path, params)
+      }
+    } else {
+      path = formatPath(index)
+    }
     const hashStr = formatHash(hash, true)
-    const fullPath = route
-      ? this.makeFullPath(path, query, hashStr)
-      : this.makeFullPath(index, query, hash)
+    const fullPath = this.makeFullPath(path, query, hashStr)
     return {
       index,
       path,
