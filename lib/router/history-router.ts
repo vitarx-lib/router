@@ -1,5 +1,11 @@
 import Router from './router.js'
-import { type HashStr, type NavigateData, NavigateStatus, type RouteTarget } from './type.js'
+import {
+  type HashStr,
+  type NavigateData,
+  NavigateStatus,
+  type RouterOptions,
+  type RouteTarget
+} from './type.js'
 import { urlToRouteTarget } from './utils.js'
 
 /**
@@ -8,6 +14,10 @@ import { urlToRouteTarget } from './utils.js'
  * 支持浏览器前进、后退、跳转等操作
  */
 export default class HistoryRouter extends Router {
+  constructor(options: RouterOptions & { mode: 'history' }) {
+    super(options)
+  }
+
   /**
    * 当前路由目标
    *
@@ -73,7 +83,7 @@ export default class HistoryRouter extends Router {
     const scrollPosition: ScrollToOptions = {
       left: window.scrollX,
       top: window.scrollY,
-      behavior: this.behavior
+      behavior: this.scrollBehavior
     }
     this.webHistory.replaceState(
       {
