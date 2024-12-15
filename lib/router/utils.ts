@@ -199,6 +199,7 @@ export function formatHash(hash: any, addHashPrefix: boolean): string {
   if (typeof hash !== 'string') return ''
   // 如果 hash 有值且不以 # 开头，添加 # 前缀
   if (!hash) return ''
+  hash = hash.trim()
   if (addHashPrefix) {
     return hash.startsWith('#') ? hash : `#${hash}`
   } else {
