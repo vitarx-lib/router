@@ -1,4 +1,4 @@
-import { type NavigateData, NavigateStatus, type RouterOptions, type RouteTarget } from './type.js'
+import { NavigateStatus, type RouteLocation, type RouterOptions, type RouteTarget } from './type.js'
 import { urlToRouteTarget } from './utils.js'
 import MemoryRouter from './memory-router.js'
 
@@ -52,14 +52,14 @@ export default class HashRouter extends MemoryRouter {
   /**
    * @inheritDoc
    */
-  protected pushHistory(data: NavigateData): void {
+  protected pushHistory(data: RouteLocation): void {
     window.location.hash = this.fullPathToHash(data.fullPath)
   }
 
   /**
    * @inheritDoc
    */
-  protected replaceHistory(data: NavigateData): void {
+  protected replaceHistory(data: RouteLocation): void {
     window.location.replace(data.fullPath)
   }
 
@@ -81,7 +81,7 @@ export default class HashRouter extends MemoryRouter {
    */
   private onHashChange(event: HashChangeEvent): void {
     // 兼容导航失败回滚造成的事件
-    if (this.currentNavigateData.fullPath === this.currentLocationFullPath) return
+    if (this.currentRouteLocation.fullPath === this.currentLocationFullPath) return
     // 完成上一次导航
     if (this.isPendingNavigation) {
       if (this.pendingPushData) {
