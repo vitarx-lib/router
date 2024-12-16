@@ -9,13 +9,13 @@ import {
   type HistoryMode,
   type InitializedRouterOptions,
   type MatchResult,
-  type NavigateData,
   type NavigateResult,
   NavigateStatus,
   type Route,
-  type RouteGroup,
   type RouteIndex,
+  type RouteLocation,
   type RouteName,
+  type RouteNormalized,
   type RoutePath,
   type RouterOptions,
   type RouteTarget,
@@ -50,13 +50,13 @@ export default abstract class Router {
     Exclude<keyof RouterOptions, 'beforeEach' | 'afterEach'>
   >
   // 命名路由映射
-  private readonly _namedRoutes = new Map<string, Route>()
+  private readonly _namedRoutes = new Map<string, RouteNormalized>()
   // 动态路由正则，按长度分组
   private readonly _dynamicRoutes = new Map<number, DynamicRouteRecord[]>()
   // 路由path映射
-  private readonly _pathRoutes = new Map<string, Route>()
+  private readonly _pathRoutes = new Map<string, RouteNormalized>()
   // 父路由映射
-  private readonly _parentRoute = new WeakMap<Route, RouteGroup>()
+  private readonly _parentRoute = new WeakMap<RouteNormalized, RouteNormalized>()
   // 当前任务 ID
   private _currentTaskId: number | null = null
   // 用于生成唯一任务 ID
@@ -66,13 +66,13 @@ export default abstract class Router {
    *
    * @private
    */
-  private _pendingReplace: NavigateData | null = null
+  private _pendingReplace: RouteLocation | null = null
   /**
    * 是否正在执行 push 操作
    *
    * @private
    */
-  private _pendingPush: NavigateData | null = null
+  private _pendingPush: RouteLocation | null = null
   // 滚动行为处理器
   private _scrollBehaviorHandler: ScrollBehaviorHandler | undefined = undefined
 
@@ -89,14 +89,14 @@ export default abstract class Router {
       ...options
     }
     this._options.base = `/${this._options.base.replace(/^\/+|\/+$/g, '')}`
-    this._currentNavigateData = {
+    this._currentRouteLocation = {
       index: this._options.base,
       path: this._options.base,
       hash: '',
       fullPath: this._options.base,
       params: {},
       query: {},
-      matched: null
+      matched: []
     }
   }
 
@@ -132,16 +132,16 @@ export default abstract class Router {
     return this._scrollBehavior
   }
 
-  // 当前导航数据
-  private _currentNavigateData: NavigateData
+  // 当前路由数据
+  private _currentRouteLocation: RouteLocation
 
   /**
    * 获取当前导航数据
    *
-   * @return {Readonly<NavigateData>} - 当前导航数据对象
+   * @return {Readonly<RouteLocation>} - 当前导航数据对象
    */
-  get currentNavigateData(): Readonly<NavigateData> {
-    return this._currentNavigateData
+  get currentRouteLocation(): Readonly<RouteLocation> {
+    return this._currentRouteLocation
   }
 
   /**
@@ -214,7 +214,7 @@ export default abstract class Router {
   /**
    * 受支持的`path`后缀名
    */
-  get suffix(): NonNullable<RouterOptions['suffix']> {
+  get suffix(): Exclude<RouterOptions['suffix'], void> {
     return this._options.suffix
   }
 
@@ -232,7 +232,7 @@ export default abstract class Router {
    *
    * @protected
    */
-  protected get pendingReplaceData(): NavigateData | null {
+  protected get pendingReplaceData(): RouteLocation | null {
     return this._pendingReplace
   }
 
@@ -241,7 +241,7 @@ export default abstract class Router {
    *
    * @protected
    */
-  protected get pendingPushData(): NavigateData | null {
+  protected get pendingPushData(): RouteLocation | null {
     return this._pendingPush
   }
 
@@ -333,10 +333,9 @@ export default abstract class Router {
    */
   public addRoute(route: Route, parent?: string) {
     if (parent) {
-      const parentRoute = this.getRoute(parent) as Route
+      const parentRoute = this.getRoute(parent)
       if (!parentRoute) throw new Error(`[Vitarx.Router.addRoute][ERROR]：父路由${parent}不存在`)
-      parentRoute.children = parentRoute.children || []
-      this.registerRoute(route, parentRoute as RouteGroup)
+      this.registerRoute(route, parentRoute)
     } else {
       this.registerRoute(route)
       this._options.routes.push(route)
@@ -348,18 +347,27 @@ export default abstract class Router {
    *
    * 传入的是`path`则会调用`matchRoute`方法，传入的是`name`则会调用`getNamedRoute`方法
    *
-   * @param {string} index - 路由索引，如果/开头则匹配path，其他匹配name
-   * @return {Readonly<Route> | undefined} - 路由对象，如果不存在则返回undefined
+   * @param {RouteIndex|RouteTarget} target - 路由索引，如果index以/开头则匹配path，其他匹配name
+   * @return {RouteNormalized | undefined} - 路由对象，如果不存在则返回undefined
    */
-  public getRoute(index: RouteIndex): Readonly<Route> | undefined {
+  public getRoute(target: RouteIndex | RouteTarget): RouteNormalized | undefined {
+    const isRouterTarget = typeof target === 'object'
+    const index: RouteIndex = isRouterTarget ? target.index : target
     if (typeof index !== 'string') {
       throw new TypeError(
-        `[Vitarx.Router.getRoute][ERROR]：路由索引${index}类型错误，必须给定字符串类型`
+        `[Vitarx.Router.getRoute][ERROR]：路由索引${target}类型错误，必须给定字符串类型`
       )
     }
-    return index.startsWith('/')
-      ? this.matchRoute(index as RoutePath)?.route
-      : this.getNamedRoute(index)
+    if (index.startsWith('/')) {
+      const matched = this.matchRoute(index as RoutePath)
+      if (!matched) return undefined
+      // 将动态路由参数注入到路由目标对象中
+      if (matched.params && isRouterTarget) {
+        target.params = Object.assign(target.params || {}, matched.params)
+      }
+      return matched.route
+    }
+    return this.getNamedRoute(index)
   }
 
   /**
@@ -367,7 +375,7 @@ export default abstract class Router {
    *
    * @param {string} name - 路由名称
    */
-  public getNamedRoute(name: RouteName): Readonly<Route> | undefined {
+  public getNamedRoute(name: RouteName): RouteNormalized | undefined {
     return this._namedRoutes.get(name)
   }
 
@@ -426,31 +434,43 @@ export default abstract class Router {
   }
 
   /**
+   * 获取路由的父路由
+   *
+   * @param route - 路由对象
+   * @return {RouteNormalized | undefined}
+   */
+  public findParentRoute(route: RouteNormalized): RouteNormalized | undefined {
+    return this._parentRoute.get(route)
+  }
+
+  /**
    * 完成导航
    *
    * 所有子类在完成导航的后续处理过后必须调用该方法！
    *
-   * @param {NavigateData} data - 如果是由`replace`或`push`方法发起的导航则无需传入此参数。
+   * @param {RouteLocation} data - 如果是由`replace`或`push`方法发起的导航则无需传入此参数。
    * @param {_ScrollToOptions} savedPosition - 保存的滚动位置信息，用于恢复滚动位置
    * @protected
    */
-  protected completeNavigation(data?: NavigateData, savedPosition?: _ScrollToOptions) {
-    const from = this._currentNavigateData
+  protected completeNavigation(data?: RouteLocation, savedPosition?: _ScrollToOptions) {
+    const from = this._currentRouteLocation
     if (data) {
-      this._currentNavigateData = data
+      this._currentRouteLocation = data
     } else if (this._pendingReplace) {
-      this._currentNavigateData = this._pendingReplace
+      this._currentRouteLocation = this._pendingReplace
     } else if (this._pendingPush) {
-      this._currentNavigateData = this._pendingPush
+      this._currentRouteLocation = this._pendingPush
     } else {
       throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
     }
     this._pendingReplace = null
     this._pendingPush = null
-    console.log('完成导航', this._currentNavigateData, savedPosition)
+    console.log('完成导航', this._currentRouteLocation)
     // TODO 待完成视图渲染相关逻辑
-    this.onScrollBehavior(this._currentNavigateData, from, savedPosition).then()
-    this.onAfterEach(this._currentNavigateData, from)
+    // 滚动行为处理
+    this.onScrollBehavior(this._currentRouteLocation, from, savedPosition).then()
+    // 触发后置钩子
+    this.onAfterEach(this._currentRouteLocation, from)
   }
 
   /**
@@ -462,12 +482,12 @@ export default abstract class Router {
    * @protected
    */
   protected updateQuery(query: Record<string, string>) {
-    if (!deepEqual(this._currentNavigateData.query, query)) {
-      this._currentNavigateData.query = query
-      this._currentNavigateData.fullPath = this.makeFullPath(
-        this._currentNavigateData.path,
+    if (!deepEqual(this._currentRouteLocation.query, query)) {
+      this._currentRouteLocation.query = query
+      this._currentRouteLocation.fullPath = this.makeFullPath(
+        this._currentRouteLocation.path,
         query,
-        this._currentNavigateData.hash
+        this._currentRouteLocation.hash
       )
     }
   }
@@ -485,12 +505,12 @@ export default abstract class Router {
       console.warn(`[Vitarx.Router.updateHash][WARN]：hash值只能是字符串类型，给定${hash}`)
     }
     const newHash = formatHash(hash, true)
-    if (newHash !== this._currentNavigateData.hash) {
-      this._currentNavigateData.hash = newHash
+    if (newHash !== this._currentRouteLocation.hash) {
+      this._currentRouteLocation.hash = newHash
       // 更新完整的path
-      this._currentNavigateData.fullPath = this.makeFullPath(
-        this._currentNavigateData.path,
-        this._currentNavigateData.query,
+      this._currentRouteLocation.fullPath = this.makeFullPath(
+        this._currentRouteLocation.path,
+        this._currentRouteLocation.query,
         newHash
       )
     }
@@ -504,16 +524,6 @@ export default abstract class Router {
    * @private
    */
   protected initializeRouter(): void {}
-
-  /**
-   * 获取路由的父路由
-   *
-   * @param route - 路由对象
-   * @return {RouteGroup | undefined}
-   */
-  protected getParentRoute(route: Route): RouteGroup | undefined {
-    return this._parentRoute.get(route)
-  }
 
   /**
    * 路由匹配
@@ -531,19 +541,12 @@ export default abstract class Router {
     // 后缀支持
     if (this.suffix) {
       const { path: realPath, suffix } = splitPathAndSuffix(path)
-      // 如果路径中有后缀
-      if (suffix) {
-        // 如果后缀不匹配，直接返回 undefined
-        if (
-          this.suffix !== '*' &&
-          this.suffix !== suffix &&
-          !(Array.isArray(this.suffix) && this.suffix.includes(suffix))
-        ) {
-          return undefined // 后缀不匹配，返回 undefined
-        }
-        // 更新路径为去掉后缀后的路径
-        path = realPath as RoutePath
+      // 如果后缀不匹配，直接返回 undefined
+      if (!this.isAllowedSuffix(suffix)) {
+        return undefined // 后缀不匹配，返回 undefined
       }
+      // 更新路径为去掉后缀后的路径
+      path = realPath as RoutePath
     }
     // 优先匹配静态路由
     if (this._pathRoutes.has(path)) {
@@ -602,17 +605,17 @@ export default abstract class Router {
    * @param data
    * @protected
    */
-  protected abstract pushHistory(data: NavigateData): void
+  protected abstract pushHistory(data: RouteLocation): void
 
   /**
    * 替换历史记录
    *
    * 子类必须实现该方法
    *
-   * @param {NavigateData} data - 目标路由
+   * @param {RouteLocation} data - 目标路由
    * @protected
    */
-  protected abstract replaceHistory(data: NavigateData): void
+  protected abstract replaceHistory(data: RouteLocation): void
 
   /**
    * 判断是否相同的导航请求
@@ -621,7 +624,7 @@ export default abstract class Router {
    * @param from
    * @protected
    */
-  protected isSameNavigate(to: NavigateData, from: NavigateData): boolean {
+  protected isSameNavigate(to: RouteLocation, from: RouteLocation): boolean {
     return deepEqual(to, from)
   }
 
@@ -641,24 +644,25 @@ export default abstract class Router {
       target: RouteTarget,
       isRedirect: boolean = false
     ): Promise<NavigateResult> => {
-      const to = this.createNavigateData(target)
+      const to = this.createRouteLocation(target)
+      // 创建导航结果
       const createNavigateResult = (overrides: Partial<NavigateResult> = {}): NavigateResult => ({
-        from: this.currentNavigateData,
+        from: this.currentRouteLocation,
         to: to,
         status: NavigateStatus.success,
         message: '导航成功',
         isRedirect,
         ...overrides
       })
-      if (this.isSameNavigate(to, this.currentNavigateData)) {
+      // 判断是否为相同的路由
+      if (this.isSameNavigate(to, this.currentRouteLocation)) {
         return createNavigateResult({
           status: NavigateStatus.duplicated,
           message: '导航到相同的路由，被系统阻止！'
         })
       }
-
       try {
-        const result = await this.onBeforeEach(to, this.currentNavigateData)
+        const result = await this.onBeforeEach(to, this.currentRouteLocation)
         // 前置守卫钩子返回 false，则导航被取消
         if (result === false) {
           return createNavigateResult({
@@ -679,7 +683,11 @@ export default abstract class Router {
           return performNavigation(result, true)
         }
         // 路由未匹配
-        if (!to.matched) {
+        if (!to.matched.length) {
+          console.warn(
+            '[Vitarx.Router.navigate][WARN]：未匹配到任何路由规则，请检测目标索引是否正确。',
+            target
+          )
           return createNavigateResult({
             status: NavigateStatus.not_matched,
             message: '未匹配到任何路由规则，被系统阻止！请检测目标索引是否正确。'
@@ -713,20 +721,25 @@ export default abstract class Router {
    * @param target
    * @protected
    */
-  protected createNavigateData(target: RouteTarget): NavigateData {
+  protected createRouteLocation(target: RouteTarget): RouteLocation {
+    // 获取路由对象
+    const route = this.getRoute(target)
     const { index, query = {}, params = {}, hash = '' } = target
-    if (!index) {
-      throw new TypeError(`[Vitarx.Router.navigate]：target.index无效，index:${index}`)
-    }
-    const route = this.getRoute(index) ?? null
     let path: RoutePath
+    const matched: RouteNormalized[] = []
     if (route) {
       let suffix = getPathSuffix(index)
-      if (this.suffix && suffix) {
+      if (this.suffix && suffix && !route.path.endsWith(suffix)) {
         path = mergePathParams((route.path + suffix) as RoutePath, params)
       } else {
         path = mergePathParams(route.path, params)
       }
+      let parent = this.findParentRoute(route)
+      while (parent) {
+        matched.unshift(parent)
+        parent = this.findParentRoute(parent)
+      }
+      matched.push(route)
     } else {
       path = formatPath(index)
     }
@@ -739,42 +752,58 @@ export default abstract class Router {
       fullPath: fullPath,
       params: params,
       query: query,
-      matched: route
+      matched: matched
     }
   }
 
   /**
    * 触发路由前置守卫
    *
-   * @param {NavigateData} to - 路由目标对象
-   * @param {NavigateData} from - 前路由对象
+   * @param {RouteLocation} to - 路由目标对象
+   * @param {RouteLocation} from - 前路由对象
    * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
-  protected onBeforeEach(to: NavigateData, from: NavigateData): BeforeEachCallbackResult {
+  protected onBeforeEach(to: RouteLocation, from: RouteLocation): BeforeEachCallbackResult {
     return this._options.beforeEach?.call(this, to, from)
   }
 
   /**
    * 触发路由后置守卫
    *
-   * @param {NavigateData} to - 路由目标对象
-   * @param {NavigateData} from - 前路由对象
+   * @param {RouteLocation} to - 路由目标对象
+   * @param {RouteLocation} from - 前路由对象
    */
-  protected onAfterEach(to: NavigateData, from: NavigateData): void {
+  protected onAfterEach(to: RouteLocation, from: RouteLocation): void {
     return this._options.afterEach?.call(this, to, from)
+  }
+
+  /**
+   * 判断是否为允许的后缀
+   *
+   * @param suffix
+   * @private
+   */
+  private isAllowedSuffix(suffix: string): boolean {
+    if (!suffix) return true
+    if (!this.suffix) return false
+    if (this.suffix === '*') return true
+    if (Array.isArray(this.suffix)) {
+      return this.suffix.includes(suffix)
+    }
+    return this.suffix === suffix
   }
 
   /**
    * 触发滚动行为
    *
-   * @param {NavigateData} to - 目标导航数据对象
-   * @param {NavigateData} from - 前导航数据对象
+   * @param {RouteLocation} to - 目标导航数据对象
+   * @param {RouteLocation} from - 前导航数据对象
    * @param {_ScrollToOptions | undefined} savedPosition - 保存的滚动位置
    * @private
    */
   private async onScrollBehavior(
-    to: NavigateData,
-    from: NavigateData,
+    to: RouteLocation,
+    from: RouteLocation,
     savedPosition: _ScrollToOptions | undefined
   ): Promise<void> {
     if (this._scrollBehaviorHandler) {
@@ -791,8 +820,8 @@ export default abstract class Router {
    * @param route
    * @protected
    */
-  private removedFromRoutes(route: Route) {
-    const parent = this.getParentRoute(route)
+  private removedFromRoutes(route: RouteNormalized) {
+    const parent = this.findParentRoute(route)
     if (parent?.children) {
       const index = parent.children.indexOf(route)
       if (index !== -1) {
@@ -856,40 +885,52 @@ export default abstract class Router {
   }
 
   /**
+   * 规范化路由对象
+   *
+   * @param route
+   * @private
+   */
+  private normalizeRoute(route: Route): RouteNormalized {
+    route.meta = route.meta || {}
+    route.pattern = route.pattern || {}
+    route.children = route.children || []
+    route.path = formatPath(route.path)
+    return route as RouteNormalized
+  }
+
+  /**
    * 注册路由
    *
    * @param {Route} route - 路由对象
-   * @param {RouteGroup} group - 路由所在的分组
+   * @param {RouteNormalized} group - 路由所在的分组
    * @protected
    */
-  private registerRoute(route: Route, group?: RouteGroup) {
+  private registerRoute(route: Route, group?: RouteNormalized) {
+    const normalizedRoute = this.normalizeRoute(route)
     if (group) {
-      // 处理路径拼接，避免多余的斜杠
-      route.path = formatPath(`${group.path}/${route.path}`)
-      this._parentRoute.set(route, group) // 记录当前路由于父路由的映射关系
-    } else {
-      // 规范化路由路径，去除空格
-      route.path = formatPath(route.path)
+      // 拼接父path
+      normalizedRoute.path = formatPath(`${group.path}${normalizedRoute.path}`)
+      this._parentRoute.set(normalizedRoute, group) // 记录当前路由于父路由的映射关系
     }
 
-    if (isRouteGroup(route)) {
+    if (isRouteGroup(normalizedRoute)) {
       // 如果是路由组并且有 widget，则将分组自身作为路由记录
       if (route.widget) {
-        this.recordRoute(route) // 记录分组路由
+        this.recordRoute(normalizedRoute) // 记录分组路由
       }
 
       // 遍历子路由并递归注册
-      for (const child of route.children) {
-        this.registerRoute(child, route) // 递归注册子路由
+      for (const child of normalizedRoute.children) {
+        this.registerRoute(child, normalizedRoute) // 递归注册子路由
       }
     } else {
-      if (typeof route.widget !== 'function') {
+      if (typeof normalizedRoute.widget !== 'function') {
         throw new TypeError(
           `[Vitarx.Router][ERROR]：路由${route.path}的widget配置无效，${route.widget}`
         )
       }
       // 记录路由
-      this.recordRoute(route)
+      this.recordRoute(normalizedRoute)
     }
   }
 
@@ -909,7 +950,7 @@ export default abstract class Router {
    * @param {Route} route - 路由对象
    * @protected
    */
-  private recordRoute(route: Route) {
+  private recordRoute(route: RouteNormalized) {
     if (route.name) {
       if (route.name.startsWith('/')) {
         route.name = route.name.replace(/^\//, '')
@@ -945,8 +986,7 @@ export default abstract class Router {
    * 添加动态路由
    * @param route
    */
-  private recordDynamicRoute(route: Route) {
-    route.pattern = route.pattern || {}
+  private recordDynamicRoute(route: RouteNormalized) {
     const { regex, length, isOptional } = createDynamicPattern(
       route.path,
       route.pattern,
