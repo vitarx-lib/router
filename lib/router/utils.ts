@@ -1,4 +1,4 @@
-import type { HashStr, LazyLoad, Route, RouteGroup, RoutePath, RouteTarget } from './type.js'
+import type { HashStr, LazyLoad, Route, RoutePath, RouteTarget } from './type.js'
 import type { LazyLoader, WidgetType } from 'vitarx'
 
 export const LAZY_LOADER_SYMBOL = Symbol('LazyLoader')
@@ -35,7 +35,7 @@ export function isOptionalVariablePath(path: string): boolean {
  *
  * @param route
  */
-export function isRouteGroup(route: Route): route is RouteGroup {
+export function isRouteGroup(route: Route): boolean {
   return 'children' in route && route.children !== undefined && route.children.length > 0
 }
 
@@ -234,30 +234,6 @@ export function objectToQueryString(obj: Record<string, string>): `?${string}` |
 }
 
 /**
- * 创建一个唯一id生成器函数，用于生成唯一的字符串。
- * 优化：防止在同一毫秒内生成相同的ID。
- */
-export function createUniqueIdGenerator(): () => string {
-  let counter = 0 // 计数器封装在闭包内
-  let lastTimestamp = 0 // 上次生成 ID 时的时间戳
-
-  return function unique_id() {
-    const timestamp = Math.floor(Date.now() / 1000) // 获取当前时间戳
-
-    // 如果当前时间戳和上次生成 ID 的时间戳相同，则递增 counter
-    if (timestamp === lastTimestamp) {
-      counter++
-    } else {
-      counter = 0 // 如果时间戳变化，重置 counter
-      lastTimestamp = timestamp // 更新上次生成 ID 时的时间戳
-    }
-
-    const counterStr = counter.toString().padStart(6, '0')
-    return `${timestamp}${counterStr}` // 组合时间戳和计数器生成唯一ID
-  }
-}
-
-/**
  * 从 URL 对象中提取 path、hash 和 query
  *
  * @param {URL} url - 当前的 URL 对象
@@ -343,19 +319,12 @@ export function deepEqual(var1: any, var2: any): boolean {
  *
  * @param path
  */
-export function splitPathAndSuffix(path: string) {
-  // 正则匹配路径末尾以文件后缀结尾的情况
-  const match = path.match(/^(.*?)(\.[a-zA-Z0-9]+)$/)
-  if (match) {
-    return {
-      path: match[1], // 提取路径部分
-      suffix: match[2].slice(1) // 提取文件扩展名，去掉前面的点（.）
-    }
-  } else {
-    return {
-      path: path, // 如果没有文件后缀，路径就为原路径
-      suffix: null // 没有后缀
-    }
+export function splitPathAndSuffix(path: string): { path: string; suffix: string } {
+  const suffix = getPathSuffix(path)
+  if (suffix) path = path.slice(0, -suffix.length)
+  return {
+    path,
+    suffix
   }
 }
 
