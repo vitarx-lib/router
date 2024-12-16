@@ -1,8 +1,7 @@
 import type { Route, RouterOptions } from './type.js'
 import Router from './router.js'
-import HistoryRouter from './history-router.js'
+import WebHistoryRouter from './web-history-router.js'
 import MemoryRouter from './memory-router.js'
-import HashRouter from './hash-router.js'
 
 /**
  * 定义路由表
@@ -38,15 +37,6 @@ export function defineRoute(route: Route): Route {
  */
 export function createRouter(options: RouterOptions & { mode: 'memory' }): MemoryRouter
 /**
- * 创建Hash路由器
- *
- * 与`HashRouter`路由器相似，它的URL地址模式为hash，例如：`http://localhost:8080/#/home`，它在所有浏览器中都能够正常运行。
- *
- * @param {RouterOptions} options - 配置
- * @return {HashRouter} - hash路由器实例
- */
-export function createRouter(options: RouterOptions & { mode: 'hash' }): HashRouter
-/**
  * 创建History路由器
  *
  * 基于History API实现路由功能，支持浏览器前进后退、刷新等操作。
@@ -55,40 +45,27 @@ export function createRouter(options: RouterOptions & { mode: 'hash' }): HashRou
  * 内部会自动根据`window.location`去匹配路由。
  *
  * @param {RouterOptions} options - 路由配置
- * @return {HistoryRouter} - HistoryRouter实例
+ * @return {WebHistoryRouter} - HistoryRouter实例
  */
 export function createRouter(
   options:
     | RouterOptions
     | (RouterOptions & {
-        mode: 'history'
+        mode: 'path' | 'hash'
       })
-): HistoryRouter
+): WebHistoryRouter
 export function createRouter(options: RouterOptions): Router {
   let router: Router
   // 如果非浏览器端，强制使用内存模式路由
   if (!window?.location && options.mode !== 'memory') {
     console.warn('当前环境非浏览器端，强制使用内存模式路由')
     options.mode = 'memory'
-    return new MemoryRouter(options).initialize()
+    return new MemoryRouter(options as RouterOptions<'memory'>).initialize()
   }
-  switch (options.mode) {
-    case 'memory':
-      router = new MemoryRouter(options)
-      break
-    case 'hash':
-      router = new HashRouter(options as RouterOptions & { mode: 'hash' })
-      break
-    default:
-      // 如果浏览器不支持history API，则强制使用hash模式路由
-      if (!window.history) {
-        console.warn('当前浏览器不支持history API，将使用hash模式路由')
-        options.mode = 'hash'
-        router = new HashRouter(options as RouterOptions & { mode: 'hash' })
-      } else {
-        options.mode = 'history'
-        router = new HistoryRouter(options as RouterOptions & { mode: 'history' })
-      }
+  if (options.mode === 'memory') {
+    router = new MemoryRouter(options as RouterOptions<'memory'>)
+  } else {
+    router = new WebHistoryRouter(options as RouterOptions<'path' | 'hash'>)
   }
   return router.initialize()
 }
