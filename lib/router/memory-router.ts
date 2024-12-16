@@ -12,8 +12,9 @@ export default class MemoryRouter extends Router {
   // 标记是否有go方法触发的导航
   protected _pendingGo: number | null = null
 
-  constructor(options: RouterOptions & { mode: 'memory' }) {
+  constructor(options: RouterOptions<'memory'>) {
     super(options)
+    options.mode = 'memory'
   }
 
   /**
