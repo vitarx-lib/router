@@ -1,5 +1,5 @@
 import Router from './router.js'
-import type { NavigateData, RouterOptions } from './type.js'
+import type { RouteLocation, RouterOptions } from './type.js'
 
 /**
  * 基于内存实现的路由器
@@ -8,7 +8,7 @@ import type { NavigateData, RouterOptions } from './type.js'
  */
 export default class MemoryRouter extends Router {
   // 路由历史记录数组
-  protected _history: NavigateData[] = [this.currentNavigateData]
+  protected _history: RouteLocation[] = [this.currentRouteLocation]
 
   constructor(options: RouterOptions) {
     super(options)
@@ -39,7 +39,7 @@ export default class MemoryRouter extends Router {
    * @param data
    * @private
    */
-  protected override pushHistory(data: NavigateData): void {
+  protected override pushHistory(data: RouteLocation): void {
     this._history.push(data)
     this.completeNavigation()
   }
@@ -47,12 +47,12 @@ export default class MemoryRouter extends Router {
   /**
    * 替换历史记录
    *
-   * @param {NavigateData} data - 目标路由
+   * @param {RouteLocation} data - 目标路由
    * @private
    */
-  protected replaceHistory(data: NavigateData): void {
+  protected replaceHistory(data: RouteLocation): void {
     // 记录映射
-    const index = this._history.indexOf(this.currentNavigateData)
+    const index = this._history.indexOf(this.currentRouteLocation)
     this._history[index] = data
     this.completeNavigation()
   }
