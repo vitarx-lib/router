@@ -35,6 +35,7 @@ import {
   objectToQueryString,
   splitPathAndSuffix
 } from './utils.js'
+import { ref, type Ref } from 'vitarx'
 
 /**
  * 路由器基类
@@ -89,7 +90,7 @@ export default abstract class Router {
       ...options
     }
     this._options.base = `/${this._options.base.replace(/^\/+|\/+$/g, '')}`
-    this._currentRouteLocation = {
+    this._currentRouteLocation = ref({
       index: this._options.base,
       path: this._options.base,
       hash: '',
@@ -97,7 +98,7 @@ export default abstract class Router {
       params: {},
       query: {},
       matched: []
-    }
+    })
   }
 
   /**
@@ -135,15 +136,15 @@ export default abstract class Router {
   }
 
   // 当前路由数据
-  private _currentRouteLocation: RouteLocation
+  private _currentRouteLocation: Ref<RouteLocation>
 
   /**
-   * 获取当前导航数据
+   * 获取当前路由数据
    *
-   * @return {Readonly<RouteLocation>} - 当前导航数据对象
+   * @return {Readonly<RouteLocation>} - 当前路由数据
    */
   get currentRouteLocation(): Readonly<RouteLocation> {
-    return this._currentRouteLocation
+    return this._currentRouteLocation.value
   }
 
   /**
@@ -457,24 +458,24 @@ export default abstract class Router {
    * @protected
    */
   protected completeNavigation(data?: RouteLocation, savedPosition?: _ScrollToOptions) {
-    const from = this._currentRouteLocation
+    const from = this._currentRouteLocation.value
     if (data) {
-      this._currentRouteLocation = data
+      this._currentRouteLocation.value = data
     } else if (this._pendingReplace) {
-      this._currentRouteLocation = this._pendingReplace
+      this._currentRouteLocation.value = this._pendingReplace
     } else if (this._pendingPush) {
-      this._currentRouteLocation = this._pendingPush
+      this._currentRouteLocation.value = this._pendingPush
     } else {
       throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
     }
     this._pendingReplace = null
     this._pendingPush = null
-    console.log('完成导航', this._currentRouteLocation)
+    console.log('完成导航', this._currentRouteLocation.value)
     // TODO 待完成视图渲染相关逻辑
     // 滚动行为处理
-    this.onScrollBehavior(this._currentRouteLocation, from, savedPosition).then()
+    this.onScrollBehavior(this._currentRouteLocation.value, from, savedPosition).then()
     // 触发后置钩子
-    this.onAfterEach(this._currentRouteLocation, from)
+    this.onAfterEach(this._currentRouteLocation.value, from)
   }
 
   /**
@@ -486,12 +487,12 @@ export default abstract class Router {
    * @protected
    */
   protected updateQuery(query: Record<string, string>) {
-    if (!deepEqual(this._currentRouteLocation.query, query)) {
-      this._currentRouteLocation.query = query
-      this._currentRouteLocation.fullPath = this.makeFullPath(
-        this._currentRouteLocation.path,
+    if (!deepEqual(this._currentRouteLocation.value.query, query)) {
+      this._currentRouteLocation.value.query = query
+      this._currentRouteLocation.value.fullPath = this.makeFullPath(
+        this._currentRouteLocation.value.path,
         query,
-        this._currentRouteLocation.hash
+        this._currentRouteLocation.value.hash
       )
     }
   }
@@ -509,12 +510,12 @@ export default abstract class Router {
       console.warn(`[Vitarx.Router.updateHash][WARN]：hash值只能是字符串类型，给定${hash}`)
     }
     const newHash = formatHash(hash, true)
-    if (newHash !== this._currentRouteLocation.hash) {
-      this._currentRouteLocation.hash = newHash
+    if (newHash !== this._currentRouteLocation.value.hash) {
+      this._currentRouteLocation.value.hash = newHash
       // 更新完整的path
-      this._currentRouteLocation.fullPath = this.makeFullPath(
-        this._currentRouteLocation.path,
-        this._currentRouteLocation.query,
+      this._currentRouteLocation.value.fullPath = this.makeFullPath(
+        this._currentRouteLocation.value.path,
+        this._currentRouteLocation.value.query,
         newHash
       )
     }
