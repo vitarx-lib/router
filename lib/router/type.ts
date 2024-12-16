@@ -79,16 +79,18 @@ export interface Route {
 }
 
 /**
- * 分组路由
+ * 规范化过后的路由线路配置
  */
-export type RouteGroup = MakeRequired<Route, 'children'>
+export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern'> {
+  children: RouteNormalized[]
+}
 
 /**
- * 导航数据
+ * 路由数据
  *
  * 所有和url相关的数据都已`decodeURIComponent`解码
  */
-export interface NavigateData {
+export interface RouteLocation {
   /**
    * 路由索引，调用`push`|`replace`时传入的index
    */
@@ -102,28 +104,40 @@ export interface NavigateData {
   fullPath: string
   /**
    * pathname
+   *
+   * 如果是`hash`模式，pathname和`window.location.pathname`获取的值是不一致的，因为它是从`window.location.hash`中提取出来的
    */
-  path: RoutePath
+  path: `/${string}`
   /**
    * hash
    *
    * 带有#前缀，空字符串代表没有hash。
+   *
+   * @default ''
    */
   hash: HashStr
   /**
+   * 动态路由path匹配的参数，包括调用`push`|`replace`时传入的params
+   *
+   * @default {}
+   */
+  params: Record<string, any>
+  /**
    * search参数
+   *
+   * @default {}
    */
   query: Record<string, string>
   /**
-   * 动态路由path匹配的参数，包括调用`push`|`replace`时传入的params
-   */
-  params: Record<string, string>
-  /**
    * 匹配的路由对象
    *
-   * 如果没有匹配到路由，matched为null
+   * > 注意：如果数组中存在多个`RouteNormalized`对象，则说明是嵌套路由，第一个则是最顶层的父路由，最后一个是精确匹配到的路由。
+   *
+   * 未匹配到路由时，它会是空数组。
+   *
+   * @default []
    */
-  matched: Route | null
+  matched: RouteNormalized[]
 }
 
 /**
@@ -145,14 +159,14 @@ export type BeforeEachCallbackResult =
  * 此时路由导航还未正式开始，此钩子常用于鉴权，如果不符合条件，可以返回false阻止路由，亦可以返回重定向目标。
  *
  * @this {Router} - 路由器实例
- * @param {NavigateData} to - 要跳转的目标路由
- * @param {NavigateData} from - 从哪个路由跳转过来
+ * @param {RouteLocation} to - 要跳转的目标路由
+ * @param {RouteLocation} from - 从哪个路由跳转过来
  * @returns {boolean | RouteTarget | void} - 返回false表示阻止路由跳转，返回{@link RouteTarget}重定向目标
  */
 export type BeforeEachCallback = (
   this: Router,
-  to: NavigateData,
-  from: NavigateData
+  to: RouteLocation,
+  from: RouteLocation
 ) => BeforeEachCallbackResult
 
 /**
@@ -161,10 +175,10 @@ export type BeforeEachCallback = (
  * 此时视图已经渲染完成，可以做一些操作，如：修改页面标题等。
  *
  * @this {Router} - 路由器实例
- * @param {NavigateData} to - 当前路由数据
- * @param {NavigateData} from - 从哪个路由跳转过来
+ * @param {RouteLocation} to - 当前路由数据
+ * @param {RouteLocation} from - 从哪个路由跳转过来
  */
-type AfterEachCallback = (this: Router, to: NavigateData, from: NavigateData) => void
+type AfterEachCallback = (this: Router, to: RouteLocation, from: RouteLocation) => void
 
 /**
  * 路由模式
@@ -221,8 +235,8 @@ type ScrollResult = ScrollTarget | false
  *
  * 仅浏览器环境有效。
  *
- * @param {NavigateData} to - 要跳转的目标路由
- * @param {NavigateData} from - 从哪个路由跳转过来
+ * @param {RouteLocation} to - 要跳转的目标路由
+ * @param {RouteLocation} from - 从哪个路由跳转过来
  * @param {_ScrollToOptions|undefined} savedPosition - 保存滚动位置，仅`history`模式前进或后退时有效
  * @returns {ScrollResult} - 返回滚动结果，由内部程序完成滚动
  */
@@ -342,9 +356,9 @@ export interface RouteTarget {
   /**
    * 路由query参数
    */
-  query?: Record<string, any>
+  query?: Record<string, string>
   /**
-   * 路由参数，对应path中的动态路由
+   * 路由参数
    */
   params?: Record<string, any>
   /**
@@ -358,7 +372,7 @@ export interface RouteTarget {
  */
 export interface DynamicRouteRecord {
   regex: RegExp
-  route: Route
+  route: RouteNormalized
 }
 
 /**
@@ -380,13 +394,13 @@ export interface NavigateResult {
    *
    * 它和守卫钩子`to`参数一致。
    */
-  to: Readonly<NavigateData>
+  to: Readonly<RouteLocation>
   /**
    * 从哪里跳转过来
    *
    * 它和守卫钩子`from`参数一致。
    */
-  from: Readonly<NavigateData>
+  from: Readonly<RouteLocation>
   /**
    * 是否被守卫钩子重定向
    */
@@ -405,7 +419,7 @@ export type MatchResult =
       /**
        * 匹配的路由对象
        */
-      route: Route
+      route: RouteNormalized
       /**
        * path参数
        *
