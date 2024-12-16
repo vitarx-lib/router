@@ -396,15 +396,15 @@ export interface NavigateResult {
    */
   to: Readonly<RouteLocation>
   /**
-   * 从哪里跳转过来
+   * 导航完成前的路由数据
    *
    * 它和守卫钩子`from`参数一致。
    */
   from: Readonly<RouteLocation>
   /**
-   * 是否被守卫钩子重定向
+   * 它被重定向之前的目标
    */
-  isRedirect: boolean
+  redirectFrom: RouteTarget | undefined
   /**
    * 捕获到的异常
    */
@@ -467,4 +467,27 @@ export enum NavigateStatus {
    * 捕获到异常
    */
   exception
+}
+
+/**
+ * 辅助判断是否为路由位置对象
+ *
+ * @param obj
+ */
+export function isRouteLocationTypeObject(obj: any): obj is RouteLocation {
+  if (typeof obj !== 'object') return false
+  if (obj === null) return false
+  const keys: (keyof RouteLocation)[] = [
+    'index',
+    'fullPath',
+    'path',
+    'hash',
+    'params',
+    'query',
+    'matched'
+  ]
+  for (const key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(obj, key)) return false
+  }
+  return true
 }
