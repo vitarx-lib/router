@@ -185,16 +185,18 @@ export default abstract class Router {
   }
 
   /**
-   * 获取路由表
+   * ## 获取已规范的路由表
    *
-   * 它始终指向的是初始化时传入的路由表，但它的数据可能有被修改，例如调用了`removeRoute`或`addRoute`方法。
+   * 它的内存地址始终指向的是初始化时传入的路由表，但它的数据结构是经过内部规范化处理过的。
    *
-   * 值得注意的是，所有嵌套`Route`的path都会被补全为完整的路径。
+   * 所有嵌套`Route`的path都会被自动补全为完整的路径
    *
-   * @return {Route[]}
+   * > 注意：不要尝试修改已规范化的路由表！请使用`removeRoute`和`addRoute`方法实现路由的变更。
+   *
+   * @return {RouteNormalized[]}
    */
-  get routes(): ReadonlyArray<Route> {
-    return this._options.routes
+  get routes(): ReadonlyArray<RouteNormalized> {
+    return this._options.routes as ReadonlyArray<RouteNormalized>
   }
 
   /**
