@@ -183,7 +183,7 @@ type AfterEachCallback = (this: Router, to: RouteLocation, from: RouteLocation) 
 /**
  * 路由模式
  */
-export type HistoryMode = 'hash' | 'history' | 'memory'
+export type HistoryMode = 'hash' | 'path' | 'memory'
 /**
  * 滚动行为
  *
@@ -249,7 +249,7 @@ export type ScrollBehaviorHandler = (
 /**
  * 路由器配置
  */
-export interface RouterOptions {
+export interface RouterOptions<T_MODE extends HistoryMode = HistoryMode> {
   /**
    * 根路径
    *
@@ -262,14 +262,14 @@ export interface RouterOptions {
    * 历史记录模式
    *
    * 可选值如下：
-   * 1. history模式：使用path值作为路由标识，如：`/page1`
+   * 1. path模式：使用path值作为路由标识，如：`/page1`
    * 2. hash模式：使用hash值作为路由标识，如：`/#/page1`
    * 3. memory模式：内存模式，用于非浏览器端，或不需要使用浏览器回退和前进功能时使用。
    *
    * @note 使用memory模式需在路由器实例化完成后使用replace替换掉初始的伪路由，另外两种模式是浏览器端使用的，会自动完成这个操作！
    * @default 'path' 默认视为是浏览器端
    */
-  mode?: HistoryMode
+  mode?: T_MODE
   /**
    * 是否严格匹配路由
    *
@@ -402,7 +402,7 @@ export interface NavigateResult {
    */
   from: Readonly<RouteLocation>
   /**
-   * 它被重定向之前的目标
+   * 如果在守卫过程中被重定向，则redirectFrom为最初的路由目标，否则为undefined。
    */
   redirectFrom: RouteTarget | undefined
   /**
