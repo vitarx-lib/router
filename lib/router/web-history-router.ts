@@ -13,9 +13,18 @@ import { urlToRouteTarget } from './utils.js'
  *
  * 支持浏览器前进、后退、跳转等操作
  */
-export default class HistoryRouter extends Router {
-  constructor(options: RouterOptions & { mode: 'history' }) {
+export default class WebHistoryRouter extends Router {
+  constructor(options: RouterOptions<'path' | 'hash'>) {
     super(options)
+    console.log(options.mode)
+    // 守卫mode类型
+    if (['path', 'hash'].includes(options.mode as string)) {
+      options.mode = 'path'
+    }
+    // 确保哈希模式path正确
+    if (options.mode === 'hash') {
+      this.ensureHash()
+    }
   }
 
   /**
@@ -24,7 +33,7 @@ export default class HistoryRouter extends Router {
    * @returns {RouteTarget} - 包含 index、hash 和 query 的对象
    */
   protected get currentRouteTarget(): MakeRequired<RouteTarget, 'query' | 'hash'> {
-    return urlToRouteTarget(window.location, 'path', this.basePath)
+    return urlToRouteTarget(window.location, this.mode as 'hash' | 'path', this.basePath)
   }
 
   /**
@@ -135,14 +144,36 @@ export default class HistoryRouter extends Router {
       newTarget = this.currentRouteTarget
     }
     this.replace(newTarget).then(res => {
-      // 如果被取消，则不处理
-      if (res.status === NavigateStatus.cancelled) return
-      // 如果重复，则不处理
-      if (res.status === NavigateStatus.duplicated) return
-      // 如果失败了，则回到之前的路由
-      if (res.status !== NavigateStatus.success) {
-        this.webHistory.replaceState(this.createState(res.from), '', res.from.fullPath)
+      // 如果被重定向则不处理
+      if (res.redirectFrom) return
+      // 未匹配时，回退页面
+      if (res.status === NavigateStatus.not_matched) {
+        // 如果是hash模式，则兼容path模式的锚点跳转
+        if (this.mode === 'hash' && res.to.index.startsWith('/')) {
+          const anchorId = res.to.index.slice(1)
+          const element = window.document.getElementById(anchorId)
+          if (element) {
+            element.scrollIntoView({ behavior: this.scrollBehavior })
+          }
+          // 更新hash记录值
+          this.updateHash(`#${anchorId}`)
+          this.webHistory.replaceState(this.createState(res.from), '', res.from.fullPath)
+        }
       }
     })
+  }
+
+  /**
+   * 确保路径是 hash 格式
+   *
+   * @private
+   */
+  private ensureHash() {
+    const { pathname, search, hash } = window.location
+    if (!pathname.startsWith(this.basePath)) {
+      // 如果路径不是以 basePath 开头，直接重定向到 `/#/path`
+      const path = `${this.basePath}/#${pathname}${search}${hash}`
+      return window.location.replace(path)
+    }
   }
 }
