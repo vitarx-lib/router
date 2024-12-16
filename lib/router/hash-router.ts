@@ -9,6 +9,7 @@ import MemoryRouter from './memory-router.js'
  *
  * > 注意：使用此模式的路由器，务必不要使用其他原生api改变路由。
  * 例如 `window.history.*`、`window.location.*`，以及`a`标签默认跳转等，可能会导致`go`方法导航异常，匹配不准确等问题。
+ * 如果你在项目中使用了上述api更改历史记录，那请不要使用`go`、`back`、`forward`方法改变历史记录，否则可能导致路由异常。
  */
 export default class HashRouter extends MemoryRouter {
   constructor(options: RouterOptions & { mode: 'hash' }) {
