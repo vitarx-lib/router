@@ -1,5 +1,5 @@
 import Router from './router.js'
-import { type RouteLocation, type RouterOptions } from './type.js'
+import { NavigateStatus, type RouteLocation, type RouterOptions } from './type.js'
 
 /**
  * 基于内存实现的路由器
@@ -8,55 +8,85 @@ import { type RouteLocation, type RouterOptions } from './type.js'
  */
 export default class MemoryRouter extends Router {
   // 路由历史记录数组
-  protected _history: RouteLocation[] = [this.currentRouteLocation]
+  protected _history: RouteLocation[] = []
   // 标记是否有go方法触发的导航
-  private _pendingGo: RouteLocation | null = null
+  protected _pendingGo: number | null = null
 
   constructor(options: RouterOptions) {
     super(options)
   }
 
   /**
+   * 当前历史路由索引
+   *
+   * @protected
+   */
+  protected get currentIndex(): number {
+    return this._history.indexOf(this.currentRouteLocation)
+  }
+
+  /**
    * @inheritDoc
    */
-  public override go(delta: number = 1): void {
-    const targetIndex = this._history.length - 1 + (delta || 0)
-    // 如果目标索引在有效范围内
-    if (targetIndex >= 0 && targetIndex < this._history.length) {
-      const target = this._history[targetIndex]
-      this._pendingGo = target
-      this.navigate(target).then(() => {
+  public override go(delta?: number): void {
+    if (!delta) return
+    const currentIndex = this.currentIndex
+    const targetIndex = Math.max(0, Math.min(this._history.length - 1, currentIndex + delta)) // 限制在合法范围内
+    if (targetIndex === currentIndex) return // 如果目标索引和当前索引相同，则无需导航
+
+    const target = this._history[targetIndex]
+    this._pendingGo = targetIndex
+    this.navigate(target).then(res => {
+      if (res.status !== NavigateStatus.success) {
         this._pendingGo = null
-      })
-    }
+      }
+    })
+  }
+
+  /**
+   * @inheritDoc
+   */
+  protected initializeRouter() {
+    this._history.push(this.currentRouteLocation)
   }
 
   /**
    * 添加历史记录
-   *
-   *
-   * @param data
-   * @private
    */
   protected override pushHistory(data: RouteLocation): void {
-    if (this._pendingGo) {
-      this.completeNavigation(data)
-    } else {
-      this._history.push(data)
-      this.completeNavigation()
-    }
+    this._updateHistory(data, false)
   }
 
   /**
    * 替换历史记录
-   *
-   * @param {RouteLocation} data - 目标路由
-   * @private
    */
   protected replaceHistory(data: RouteLocation): void {
-    // 记录映射
-    const index = this._history.indexOf(this.currentRouteLocation)
-    this._history[index] = data
-    this.completeNavigation()
+    this._updateHistory(data, true)
+  }
+
+  /**
+   * 更新历史记录
+   *
+   * @param {RouteLocation} data - 目标路由
+   * @param {boolean} isReplace - 是否为替换操作
+   * @private
+   */
+  private _updateHistory(data: RouteLocation, isReplace: boolean): void {
+    if (this._pendingGo !== null) {
+      this._history[this._pendingGo] = data
+    } else if (isReplace) {
+      const index = this.currentIndex
+      this._history[index] = data
+    } else {
+      const nextIndex = this.currentIndex + 1
+      if (nextIndex < this._history.length) {
+        this._history[nextIndex] = data
+        this._history.length = nextIndex + 1
+      } else {
+        this._history.push(data)
+      }
+    }
+    this.completeNavigation(data)
+    this._pendingGo = null
   }
 }
