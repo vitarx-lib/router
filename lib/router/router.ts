@@ -403,7 +403,7 @@ export default abstract class Router {
    * @protected
    */
   public scrollTo(scrollTarget: ScrollTarget | undefined): void {
-    if (this.isBrowser || !scrollTarget) return
+    if (this.isBrowser || !scrollTarget || typeof scrollTarget !== 'object') return
     if ('el' in scrollTarget) {
       const { el, ...rest } = scrollTarget
       const element = typeof el === 'string' ? document.querySelector(el) : el
