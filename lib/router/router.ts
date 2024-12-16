@@ -127,6 +127,8 @@ export default abstract class Router {
 
   /**
    * 滚动行为
+   *
+   * 如果options.scrollBehavior为函数，则scrollBehavior固定为auto'。
    */
   get scrollBehavior(): _ScrollBehavior {
     return this._scrollBehavior
