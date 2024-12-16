@@ -1,8 +1,8 @@
 import Router from './router.js'
 import {
   type HashStr,
-  type NavigateData,
   NavigateStatus,
+  type RouteLocation,
   type RouterOptions,
   type RouteTarget
 } from './type.js'
@@ -56,7 +56,7 @@ export default class HistoryRouter extends Router {
   /**
    * @inheritDoc
    */
-  protected pushHistory(data: NavigateData): void {
+  protected pushHistory(data: RouteLocation): void {
     // 保存滚动位置
     this.saveCurrentScrollPosition()
     // 跳转到新路由
@@ -67,7 +67,7 @@ export default class HistoryRouter extends Router {
   /**
    * @inheritDoc
    */
-  protected replaceHistory(data: NavigateData): void {
+  protected replaceHistory(data: RouteLocation): void {
     // 还原滚动位置 this.webHistory.state 存在则是回退或前进所触发的替换状态
     const scrollPosition = this.webHistory.state?.scrollPosition
     this.webHistory.replaceState(this.createState(data), '', data.fullPath)
@@ -106,10 +106,10 @@ export default class HistoryRouter extends Router {
    * @private
    */
   private createState(
-    data: NavigateData,
+    data: RouteLocation,
     hash?: HashStr,
     query?: Record<string, string>
-  ): Omit<NavigateData, 'matched'> {
+  ): Omit<RouteLocation, 'matched'> {
     const { matched, ...state } = data
     if (typeof hash === 'string') {
       state.hash = hash
