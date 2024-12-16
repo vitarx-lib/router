@@ -303,7 +303,7 @@ export default abstract class Router {
    * @param {boolean} isRemoveFromRoutes 是否从路由表中移除，内部递归时传递的参数，无需外部传入！
    */
   public removeRoute(index: RouteIndex, isRemoveFromRoutes: boolean = true): void {
-    const deleteRoute = this.getRoute(index)
+    const deleteRoute = this.findRoute(index)
 
     if (!deleteRoute) return
 
@@ -335,7 +335,7 @@ export default abstract class Router {
    */
   public addRoute(route: Route, parent?: string) {
     if (parent) {
-      const parentRoute = this.getRoute(parent)
+      const parentRoute = this.findRoute(parent)
       if (!parentRoute) throw new Error(`[Vitarx.Router.addRoute][ERROR]：父路由${parent}不存在`)
       this.registerRoute(route, parentRoute)
     } else {
@@ -345,14 +345,14 @@ export default abstract class Router {
   }
 
   /**
-   * 获取路由
+   * 超找路由
    *
    * 传入的是`path`则会调用`matchRoute`方法，传入的是`name`则会调用`getNamedRoute`方法
    *
    * @param {RouteIndex|RouteTarget} target - 路由索引，如果index以/开头则匹配path，其他匹配name
    * @return {RouteNormalized | undefined} - 路由对象，如果不存在则返回undefined
    */
-  public getRoute(target: RouteIndex | RouteTarget): RouteNormalized | undefined {
+  public findRoute(target: RouteIndex | RouteTarget): RouteNormalized | undefined {
     const isRouterTarget = typeof target === 'object'
     const index: RouteIndex = isRouterTarget ? target.index : target
     if (typeof index !== 'string') {
@@ -369,15 +369,15 @@ export default abstract class Router {
       }
       return matched.route
     }
-    return this.getNamedRoute(index)
+    return this.findNamedRoute(index)
   }
 
   /**
-   * 获取命名路由
+   * 查找命名路由
    *
    * @param {string} name - 路由名称
    */
-  public getNamedRoute(name: RouteName): RouteNormalized | undefined {
+  public findNamedRoute(name: RouteName): RouteNormalized | undefined {
     return this._namedRoutes.get(name)
   }
 
@@ -725,7 +725,7 @@ export default abstract class Router {
    */
   protected createRouteLocation(target: RouteTarget): RouteLocation {
     // 获取路由对象
-    const route = this.getRoute(target)
+    const route = this.findRoute(target)
     const { index, query = {}, params = {}, hash = '' } = target
     let path: RoutePath
     const matched: RouteNormalized[] = []
