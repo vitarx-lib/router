@@ -120,7 +120,7 @@ export interface Route<WIDGET extends AllowedRouteWidget = AllowedRouteWidget> {
 export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern'> {
   children: RouteNormalized[]
   widget: undefined | Record<string, RouteWidget>
-  injectProps: undefined | Record<string, RouteWidget>
+  injectProps: undefined | InjectNamedProps
 }
 
 /**
