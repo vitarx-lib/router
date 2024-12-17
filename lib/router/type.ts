@@ -161,14 +161,14 @@ export type BeforeEachCallbackResult =
  * 此时路由导航还未正式开始，此钩子常用于鉴权，如果不符合条件，可以返回false阻止路由，亦可以返回重定向目标。
  *
  * @this {Router} - 路由器实例
- * @param {RouteLocation} to - 要跳转的目标路由
- * @param {RouteLocation} from - 从哪个路由跳转过来
+ * @param {DeepReadonly<RouteLocation>} to - 要跳转的目标路由
+ * @param {DeepReadonly<RouteLocation>} from - 从哪个路由跳转过来
  * @returns {boolean | RouteTarget | void} - 返回false表示阻止路由跳转，返回{@link RouteTarget}重定向目标
  */
 export type BeforeEachCallback = (
   this: Router,
-  to: RouteLocation,
-  from: RouteLocation
+  to: DeepReadonly<RouteLocation>,
+  from: DeepReadonly<RouteLocation>
 ) => BeforeEachCallbackResult
 
 /**
@@ -177,10 +177,14 @@ export type BeforeEachCallback = (
  * 此时视图已经渲染完成，可以做一些操作，如：修改页面标题等。
  *
  * @this {Router} - 路由器实例
- * @param {RouteLocation} to - 当前路由数据
- * @param {RouteLocation} from - 从哪个路由跳转过来
+ * @param {DeepReadonly<RouteLocation>} to - 当前路由数据
+ * @param {DeepReadonly<RouteLocation>} from - 从哪个路由跳转过来
  */
-type AfterEachCallback = (this: Router, to: RouteLocation, from: RouteLocation) => void
+type AfterEachCallback = (
+  this: Router,
+  to: DeepReadonly<RouteLocation>,
+  from: DeepReadonly<RouteLocation>
+) => void
 
 /**
  * 路由模式
