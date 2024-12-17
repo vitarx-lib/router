@@ -54,6 +54,17 @@ type AllowedRouteWidget = RouteWidget | NamedRouteWidget
  * @template WIDGET 允许的路由小部件类型，用于类型重载
  */
 export interface Route<WIDGET extends AllowedRouteWidget = AllowedRouteWidget> {
+  /**
+   * 路由路径
+   *
+   * 支持动态路由参数
+   *
+   * example:
+   * `/user` // 静态路径
+   * `/user/{id}` // 必填参数
+   * `/user/{id?}` // 可选参数
+   * `/user/{id?}/{name}` // 错误的用例，可选参数后面不能再有其他参数
+   */
   path: RoutePath
   /**
    * 动态路由参数匹配规则
@@ -76,6 +87,7 @@ export interface Route<WIDGET extends AllowedRouteWidget = AllowedRouteWidget> {
    *  1. WidgetType: `YourWidget` 可以是函数式小部件，也可以是类小部件
    *  2. LazyLoad: `() => import('./YourWidget')` 代码分块，懒加载，它会自动被LazyWidget包裹。
    *  3. undefined: 自身不展示任何ui，仅做为父路由，使children继承父路由的`path`和`pattern`。
+   *  4. Record<string, WidgetType | LazyLoad<WidgetType>>: 命名的小部件，同级的`RouterView`会根据name属性展示对应的小部件。
    */
   widget?: WIDGET
   /**
