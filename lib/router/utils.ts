@@ -150,9 +150,10 @@ export function mergePathParams(path: RoutePath, params: Record<string, string>)
   if (!isVariablePath(path)) return path
   const oldPath = path
   // 处理必填参数和可选参数
-  path = path.replace(/{([^}]+)\?*}/g, (match, paramName) => {
+  path = path.replace(/{([^}]+)\?*}/g, (_match, paramName) => {
     // 判断是否为可选参数
-    const isOptional = match.includes('?')
+    const isOptional = paramName.endsWith('?')
+    if (isOptional) paramName = paramName.slice(0, -1)
     if (params[paramName] === undefined) {
       // 如果是可选参数并且 params 中没有对应值，跳过替换
       if (isOptional) return ''
@@ -161,7 +162,7 @@ export function mergePathParams(path: RoutePath, params: Record<string, string>)
       )
     }
     // 返回对应的参数值
-    return String(params[paramName])
+    return String(params[paramName]).replace(/\s+/g, '_')
   }) as RoutePath
   return path
 }
@@ -193,6 +194,12 @@ export function formatHash(hash: any, addHashPrefix: true): `#${string}` | ''
  * @return {string} - 格式化后的hash，不带#前缀
  */
 export function formatHash(hash: any, addHashPrefix: false): string
+/**
+ * 格式化hash
+ *
+ * @param hash
+ * @param addHashPrefix
+ */
 export function formatHash(hash: any, addHashPrefix: boolean): string {
   if (typeof hash !== 'string') return ''
   // 如果 hash 有值且不以 # 开头，添加 # 前缀
