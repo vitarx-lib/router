@@ -36,6 +36,8 @@ import {
   objectToQueryString,
   splitPathAndSuffix
 } from './utils.js'
+import { type Reactive, reactive } from 'vitarx'
+import { patchUpdate } from './update.js'
 
 /**
  * 路由器基类
@@ -76,6 +78,8 @@ export default abstract class Router {
   private _pendingPush: RouteLocation | null = null
   // 滚动行为处理器
   private _scrollBehaviorHandler: ScrollBehaviorHandler | undefined = undefined
+  // 当前路由数据
+  private readonly _currentRouteLocation: Reactive<RouteLocation>
 
   protected constructor(options: RouterOptions) {
     if (Router.#instance) {
@@ -90,7 +94,7 @@ export default abstract class Router {
       ...options
     }
     this._options.base = `/${this._options.base.replace(/^\/+|\/+$/g, '')}`
-    this._currentRouteLocation = {
+    this._currentRouteLocation = reactive<RouteLocation>({
       index: this._options.base,
       path: this._options.base,
       hash: '',
@@ -98,7 +102,7 @@ export default abstract class Router {
       params: {},
       query: {},
       matched: []
-    }
+    })
   }
 
   /**
@@ -158,7 +162,7 @@ export default abstract class Router {
    *
    * @return {Map<string, Route>}
    */
-  get routeMaps(): ReadonlyMap<string, Route> {
+  get pathRoutes(): ReadonlyMap<string, Route> {
     return this._pathRoutes
   }
 
@@ -169,8 +173,17 @@ export default abstract class Router {
    *
    * @return {Map<string, Route>}
    */
-  get namedRouteMaps(): ReadonlyMap<string, Route> {
+  get namedRoutes(): ReadonlyMap<string, Route> {
     return this._namedRoutes
+  }
+
+  /**
+   * 动态路由记录
+   *
+   * map键值是path段长度，值是Array<{regex: RegExp,route:RouteNormalized}>
+   */
+  get dynamicRoutes(): Map<number, DynamicRouteRecord[]> {
+    return this._dynamicRoutes
   }
 
   /**
@@ -211,15 +224,14 @@ export default abstract class Router {
     return this._options.suffix
   }
 
-  // 当前路由数据
-  private _currentRouteLocation: RouteLocation
-
   /**
-   * 获取当前路由数据
+   * 当前路由数据
+   *
+   * 它是只读的，不要在外部修改它！
    *
    * @return {Readonly<RouteLocation>} - 当前路由数据
    */
-  protected get currentRouteLocation(): Readonly<RouteLocation> {
+  public get currentRouteLocation(): Readonly<Reactive<RouteLocation>> {
     return this._currentRouteLocation
   }
 
@@ -462,22 +474,22 @@ export default abstract class Router {
   protected completeNavigation(data?: RouteLocation, savedPosition?: _ScrollToOptions) {
     const from = this._currentRouteLocation
     if (data) {
-      this._currentRouteLocation = data
+      this.updateRouteLocation(data)
     } else if (this._pendingReplace) {
-      this._currentRouteLocation = this._pendingReplace
+      this.updateRouteLocation(this._pendingReplace)
     } else if (this._pendingPush) {
-      this._currentRouteLocation = this._pendingPush
+      this.updateRouteLocation(this._pendingPush)
     } else {
       throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
     }
     this._pendingReplace = null
     this._pendingPush = null
-    console.log('完成导航', this._currentRouteLocation)
+    console.log('路由完成', this.currentRouteLocation)
     // TODO 待完成视图渲染相关逻辑
     // 滚动行为处理
-    this.onScrollBehavior(this._currentRouteLocation, from, savedPosition).then()
+    this.onScrollBehavior(this.currentRouteLocation, from, savedPosition).then()
     // 触发后置钩子
-    this.onAfterEach(this._currentRouteLocation, from)
+    this.onAfterEach(this.currentRouteLocation, from)
   }
 
   /**
@@ -657,7 +669,8 @@ export default abstract class Router {
       }
       let parent = this.findParentRoute(route)
       while (parent) {
-        matched.unshift(parent)
+        // 如果父路由具有`widget`则添加到匹配的路由栈中
+        if (parent.widget) matched.unshift(parent)
         parent = this.findParentRoute(parent)
       }
       matched.push(route)
@@ -680,21 +693,24 @@ export default abstract class Router {
   /**
    * 触发路由前置守卫
    *
-   * @param {RouteLocation} to - 路由目标对象
-   * @param {RouteLocation} from - 前路由对象
+   * @param {DeepReadonly<RouteLocation>} to - 路由目标对象
+   * @param {DeepReadonly<RouteLocation>} from - 前路由对象
    * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
-  protected onBeforeEach(to: RouteLocation, from: RouteLocation): BeforeEachCallbackResult {
+  protected onBeforeEach(
+    to: DeepReadonly<RouteLocation>,
+    from: DeepReadonly<RouteLocation>
+  ): BeforeEachCallbackResult {
     return this._options.beforeEach?.call(this, to, from)
   }
 
   /**
    * 触发路由后置守卫
    *
-   * @param {RouteLocation} to - 路由目标对象
-   * @param {RouteLocation} from - 前路由对象
+   * @param {DeepReadonly<RouteLocation>} to - 路由目标对象
+   * @param {DeepReadonly<RouteLocation>} from - 前路由对象
    */
-  protected onAfterEach(to: RouteLocation, from: RouteLocation): void {
+  protected onAfterEach(to: DeepReadonly<RouteLocation>, from: DeepReadonly<RouteLocation>): void {
     return this._options.afterEach?.call(this, to, from)
   }
 
@@ -781,6 +797,16 @@ export default abstract class Router {
     }
 
     return performNavigation(target, false)
+  }
+
+  /**
+   * 更新路由数据
+   *
+   * @private
+   * @param {RouteLocation} newLocation - 新的路由数据对象
+   */
+  private updateRouteLocation(newLocation: RouteLocation): void {
+    patchUpdate(this._currentRouteLocation, newLocation)
   }
 
   /**
