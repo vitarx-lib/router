@@ -1,5 +1,5 @@
-import type { HashStr, LazyLoad, Route, RoutePath, RouteTarget } from './type.js'
-import type { LazyLoader, WidgetType } from 'vitarx'
+import type { HashStr, LazyLoad, Route, RouteLocation, RoutePath, RouteTarget } from './type.js'
+import type { WidgetType } from 'vitarx'
 
 export const LAZY_LOADER_SYMBOL = Symbol('LazyLoader')
 export type LAZY_LOADER_SYMBOL = typeof LAZY_LOADER_SYMBOL
@@ -116,7 +116,7 @@ export function createDynamicPattern(
 export function formatPath(path: string): RoutePath {
   if (path === '/') return path
   // 重复的// 替换为/ 去除结尾/
-  return `/${path}`.replace(/\/+/g, '/').replace(/\s+/g, '') as RoutePath
+  return `/${path.trim()}`.replace(/\/+/g, '/').replace(/\s+/g, '') as RoutePath
 }
 
 /**
@@ -143,23 +143,6 @@ export function mergePathParams(path: RoutePath, params: Record<string, string>)
     return String(params[paramName])
   }) as RoutePath
   return path
-}
-
-/**
- * ## 标记延迟加载
- *
- * 由于直接定义`() => import('./xxx.js')`会导致类型与函数式组件冲突，
- * 在未执行函数之前难以有效判断其类型，所以这里使用Symbol标记懒加载器。
- *
- * @example
- * lazy(() => import('./xxx.js'))
- *
- * @template T - WidgetType
- * @param {LazyLoader<T>} lazyLoader - 函数返回的import即是惰性加载器
- */
-export function lazy<T extends WidgetType>(lazyLoader: LazyLoader<T>): LazyLoad<T> {
-  ;(lazyLoader as any)[LAZY_LOADER_SYMBOL] = true
-  return lazyLoader as LazyLoad<T>
 }
 
 /**
@@ -377,4 +360,57 @@ export function generateRouteIndex(routes: Route[]): { paths: string[]; names: s
     paths,
     names
   }
+}
+
+/**
+ * 验证 widget 配置
+ *
+ * @param route
+ * @private
+ */
+export function validateWidget(route: Route): void {
+  if (typeof route.widget === 'function') {
+    // 函数式小部件处理
+    route.widget = { default: route.widget }
+  } else if (typeof route.widget === 'object' && route.widget !== null) {
+    // 对象类型的小部件
+    if (Object.keys(route.widget).length === 0) {
+      route.widget = undefined
+    } else {
+      for (const k in route.widget) {
+        if (typeof route.widget[k] !== 'function') {
+          throw new TypeError(
+            `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置的 widget 命名视图 ${k} 类型有误，它可以是函数式小部件、类小部件，亦或是一个惰性加载器。`
+          )
+        }
+      }
+    }
+  } else {
+    throw new TypeError(
+      `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置的 widget 类型有误，它可以是函数式小部件、类小部件，亦或是一个惰性加载器。`
+    )
+  }
+}
+
+/**
+ * 辅助判断是否为路由位置对象
+ *
+ * @param obj
+ */
+export function isRouteLocationTypeObject(obj: any): obj is RouteLocation {
+  if (typeof obj !== 'object') return false
+  if (obj === null) return false
+  const keys: (keyof RouteLocation)[] = [
+    'index',
+    'fullPath',
+    'path',
+    'hash',
+    'params',
+    'query',
+    'matched'
+  ]
+  for (const key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(obj, key)) return false
+  }
+  return true
 }
