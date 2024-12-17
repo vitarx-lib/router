@@ -105,17 +105,22 @@ export interface Route<WIDGET extends AllowedRouteWidget = AllowedRouteWidget> {
   /**
    * 将路由参数注入到小部件实例的props中
    *
+   * 如果是命名视图，则必须定义给每个命名视图定义`props`配置
+   *
    * @default true
    */
-  injectProps?: WIDGET extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps
+  injectProps?:
+    | (WIDGET extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps)
+    | boolean
 }
 
 /**
  * 规范化过后的路由线路配置
  */
-export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern' | 'injectProps'> {
+export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern'> {
   children: RouteNormalized[]
   widget: undefined | Record<string, RouteWidget>
+  injectProps: undefined | Record<string, RouteWidget>
 }
 
 /**
@@ -361,6 +366,12 @@ export interface RouterOptions<T_MODE extends HistoryMode = HistoryMode> {
    * @default false
    */
   suffix?: '*' | string | string[] | false
+  /**
+   * 默认path变量匹配模式
+   *
+   * @default '/[\w.]+/'
+   */
+  pattern?: RegExp
 }
 
 /**
