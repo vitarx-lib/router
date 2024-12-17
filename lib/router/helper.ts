@@ -1,7 +1,8 @@
-import type { Route, RouterOptions } from './type.js'
+import type { Route, RouteLocation, RouterOptions } from './type.js'
 import Router from './router.js'
 import WebHistoryRouter from './web-history-router.js'
 import MemoryRouter from './memory-router.js'
+import type { Reactive } from 'vitarx'
 
 /**
  * 定义路由表
@@ -80,4 +81,29 @@ export function createRouter(options: RouterOptions): Router {
  */
 export function useRouter<T extends Router>(): T {
   return Router.instance as T
+}
+
+/**
+ * 获取当前`RouteLocation`对象
+ *
+ * 它是`Router.instance.currentRouteLocation`属性的助手函数，优化函数式编程体验。
+ *
+ * 简单示例：
+ * ```jsx
+ * import { useRoute } from 'vitarx-router'
+ *
+ * // 监听路由参数变化示例
+ * export default function App() {
+ *  const route = useRoute()
+ *  watch(()=>route.params.id, (newId, oldId) => {
+ *   console.log(`监听到id参数变化, 旧值：${oldId}, 新值：${newId}`)
+ *  })
+ *  return <div>当前路由参数ID：{route.params.id}</div>
+ * }
+ * ```
+ *
+ * @return {Readonly<Reactive<RouteLocation>>} - 只读的`RouteLocation`对象
+ */
+export function useRoute(): Readonly<Reactive<RouteLocation>> {
+  return Router.instance.currentRouteLocation
 }
