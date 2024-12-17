@@ -8,7 +8,6 @@ import {
   type HashStr,
   type HistoryMode,
   type InitializedRouterOptions,
-  isRouteLocationTypeObject,
   type MatchResult,
   type NavigateResult,
   NavigateStatus,
@@ -31,10 +30,12 @@ import {
   getPathSuffix,
   isOptionalVariablePath,
   isRouteGroup,
+  isRouteLocationTypeObject,
   isVariablePath,
   mergePathParams,
   objectToQueryString,
-  splitPathAndSuffix
+  splitPathAndSuffix,
+  validateWidget
 } from './utils.js'
 import { type Reactive, reactive } from 'vitarx'
 import { patchUpdate } from './update.js'
@@ -463,6 +464,13 @@ export default abstract class Router {
   }
 
   /**
+   * 该方法提供给`RouterView`完成渲染时调用
+   *
+   * @internal
+   */
+  __viewRenderComplete() {}
+
+  /**
    * 完成导航
    *
    * 所有子类在完成导航的后续处理过后必须调用该方法！
@@ -473,6 +481,13 @@ export default abstract class Router {
    */
   protected completeNavigation(data?: RouteLocation, savedPosition?: _ScrollToOptions) {
     const from = this._currentRouteLocation
+    // 替换视图渲染完成的回调
+    this.__viewRenderComplete = () => {
+      // 滚动行为处理
+      this.onScrollBehavior(this.currentRouteLocation, from, savedPosition).then()
+      // 触发后置钩子
+      this.onAfterEach(this.currentRouteLocation, from)
+    }
     if (data) {
       this.updateRouteLocation(data)
     } else if (this._pendingReplace) {
@@ -484,12 +499,6 @@ export default abstract class Router {
     }
     this._pendingReplace = null
     this._pendingPush = null
-    console.log('路由完成', this.currentRouteLocation)
-    // TODO 待完成视图渲染相关逻辑
-    // 滚动行为处理
-    this.onScrollBehavior(this.currentRouteLocation, from, savedPosition).then()
-    // 触发后置钩子
-    this.onAfterEach(this.currentRouteLocation, from)
   }
 
   /**
@@ -571,12 +580,11 @@ export default abstract class Router {
     if (this._pathRoutes.has(path)) {
       return { route: this._pathRoutes.get(path)!, params: undefined }
     }
-    // 动态路由匹配
-    const segments = path.split('/').filter(Boolean)
     // 路径段长度
-    const length = segments.length
+    const length = path.split('/').filter(Boolean).length
     // 动态路由列表
-    const candidates = this._dynamicRoutes.get(length) || []
+    const candidates = this._dynamicRoutes.get(length)
+    if (!candidates) return undefined
     // 添加尾部斜杠 兼容可选参数 路径匹配
     path = `${path}/`
     // 遍历动态路由
@@ -838,11 +846,15 @@ export default abstract class Router {
     from: RouteLocation,
     savedPosition: _ScrollToOptions | undefined
   ): Promise<void> {
-    if (this._scrollBehaviorHandler) {
-      const scrollTarget = await this._scrollBehaviorHandler(to, from, savedPosition)
-      if (scrollTarget) this.scrollTo(scrollTarget)
-    } else {
-      this.scrollTo(savedPosition)
+    try {
+      if (this._scrollBehaviorHandler) {
+        const scrollTarget = await this._scrollBehaviorHandler(to, from, savedPosition)
+        if (scrollTarget) this.scrollTo(scrollTarget)
+      } else {
+        this.scrollTo(savedPosition)
+      }
+    } catch (e) {
+      console.error("[Vitarx.Router.onScrollBehavior]['ERROR']：处理滚动行为时捕获到了异常", e)
     }
   }
 
@@ -923,10 +935,38 @@ export default abstract class Router {
    * @private
    */
   private normalizeRoute(route: Route): RouteNormalized {
+    // 初始化必要的属性
     route.meta = route.meta || {}
     route.pattern = route.pattern || {}
     route.children = route.children || []
+    // 验证 children 是否为数组
+    if (!Array.isArray(route.children)) {
+      throw new TypeError(
+        `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置 children 类型错误，它必须是数组类型。`
+      )
+    }
+    if (!route.path.trim()) {
+      throw new TypeError(`[Vitarx.Router][TYPE_ERROR]：路由线路配置 path 不能为空`)
+    }
+    // 格式化路径
     route.path = formatPath(route.path)
+    // 注入属性逻辑
+    if ('injectProps' in route) {
+      route.injectProps = true
+    }
+    // 处理 widget 配置
+    if ('widget' in route) {
+      validateWidget(route)
+    } else {
+      // 如果没有 widget 且没有子路由，则报错
+      if (route.children.length === 0) {
+        throw new TypeError(
+          `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置的 widget 属性缺失，它可以是函数式小部件、类小部件，亦或是一个惰性加载器。`
+        )
+      }
+      route.widget = undefined
+    }
+
     return route as RouteNormalized
   }
 
@@ -939,6 +979,7 @@ export default abstract class Router {
    */
   private registerRoute(route: Route, group?: RouteNormalized) {
     const normalizedRoute = this.normalizeRoute(route)
+    console.log(normalizedRoute)
     if (group) {
       // 拼接父path
       normalizedRoute.path = formatPath(`${group.path}${normalizedRoute.path}`)
@@ -956,11 +997,6 @@ export default abstract class Router {
         this.registerRoute(child, normalizedRoute) // 递归注册子路由
       }
     } else {
-      if (typeof normalizedRoute.widget !== 'function') {
-        throw new TypeError(
-          `[Vitarx.Router][ERROR]：路由${route.path}的widget配置无效，${route.widget}`
-        )
-      }
       // 记录路由
       this.recordRoute(normalizedRoute)
     }
