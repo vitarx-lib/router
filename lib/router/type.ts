@@ -119,6 +119,8 @@ export interface RouteLocation {
   /**
    * 动态路由path匹配的参数，包括调用`push`|`replace`时传入的params
    *
+   * > 注意：必须是能够被序列化的参数，否则会导致异常。
+   *
    * @default {}
    */
   params: Record<string, any>
