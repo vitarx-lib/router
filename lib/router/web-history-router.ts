@@ -16,7 +16,6 @@ import { urlToRouteTarget } from './utils.js'
 export default class WebHistoryRouter extends Router {
   constructor(options: RouterOptions<'path' | 'hash'>) {
     super(options)
-    console.log(options.mode)
     // 守卫mode类型
     if (['path', 'hash'].includes(options.mode as string)) {
       options.mode = 'path'
