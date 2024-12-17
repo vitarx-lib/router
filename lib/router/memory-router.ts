@@ -5,6 +5,8 @@ import { NavigateStatus, type RouteLocation, type RouterOptions } from './type.j
  * 基于内存实现的路由器
  *
  * 仅支持路由器操作前进、后退、跳转等操作
+ *
+ * > 注意：不要在浏览器端使用，因为浏览器端有原生的history对象，使用内存模式会和浏览器端的历史记录冲突，导致路由异常。
  */
 export default class MemoryRouter extends Router {
   // 路由历史记录数组
@@ -81,17 +83,21 @@ export default class MemoryRouter extends Router {
       this._history[this._pendingGo] = data
       newIndex = this._pendingGo
     } else if (isReplace) {
+      // 替换当前路由
       this._history[this.currentIndex] = data
       newIndex = this.currentIndex
     } else {
+      // push新路由
       const nextIndex = this.currentIndex + 1
       if (nextIndex < this._history.length) {
+        // 清除后面的历史记录
         this._history[nextIndex] = data
         this._history.length = nextIndex + 1
         newIndex = nextIndex
       } else {
+        // 添加新路由
         this._history.push(data)
-        newIndex = this._history.length
+        newIndex = this._history.length - 1
       }
     }
     this._currentIndex = newIndex
