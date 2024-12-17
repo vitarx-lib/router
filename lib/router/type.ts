@@ -21,7 +21,12 @@ export type HashStr = `#${string}` | ''
 export type InjectProps =
   | boolean
   | Record<string, any>
-  | ((params: Record<string, any> | null) => Record<string, any>)
+  | ((route: RouteLocation) => Record<string, any>)
+
+/**
+ * 命名的props
+ */
+export type InjectNamedProps<k extends string = string> = Record<k, InjectProps>
 
 /**
  * 路由元数据
@@ -31,9 +36,24 @@ export interface RouteMeta {
 }
 
 /**
- * 路由路线配置
+ * 路由视图小部件
  */
-export interface Route {
+type RouteWidget = WidgetType | LazyLoad<WidgetType>
+/**
+ * 命名的路由视图小部件
+ */
+type NamedRouteWidget<K extends string = string> = Record<K, RouteWidget>
+/**
+ * 允许的路由小部件联合类型
+ */
+type AllowedRouteWidget = RouteWidget | NamedRouteWidget
+
+/**
+ * 路由路线配置
+ *
+ * @template WIDGET 允许的路由小部件类型，用于类型重载
+ */
+export interface Route<WIDGET extends AllowedRouteWidget = AllowedRouteWidget> {
   path: RoutePath
   /**
    * 动态路由参数匹配规则
@@ -57,7 +77,7 @@ export interface Route {
    *  2. LazyLoad: `() => import('./YourWidget')` 代码分块，懒加载，它会自动被LazyWidget包裹。
    *  3. undefined: 自身不展示任何ui，仅做为父路由，使children继承父路由的`path`和`pattern`。
    */
-  widget?: WidgetType | LazyLoad<WidgetType>
+  widget?: WIDGET
   /**
    * 子路由
    *
@@ -75,18 +95,19 @@ export interface Route {
    *
    * @default true
    */
-  injectProps?: InjectProps
+  injectProps?: WIDGET extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps
 }
 
 /**
  * 规范化过后的路由线路配置
  */
-export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern'> {
+export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern' | 'injectProps'> {
   children: RouteNormalized[]
+  widget: undefined | Record<string, RouteWidget>
 }
 
 /**
- * 路由数据
+ * 路由匹配的详情数据
  *
  * 所有和url相关的数据都已`decodeURIComponent`解码
  */
@@ -221,6 +242,11 @@ export interface _ScrollToOptions {
   behavior?: _ScrollBehavior
 }
 
+/**
+ * 滚动到视图配置
+ *
+ * @see https://developer.mozilla.org/zh-CN/docs/Web/API/Element/scrollIntoView
+ */
 export interface _ScrollIntoViewOptions extends ScrollIntoViewOptions {
   el: Element | `#${string}` | string
 }
@@ -473,27 +499,4 @@ export enum NavigateStatus {
    * 捕获到异常
    */
   exception
-}
-
-/**
- * 辅助判断是否为路由位置对象
- *
- * @param obj
- */
-export function isRouteLocationTypeObject(obj: any): obj is RouteLocation {
-  if (typeof obj !== 'object') return false
-  if (obj === null) return false
-  const keys: (keyof RouteLocation)[] = [
-    'index',
-    'fullPath',
-    'path',
-    'hash',
-    'params',
-    'query',
-    'matched'
-  ]
-  for (const key of keys) {
-    if (!Object.prototype.hasOwnProperty.call(obj, key)) return false
-  }
-  return true
 }
