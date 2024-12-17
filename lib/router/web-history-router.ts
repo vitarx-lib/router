@@ -126,7 +126,7 @@ export default class WebHistoryRouter extends Router {
     if (typeof query === 'object') {
       state.query = query
     }
-    return state
+    return JSON.parse(JSON.stringify(state))
   }
 
   /**
