@@ -1,8 +1,9 @@
-import type { Route, RouteLocation, RouterOptions } from './type.js'
+import type { LazyLoad, Route, RouteLocation, RouterOptions } from './type.js'
 import Router from './router.js'
 import WebHistoryRouter from './web-history-router.js'
 import MemoryRouter from './memory-router.js'
-import type { Reactive } from 'vitarx'
+import type { LazyLoader, Reactive, WidgetType } from 'vitarx'
+import { LAZY_LOADER_SYMBOL } from './utils.js'
 
 /**
  * 定义路由表
@@ -106,4 +107,21 @@ export function useRouter<T extends Router>(): T {
  */
 export function useRoute(): Readonly<Reactive<RouteLocation>> {
   return Router.instance.currentRouteLocation
+}
+
+/**
+ * ## 标记延迟加载
+ *
+ * 由于直接定义`() => import('./xxx.js')`会导致类型与函数式组件冲突，
+ * 在未执行函数之前难以有效判断其类型，所以这里使用Symbol标记懒加载器。
+ *
+ * @example
+ * lazy(() => import('./xxx.js'))
+ *
+ * @template T - WidgetType
+ * @param {LazyLoader<T>} lazyLoader - 函数返回的import即是惰性加载器
+ */
+export function lazy<T extends WidgetType>(lazyLoader: LazyLoader<T>): LazyLoad<T> {
+  ;(lazyLoader as any)[LAZY_LOADER_SYMBOL] = true
+  return lazyLoader as LazyLoad<T>
 }
