@@ -1,4 +1,12 @@
-import type { HashStr, LazyLoad, Route, RouteLocation, RoutePath, RouteTarget } from './type.js'
+import type {
+  HashStr,
+  LazyLoad,
+  Route,
+  RouteLocation,
+  RouteNormalized,
+  RoutePath,
+  RouteTarget
+} from './type.js'
 import type { WidgetType } from 'vitarx'
 
 export const LAZY_LOADER_SYMBOL = Symbol('LazyLoader')
@@ -31,6 +39,26 @@ export function isOptionalVariablePath(path: string): boolean {
 }
 
 /**
+ * 获取路径中的可选变量数量
+ *
+ * @param path - 路径
+ * @return {number} - 可选变量数量
+ */
+export function optionalVariableCount(path: string): number {
+  // 去除路径中的所有空格
+  const pathWithoutSpaces = path.replace(/\s+/g, '')
+
+  // 匹配形如 {varname?} 的可选变量
+  const regex = /\{[\w-]+\?}/g
+
+  // 提取所有符合可选变量规则的部分
+  const matches = pathWithoutSpaces.match(regex)
+
+  // 如果匹配到的部分存在，则返回数量，否则返回 0
+  return matches ? matches.length : 0
+}
+
+/**
  * 判断路由是否具有子路由
  *
  * @param route
@@ -45,20 +73,16 @@ export function isRouteGroup(route: Route): boolean {
  * @param {string} path - 路径字符串
  * @param {Record<string, any>} pattern - 自定义的正则规则集合
  * @param {boolean} strict - 是否严格匹配
- * @return { {regex: RegExp length: number; isOptional: boolean} } - 返回动态匹配的正则表达式
+ * @return { {regex: RegExp length: number; optional: number} } - 返回动态匹配的正则表达式
  */
 export function createDynamicPattern(
   path: string,
   pattern: Record<string, any>,
   strict: boolean
-): { regex: RegExp; length: number; isOptional: boolean } {
-  let optional = false
+): { regex: RegExp; length: number; optional: number } {
+  let optional = 0
   // 处理变量路径段
-  const processVariable = (
-    varName: string,
-    isOptional: boolean,
-    isLastSegment?: boolean
-  ): string => {
+  const processVariable = (varName: string, isOptional: boolean): string => {
     const regex = pattern[varName]
     // 如果 `pattern` 中没有该变量的正则表达式，使用默认规则
     if (!regex) {
@@ -70,15 +94,14 @@ export function createDynamicPattern(
       pattern[varName] = /[^/]+/
     }
 
-    // 如果是可选的且是路径的最后一段，使用 `(?:...)` 包裹正则
+    // 如果是可选的，使用 `(?:...)` 包裹正则
     if (isOptional) {
-      optional = true
-      if (!isLastSegment) {
-        throw new Error(
-          `[Vitarx.Router][ERROR]：动态路径 ${path} 中，可选变量 ${varName} 必须是路径的最后一段`
-        )
-      }
+      optional++
       return `(?:(${pattern[varName].source}))?`
+    } else if (optional) {
+      throw new Error(
+        `[Vitarx.Router][ERROR]：动态路径 ${path} 中，可选变量 ${varName} 后不能存在任何必填变量`
+      )
     }
     // 如果是必填的或非最后一段可选变量，使用捕获组
     return `(${pattern[varName].source})`
@@ -86,9 +109,7 @@ export function createDynamicPattern(
 
   const processedPath = path
     // 将 `{var?}` 替换为可选的捕获组，检查它是否在路径的最后部分
-    .replace(/{([^}?]+)\?}/g, (_, varName) =>
-      processVariable(varName, true, path.endsWith(`{${varName}?}`))
-    )
+    .replace(/{([^}?]+)\?}/g, (_, varName) => processVariable(varName, true))
     // 将 `{var}` 替换为必填捕获组
     .replace(/{([^}]+)}/g, (_, varName) => processVariable(varName, false))
     // 转义斜杠
@@ -103,7 +124,7 @@ export function createDynamicPattern(
   return {
     regex: new RegExp(`^${processedPath}$`, flags),
     length: segments,
-    isOptional: optional
+    optional
   }
 }
 
@@ -363,12 +384,35 @@ export function generateRouteIndex(routes: Route[]): { paths: string[]; names: s
 }
 
 /**
+ * 辅助判断是否为路由位置对象
+ *
+ * @param obj
+ */
+export function isRouteLocationTypeObject(obj: any): obj is RouteLocation {
+  if (typeof obj !== 'object') return false
+  if (obj === null) return false
+  const keys: (keyof RouteLocation)[] = [
+    'index',
+    'fullPath',
+    'path',
+    'hash',
+    'params',
+    'query',
+    'matched'
+  ]
+  for (const key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(obj, key)) return false
+  }
+  return true
+}
+
+/**
  * 验证 widget 配置
  *
  * @param route
  * @private
  */
-export function validateWidget(route: Route): void {
+function validateWidget(route: Route): void {
   if (typeof route.widget === 'function') {
     // 函数式小部件处理
     route.widget = { default: route.widget }
@@ -393,24 +437,43 @@ export function validateWidget(route: Route): void {
 }
 
 /**
- * 辅助判断是否为路由位置对象
+ * 规范化路由对象
  *
- * @param obj
+ * @param route
+ * @private
  */
-export function isRouteLocationTypeObject(obj: any): obj is RouteLocation {
-  if (typeof obj !== 'object') return false
-  if (obj === null) return false
-  const keys: (keyof RouteLocation)[] = [
-    'index',
-    'fullPath',
-    'path',
-    'hash',
-    'params',
-    'query',
-    'matched'
-  ]
-  for (const key of keys) {
-    if (!Object.prototype.hasOwnProperty.call(obj, key)) return false
+export function normalizeRoute(route: Route): RouteNormalized {
+  // 初始化必要的属性
+  route.meta = route.meta || {}
+  route.pattern = route.pattern || {}
+  route.children = route.children || []
+  // 验证 children 是否为数组
+  if (!Array.isArray(route.children)) {
+    throw new TypeError(
+      `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置 children 类型错误，它必须是数组类型。`
+    )
   }
-  return true
+  if (!route.path.trim()) {
+    throw new TypeError(`[Vitarx.Router][TYPE_ERROR]：路由线路配置 path 不能为空`)
+  }
+  // 格式化路径
+  route.path = formatPath(route.path)
+  // 注入属性逻辑
+  if ('injectProps' in route) {
+    route.injectProps = true
+  }
+  // 处理 widget 配置
+  if ('widget' in route) {
+    validateWidget(route)
+  } else {
+    // 如果没有 widget 且没有子路由，则报错
+    if (route.children.length === 0) {
+      throw new TypeError(
+        `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置的 widget 属性缺失，它可以是函数式小部件、类小部件，亦或是一个惰性加载器。`
+      )
+    }
+    route.widget = undefined
+  }
+
+  return route as RouteNormalized
 }
