@@ -28,14 +28,14 @@ import {
   formatHash,
   formatPath,
   getPathSuffix,
-  isOptionalVariablePath,
   isRouteGroup,
   isRouteLocationTypeObject,
   isVariablePath,
   mergePathParams,
+  normalizeRoute,
   objectToQueryString,
-  splitPathAndSuffix,
-  validateWidget
+  optionalVariableCount,
+  splitPathAndSuffix
 } from './utils.js'
 import { type Reactive, reactive } from 'vitarx'
 import { patchUpdate } from './update.js'
@@ -92,6 +92,7 @@ export default abstract class Router {
       mode: 'path',
       scrollBehavior: 'smooth',
       suffix: false,
+      pattern: /[\w.]+/,
       ...options
     }
     this._options.base = `/${this._options.base.replace(/^\/+|\/+$/g, '')}`
@@ -910,10 +911,12 @@ export default abstract class Router {
 
     // 删除匹配路径的动态路由
     removeRouteFromRecords(length)
-
+    const count = optionalVariableCount(path)
     // 如果是可选参数路由，删除对应短路径的路由
-    if (isOptionalVariablePath(path)) {
-      removeRouteFromRecords(length - 1)
+    if (count > 0) {
+      for (let i = 1; i <= count; i++) {
+        removeRouteFromRecords(length - i)
+      }
     }
   }
 
@@ -929,48 +932,6 @@ export default abstract class Router {
   }
 
   /**
-   * 规范化路由对象
-   *
-   * @param route
-   * @private
-   */
-  private normalizeRoute(route: Route): RouteNormalized {
-    // 初始化必要的属性
-    route.meta = route.meta || {}
-    route.pattern = route.pattern || {}
-    route.children = route.children || []
-    // 验证 children 是否为数组
-    if (!Array.isArray(route.children)) {
-      throw new TypeError(
-        `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置 children 类型错误，它必须是数组类型。`
-      )
-    }
-    if (!route.path.trim()) {
-      throw new TypeError(`[Vitarx.Router][TYPE_ERROR]：路由线路配置 path 不能为空`)
-    }
-    // 格式化路径
-    route.path = formatPath(route.path)
-    // 注入属性逻辑
-    if ('injectProps' in route) {
-      route.injectProps = true
-    }
-    // 处理 widget 配置
-    if ('widget' in route) {
-      validateWidget(route)
-    } else {
-      // 如果没有 widget 且没有子路由，则报错
-      if (route.children.length === 0) {
-        throw new TypeError(
-          `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置的 widget 属性缺失，它可以是函数式小部件、类小部件，亦或是一个惰性加载器。`
-        )
-      }
-      route.widget = undefined
-    }
-
-    return route as RouteNormalized
-  }
-
-  /**
    * 注册路由
    *
    * @param {Route} route - 路由对象
@@ -978,7 +939,7 @@ export default abstract class Router {
    * @protected
    */
   private registerRoute(route: Route, group?: RouteNormalized) {
-    const normalizedRoute = this.normalizeRoute(route)
+    const normalizedRoute = normalizeRoute(route)
     console.log(normalizedRoute)
     if (group) {
       // 拼接父path
@@ -1055,10 +1016,11 @@ export default abstract class Router {
    * @param route
    */
   private recordDynamicRoute(route: RouteNormalized) {
-    const { regex, length, isOptional } = createDynamicPattern(
+    const { regex, length, optional } = createDynamicPattern(
       route.path,
       route.pattern,
-      this._options.strict
+      this.options.strict,
+      this.options.pattern
     )
     const addToLengthMap = (len: number) => {
       if (!this._dynamicRoutes.has(len)) {
@@ -1067,6 +1029,10 @@ export default abstract class Router {
       this._dynamicRoutes.get(len)!.push({ regex, route })
     }
     addToLengthMap(length)
-    if (isOptional) addToLengthMap(length - 1)
+    if (optional > 0) {
+      for (let i = 1; i <= optional; i++) {
+        addToLengthMap(length - i)
+      }
+    }
   }
 }
