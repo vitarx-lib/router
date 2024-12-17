@@ -17,13 +17,16 @@ export default class MemoryRouter extends Router {
     options.mode = 'memory'
   }
 
+  /// 当前历史路由索引
+  private _currentIndex: number = 0
+
   /**
    * 当前历史路由索引
    *
    * @protected
    */
   protected get currentIndex(): number {
-    return this._history.indexOf(this.currentRouteLocation)
+    return this._currentIndex
   }
 
   /**
@@ -73,20 +76,25 @@ export default class MemoryRouter extends Router {
    * @private
    */
   private _updateHistory(data: RouteLocation, isReplace: boolean): void {
+    let newIndex: number
     if (this._pendingGo !== null) {
       this._history[this._pendingGo] = data
+      newIndex = this._pendingGo
     } else if (isReplace) {
-      const index = this.currentIndex
-      this._history[index] = data
+      this._history[this.currentIndex] = data
+      newIndex = this.currentIndex
     } else {
       const nextIndex = this.currentIndex + 1
       if (nextIndex < this._history.length) {
         this._history[nextIndex] = data
         this._history.length = nextIndex + 1
+        newIndex = nextIndex
       } else {
         this._history.push(data)
+        newIndex = this._history.length
       }
     }
+    this._currentIndex = newIndex
     this.completeNavigation(data)
     this._pendingGo = null
   }
