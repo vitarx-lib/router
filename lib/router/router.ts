@@ -24,7 +24,6 @@ import {
 } from './type.js'
 import {
   createDynamicPattern,
-  deepEqual,
   formatHash,
   formatPath,
   getPathSuffix,
@@ -37,7 +36,7 @@ import {
   optionalVariableCount,
   splitPathAndSuffix
 } from './utils.js'
-import { type Reactive, reactive } from 'vitarx'
+import { deepEqual, reactive, type Reactive } from 'vitarx'
 import { patchUpdate } from './update.js'
 
 /**
@@ -940,7 +939,6 @@ export default abstract class Router {
    */
   private registerRoute(route: Route, group?: RouteNormalized) {
     const normalizedRoute = normalizeRoute(route)
-    console.log(normalizedRoute)
     if (group) {
       // 拼接父path
       normalizedRoute.path = formatPath(`${group.path}${normalizedRoute.path}`)
