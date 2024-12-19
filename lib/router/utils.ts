@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import type {
   HashStr,
   LazyLoad,
@@ -289,43 +291,6 @@ export function urlToRouteTarget(
     query = queryStringToObject(url.search)
   }
   return { index: path, hash, query }
-}
-
-/**
- * 深度比较两个变量是否相等
- *
- * @param {any} var1 - 要比较的第一个变量
- * @param {any} var2 - 要比较的第二个变量
- * @returns {boolean} - 如果两个变量完全相等，则返回 true；否则返回 false
- */
-export function deepEqual(var1: any, var2: any): boolean {
-  // 精确比较两个值是否相同
-  if (Object.is(var1, var2)) return true
-
-  // 如果类型不相等或者有一个是 null，返回 false
-  if (typeof var1 !== 'object' || typeof var2 !== 'object' || var1 === null || var2 === null) {
-    return false
-  }
-
-  const keys1 = Reflect.ownKeys(var1)
-  const keys2 = Reflect.ownKeys(var2)
-
-  if (keys1.length !== keys2.length) return false // 键数量不同
-
-  for (const key of keys1) {
-    // 递归比较嵌套对象
-    const value1 = var1[key]
-    const value2 = var2[key]
-
-    if (
-      !Object.prototype.hasOwnProperty.call(var2, key) ||
-      !deepEqual(value1, value2) // 对比基本类型
-    ) {
-      return false // 键值不一致，立即返回 false
-    }
-  }
-
-  return true // 所有键和值一致
 }
 
 /**
