@@ -27,6 +27,7 @@ import {
   formatHash,
   formatPath,
   getPathSuffix,
+  isLazyLoad,
   isRouteGroup,
   isRouteLocationTypeObject,
   isVariablePath,
@@ -36,7 +37,15 @@ import {
   optionalVariableCount,
   splitPathAndSuffix
 } from './utils.js'
-import { deepEqual, reactive, type Reactive } from 'vitarx'
+import {
+  createElement,
+  deepEqual,
+  LazyWidget,
+  reactive,
+  type Reactive,
+  type VNode,
+  type WidgetType
+} from 'vitarx'
 import { patchUpdate } from './update.js'
 
 /**
@@ -261,6 +270,27 @@ export default abstract class Router {
    */
   protected get pendingPushData(): RouteLocation | null {
     return this._pendingPush
+  }
+
+  /**
+   * 路由视图
+   *
+   * 内部方法，用于获取路由线路对应的视图元素虚拟节点。
+   *
+   * @internal
+   * @param {RouteNormalized} route - 路由对象
+   * @param {string} name - 视图名称
+   * @return {VNode<WidgetType> | undefined} - 视图元素虚拟节点
+   */
+  static routeView(route: RouteNormalized, name: string): VNode<WidgetType> | undefined {
+    const widgetMap = route.widget!
+    if (!widgetMap.hasOwnProperty(name)) return undefined
+    const widget = widgetMap[name]
+    if (isLazyLoad(widget)) {
+      return createElement(LazyWidget, { children: widget })
+    } else {
+      return createElement(widget)
+    }
   }
 
   /**
