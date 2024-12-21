@@ -38,6 +38,7 @@ export function defineRoute(route: Route): Route {
  * @return {MemoryRouter} - 内存路由器实例
  */
 export function createRouter(options: RouterOptions & { mode: 'memory' }): MemoryRouter
+
 /**
  * 创建History路由器
  *
@@ -56,6 +57,13 @@ export function createRouter(
         mode: 'path' | 'hash'
       })
 ): WebHistoryRouter
+
+/**
+ * 创建路由器
+ *
+ * @param {RouterOptions} options - 路由配置
+ * @return {Router} - 路由器实例
+ */
 export function createRouter(options: RouterOptions): Router {
   let router: Router
   // 如果非浏览器端，强制使用内存模式路由
