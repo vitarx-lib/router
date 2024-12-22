@@ -141,7 +141,7 @@ export function createDynamicPattern(
  */
 export function formatPath(path: string): RoutePath {
   path = path.replace(/\s+/g, '').replace(/\/+/g, '/')
-  if (path === '/') return path
+  if (path === '/' || path === '/#/') return path
   // 重复的// 替换为/ 去除结尾/
   return path.replace(/\/$/, '') as RoutePath
 }
