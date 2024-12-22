@@ -498,7 +498,7 @@ export default abstract class Router {
    *
    * @internal
    */
-  __viewRenderComplete() {}
+  protected _completeViewRender() {}
 
   /**
    * 完成导航
@@ -512,7 +512,7 @@ export default abstract class Router {
   protected completeNavigation(data?: RouteLocation, savedPosition?: _ScrollToOptions) {
     const from = this._currentRouteLocation
     // 替换视图渲染完成的回调
-    this.__viewRenderComplete = () => {
+    this._completeViewRender = () => {
       // 滚动行为处理
       this.onScrollBehavior(this.currentRouteLocation, from, savedPosition).then()
       // 触发后置钩子
