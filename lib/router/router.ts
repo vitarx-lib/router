@@ -39,10 +39,12 @@ import {
 } from './utils.js'
 import {
   createElement,
+  deepClone,
   deepEqual,
   LazyWidget,
   reactive,
   type Reactive,
+  shallowReactive,
   type VNode,
   type WidgetType
 } from 'vitarx'
@@ -111,7 +113,7 @@ export default abstract class Router {
       fullPath: this._options.base,
       params: {},
       query: {},
-      matched: []
+      matched: shallowReactive([])
     })
   }
 
@@ -287,7 +289,7 @@ export default abstract class Router {
     if (!widgetMap.hasOwnProperty(name)) return undefined
     const widget = widgetMap[name]
     if (isLazyLoad(widget)) {
-      return createElement(LazyWidget, { children: widget })
+      return createElement(LazyWidget, { children: widget, key: route.path })
     } else {
       return createElement(widget)
     }
@@ -765,7 +767,7 @@ export default abstract class Router {
     const taskId = ++this._taskCounter // 生成唯一任务 ID
     this._currentTaskId = taskId // 更新当前任务
     const isCurrentTask = () => this._currentTaskId === taskId // 检查任务是否被取消
-    const from = this.currentRouteLocation
+    const from = deepClone(this.currentRouteLocation)
     const performNavigation = async (
       _target: RouteTarget,
       isRedirect: boolean
