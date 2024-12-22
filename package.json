@@ -1,6 +1,6 @@
 {
   "name": "vitarx-router",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "main": "dist/vitarx-router.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,7 @@
     "push": "npm publish --access=public"
   },
   "peerDependencies": {
-    "vitarx": "^1.0.0-beta.18"
+    "vitarx": "^1.0.0-beta.19"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
