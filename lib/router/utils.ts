@@ -171,7 +171,7 @@ export function mergePathParams(path: RoutePath, params: Record<string, string>)
     // 返回对应的参数值
     return String(params[paramName]).replace(/\s+/g, '_')
   }) as RoutePath
-  return path
+  return formatPath(path)
 }
 
 /**
