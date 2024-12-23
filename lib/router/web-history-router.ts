@@ -145,18 +145,30 @@ export default class WebHistoryRouter extends Router {
     this.replace(newTarget).then(res => {
       // 如果被重定向则不处理
       if (res.redirectFrom) return
-      // 未匹配时，回退页面
-      if (res.status === NavigateStatus.not_matched) {
-        // 如果是hash模式，则兼容path模式的锚点跳转
-        if (this.mode === 'hash' && res.to.index.startsWith('/')) {
-          const anchorId = res.to.index.slice(1)
-          const element = window.document.getElementById(anchorId)
-          if (element) {
-            element.scrollIntoView({ behavior: this.scrollBehavior })
+      if (this.mode === 'hash' && res.status !== NavigateStatus.success) {
+        // 未匹配时，回退页面
+        if (res.status === NavigateStatus.not_matched) {
+          // 如果是hash模式，则兼容path模式的锚点跳转
+          if (res.to.index.startsWith('/')) {
+            const anchorId = res.to.index.slice(1)
+            const element = window.document.getElementById(anchorId)
+            if (element) {
+              element.scrollIntoView({ behavior: this.scrollBehavior })
+            }
+            // 更新hash记录值
+            this.updateHash(`#${anchorId}`)
+            this.webHistory.replaceState(
+              this.createState(this.currentRouteLocation),
+              '',
+              this.currentRouteLocation.fullPath
+            )
           }
-          // 更新hash记录值
-          this.updateHash(`#${anchorId}`)
-          this.webHistory.replaceState(this.createState(res.from), '', res.from.fullPath)
+        } else if (res.status === NavigateStatus.duplicated) {
+          this.webHistory.replaceState(
+            this.createState(this.currentRouteLocation),
+            '',
+            this.currentRouteLocation.fullPath
+          )
         }
       }
     })
