@@ -43,6 +43,7 @@ import {
   deepClone,
   deepEqual,
   LazyWidget,
+  markRaw,
   reactive,
   type Reactive,
   shallowReactive,
@@ -115,7 +116,7 @@ export default abstract class Router {
       params: {},
       query: {},
       matched: shallowReactive([]),
-      meta: shallowReactive({})
+      meta: markRaw({})
     })
   }
 
