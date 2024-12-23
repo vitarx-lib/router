@@ -140,10 +140,10 @@ export function createDynamicPattern(
  * @return {string} - 格式化后的路径字符串
  */
 export function formatPath(path: string): RoutePath {
-  path = path.replace(/\s+/g, '').replace(/\/+/g, '/')
+  // 去除所有空格 处理重复//
+  path = `/${path}`.replace(/\s+/g, '').replace(/\/+/g, '/')
   if (!path.length) return '/'
   if (path === '/' || path === '/#/') return path
-  // 重复的// 替换为/ 去除结尾/
   return path.replace(/\/$/, '') as RoutePath
 }
 
