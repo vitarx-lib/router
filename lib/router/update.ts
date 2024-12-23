@@ -13,6 +13,7 @@ export function patchUpdate(location: RouteLocation, newLocation: RouteLocation)
   diffUpdateArrays(location['matched'], newLocation['matched'])
   diffUpdateObjects(location['params'], newLocation['params'])
   diffUpdateObjects(location['query'], newLocation['query'])
+  diffUpdateObjects(location.meta, newLocation.meta)
   for (const key of __stringValueKeys) {
     if (location[key] !== newLocation[key]) {
       location[key] = newLocation[key] as any

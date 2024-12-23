@@ -169,6 +169,14 @@ export interface RouteLocation {
    */
   query: Record<string, string>
   /**
+   * 路由线路配置的元数据
+   *
+   * 如果没有配置元数据，那它将会是空对象，未匹配到任何路由也会是空对象。
+   *
+   * @default {}
+   */
+  meta: RouteMeta
+  /**
    * 匹配的路由对象
    *
    * > 注意：如果数组中存在多个`RouteNormalized`对象，则说明是嵌套路由，第一个则是最顶层的父路由，最后一个是精确匹配到的路由。

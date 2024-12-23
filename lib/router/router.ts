@@ -14,6 +14,7 @@ import {
   type Route,
   type RouteIndex,
   type RouteLocation,
+  type RouteMeta,
   type RouteName,
   type RouteNormalized,
   type RoutePath,
@@ -113,7 +114,8 @@ export default abstract class Router {
       fullPath: this._options.base,
       params: {},
       query: {},
-      matched: shallowReactive([])
+      matched: shallowReactive([]),
+      meta: shallowReactive({})
     })
   }
 
@@ -717,17 +719,10 @@ export default abstract class Router {
     } else {
       path = formatPath(index)
     }
+    const meta: RouteMeta = route?.meta || ({} as RouteMeta)
     const hashStr = formatHash(hash, true)
     const fullPath = this.makeFullPath(path, query, hashStr)
-    return {
-      index,
-      path,
-      hash: hashStr,
-      fullPath: fullPath,
-      params: params,
-      query: query,
-      matched: matched
-    }
+    return { index, path, hash: hashStr, fullPath, params, query, matched, meta }
   }
 
   /**
@@ -982,7 +977,6 @@ export default abstract class Router {
       if (route.widget) {
         this.recordRoute(normalizedRoute) // 记录分组路由
       }
-
       // 遍历子路由并递归注册
       for (const child of normalizedRoute.children) {
         this.registerRoute(child, normalizedRoute) // 递归注册子路由
