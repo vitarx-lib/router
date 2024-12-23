@@ -499,6 +499,126 @@ export default abstract class Router {
   }
 
   /**
+   * 根据路由目标创建导航数据
+   *
+   * @param {RouteTarget} target - 路由目标
+   */
+  public createRouteLocation(target: RouteTarget): RouteLocation {
+    if (isRouteLocationTypeObject(target)) return target
+    // 获取路由对象
+    const route = this.findRoute(target)
+    const { index, query = {}, params = {}, hash = '' } = target
+    let path: RoutePath
+    const matched: RouteNormalized[] = []
+    if (route) {
+      let suffix = getPathSuffix(index)
+      if (this.suffix && suffix && !route.path.endsWith(suffix)) {
+        path = mergePathParams((route.path + suffix) as RoutePath, params)
+      } else {
+        path = mergePathParams(route.path, params)
+      }
+      let parent = this.findParentRoute(route)
+      while (parent) {
+        // 如果父路由具有`widget`则添加到匹配的路由栈中
+        if (parent.widget) matched.unshift(parent)
+        parent = this.findParentRoute(parent)
+      }
+      matched.push(route)
+    } else {
+      path = formatPath(index)
+    }
+    const meta: RouteMeta = route?.meta || ({} as RouteMeta)
+    const hashStr = formatHash(hash, true)
+    const fullPath = this.makeFullPath(path, query, hashStr)
+    return { index, path, hash: hashStr, fullPath, params, query, matched, meta }
+  }
+
+  /**
+   * 路由跳转的通用方法
+   *
+   * `push`|`replace`方法最终都会调用此方法
+   *
+   * @protected
+   * @param {RouteTarget} target - 目标
+   * @return {Promise<NavigateResult>} - 是否导航成功
+   */
+  public navigate(target: RouteTarget): Promise<NavigateResult> {
+    const taskId = ++this._taskCounter // 生成唯一任务 ID
+    this._currentTaskId = taskId // 更新当前任务
+    const isCurrentTask = () => this._currentTaskId === taskId // 检查任务是否被取消
+    const from = deepClone(this.currentRouteLocation)
+    const performNavigation = async (
+      _target: RouteTarget,
+      isRedirect: boolean
+    ): Promise<NavigateResult> => {
+      const to = this.createRouteLocation(_target)
+      // 创建导航结果
+      const createNavigateResult = (overrides: Partial<NavigateResult> = {}): NavigateResult => ({
+        from,
+        to,
+        status: NavigateStatus.success,
+        message: '导航成功',
+        redirectFrom: isRedirect ? target : undefined,
+        ...overrides
+      })
+      // 判断是否为相同的路由
+      if (this.isSameNavigate(to, this.currentRouteLocation)) {
+        return createNavigateResult({
+          status: NavigateStatus.duplicated,
+          message: '导航到相同的路由，被系统阻止！'
+        })
+      }
+      try {
+        const result = await this.onBeforeEach(to, this.currentRouteLocation)
+        // 前置守卫钩子返回 false，则导航被取消
+        if (result === false) {
+          return createNavigateResult({
+            status: NavigateStatus.aborted,
+            message: '导航被前置守卫钩子阻止'
+          })
+        }
+        // 检测任务是否已被取消
+        if (!isCurrentTask()) {
+          return createNavigateResult({
+            status: NavigateStatus.cancelled,
+            message: '已被新的导航请求替代，取消此次导航！'
+          })
+        }
+        // 前置守卫钩子返回对象，则导航被重定向
+        if (typeof result === 'object' && result.index !== _target.index) {
+          result.isReplace ??= false // 确保 isReplace 有默认值
+          return performNavigation(result, true)
+        }
+        // 路由未匹配
+        if (!to.matched.length) {
+          return createNavigateResult({
+            status: NavigateStatus.not_matched,
+            message: '未匹配到任何路由规则，被系统阻止！请检测目标索引是否正确。'
+          })
+        }
+        // 更新路由历史
+        if (_target.isReplace) {
+          this._pendingReplace = to
+          this.replaceHistory(to)
+        } else {
+          this._pendingPush = to
+          this.pushHistory(to)
+        }
+        return createNavigateResult()
+      } catch (error) {
+        console.error(`[Vitarx.Router.navigate][ERROR]：导航时捕获到了异常`, error)
+        return createNavigateResult({
+          status: NavigateStatus.exception,
+          message: '导航时捕获到了异常',
+          error
+        })
+      }
+    }
+
+    return performNavigation(target, false)
+  }
+
+  /**
    * 该方法提供给`RouterView`完成渲染时调用
    *
    * @internal
@@ -646,12 +766,13 @@ export default abstract class Router {
    * @param path - 路径
    * @param query - ?查询参数
    * @param hash - #哈希值
+   * @return {string}
    */
   protected makeFullPath(
     path: string,
     query: `?${string}` | '' | Record<string, string>,
     hash: HashStr
-  ): `${string}` {
+  ): `/${string}` {
     if (hash && !hash.startsWith('#')) hash = `#${hash}`
     if (typeof query === 'object') query = objectToQueryString(query)
     return this.mode === 'hash'
@@ -691,42 +812,6 @@ export default abstract class Router {
   }
 
   /**
-   * 根据路由目标创建导航数据
-   *
-   * @param {RouteTarget} target - 路由目标
-   * @protected
-   */
-  protected createRouteLocation(target: RouteTarget): RouteLocation {
-    if (isRouteLocationTypeObject(target)) return target
-    // 获取路由对象
-    const route = this.findRoute(target)
-    const { index, query = {}, params = {}, hash = '' } = target
-    let path: RoutePath
-    const matched: RouteNormalized[] = []
-    if (route) {
-      let suffix = getPathSuffix(index)
-      if (this.suffix && suffix && !route.path.endsWith(suffix)) {
-        path = mergePathParams((route.path + suffix) as RoutePath, params)
-      } else {
-        path = mergePathParams(route.path, params)
-      }
-      let parent = this.findParentRoute(route)
-      while (parent) {
-        // 如果父路由具有`widget`则添加到匹配的路由栈中
-        if (parent.widget) matched.unshift(parent)
-        parent = this.findParentRoute(parent)
-      }
-      matched.push(route)
-    } else {
-      path = formatPath(index)
-    }
-    const meta: RouteMeta = route?.meta || ({} as RouteMeta)
-    const hashStr = formatHash(hash, true)
-    const fullPath = this.makeFullPath(path, query, hashStr)
-    return { index, path, hash: hashStr, fullPath, params, query, matched, meta }
-  }
-
-  /**
    * 触发路由前置守卫
    *
    * @param {DeepReadonly<RouteLocation>} to - 路由目标对象
@@ -748,91 +833,6 @@ export default abstract class Router {
    */
   protected onAfterEach(to: DeepReadonly<RouteLocation>, from: DeepReadonly<RouteLocation>): void {
     return this._options.afterEach?.call(this, to, from)
-  }
-
-  /**
-   * 路由跳转的通用方法
-   *
-   * 仅供内部使用，外部请使用`push`|`replace`方法
-   *
-   * @protected
-   * @param {RouteTarget} target - 目标
-   * @return {Promise<NavigateResult>} - 是否导航成功
-   */
-  protected navigate(target: RouteTarget): Promise<NavigateResult> {
-    const taskId = ++this._taskCounter // 生成唯一任务 ID
-    this._currentTaskId = taskId // 更新当前任务
-    const isCurrentTask = () => this._currentTaskId === taskId // 检查任务是否被取消
-    const from = deepClone(this.currentRouteLocation)
-    const performNavigation = async (
-      _target: RouteTarget,
-      isRedirect: boolean
-    ): Promise<NavigateResult> => {
-      const to = this.createRouteLocation(_target)
-      // 创建导航结果
-      const createNavigateResult = (overrides: Partial<NavigateResult> = {}): NavigateResult => ({
-        from,
-        to,
-        status: NavigateStatus.success,
-        message: '导航成功',
-        redirectFrom: isRedirect ? target : undefined,
-        ...overrides
-      })
-      // 判断是否为相同的路由
-      if (this.isSameNavigate(to, this.currentRouteLocation)) {
-        return createNavigateResult({
-          status: NavigateStatus.duplicated,
-          message: '导航到相同的路由，被系统阻止！'
-        })
-      }
-      try {
-        const result = await this.onBeforeEach(to, this.currentRouteLocation)
-        // 前置守卫钩子返回 false，则导航被取消
-        if (result === false) {
-          return createNavigateResult({
-            status: NavigateStatus.aborted,
-            message: '导航被前置守卫钩子阻止'
-          })
-        }
-        // 检测任务是否已被取消
-        if (!isCurrentTask()) {
-          return createNavigateResult({
-            status: NavigateStatus.cancelled,
-            message: '已被新的导航请求替代，取消此次导航！'
-          })
-        }
-        // 前置守卫钩子返回对象，则导航被重定向
-        if (typeof result === 'object' && result.index !== _target.index) {
-          result.isReplace ??= false // 确保 isReplace 有默认值
-          return performNavigation(result, true)
-        }
-        // 路由未匹配
-        if (!to.matched.length) {
-          return createNavigateResult({
-            status: NavigateStatus.not_matched,
-            message: '未匹配到任何路由规则，被系统阻止！请检测目标索引是否正确。'
-          })
-        }
-        // 更新路由历史
-        if (_target.isReplace) {
-          this._pendingReplace = to
-          this.replaceHistory(to)
-        } else {
-          this._pendingPush = to
-          this.pushHistory(to)
-        }
-        return createNavigateResult()
-      } catch (error) {
-        console.error(`[Vitarx.Router.navigate][ERROR]：导航时捕获到了异常`, error)
-        return createNavigateResult({
-          status: NavigateStatus.exception,
-          message: '导航时捕获到了异常',
-          error
-        })
-      }
-    }
-
-    return performNavigation(target, false)
   }
 
   /**
