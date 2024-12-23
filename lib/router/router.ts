@@ -289,7 +289,7 @@ export default abstract class Router {
    */
   static routeView(route: RouteNormalized, name: string): VNode<WidgetType> | undefined {
     const widgetMap = route.widget!
-    if (!widgetMap.hasOwnProperty(name)) return undefined
+    if (!Object.prototype.hasOwnProperty.call(widgetMap, name)) return undefined
     const widget = widgetMap[name]
     if (isLazyLoad(widget)) {
       return createElement(LazyWidget, { children: widget, key: route.path })

@@ -363,7 +363,8 @@ export function isRouteLocationTypeObject(obj: any): obj is RouteLocation {
     'hash',
     'params',
     'query',
-    'matched'
+    'matched',
+    'meta'
   ]
   for (const key of keys) {
     if (!Object.prototype.hasOwnProperty.call(obj, key)) return false

@@ -56,7 +56,7 @@ function diffUpdateObjects(a: Record<string, any>, b: Record<string, any>): void
   const bKeys = Object.keys(b)
   // 遍历 b 中的属性，将 b 的值赋给 a
   for (const key of bKeys) {
-    if (b.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(b, key)) {
       a[key] = b[key]
     }
   }
