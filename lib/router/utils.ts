@@ -266,19 +266,10 @@ export function urlToRouteTarget(
 ): MakeRequired<RouteTarget, 'query' | 'hash'> {
   let path = decodeURIComponent(url.pathname) as RoutePath
   let hash = decodeURIComponent(url.hash) as HashStr
-  let query: Record<string, string>
-  if (mode === 'path') {
-    query = queryStringToObject(url.search)
-    // 去除 basePath
-    if (path.startsWith(base)) {
-      path = formatPath(path.slice(base.length))
-    } else {
-      // 使用 pathname 来获取 path
-      path = formatPath(path) // 去除结尾/
-    }
-    return { index: path, hash, query }
-  }
-  if (hash.includes('#')) {
+  let query: Record<string, string> = queryStringToObject(url.search)
+  // 格式化path
+  path = formatPath(path.startsWith(base) ? path.slice(base.length) : path)
+  if (mode === 'hash' && hash.includes('#/')) {
     // 使用 hash 来获取 path 和 hash
     const hashPart = hash.slice(1) // 去掉前缀 #
     const [fullPath, anchor] = hashPart.split('#') // 分离路径和锚点
@@ -288,9 +279,6 @@ export function urlToRouteTarget(
     hash = anchor ? `#${anchor}` : ''
     // 提取查询参数
     query = queryStringToObject(queryString || '') // 安全处理无查询参数的情况
-  } else {
-    path = base as RoutePath
-    query = queryStringToObject(url.search)
   }
   return { index: path, hash, query }
 }
