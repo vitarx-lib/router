@@ -1,16 +1,9 @@
 import { defineConfig } from 'vite'
-import vitarxPlugin from 'vite-plugin-vitarx'
-import dtsPlugin from 'vite-plugin-dts'
+import vitarx from 'vite-plugin-vitarx'
 
 export default defineConfig({
-  plugins: [vitarxPlugin(), dtsPlugin({ include: ['lib'] })],
+  plugins: [vitarx()],
   build: {
-    lib: {
-      entry: 'lib/index.ts',
-      formats: ['es']
-    },
-    rollupOptions: {
-      external: ['vitarx', 'vitarx/jsx-runtime']
-    }
+    outDir: 'dist-demo'
   }
 })

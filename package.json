@@ -6,8 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "dev": "vite --force",
-    "build:lib": "rimraf dist && tsc --p tsconfig-build.json && vite build",
-    "build": "rimraf dist && vite build",
+    "build:lib": "rimraf dist && tsc --p tsconfig-lib.json && vite --config vite.config.lib.ts build",
+    "build": "rimraf dist-web && vite build",
     "preview": "vite preview",
     "prepublishOnly": "npm run build:lib",
     "push": "npm publish --access=public"
