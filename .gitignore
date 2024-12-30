@@ -13,6 +13,7 @@ dist-ssr
 *.local
 tests
 dist-demo
+package-lock.json
 
 # Editor directories and files
 .vscode/*
