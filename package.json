@@ -1,6 +1,6 @@
 {
   "name": "vitarx-router",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "type": "module",
   "main": "dist/vitarx-router.js",
   "types": "dist/index.d.ts",
