@@ -3,7 +3,7 @@
   "version": "1.0.0-beta.2",
   "type": "module",
   "main": "dist/vitarx-router.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/vitarx-router.d.ts",
   "scripts": {
     "dev": "vite --force",
     "build:lib": "rimraf dist && tsc --p tsconfig-lib.json && vite --config vite.config.lib.ts build",
