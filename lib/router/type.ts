@@ -400,7 +400,7 @@ export type RouteName = string
 /**
  * 路由索引
  */
-export type RouteIndex = RoutePath | RouteName
+export type RouteIndex = RoutePath | RouteName | VitarxRouterRouteIndexTyped
 
 /**
  * 路由目标
