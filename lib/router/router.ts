@@ -1,6 +1,18 @@
 // noinspection JSUnusedGlobalSymbols
 
 import {
+  createElement,
+  deepClone,
+  isDeepEqual,
+  LazyWidget,
+  markRaw,
+  reactive,
+  type Reactive,
+  shallowReactive,
+  type VNode,
+  type WidgetType
+} from 'vitarx'
+import {
   type _ScrollBehavior,
   type _ScrollToOptions,
   type BeforeEachCallbackResult,
@@ -23,6 +35,7 @@ import {
   type ScrollBehaviorHandler,
   type ScrollTarget
 } from './type.js'
+import { patchUpdate } from './update.js'
 import {
   createDynamicPattern,
   formatHash,
@@ -38,19 +51,6 @@ import {
   optionalVariableCount,
   splitPathAndSuffix
 } from './utils.js'
-import {
-  createElement,
-  deepClone,
-  deepEqual,
-  LazyWidget,
-  markRaw,
-  reactive,
-  type Reactive,
-  shallowReactive,
-  type VNode,
-  type WidgetType
-} from 'vitarx'
-import { patchUpdate } from './update.js'
 
 /**
  * 路由器基类
@@ -665,7 +665,7 @@ export default abstract class Router {
    * @protected
    */
   protected updateQuery(query: Record<string, string>) {
-    if (!deepEqual(this._currentRouteLocation.query, query)) {
+    if (!isDeepEqual(this._currentRouteLocation.query, query)) {
       this._currentRouteLocation.query = query
       this._currentRouteLocation.fullPath = this.makeFullPath(
         this._currentRouteLocation.path,
@@ -808,7 +808,7 @@ export default abstract class Router {
    * @protected
    */
   protected isSameNavigate(to: RouteLocation, from: RouteLocation): boolean {
-    return deepEqual(to, from)
+    return isDeepEqual(to, from)
   }
 
   /**
