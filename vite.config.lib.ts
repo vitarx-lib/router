@@ -8,17 +8,24 @@ export default defineConfig({
     dtsPlugin({
       include: ['lib'],
       insertTypesEntry: true,
-      rollupTypes: true,
-      tsconfigPath: 'tsconfig.lib.json'
+      rollupTypes: true
     })
   ],
   build: {
     lib: {
       entry: 'lib/index.ts',
-      formats: ['es']
+      name: 'VitarxRouter',
+      fileName: format => `vitarx-router.${format}.js`,
+      formats: ['es', 'umd']
     },
     rollupOptions: {
-      external: ['vitarx', 'vitarx/jsx-runtime']
+      external: ['vitarx', 'vitarx/jsx-runtime'],
+      output: {
+        globals: {
+          vitarx: 'Vitarx',
+          'vitarx/jsx-runtime': 'Vitarx'
+        }
+      }
     }
   }
 })
