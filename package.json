@@ -1,13 +1,17 @@
 {
   "name": "vitarx-router",
   "version": "1.0.0-beta.4",
+  "description": "Vitarx前端框架的配套路由器",
   "type": "module",
   "main": "dist/vitarx-router.js",
   "types": "dist/vitarx-router.d.ts",
   "scripts": {
     "dev": "vite --force",
-    "build:lib": "rimraf dist && tsc --p tsconfig-lib.json && vite --config vite.config.lib.ts build",
-    "build": "rimraf dist-web && vite build",
+    "tsc:lib": "tsc --p tsconfig-lib.json",
+    "vite:lib": "vite --config vite.config.lib.ts build",
+    "build:script": "tsc scripts/type-make.ts --declaration --outDir ./dist/scripts --esModuleInterop",
+    "build:lib": "rimraf dist && npm run tsc:lib && npm run vite:lib && npm run build:script",
+    "build:web": "rimraf dist-web && vite build",
     "preview": "vite preview",
     "prepublishOnly": "npm run build:lib",
     "push": "npm publish --access=public"
@@ -25,7 +29,6 @@
   },
   "files": [
     "dist",
-    "type-make.js",
     "LICENSE",
     "README.md"
   ]
