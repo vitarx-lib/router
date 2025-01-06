@@ -15,6 +15,7 @@ npm install vitarx-router
 // main.ts
 import { createRouter } from 'vitarx-router'
 import Page1 from './Page/Page1.js'
+import App from './App.js'
 
 createRouter({
   mode: 'path', // 路由模式，可选值：hash、path、memory
