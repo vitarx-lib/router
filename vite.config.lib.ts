@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
-import vitarxPlugin from 'vite-plugin-vitarx'
 import dtsPlugin from 'vite-plugin-dts'
+import vitarxPlugin from 'vite-plugin-vitarx'
 
 export default defineConfig({
   plugins: [
@@ -8,7 +8,8 @@ export default defineConfig({
     dtsPlugin({
       include: ['lib'],
       insertTypesEntry: true,
-      rollupTypes: true
+      rollupTypes: true,
+      tsconfigPath: 'tsconfig.lib.json'
     })
   ],
   build: {
