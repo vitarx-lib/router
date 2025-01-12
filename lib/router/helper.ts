@@ -1,9 +1,9 @@
-import type { LazyLoad, Route, RouteLocation, RouterOptions } from './type.js'
-import Router from './router.js'
-import WebHistoryRouter from './web-history-router.js'
-import MemoryRouter from './memory-router.js'
 import type { LazyLoader, Reactive, WidgetType } from 'vitarx'
+import MemoryRouter from './memory-router.js'
+import Router from './router.js'
+import type { LazyLoad, Route, RouteLocation, RouterOptions } from './type.js'
 import { LAZY_LOADER_SYMBOL } from './utils.js'
+import WebHistoryRouter from './web-history-router.js'
 
 /**
  * 定义路由表
@@ -130,6 +130,8 @@ export function useRoute(): Readonly<Reactive<RouteLocation>> {
  * @param {LazyLoader<T>} lazyLoader - 函数返回的import即是惰性加载器
  */
 export function lazy<T extends WidgetType>(lazyLoader: LazyLoader<T>): LazyLoad<T> {
-  ;(lazyLoader as any)[LAZY_LOADER_SYMBOL] = true
+  Object.defineProperty(lazyLoader, LAZY_LOADER_SYMBOL, {
+    value: true
+  })
   return lazyLoader as LazyLoad<T>
 }
