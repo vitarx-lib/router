@@ -77,7 +77,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
     this.location = new Computed(() => {
       const location = Router.instance.createRouteLocation(this.target.value)
       if (!location.matched.length) {
-        console.trace(
+        console.warn(
           `[Vitarx.RouterLink][WARN]：索引：${this.target.value.index}，未匹配到任何有效的路由线路，请检查to属性是否配置正确！`
         )
       }
