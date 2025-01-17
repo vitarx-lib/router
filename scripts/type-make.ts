@@ -65,17 +65,13 @@ function buildRouteIndex(routes: Route[]): { paths: string[]; names: string[] } 
  * 生成路由索引类型声明
  *
  * @param {Route[]} routes - 路由表
- * @param {string[]} dynamic - 动态路由参数列表
- * @param {string} [writePath] - 要写入的路径，完整的路径！例如'/Users/Vitarx/vitarx/route.type.d.ts'
+ * @param {string[]} custom - 自定义的名称或路径，例如['/home', 'home']
+ * @param {string} [writePath] - 要写入的路径，完整的路径！例如'/Users/Vitarx/vitarx/route.type.d.ts'，默认为当前工作目录下的route.type.d.ts
  * @return {void}
  */
-export default function make(
-  routes: Route[],
-  dynamic: string[] = [],
-  writePath: string = ''
-): void {
+export default function make(routes: Route[], custom: string[] = [], writePath: string = ''): void {
   const { paths, names } = buildRouteIndex(routes)
-  const all = [...paths, ...names, ...dynamic]
+  const all = [...paths, ...names, ...custom]
   // 构造类型声明字符串
   const typeDeclaration = `type VitarxRouterRouteIndexTyped = ${all.map(route => `'${route}'`).join(' | ')};`
   if (!writePath) writePath = `${process.cwd()}/route.type.d.ts`
