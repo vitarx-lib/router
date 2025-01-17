@@ -569,7 +569,10 @@ export default abstract class Router {
         })
       }
       try {
-        const result = await this.onBeforeEach(to, this.currentRouteLocation)
+        const result = await this.onBeforeEach(
+          to as unknown as DeepReadonly<RouteLocation>,
+          this.currentRouteLocation as unknown as DeepReadonly<RouteLocation>
+        )
         // 前置守卫钩子返回 false，则导航被取消
         if (result === false) {
           return createNavigateResult({
@@ -641,7 +644,10 @@ export default abstract class Router {
       // 滚动行为处理
       this.onScrollBehavior(this.currentRouteLocation, from, savedPosition).then()
       // 触发后置钩子
-      this.onAfterEach(this.currentRouteLocation, from)
+      this.onAfterEach(
+        this.currentRouteLocation as unknown as DeepReadonly<RouteLocation>,
+        from as unknown as DeepReadonly<RouteLocation>
+      )
     }
     if (data) {
       this.updateRouteLocation(data)
