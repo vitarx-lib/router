@@ -5,12 +5,29 @@
   "type": "module",
   "main": "dist/vitarx-router.umd.js",
   "module": "dist/vitarx-router.es.js",
-  "types": "dist/vitarx-router.es.d.ts",
+  "types": "dist/vitarx-router.d.ts",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/vitarx-router.d.ts",
+        "node": "./dist/vitarx-router.umd.js"
+      },
+      "import": {
+        "types": "./dist/vitarx-router.d.ts",
+        "node": "./index.mjs",
+        "default": "./dist/vitarx-router.es.js"
+      }
+    },
+    "./scripts/make-type": {
+      "types": "./dist/scripts/type-make.d.ts",
+      "default": "./dist/scripts/type-make.js"
+    }
+  },
   "scripts": {
     "dev": "vite --force",
     "tsc:lib": "tsc --p tsconfig-lib.json",
     "vite:lib": "vite --config vite.config.lib.ts build",
-    "build:script": "tsc scripts/type-make.ts --declaration --outDir ./dist/scripts --esModuleInterop",
+    "build:script": "tsc --p tsconfig-script.json",
     "build:lib": "rimraf dist && npm run tsc:lib && npm run vite:lib && npm run build:script",
     "build:web": "rimraf dist-web && vite build",
     "preview": "vite preview",
@@ -31,6 +48,7 @@
   "files": [
     "dist",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "index.mjs"
   ]
 }
