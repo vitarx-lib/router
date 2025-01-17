@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    // 使 TypeScript 输出 ES 模块
+    "module": "ESNext",
+    // 输出到 JavaScript 版本
+    "target": "ES2020",
+    // 生成类型声明文件 (.d.ts)
+    "declaration": true,
+    // 输出目录
+    "outDir": "./dist/scripts",
+    // 启用 ES 模块互操作性
+    "esModuleInterop": true,
+    // 解析 Node.js 样式的模块
+    "moduleResolution": "node",
+    // 跳过库文件的类型检查
+    "skipLibCheck": true,
+    // 启用严格模式，建议开启
+    "strict": true
+  },
+  "include": [
+    // 编译 scripts 目录下的所有 TypeScript 文件
+    "scripts/**/*.ts"
+  ]
+}
