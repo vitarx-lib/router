@@ -49,7 +49,8 @@ import {
   normalizeRoute,
   objectToQueryString,
   optionalVariableCount,
-  splitPathAndSuffix
+  splitPathAndSuffix,
+  validateSuffix
 } from './utils.js'
 
 /**
@@ -103,7 +104,7 @@ export default abstract class Router {
       strict: false,
       mode: 'path',
       scrollBehavior: 'smooth',
-      suffix: false,
+      suffix: '*',
       pattern: /[\w.]+/,
       ...options
     }
@@ -235,7 +236,7 @@ export default abstract class Router {
   /**
    * 受支持的`path`后缀名
    */
-  get suffix(): Exclude<RouterOptions['suffix'], void> {
+  get suffix(): RouterOptions['suffix'] {
     return this._options.suffix
   }
 
@@ -717,51 +718,58 @@ export default abstract class Router {
   /**
    * 路由匹配
    *
-   *
    * @param {string} path - 路径
-   *
-   * @return {MatchResult} 如果匹配失败则返回undefined
+   * @return {MatchResult | undefined} 如果匹配失败则返回 undefined
    */
-  protected matchRoute(path: RoutePath): MatchResult {
-    // 格式化path
+  protected matchRoute(path: RoutePath): MatchResult | undefined {
+    // 格式化路径
     path = formatPath(path)
-    // 转换为小写
-    if (!this._options.strict) path = path.toLowerCase() as RoutePath
-    // 后缀支持
-    if (this.suffix) {
-      const { path: realPath, suffix } = splitPathAndSuffix(path)
-      // 如果后缀不匹配，直接返回 undefined
-      if (!this.isAllowedSuffix(suffix)) {
-        return undefined // 后缀不匹配，返回 undefined
-      }
-      // 更新路径为去掉后缀后的路径
-      path = realPath as RoutePath
-    }
-    // 优先匹配静态路由
-    if (this._pathRoutes.has(path)) {
-      return { route: this._pathRoutes.get(path)!, params: undefined }
-    }
-    // 路径段长度
-    const length = path.split('/').filter(Boolean).length
-    // 动态路由列表
-    const candidates = this._dynamicRoutes.get(length)
-    if (!candidates) return undefined
-    // 添加尾部斜杠 兼容可选参数 路径匹配
-    path = `${path}/`
-    // 遍历动态路由
-    for (const { regex, route } of candidates) {
-      const match = regex.exec(path)
-      if (match) {
-        const params: Record<string, string> = {}
 
-        // 提取动态参数
-        const keys = Object.keys(route.pattern!)
-        keys.forEach((key, index) => {
-          params[key] = match[index + 1] // +1 因为匹配结果的第一个元素是完整匹配
-        })
-        return { route, params }
-      }
+    // 非严格模式下，转换为小写
+    if (!this._options.strict) {
+      path = path.toLowerCase() as RoutePath
     }
+
+    // 分离路径和后缀
+    const { path: shortPath, suffix } = splitPathAndSuffix(path)
+    path = shortPath as RoutePath
+
+    // 优先匹配静态路由
+    const staticRoute = this._pathRoutes.get(path)
+    if (staticRoute) {
+      return validateSuffix(suffix, staticRoute.suffix)
+        ? { route: staticRoute, params: undefined }
+        : undefined
+    }
+
+    // 动态路由匹配
+    const segmentCount = path.split('/').filter(Boolean).length
+    const candidates = this._dynamicRoutes.get(segmentCount)
+    if (!candidates) return undefined
+
+    // 兼容可选参数的路径匹配
+    const normalizedPath = `${path}/`
+
+    for (const { regex, route } of candidates) {
+      const match = regex.exec(normalizedPath)
+      if (!match) continue
+      // 提取动态参数
+      const params: Record<string, string> = {}
+      const keys = Object.keys(route.pattern!)
+      for (let i = 0; i < keys.length; i++) {
+        params[keys[i]] = match[i + 1]
+      }
+      // 验证后缀
+      if (validateSuffix(suffix, route.suffix)) {
+        return {
+          route,
+          params
+        }
+      }
+      break
+    }
+
+    // 未匹配到任何路由
     return undefined
   }
 
@@ -849,22 +857,6 @@ export default abstract class Router {
    */
   private updateRouteLocation(newLocation: RouteLocation): void {
     patchUpdate(this._currentRouteLocation, newLocation)
-  }
-
-  /**
-   * 判断是否为允许的后缀
-   *
-   * @param suffix
-   * @private
-   */
-  private isAllowedSuffix(suffix: string): boolean {
-    if (!suffix) return true
-    if (!this.suffix) return false
-    if (this.suffix === '*') return true
-    if (Array.isArray(this.suffix)) {
-      return this.suffix.includes(suffix)
-    }
-    return this.suffix === suffix
   }
 
   /**
@@ -972,7 +964,7 @@ export default abstract class Router {
    * @protected
    */
   private registerRoute(route: Route, group?: RouteNormalized) {
-    const normalizedRoute = normalizeRoute(route)
+    const normalizedRoute = normalizeRoute(route, group?.suffix ?? this.suffix)
     if (group) {
       normalizedRoute.path = formatPath(`${group.path}/${normalizedRoute.path}`)
       this._parentRoute.set(normalizedRoute, group) // 记录当前路由于父路由的映射关系
