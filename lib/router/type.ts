@@ -1,6 +1,6 @@
 import type { WidgetType } from 'vitarx'
-import { type LAZY_LOADER_SYMBOL } from './utils.js'
 import type Router from './router.js'
+import { type LAZY_LOADER_SYMBOL } from './utils.js'
 
 /**
  * 延迟加载/惰性加载
@@ -51,9 +51,9 @@ type AllowedRouteWidget = RouteWidget | NamedRouteWidget
 /**
  * 路由路线配置
  *
- * @template WIDGET 允许的路由小部件类型，用于类型重载
+ * @template W 允许的路由小部件类型，用于类型重载
  */
-export interface Route<WIDGET extends AllowedRouteWidget = AllowedRouteWidget> {
+export interface Route<W extends AllowedRouteWidget = AllowedRouteWidget> {
   /**
    * 路由路径
    *
@@ -89,7 +89,7 @@ export interface Route<WIDGET extends AllowedRouteWidget = AllowedRouteWidget> {
    *  3. undefined: 自身不展示任何ui，仅做为父路由，使children继承父路由的`path`和`pattern`。
    *  4. Record<string, WidgetType | LazyLoad<WidgetType>>: 命名的小部件，同级的`RouterView`会根据name属性展示对应的小部件。
    */
-  widget?: WIDGET
+  widget?: W
   /**
    * 子路由
    *
@@ -109,9 +109,7 @@ export interface Route<WIDGET extends AllowedRouteWidget = AllowedRouteWidget> {
    *
    * @default true
    */
-  injectProps?:
-    | (WIDGET extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps)
-    | boolean
+  injectProps?: (W extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps) | boolean
 }
 
 /**
