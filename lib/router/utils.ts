@@ -1,5 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
+import type { WidgetType } from 'vitarx'
 import type {
   HashStr,
   LazyLoad,
@@ -9,7 +10,6 @@ import type {
   RoutePath,
   RouteTarget
 } from './type.js'
-import type { WidgetType } from 'vitarx'
 import { validateInjectProps, validateWidget } from './validate/index.js'
 
 export const LAZY_LOADER_SYMBOL = Symbol('LazyLoader')
@@ -135,6 +135,8 @@ export function createDynamicPattern(
 
 /**
  * 格式化path
+ *
+ * 去除所有空格、替换重复的斜杠、去除尾部的斜杠
  *
  * @param {string} path - 路径字符串
  * @return {string} - 格式化后的路径字符串
