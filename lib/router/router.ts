@@ -732,14 +732,18 @@ export default abstract class Router {
 
     // 分离路径和后缀
     const { path: shortPath, suffix } = splitPathAndSuffix(path)
-    path = shortPath as RoutePath
+
+    // 处理兼容的路径（添加对 index.html 的处理）
+    const possiblePaths = [shortPath, shortPath.replace(/\/index$/, '') || '/']
 
     // 优先匹配静态路由
-    const staticRoute = this._pathRoutes.get(path)
-    if (staticRoute) {
-      return validateSuffix(suffix, staticRoute.suffix)
-        ? { route: staticRoute, params: undefined }
-        : undefined
+    for (const possiblePath of possiblePaths) {
+      const staticRoute = this._pathRoutes.get(possiblePath)
+      if (staticRoute) {
+        return validateSuffix(suffix, staticRoute.suffix)
+          ? { route: staticRoute, params: undefined }
+          : undefined
+      }
     }
 
     // 动态路由匹配
@@ -748,7 +752,7 @@ export default abstract class Router {
     if (!candidates) return undefined
 
     // 兼容可选参数的路径匹配
-    const normalizedPath = `${path}/`
+    const normalizedPath = `${shortPath}/`
 
     for (const { regex, route } of candidates) {
       const match = regex.exec(normalizedPath)
@@ -768,7 +772,6 @@ export default abstract class Router {
       }
       break
     }
-
     // 未匹配到任何路由
     return undefined
   }
