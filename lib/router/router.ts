@@ -974,8 +974,7 @@ export default abstract class Router {
   private registerRoute(route: Route, group?: RouteNormalized) {
     const normalizedRoute = normalizeRoute(route)
     if (group) {
-      // 拼接父path
-      normalizedRoute.path = formatPath(`${group.path}${normalizedRoute.path}`)
+      normalizedRoute.path = formatPath(`${group.path}/${normalizedRoute.path}`)
       this._parentRoute.set(normalizedRoute, group) // 记录当前路由于父路由的映射关系
     }
 
