@@ -398,7 +398,7 @@ export default abstract class Router {
   }
 
   /**
-   * 超找路由
+   * 查找路由
    *
    * 传入的是`path`则会调用`matchRoute`方法，传入的是`name`则会调用`getNamedRoute`方法
    *
