@@ -8,6 +8,7 @@ import type {
   RouteLocation,
   RouteNormalized,
   RoutePath,
+  RouterOptions,
   RouteTarget
 } from './type.js'
 import { validateInjectProps, validateWidget } from './validate/index.js'
@@ -289,13 +290,15 @@ export function urlToRouteTarget(
  * 拆分路径和后缀
  *
  * @param path
+ *
+ * @return {object} - 包含 path 和 suffix 的对象，suffix不带.
  */
 export function splitPathAndSuffix(path: string): { path: string; suffix: string } {
   const suffix = getPathSuffix(path)
   if (suffix) path = path.slice(0, -suffix.length)
   return {
     path,
-    suffix
+    suffix: suffix.substring(1)
   }
 }
 
@@ -339,9 +342,10 @@ export function isRouteLocationTypeObject(obj: any): obj is RouteLocation {
  * 规范化路由对象
  *
  * @param route
- * @private
+ * @param suffix
+ * @internal
  */
-export function normalizeRoute(route: Route): RouteNormalized {
+export function normalizeRoute(route: Route, suffix: RouterOptions['suffix']): RouteNormalized {
   // 初始化必要的属性
   route.meta = route.meta || {}
   route.pattern = route.pattern || {}
@@ -362,5 +366,18 @@ export function normalizeRoute(route: Route): RouteNormalized {
   validateWidget(route)
   // 验证injectProps
   validateInjectProps(route)
+  route.suffix ??= suffix
   return route as RouteNormalized
+}
+
+/**
+ * 验证后缀
+ *
+ * @param suffix
+ * @param allowSuffix
+ */
+export function validateSuffix(suffix: string, allowSuffix: RouterOptions['suffix']) {
+  if (allowSuffix === '*') return true
+  if (Array.isArray(allowSuffix)) return allowSuffix.includes(suffix)
+  return suffix === allowSuffix
 }
