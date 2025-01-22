@@ -57,9 +57,9 @@ export interface Route<W extends AllowedRouteWidget = AllowedRouteWidget> {
   /**
    * 路由路径
    *
-   * 支持动态路由参数
+   * 支持动态路由参数，path不要带有后缀，例如：`/home.html` ❌
    *
-   * example:
+   * @example
    * `/user` // 静态路径
    * `/user/{id}` // 必填参数
    * `/user/{id?}` // 可选参数
@@ -103,6 +103,14 @@ export interface Route<W extends AllowedRouteWidget = AllowedRouteWidget> {
    */
   meta?: RouteMeta
   /**
+   * 受支持的后缀
+   *
+   * 如果不传入，此属性会向上继承
+   *
+   * @see {@linkcode RouterOptions.suffix}
+   */
+  suffix?: '*' | string | string[] | false
+  /**
    * 将路由参数注入到小部件实例的props中
    *
    * 如果是命名视图，则必须定义给每个命名视图定义`props`配置
@@ -115,7 +123,7 @@ export interface Route<W extends AllowedRouteWidget = AllowedRouteWidget> {
 /**
  * 规范化过后的路由线路配置
  */
-export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern'> {
+export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern' | 'suffix'> {
   children: RouteNormalized[]
   widget: undefined | Record<string, RouteWidget>
   injectProps: undefined | InjectNamedProps
@@ -304,7 +312,7 @@ export type ScrollBehaviorHandler = (
 /**
  * 路由器配置
  */
-export interface RouterOptions<T_MODE extends HistoryMode = HistoryMode> {
+export interface RouterOptions<T extends HistoryMode = HistoryMode> {
   /**
    * 根路径
    *
@@ -324,7 +332,7 @@ export interface RouterOptions<T_MODE extends HistoryMode = HistoryMode> {
    * @note 使用memory模式需在路由器实例化完成后使用replace替换掉初始的伪路由，另外两种模式是浏览器端使用的，会自动完成这个操作！
    * @default 'path' 默认视为是浏览器端
    */
-  mode?: T_MODE
+  mode?: T
   /**
    * 是否严格匹配路由
    *
@@ -364,10 +372,11 @@ export interface RouterOptions<T_MODE extends HistoryMode = HistoryMode> {
    *
    * 可选值类型：
    * 1. 通配符：`*`：支持所有后缀名，如：`/page.html`、`/page.md`等。
-   * 2. 字符串类型：`html`：支持html后缀名
-   * 3. 数组：`['html','md']`：同时支持html和md后缀名，注意不要以`.`开头
-   * 4. false：不做任何处理，硬性匹配。
-   * @default false
+   * 2. 字符串类型：`html`：支持html后缀名，注意不要以`.`开头
+   * 3. 数组：`['html','md']`：同时支持html和md后缀名
+   * 4. false：不允许有后缀。
+   *
+   * @default '*'
    */
   suffix?: '*' | string | string[] | false
   /**
