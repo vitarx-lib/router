@@ -11,6 +11,10 @@ export default defineConfig({
       rollupTypes: true
     })
   ],
+  esbuild: {
+    // 不压缩标识符（如函数名）
+    minifyIdentifiers: false
+  },
   build: {
     lib: {
       entry: 'lib/index.ts',
