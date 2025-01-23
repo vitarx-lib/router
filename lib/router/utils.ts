@@ -67,7 +67,7 @@ export function optionalVariableCount(path: string): number {
  *
  * @param route
  */
-export function isRouteGroup(route: Route): boolean {
+export function isRouteGroup(route: Route): route is RouteNormalized {
   return 'children' in route && route.children !== undefined && route.children.length > 0
 }
 
