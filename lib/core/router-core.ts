@@ -57,10 +57,6 @@ import {
  * 路由器基类
  */
 export default abstract class RouterCore {
-  /**
-   * 路由器实例，单例模式，用于全局获取路由器实例
-   */
-  static #instance: RouterCore | undefined
   // 配置
   private readonly _options: MakeRequired<
     RouterOptions,
@@ -96,7 +92,7 @@ export default abstract class RouterCore {
   private readonly _currentRouteLocation: Reactive<RouteLocation>
 
   protected constructor(options: RouterOptions) {
-    if (RouterCore.#instance) {
+    if (RouterCore._instance) {
       throw new Error(`[Vitarx.Router.constructor]：路由器实例已存在，不能创建多个实例`)
     }
     this._options = {
@@ -122,15 +118,20 @@ export default abstract class RouterCore {
   }
 
   /**
+   * 路由器实例，单例模式，用于全局获取路由器实例
+   */
+  private static _instance: RouterCore | undefined
+
+  /**
    * 获取单例实例
    *
    * @return {RouterCore} - 路由器实例
    */
   static get instance(): RouterCore {
-    if (!RouterCore.#instance) {
+    if (!RouterCore._instance) {
       throw new Error(`[Vitarx.Router.instance]：路由器实例未初始化`)
     }
-    return RouterCore.#instance
+    return RouterCore._instance
   }
 
   // 是否运行在浏览器端
@@ -230,7 +231,7 @@ export default abstract class RouterCore {
    * @return {boolean} - 如果初始化完成，返回true，否则返回false
    */
   get initialized(): boolean {
-    return RouterCore.#instance !== undefined
+    return RouterCore._instance !== undefined
   }
 
   /**
@@ -446,7 +447,7 @@ export default abstract class RouterCore {
    * @return {this} - 返回当前路由器实例
    */
   public initialize(): this {
-    if (RouterCore.#instance) return this
+    if (RouterCore._instance) return this
     // 初始化路由表
     this.setupRoutes(this._options.routes)
     if (typeof this.options.scrollBehavior === 'function') {
@@ -457,7 +458,7 @@ export default abstract class RouterCore {
     // 初始化路由器
     this.initializeRouter()
     // 记录单例
-    RouterCore.#instance = this
+    RouterCore._instance = this
     return this
   }
 
