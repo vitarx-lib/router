@@ -861,7 +861,7 @@ export default abstract class Router {
    */
   protected onAfterEach(to: RouteLocation, from: RouteLocation): void {
     const matched = to.matched.at(-1)
-    if (matched && 'afterEach' in matched && typeof matched.afterEach === 'function') {
+    if (matched && 'afterEnter' in matched && typeof matched.afterEach === 'function') {
       return matched.afterEach.call(this, to as any, from as any)
     }
     return this._options.afterEach?.call(this, to as any, from as any)

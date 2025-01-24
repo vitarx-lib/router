@@ -57,7 +57,7 @@ type RedirectHandler = (this: Router, to: RouteLocation) => RouteTarget
  *
  * @template W 允许的路由小部件类型，用于类型重载
  */
-export interface Route<W extends AllowedRouteWidget = AllowedRouteWidget> extends HookCallBack {
+export interface Route<W extends AllowedRouteWidget = AllowedRouteWidget> {
   /**
    * 路由路径
    *
@@ -128,6 +128,18 @@ export interface Route<W extends AllowedRouteWidget = AllowedRouteWidget> extend
    * @default true
    */
   injectProps?: (W extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps) | boolean
+  /**
+   * 路由前置钩子
+   *
+   * @see BeforeEnterCallback
+   */
+  beforeEnter?: BeforeEnterCallback
+  /**
+   * 路由后置钩子
+   *
+   * @see AfterEnterCallback
+   */
+  afterEnter?: AfterEnterCallback
 }
 
 /**
@@ -218,7 +230,7 @@ export type BeforeEachCallbackResult =
   | void
   | Promise<boolean | RouteTarget | void>
 /**
- * 全局路由前置钩子
+ * 路由前置钩子
  *
  * 此时路由导航还未正式开始，此钩子常用于鉴权，如果不符合条件，可以返回false阻止路由，亦可以返回重定向目标。
  *
@@ -227,14 +239,14 @@ export type BeforeEachCallbackResult =
  * @param {DeepReadonly<RouteLocation>} from - 从哪个路由跳转过来
  * @returns {boolean | RouteTarget | void} - 返回false表示阻止路由跳转，返回{@link RouteTarget}重定向目标
  */
-export type BeforeEachCallback = (
+export type BeforeEnterCallback = (
   this: Router,
   to: DeepReadonly<RouteLocation>,
   from: DeepReadonly<RouteLocation>
 ) => BeforeEachCallbackResult
 
 /**
- * 全局路由后置钩子
+ * 路由后置钩子
  *
  * 此时视图已经渲染完成，可以做一些操作，如：修改页面标题等。
  *
@@ -242,7 +254,7 @@ export type BeforeEachCallback = (
  * @param {DeepReadonly<RouteLocation>} to - 当前路由数据
  * @param {DeepReadonly<RouteLocation>} from - 从哪个路由跳转过来
  */
-type AfterEachCallback = (
+type AfterEnterCallback = (
   this: Router,
   to: DeepReadonly<RouteLocation>,
   from: DeepReadonly<RouteLocation>
@@ -319,26 +331,10 @@ export type ScrollBehaviorHandler = (
   savedPosition: _ScrollToOptions | undefined
 ) => ScrollResult | Promise<ScrollResult>
 
-// 钩子回调
-interface HookCallBack {
-  /**
-   * 路由前置钩子
-   *
-   * @see BeforeEachCallback
-   */
-  beforeEach?: BeforeEachCallback
-  /**
-   * 路由后置钩子
-   *
-   * @see AfterEachCallback
-   */
-  afterEach?: AfterEachCallback
-}
-
 /**
  * 路由器配置
  */
-export interface RouterOptions<T extends HistoryMode = HistoryMode> extends HookCallBack {
+export interface RouterOptions<T extends HistoryMode = HistoryMode> {
   /**
    * 根路径
    *
@@ -399,6 +395,18 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> extends Hook
    * @default 'smooth'
    */
   scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
+  /**
+   * 全局路由前置钩子
+   *
+   * @see BeforeEnterCallback
+   */
+  beforeEach?: BeforeEnterCallback
+  /**
+   * 全局路由后置钩子
+   *
+   * @see AfterEnterCallback
+   */
+  afterEach?: AfterEnterCallback
 }
 
 /**
