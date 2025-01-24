@@ -21,6 +21,9 @@ export interface RouteOptions {
   name?: string
 }
 
+// 路由视图层级索引
+const INDEX_SYMBOL = Symbol('RouterViewCounter')
+
 /**
  * # 路由器视图
  *
@@ -29,28 +32,25 @@ export interface RouteOptions {
  * 如需实现页面缓存等功能，可以重写该类的{@link build}方法。
  */
 export class RouterView extends Widget<RouteOptions> {
-  static #indexSymbol = Symbol('RouterViewCounter')
   // 自身index
-  readonly #index: number
+  private readonly _$index: number
   // 当前匹配的路由配置
-  #currentRoute?: RouteNormalized
-  // 当前视图元素
-  #currentElement = shallowRef<VNode<WidgetType>>()
+  private _$currentRoute?: RouteNormalized
 
   constructor(props: RouteOptions) {
     super(props)
-    const parentIndex = inject(RouterView.#indexSymbol, -1, this)
-    this.#index = parentIndex + 1
-    provide(RouterView.#indexSymbol, this.#index, this)
-    this.#currentRoute = this.matchedRoute
-    if (this.#currentRoute) {
-      this.#currentElement.value = Router.routeView(this.#currentRoute, this.name)
+    const parentIndex = inject(INDEX_SYMBOL, -1, this)
+    this._$index = parentIndex + 1
+    provide(INDEX_SYMBOL, this._$index, this)
+    this._$currentRoute = this.matchedRoute
+    if (this._$currentRoute) {
+      this._$currentElement.value = Router.routeView(this._$currentRoute, this.name)
     }
     watch(this.location.matched, (_c, o) => {
       const newRoute = o[this.index]
-      if (newRoute !== this.#currentRoute) {
-        this.#currentRoute = newRoute
-        this.#currentElement.value = newRoute ? Router.routeView(newRoute, this.name) : undefined
+      if (newRoute !== this._$currentRoute) {
+        this._$currentRoute = newRoute
+        this._$currentElement.value = newRoute ? Router.routeView(newRoute, this.name) : undefined
       }
     })
   }
@@ -61,7 +61,7 @@ export class RouterView extends Widget<RouteOptions> {
    * `index`的值从0开始，它与`RouteLocation.matched`数组下标一一对应
    */
   public get index() {
-    return this.#index
+    return this._$index
   }
 
   /**
@@ -81,8 +81,11 @@ export class RouterView extends Widget<RouteOptions> {
   }
 
   public get matchedRoute(): RouteNormalized | undefined {
-    return this.location.matched[this.#index]
+    return this.location.matched[this.index]
   }
+
+  // 当前视图元素
+  private _$currentElement = shallowRef<VNode<WidgetType>>()
 
   /**
    * 当前路由器视图要显示的虚拟节点
@@ -91,8 +94,8 @@ export class RouterView extends Widget<RouteOptions> {
    *
    * @protected
    */
-  protected get currentElement(): VNode | undefined {
-    return this.#currentElement.value
+  protected get $currentElement(): VNode | undefined {
+    return this._$currentElement.value
   }
 
   /**
@@ -136,7 +139,7 @@ export class RouterView extends Widget<RouteOptions> {
    * @protected
    */
   protected build(): Element {
-    return this.currentElement || createElement(Fragment)
+    return this.$currentElement || createElement(Fragment)
   }
 
   /**
