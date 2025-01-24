@@ -1,6 +1,6 @@
 {
   "name": "vitarx-router",
-  "version": "1.0.0-beta.8",
+  "version": "1.0.0-beta.9",
   "description": "Vitarx前端框架的配套路由器",
   "type": "module",
   "main": "dist/vitarx-router.umd.js",
@@ -34,7 +34,7 @@
     "push": "npm publish --access=public"
   },
   "peerDependencies": {
-    "vitarx": "^1.0.0-beta.33"
+    "vitarx": "^1.0.0-beta.35"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
