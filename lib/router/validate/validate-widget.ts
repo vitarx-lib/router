@@ -1,4 +1,4 @@
-import type { Route } from '../type.js'
+import type { Route } from '../types.js'
 
 /**
  * 验证 widget 配置
