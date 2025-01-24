@@ -1,5 +1,3 @@
-// noinspection JSUnusedGlobalSymbols
-
 import {
   createElement,
   deepClone,
@@ -12,22 +10,19 @@ import {
   type VNode,
   type WidgetType
 } from 'vitarx'
+import RouterRegistry from './router-registry.ts'
 import {
   type _ScrollBehavior,
   type _ScrollToOptions,
   type BeforeEachCallbackResult,
-  type DynamicRouteRecord,
   type HashStr,
   type HistoryMode,
   type InitializedRouterOptions,
-  type MatchResult,
   type NavigateResult,
   NavigateStatus,
-  type Route,
   type RouteIndex,
   type RouteLocation,
   type RouteMeta,
-  type RouteName,
   type RouteNormalized,
   type RoutePath,
   type RouterOptions,
@@ -37,74 +32,64 @@ import {
 } from './router-types.js'
 import { patchUpdate } from './update.js'
 import {
-  createDynamicPattern,
   formatHash,
   formatPath,
   getPathSuffix,
   isLazyLoad,
-  isRouteGroup,
   isRouteLocationTypeObject,
-  isVariablePath,
   mergePathParams,
-  normalizeRoute,
-  objectToQueryString,
-  optionalVariableCount,
-  splitPathAndSuffix,
-  validateSuffix
+  objectToQueryString
 } from './utils.js'
 
 /**
- * 路由器基类
+ * 路由器核心类
+ *
+ * 继承自 RouterRegistry，负责处理路由导航、历史记录管理、生命周期等核心功能。
+ * 采用单例模式，确保全局只有一个路由器实例。
  */
-export default abstract class RouterCore {
-  // 配置
-  private readonly _options: MakeRequired<
-    RouterOptions,
-    Exclude<keyof RouterOptions, 'beforeEach' | 'afterEach'>
-  >
-  // 命名路由映射
-  private readonly _namedRoutes = new Map<string, RouteNormalized>()
-  // 动态路由正则，按长度分组
-  private readonly _dynamicRoutes = new Map<number, DynamicRouteRecord[]>()
-  // 路由path映射
-  private readonly _pathRoutes = new Map<string, RouteNormalized>()
-  // 父路由映射
-  private readonly _parentRoute = new WeakMap<RouteNormalized, RouteNormalized>()
-  // 当前任务 ID
+export default abstract class RouterCore extends RouterRegistry {
+  // 当前执行的导航任务ID，用于处理并发导航请求
   private _currentTaskId: number | null = null
-  // 用于生成唯一任务 ID
+
+  // 任务计数器，用于生成唯一的任务ID
   private _taskCounter = 0
+
   /**
-   * 是否正在执行 replace 操作
-   *
-   * @private
+   * 等待执行的 replace 操作数据
+   * 如果不为 null，表示当前有一个等待完成的 replace 导航
    */
   private _pendingReplace: RouteLocation | null = null
+
   /**
-   * 是否正在执行 push 操作
-   *
-   * @private
+   * 等待执行的 push 操作数据
+   * 如果不为 null，表示当前有一个等待完成的 push 导航
    */
   private _pendingPush: RouteLocation | null = null
-  // 滚动行为处理器
+
+  /**
+   * 滚动行为处理器
+   * 用于自定义路由切换时的滚动行为
+   */
   private _scrollBehaviorHandler: ScrollBehaviorHandler | undefined = undefined
-  // 当前路由数据
+
+  /**
+   * 当前路由数据
+   * 包含当前路由的完整信息，如路径、参数、查询字符串等
+   */
   private readonly _currentRouteLocation: Reactive<RouteLocation>
 
+  /**
+   * 路由器构造函数
+   * 初始化路由器并确保单例
+   *
+   * @param {RouterOptions} options - 路由器配置选项
+   * @throws {Error} 如果已存在路由器实例则抛出错误
+   */
   protected constructor(options: RouterOptions) {
     if (RouterCore._instance) {
       throw new Error(`[Vitarx.Router.constructor]：路由器实例已存在，不能创建多个实例`)
     }
-    this._options = {
-      base: '/',
-      strict: false,
-      mode: 'path',
-      scrollBehavior: 'smooth',
-      suffix: '*',
-      pattern: /[\w.]+/,
-      ...options
-    }
-    this._options.base = `/${this._options.base.replace(/^\/+|\/+$/g, '')}`
+    super(options)
     this._currentRouteLocation = reactive<RouteLocation>({
       index: this._options.base,
       path: this._options.base,
@@ -118,14 +103,16 @@ export default abstract class RouterCore {
   }
 
   /**
-   * 路由器实例，单例模式，用于全局获取路由器实例
+   * 路由器单例实例
+   * 用于全局存储唯一的路由器实例
    */
   private static _instance: RouterCore | undefined
 
   /**
-   * 获取单例实例
+   * 获取路由器单例实例
    *
-   * @return {RouterCore} - 路由器实例
+   * @throws {Error} 如果路由器未初始化则抛出错误
+   * @return {RouterCore} 路由器实例
    */
   static get instance(): RouterCore {
     if (!RouterCore._instance) {
@@ -134,7 +121,10 @@ export default abstract class RouterCore {
     return RouterCore._instance
   }
 
-  // 是否运行在浏览器端
+  /**
+   * 是否运行在浏览器环境
+   * 用于区分服务端渲染和客户端渲染
+   */
   private _isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined'
 
   /**
@@ -144,7 +134,10 @@ export default abstract class RouterCore {
     return this._isBrowser
   }
 
-  // 滚动行为
+  /**
+   * 滚动行为
+   * 定义路由切换时的滚动效果
+   */
   private _scrollBehavior: _ScrollBehavior = 'auto'
 
   /**
@@ -173,72 +166,12 @@ export default abstract class RouterCore {
   }
 
   /**
-   * 获取所有路由映射
-   *
-   * map键值是path，值是路由对象
-   *
-   * @return {Map<string, Route>}
-   */
-  get pathRoutes(): ReadonlyMap<string, Route> {
-    return this._pathRoutes
-  }
-
-  /**
-   * 获取所有命名路由映射
-   *
-   * map键值是name，值是路由对象
-   *
-   * @return {Map<string, Route>}
-   */
-  get namedRoutes(): ReadonlyMap<string, Route> {
-    return this._namedRoutes
-  }
-
-  /**
-   * 动态路由记录
-   *
-   * map键值是path段长度，值是Array<{regex: RegExp,route:RouteNormalized}>
-   */
-  get dynamicRoutes(): Map<number, DynamicRouteRecord[]> {
-    return this._dynamicRoutes
-  }
-
-  /**
-   * ## 获取已规范的路由表
-   *
-   * 它的内存地址始终指向的是初始化时传入的路由表，但它的数据结构是经过内部规范化处理过的。
-   *
-   * 所有嵌套`Route`的path都会被自动补全为完整的路径
-   *
-   * > 注意：不要尝试修改已规范化的路由表！请使用`removeRoute`和`addRoute`方法实现路由的变更。
-   *
-   * @return {RouteNormalized[]}
-   */
-  get routes(): ReadonlyArray<RouteNormalized> {
-    return this._options.routes as ReadonlyArray<RouteNormalized>
-  }
-
-  /**
-   * 基本路径
-   */
-  get basePath(): `/${string}` {
-    return this._options.base
-  }
-
-  /**
    * 判断路由器是否初始化完成
    *
    * @return {boolean} - 如果初始化完成，返回true，否则返回false
    */
   get initialized(): boolean {
     return RouterCore._instance !== undefined
-  }
-
-  /**
-   * 受支持的`path`后缀名
-   */
-  get suffix(): RouterOptions['suffix'] {
-    return this._options.suffix
   }
 
   /**
@@ -353,91 +286,6 @@ export default abstract class RouterCore {
   }
 
   /**
-   * 删除路由
-   *
-   * @param {string} index 路由索引，如果/开头则匹配path，其他匹配name
-   * @param {boolean} isRemoveFromRoutes 是否从路由表中移除，内部递归时传递的参数，无需外部传入！
-   */
-  public removeRoute(index: RouteIndex, isRemoveFromRoutes: boolean = true): void {
-    const deleteRoute = this.findRoute(index)
-
-    if (!deleteRoute) return
-
-    // 如果有子路由，则递归删除
-    if (isRouteGroup(deleteRoute)) {
-      for (const child of deleteRoute.children) {
-        this.removeRoute(child.path, false)
-      }
-    }
-
-    // 删除通用映射关系
-    this._pathRoutes.delete(deleteRoute.path)
-    if (deleteRoute.name) {
-      this._namedRoutes.delete(deleteRoute.name)
-    }
-
-    // 删除动态路由
-    this.removeDynamicRoute(deleteRoute.path)
-
-    // 从路由表中移除
-    if (isRemoveFromRoutes) this.removedFromRoutes(deleteRoute)
-  }
-
-  /**
-   * 添加路由
-   *
-   * @param {Route} route - 路由描述对象
-   * @param {string} parent - 父路由的path或name，不传入则添加至路由表根节点
-   */
-  public addRoute(route: Route, parent?: string) {
-    if (parent) {
-      const parentRoute = this.findRoute(parent)
-      if (!parentRoute) throw new Error(`[Vitarx.Router.addRoute][ERROR]：父路由${parent}不存在`)
-      this.registerRoute(route, parentRoute)
-    } else {
-      this.registerRoute(route)
-      this._options.routes.push(route)
-    }
-  }
-
-  /**
-   * 查找路由
-   *
-   * 传入的是`path`则会调用`matchRoute`方法，传入的是`name`则会调用`getNamedRoute`方法
-   *
-   * @param {RouteIndex|RouteTarget} target - 路由索引，如果index以/开头则匹配path，其他匹配name
-   * @return {RouteNormalized | undefined} - 路由对象，如果不存在则返回undefined
-   */
-  public findRoute(target: RouteIndex | RouteTarget): RouteNormalized | undefined {
-    const isRouterTarget = typeof target === 'object'
-    const index: RouteIndex = isRouterTarget ? target.index : target
-    if (typeof index !== 'string') {
-      throw new TypeError(
-        `[Vitarx.Router.getRoute][ERROR]：路由索引${target}类型错误，必须给定字符串类型`
-      )
-    }
-    if (index.startsWith('/')) {
-      const matched = this.matchRoute(index as RoutePath)
-      if (!matched) return undefined
-      // 将动态路由参数注入到路由目标对象中
-      if (matched.params && isRouterTarget) {
-        target.params = Object.assign(target.params || {}, matched.params)
-      }
-      return matched.route
-    }
-    return this.findNamedRoute(index)
-  }
-
-  /**
-   * 查找命名路由
-   *
-   * @param {string} name - 路由名称
-   */
-  public findNamedRoute(name: RouteName): RouteNormalized | undefined {
-    return this._namedRoutes.get(name)
-  }
-
-  /**
    * 初始化路由器
    *
    * 只能初始化一次，多次初始化无效。
@@ -492,19 +340,11 @@ export default abstract class RouterCore {
   }
 
   /**
-   * 获取路由的父路由
+   * 创建路由位置对象
+   * 根据导航目标创建标准化的路由位置信息
    *
-   * @param route - 路由对象
-   * @return {RouteNormalized | undefined}
-   */
-  public findParentRoute(route: RouteNormalized): RouteNormalized | undefined {
-    return this._parentRoute.get(route)
-  }
-
-  /**
-   * 根据路由目标创建导航数据
-   *
-   * @param {RouteTarget} target - 路由目标
+   * @param {RouteTarget} target - 导航目标
+   * @return {RouteLocation} 路由位置对象
    */
   public createRouteLocation(target: RouteTarget): RouteLocation {
     if (isRouteLocationTypeObject(target)) return target
@@ -537,26 +377,32 @@ export default abstract class RouterCore {
   }
 
   /**
-   * 路由跳转的通用方法
+   * 路由导航方法
+   * 处理所有的路由跳转请求，包括 push 和 replace
    *
-   * `push`|`replace`方法最终都会调用此方法
-   *
-   * @protected
-   * @param {RouteTarget} target - 目标
-   * @return {Promise<NavigateResult>} - 是否导航成功
+   * @param {RouteTarget} target - 导航目标
+   * @return {Promise<NavigateResult>} 导航结果
    */
   public navigate(target: RouteTarget): Promise<NavigateResult> {
-    const taskId = ++this._taskCounter // 生成唯一任务 ID
-    this._currentTaskId = taskId // 更新当前任务
-    const isCurrentTask = () => this._currentTaskId === taskId // 检查任务是否被取消
+    // 生成新的任务ID并更新当前任务
+    const taskId = ++this._taskCounter
+    this._currentTaskId = taskId
+
+    // 创建任务检查函数
+    const isCurrentTask = () => this._currentTaskId === taskId
+
+    // 保存当前路由状态的深拷贝
     const from = deepClone(this.currentRouteLocation)
+
     const performNavigation = async (
       _target: RouteTarget,
       isRedirect: boolean
     ): Promise<NavigateResult> => {
+      // 创建标准化的路由位置对象
       const to = this.createRouteLocation(_target)
       const matched = to.matched.at(-1)
-      // 如果目标路由有重定向，则导航到重定向的目标
+
+      // 处理路由重定向
       if (matched?.redirect) {
         if (typeof matched.redirect === 'string') {
           return performNavigation({ index: matched.redirect }, true)
@@ -564,7 +410,8 @@ export default abstract class RouterCore {
           return performNavigation(matched.redirect.call(this, to), true)
         }
       }
-      // 创建导航结果
+
+      // 创建导航结果对象的工具函数
       const createNavigateResult = (overrides: Partial<NavigateResult> = {}): NavigateResult => ({
         from,
         to,
@@ -573,41 +420,49 @@ export default abstract class RouterCore {
         redirectFrom: isRedirect ? target : undefined,
         ...overrides
       })
-      // 判断是否为相同的路由
+
+      // 检查是否导航到相同路由
       if (this.isSameNavigate(to, this.currentRouteLocation)) {
         return createNavigateResult({
           status: NavigateStatus.duplicated,
           message: '导航到相同的路由，被系统阻止！'
         })
       }
+
       try {
+        // 执行前置守卫
         const result = await this.onBeforeEach(to, this.currentRouteLocation)
-        // 前置守卫钩子返回 false，则导航被取消
+
+        // 如果前置守卫返回false，取消导航
         if (result === false) {
           return createNavigateResult({
             status: NavigateStatus.aborted,
             message: '导航被前置守卫钩子阻止'
           })
         }
-        // 检测任务是否已被取消
+
+        // 检查任务是否已被新的导航取代
         if (!isCurrentTask()) {
           return createNavigateResult({
             status: NavigateStatus.cancelled,
             message: '已被新的导航请求替代，取消此次导航！'
           })
         }
-        // 前置守卫钩子返回对象，则导航被重定向
+
+        // 处理重定向
         if (typeof result === 'object' && result.index !== _target.index) {
-          result.isReplace ??= false // 确保 isReplace 有默认值
+          result.isReplace ??= false
           return performNavigation(result, true)
         }
-        // 路由未匹配
+
+        // 检查路由匹配结果
         if (!to.matched.length) {
           return createNavigateResult({
             status: NavigateStatus.not_matched,
             message: '未匹配到任何路由规则，被系统阻止！请检测目标索引是否正确。'
           })
         }
+
         // 更新路由历史
         if (_target.isReplace) {
           this._pendingReplace = to
@@ -616,6 +471,7 @@ export default abstract class RouterCore {
           this._pendingPush = to
           this.pushHistory(to)
         }
+
         return createNavigateResult()
       } catch (error) {
         console.error(`[Vitarx.Router.navigate][ERROR]：导航时捕获到了异常`, error)
@@ -638,23 +494,26 @@ export default abstract class RouterCore {
   protected _completeViewRender() {}
 
   /**
-   * 完成导航
+   * 完成导航过程
+   * 更新路由状态并触发相关的生命周期钩子
    *
-   * 所有子类在完成导航的后续处理过后必须调用该方法！
-   *
-   * @param {RouteLocation} data - 如果是由`replace`或`push`方法发起的导航则无需传入此参数。
-   * @param {_ScrollToOptions} savedPosition - 保存的滚动位置信息，用于恢复滚动位置
+   * @param {RouteLocation} data - 新的路由数据
+   * @param {_ScrollToOptions} savedPosition - 保存的滚动位置
    * @protected
    */
   protected completeNavigation(data?: RouteLocation, savedPosition?: _ScrollToOptions) {
+    // 保存当前路由状态用于后续钩子
     const from = this._currentRouteLocation
-    // 替换视图渲染完成的回调
+
+    // 设置视图渲染完成后的回调
     this._completeViewRender = () => {
-      // 滚动行为处理
+      // 处理滚动行为
       this.onScrollBehavior(this.currentRouteLocation, from, savedPosition).then()
-      // 触发后置钩子
+      // 触发后置守卫
       this.onAfterEach(this.currentRouteLocation, from)
     }
+
+    // 根据不同情况更新路由状态
     if (data) {
       this.updateRouteLocation(data)
     } else if (this._pendingReplace) {
@@ -664,6 +523,8 @@ export default abstract class RouterCore {
     } else {
       throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
     }
+
+    // 清理等待状态
     this._pendingReplace = null
     this._pendingPush = null
   }
@@ -719,67 +580,6 @@ export default abstract class RouterCore {
    * @private
    */
   protected abstract initializeRouter(): void
-
-  /**
-   * 路由匹配
-   *
-   * @param {string} path - 路径
-   * @return {MatchResult | undefined} 如果匹配失败则返回 undefined
-   */
-  protected matchRoute(path: RoutePath): MatchResult | undefined {
-    // 格式化路径
-    path = formatPath(path)
-
-    // 非严格模式下，转换为小写
-    if (!this._options.strict) {
-      path = path.toLowerCase() as RoutePath
-    }
-
-    // 分离路径和后缀
-    const { path: shortPath, suffix } = splitPathAndSuffix(path)
-
-    // 处理兼容的路径（添加对 index.html 的处理）
-    const possiblePaths = [shortPath, shortPath.replace(/\/index$/, '') || '/']
-
-    // 优先匹配静态路由
-    for (const possiblePath of possiblePaths) {
-      const staticRoute = this._pathRoutes.get(possiblePath)
-      if (staticRoute) {
-        return validateSuffix(suffix, staticRoute.suffix)
-          ? { route: staticRoute, params: undefined }
-          : undefined
-      }
-    }
-
-    // 动态路由匹配
-    const segmentCount = path.split('/').filter(Boolean).length
-    const candidates = this._dynamicRoutes.get(segmentCount)
-    if (!candidates) return undefined
-
-    // 兼容可选参数的路径匹配
-    const normalizedPath = `${shortPath}/`
-
-    for (const { regex, route } of candidates) {
-      const match = regex.exec(normalizedPath)
-      if (!match) continue
-      // 提取动态参数
-      const params: Record<string, string> = {}
-      const keys = Object.keys(route.pattern!)
-      for (let i = 0; i < keys.length; i++) {
-        params[keys[i]] = match[i + 1]
-      }
-      // 验证后缀
-      if (validateSuffix(suffix, route.suffix)) {
-        return {
-          route,
-          params
-        }
-      }
-      break
-    }
-    // 未匹配到任何路由
-    return undefined
-  }
 
   /**
    * 创建完整路径
@@ -867,20 +667,22 @@ export default abstract class RouterCore {
 
   /**
    * 更新路由数据
+   * 使用补丁更新的方式更新路由状态
    *
+   * @param {RouteLocation} newLocation - 新的路由数据
    * @private
-   * @param {RouteLocation} newLocation - 新的路由数据对象
    */
   private updateRouteLocation(newLocation: RouteLocation): void {
     patchUpdate(this._currentRouteLocation, newLocation)
   }
 
   /**
-   * 触发滚动行为
+   * 处理滚动行为
+   * 根据配置和保存的位置信息处理页面滚动
    *
-   * @param {RouteLocation} to - 目标导航数据对象
-   * @param {RouteLocation} from - 前导航数据对象
-   * @param {_ScrollToOptions | undefined} savedPosition - 保存的滚动位置
+   * @param {RouteLocation} to - 目标路由
+   * @param {RouteLocation} from - 当前路由
+   * @param {_ScrollToOptions} savedPosition - 保存的滚动位置
    * @private
    */
   private async onScrollBehavior(
@@ -897,180 +699,6 @@ export default abstract class RouterCore {
       }
     } catch (e) {
       console.error("[Vitarx.Router.onScrollBehavior]['ERROR']：处理滚动行为时捕获到了异常", e)
-    }
-  }
-
-  /**
-   * 从源路由表中删除路由
-   *
-   * @param route
-   * @protected
-   */
-  private removedFromRoutes(route: RouteNormalized) {
-    const parent = this.findParentRoute(route)
-    if (parent?.children) {
-      const index = parent.children.indexOf(route)
-      if (index !== -1) {
-        parent.children.splice(index, 1)
-      }
-    } else {
-      const index = this._options.routes.indexOf(route)
-      if (index !== -1) {
-        this._options.routes.splice(index, 1)
-      }
-    }
-  }
-
-  /**
-   * 删除动态路由映射
-   *
-   * @param path
-   * @protected
-   */
-  private removeDynamicRoute(path: string): void {
-    if (!isVariablePath(path)) return
-
-    const segments = path.split('/').filter(Boolean)
-    const length = segments.length
-
-    /**
-     * 根据动态路径长度删除匹配的记录
-     *
-     * @param key 动态路径的长度
-     */
-    const removeRouteFromRecords = (key: number) => {
-      const records = this._dynamicRoutes.get(key)
-      if (records) {
-        for (let i = 0; i < records.length; i++) {
-          if (records[i].route.path === path) {
-            records.splice(i, 1) // 删除匹配的记录
-            break // 找到后立即停止循环
-          }
-        }
-      }
-    }
-
-    // 删除匹配路径的动态路由
-    removeRouteFromRecords(length)
-    const count = optionalVariableCount(path)
-    // 如果是可选参数路由，删除对应短路径的路由
-    if (count > 0) {
-      for (let i = 1; i <= count; i++) {
-        removeRouteFromRecords(length - i)
-      }
-    }
-  }
-
-  /**
-   * 初始化路由表
-   *
-   * @param routes
-   */
-  private setupRoutes(routes: Route[]) {
-    for (const route of routes) {
-      this.registerRoute(route)
-    }
-  }
-
-  /**
-   * 注册路由
-   *
-   * @param {Route} route - 路由对象
-   * @param {RouteNormalized} group - 路由所在的分组
-   * @protected
-   */
-  private registerRoute(route: Route, group?: RouteNormalized) {
-    const normalizedRoute = normalizeRoute(route, group?.suffix ?? this.suffix)
-    if (group) {
-      normalizedRoute.path = formatPath(`${group.path}/${normalizedRoute.path}`)
-      this._parentRoute.set(normalizedRoute, group) // 记录当前路由于父路由的映射关系
-    }
-
-    if (isRouteGroup(normalizedRoute)) {
-      // 如果是路由组并且有 widget，则将分组自身作为路由记录
-      if (route.widget) {
-        this.recordRoute(normalizedRoute) // 记录分组路由
-      }
-      // 遍历子路由并递归注册
-      for (const child of normalizedRoute.children) {
-        this.registerRoute(child, normalizedRoute) // 递归注册子路由
-      }
-    } else {
-      // 记录路由
-      this.recordRoute(normalizedRoute)
-    }
-  }
-
-  /**
-   * 如果路径是严格匹配，则转换为小写
-   *
-   * @param path
-   * @private
-   */
-  private strictPath(path: string): RoutePath {
-    return (this._options.strict ? path : path.toLowerCase()) as RoutePath
-  }
-
-  /**
-   * 记录路由
-   *
-   * @param {Route} route - 路由对象
-   * @protected
-   */
-  private recordRoute(route: RouteNormalized) {
-    if (route.name) {
-      if (route.name.startsWith('/')) {
-        route.name = route.name.replace(/^\//, '')
-        console.warn(
-          `[Vitarx.Router][WARN]：命名路由(name)不要以/开头: ${route.name}，因为内部需要使用/区分path、name`
-        )
-      }
-
-      if (this._namedRoutes.has(route.name)) {
-        throw new Error(`[Vitarx.Router][ERROR]：检测到重复的路由名称(name): ${route.name}`)
-      }
-
-      // 添加命名路由
-      this._namedRoutes.set(route.name, route)
-    }
-
-    const path = this.strictPath(route.path)
-
-    if (this._pathRoutes.has(path)) {
-      throw new Error(`[Vitarx.Router][ERROR]：检测到重复的路由路径(path): ${route.path}`)
-    }
-
-    // 添加路由path映射
-    this._pathRoutes.set(path, route)
-
-    // 添加动态路由
-    if (isVariablePath(route.path)) {
-      this.recordDynamicRoute(route)
-    }
-  }
-
-  /**
-   * 添加动态路由
-   * @param route
-   */
-  private recordDynamicRoute(route: RouteNormalized) {
-    const { regex, length, optional } = createDynamicPattern(
-      route.path,
-      route.pattern,
-      this.options.strict,
-      this.options.pattern
-    )
-    const addToLengthMap = (len: number) => {
-      if (!this._dynamicRoutes.has(len)) {
-        this._dynamicRoutes.set(len, [])
-      }
-      this._dynamicRoutes.get(len)!.push({ regex, route })
-    }
-    addToLengthMap(length)
-    if (optional > 0) {
-      for (let i = 1; i <= optional; i++) {
-        addToLengthMap(length - i)
-      }
     }
   }
 }
