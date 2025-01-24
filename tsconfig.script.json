@@ -18,7 +18,6 @@
     "strict": true
   },
   "include": [
-    // 编译 scripts 目录下的所有 TypeScript 文件
-    "scripts/**/*.ts"
+    "scripts"
   ]
 }
