@@ -5,7 +5,7 @@ import {
   type RouteLocation,
   type RouterOptions,
   type RouteTarget
-} from './type.js'
+} from './types.js'
 import { urlToRouteTarget } from './utils.js'
 
 /**

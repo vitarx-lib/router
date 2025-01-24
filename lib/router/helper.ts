@@ -1,7 +1,7 @@
 import type { LazyLoader, Reactive, WidgetType } from 'vitarx'
 import MemoryRouter from './memory-router.js'
 import Router from './router.js'
-import type { LazyLoad, Route, RouteLocation, RouterOptions } from './type.js'
+import type { LazyLoad, Route, RouteLocation, RouterOptions } from './types.js'
 import { LAZY_LOADER_SYMBOL } from './utils.js'
 import WebHistoryRouter from './web-history-router.js'
 

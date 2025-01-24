@@ -34,7 +34,7 @@ import {
   type RouteTarget,
   type ScrollBehaviorHandler,
   type ScrollTarget
-} from './type.js'
+} from './types.js'
 import { patchUpdate } from './update.js'
 import {
   createDynamicPattern,
@@ -289,8 +289,9 @@ export default abstract class Router {
    * @return {VNode<WidgetType> | undefined} - 视图元素虚拟节点
    */
   static routeView(route: RouteNormalized, name: string): VNode<WidgetType> | undefined {
-    const widgetMap = route.widget!
-    if (!Object.prototype.hasOwnProperty.call(widgetMap, name)) return undefined
+    const widgetMap = route.widget
+    if (!widgetMap) return undefined
+    if (!(name in widgetMap)) return undefined
     const widget = widgetMap[name]
     if (isLazyLoad(widget)) {
       return createElement(LazyWidget, { children: widget, key: route.path })
@@ -553,6 +554,15 @@ export default abstract class Router {
       isRedirect: boolean
     ): Promise<NavigateResult> => {
       const to = this.createRouteLocation(_target)
+      const matched = to.matched.at(-1)
+      // 如果目标路由有重定向，则导航到重定向的目标
+      if (matched?.redirect) {
+        if (typeof matched.redirect === 'string') {
+          return performNavigation({ index: matched.redirect }, true)
+        } else if (typeof matched.redirect === 'function') {
+          return performNavigation(matched.redirect(to), true)
+        }
+      }
       // 创建导航结果
       const createNavigateResult = (overrides: Partial<NavigateResult> = {}): NavigateResult => ({
         from,

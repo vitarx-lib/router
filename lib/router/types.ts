@@ -47,13 +47,17 @@ type NamedRouteWidget<K extends string = string> = Record<K, RouteWidget>
  * 允许的路由小部件联合类型
  */
 type AllowedRouteWidget = RouteWidget | NamedRouteWidget
+/**
+ * 重定向处理器
+ */
+type RedirectHandler = (to: RouteLocation) => RouteTarget
 
 /**
  * 路由路线配置
  *
  * @template W 允许的路由小部件类型，用于类型重载
  */
-export interface Route<W extends AllowedRouteWidget = AllowedRouteWidget> {
+export interface Route<W extends AllowedRouteWidget = AllowedRouteWidget> extends HookCallBack {
   /**
    * 路由路径
    *
@@ -90,6 +94,12 @@ export interface Route<W extends AllowedRouteWidget = AllowedRouteWidget> {
    *  4. Record<string, WidgetType | LazyLoad<WidgetType>>: 命名的小部件，同级的`RouterView`会根据name属性展示对应的小部件。
    */
   widget?: W
+  /**
+   * 重定向目标
+   *
+   * 如果没有配置`widget`，则需要配置`redirect`，否则`path`无法被访问。
+   */
+  redirect?: RouteTarget | RedirectHandler
   /**
    * 子路由
    *
@@ -309,10 +319,34 @@ export type ScrollBehaviorHandler = (
   savedPosition: _ScrollToOptions | undefined
 ) => ScrollResult | Promise<ScrollResult>
 
+// 钩子回调
+interface HookCallBack {
+  /**
+   * 路由前置钩子
+   *
+   * @see BeforeEachCallback
+   */
+  beforeEach?: BeforeEachCallback
+  /**
+   * 路由后置钩子
+   *
+   * @see AfterEachCallback
+   */
+  afterEach?: AfterEachCallback
+  /**
+   * 滚动行为
+   *
+   * 可以传入`ScrollBehavior`或`ScrollBehaviorHandler`函数自定义滚动行为。
+   *
+   * @default 'smooth'
+   */
+  scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
+}
+
 /**
  * 路由器配置
  */
-export interface RouterOptions<T extends HistoryMode = HistoryMode> {
+export interface RouterOptions<T extends HistoryMode = HistoryMode> extends HookCallBack {
   /**
    * 根路径
    *
@@ -347,26 +381,6 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    * @note 注意：路由表传入过后，不应该在外部进行修改，如需修改需使用`Router.removeRoute`或`Router.addRoute`方法。
    */
   routes: Route[]
-  /**
-   * 全局路由前置钩子
-   *
-   * @see BeforeEachCallback
-   */
-  beforeEach?: BeforeEachCallback
-  /**
-   * 全局路由后置钩子
-   *
-   * @see AfterEachCallback
-   */
-  afterEach?: AfterEachCallback
-  /**
-   * 滚动行为
-   *
-   * 可以传入`ScrollBehavior`或`ScrollBehaviorHandler`函数自定义滚动行为。
-   *
-   * @default 'smooth'
-   */
-  scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
   /**
    * 支持的后缀名，如：.html、.md等。
    *

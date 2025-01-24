@@ -1,5 +1,5 @@
 import Router from './router.js'
-import { NavigateStatus, type RouteLocation, type RouterOptions } from './type.js'
+import { NavigateStatus, type RouteLocation, type RouterOptions } from './types.js'
 
 /**
  * 基于内存实现的路由器

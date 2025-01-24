@@ -1,5 +1,4 @@
-export type * from './type.js'
-export { NavigateStatus } from './type.js'
+export * from './types.js'
 export { default as Router } from './router.js'
 export { default as WebHistoryRouter } from './web-history-router.js'
 export { default as MemoryRouter } from './memory-router.js'
