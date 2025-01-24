@@ -1,5 +1,5 @@
 import type { WidgetType } from 'vitarx'
-import type Router from './router.js'
+import type RouterCore from './router-core.js'
 import { type LAZY_LOADER_SYMBOL } from './utils.js'
 
 /**
@@ -50,7 +50,7 @@ type AllowedRouteWidget = RouteWidget | NamedRouteWidget
 /**
  * 重定向处理器
  */
-type RedirectHandler = (this: Router, to: RouteLocation) => RouteTarget
+type RedirectHandler = (this: RouterCore, to: RouteLocation) => RouteTarget
 
 /**
  * 路由路线配置
@@ -234,13 +234,13 @@ export type BeforeEachCallbackResult =
  *
  * 此时路由导航还未正式开始，此钩子常用于鉴权，如果不符合条件，可以返回false阻止路由，亦可以返回重定向目标。
  *
- * @this {Router} - 路由器实例
+ * @this {RouterCore} - 路由器实例
  * @param {DeepReadonly<RouteLocation>} to - 要跳转的目标路由
  * @param {DeepReadonly<RouteLocation>} from - 从哪个路由跳转过来
  * @returns {boolean | RouteTarget | void} - 返回false表示阻止路由跳转，返回{@link RouteTarget}重定向目标
  */
 export type BeforeEnterCallback = (
-  this: Router,
+  this: RouterCore,
   to: DeepReadonly<RouteLocation>,
   from: DeepReadonly<RouteLocation>
 ) => BeforeEachCallbackResult
@@ -250,12 +250,12 @@ export type BeforeEnterCallback = (
  *
  * 此时视图已经渲染完成，可以做一些操作，如：修改页面标题等。
  *
- * @this {Router} - 路由器实例
+ * @this {RouterCore} - 路由器实例
  * @param {DeepReadonly<RouteLocation>} to - 当前路由数据
  * @param {DeepReadonly<RouteLocation>} from - 从哪个路由跳转过来
  */
 type AfterEnterCallback = (
-  this: Router,
+  this: RouterCore,
   to: DeepReadonly<RouteLocation>,
   from: DeepReadonly<RouteLocation>
 ) => void

@@ -10,7 +10,7 @@ import type {
   RoutePath,
   RouterOptions,
   RouteTarget
-} from './types.js'
+} from './router-types.js'
 import { validateInjectProps, validateWidget } from './validate/index.js'
 
 export const LAZY_LOADER_SYMBOL = Symbol('LazyLoader')

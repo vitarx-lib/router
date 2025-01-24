@@ -1,10 +1,10 @@
 import { createApp } from 'vitarx'
-import { WebHistoryRouter } from '../lib/index.js'
+import { HistoryRouter } from '../lib/index.js'
 import App from './App.js'
 import Page1 from './Page/Page1.js'
 import Page2 from './Page/Page2.js'
 
-const router = new WebHistoryRouter({
+const router = new HistoryRouter({
   base: '/',
   routes: [
     {

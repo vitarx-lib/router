@@ -1,5 +1,5 @@
-import Router from './router.js'
-import { NavigateStatus, type RouteLocation, type RouterOptions } from './types.js'
+import RouterCore from './router-core.js'
+import { NavigateStatus, type RouteLocation, type RouterOptions } from './router-types.js'
 
 /**
  * 基于内存实现的路由器
@@ -8,7 +8,7 @@ import { NavigateStatus, type RouteLocation, type RouterOptions } from './types.
  *
  * > 注意：不要在浏览器端使用，因为浏览器端有原生的history对象，使用内存模式会和浏览器端的历史记录冲突，导致路由异常。
  */
-export default class MemoryRouter extends Router {
+export default class RouterMemory extends RouterCore {
   // 路由历史记录数组
   protected _history: RouteLocation[] = []
   // 标记是否有go方法触发的导航

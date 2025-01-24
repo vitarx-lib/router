@@ -10,7 +10,7 @@ import {
   Widget,
   type WidgetType
 } from 'vitarx'
-import { type RouteNormalized, Router } from '../router/index.js'
+import { type RouteNormalized, Router } from '../core/index.js'
 
 export interface RouteOptions {
   /**

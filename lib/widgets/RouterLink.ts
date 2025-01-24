@@ -7,7 +7,7 @@ import {
   type WebRuntimeDom,
   Widget
 } from 'vitarx'
-import { type RouteIndex, type RouteLocation, Router, type RouteTarget } from '../router/index.js'
+import { type RouteIndex, type RouteLocation, Router, type RouteTarget } from '../core/index.js'
 
 export interface RouterLinkProps {
   /**

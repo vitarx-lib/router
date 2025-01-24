@@ -1,11 +1,11 @@
-import Router from './router.js'
+import RouterCore from './router-core.js'
 import {
   type HashStr,
   NavigateStatus,
   type RouteLocation,
   type RouterOptions,
   type RouteTarget
-} from './types.js'
+} from './router-types.js'
 import { urlToRouteTarget } from './utils.js'
 
 /**
@@ -13,7 +13,7 @@ import { urlToRouteTarget } from './utils.js'
  *
  * 支持浏览器前进、后退、跳转等操作
  */
-export default class WebHistoryRouter extends Router {
+export default class RouterHistory extends RouterCore {
   constructor(options: RouterOptions<'path' | 'hash'>) {
     super(options)
     // 守卫mode类型

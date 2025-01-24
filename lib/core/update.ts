@@ -1,4 +1,4 @@
-import type { RouteLocation } from './types.js'
+import type { RouteLocation } from './router-types.js'
 
 // 字符串值的key
 const __stringValueKeys: (keyof RouteLocation)[] = ['path', 'hash', 'index', 'fullPath']

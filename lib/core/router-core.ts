@@ -34,7 +34,7 @@ import {
   type RouteTarget,
   type ScrollBehaviorHandler,
   type ScrollTarget
-} from './types.js'
+} from './router-types.js'
 import { patchUpdate } from './update.js'
 import {
   createDynamicPattern,
@@ -56,11 +56,11 @@ import {
 /**
  * 路由器基类
  */
-export default abstract class Router {
+export default abstract class RouterCore {
   /**
    * 路由器实例，单例模式，用于全局获取路由器实例
    */
-  static #instance: Router | undefined
+  static #instance: RouterCore | undefined
   // 配置
   private readonly _options: MakeRequired<
     RouterOptions,
@@ -96,7 +96,7 @@ export default abstract class Router {
   private readonly _currentRouteLocation: Reactive<RouteLocation>
 
   protected constructor(options: RouterOptions) {
-    if (Router.#instance) {
+    if (RouterCore.#instance) {
       throw new Error(`[Vitarx.Router.constructor]：路由器实例已存在，不能创建多个实例`)
     }
     this._options = {
@@ -124,13 +124,13 @@ export default abstract class Router {
   /**
    * 获取单例实例
    *
-   * @return {Router} - 路由器实例
+   * @return {RouterCore} - 路由器实例
    */
-  static get instance(): Router {
-    if (!Router.#instance) {
+  static get instance(): RouterCore {
+    if (!RouterCore.#instance) {
       throw new Error(`[Vitarx.Router.instance]：路由器实例未初始化`)
     }
-    return Router.#instance
+    return RouterCore.#instance
   }
 
   // 是否运行在浏览器端
@@ -230,7 +230,7 @@ export default abstract class Router {
    * @return {boolean} - 如果初始化完成，返回true，否则返回false
    */
   get initialized(): boolean {
-    return Router.#instance !== undefined
+    return RouterCore.#instance !== undefined
   }
 
   /**
@@ -446,7 +446,7 @@ export default abstract class Router {
    * @return {this} - 返回当前路由器实例
    */
   public initialize(): this {
-    if (Router.#instance) return this
+    if (RouterCore.#instance) return this
     // 初始化路由表
     this.setupRoutes(this._options.routes)
     if (typeof this.options.scrollBehavior === 'function') {
@@ -457,7 +457,7 @@ export default abstract class Router {
     // 初始化路由器
     this.initializeRouter()
     // 记录单例
-    Router.#instance = this
+    RouterCore.#instance = this
     return this
   }
 
@@ -580,10 +580,7 @@ export default abstract class Router {
         })
       }
       try {
-        const result = await this.onBeforeEach(
-          to as unknown as DeepReadonly<RouteLocation>,
-          this.currentRouteLocation as unknown as DeepReadonly<RouteLocation>
-        )
+        const result = await this.onBeforeEach(to, this.currentRouteLocation)
         // 前置守卫钩子返回 false，则导航被取消
         if (result === false) {
           return createNavigateResult({
@@ -838,31 +835,31 @@ export default abstract class Router {
   /**
    * 触发路由前置守卫
    *
-   * @param {DeepReadonly<RouteLocation>} to - 路由目标对象
-   * @param {DeepReadonly<RouteLocation>} from - 前路由对象
+   * @param {Required<RouteLocation>} to - 路由目标对象
+   * @param {Required<RouteLocation>} from - 前路由对象
    * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
   protected onBeforeEach(
-    to: DeepReadonly<RouteLocation>,
-    from: DeepReadonly<RouteLocation>
+    to: Required<RouteLocation>,
+    from: Required<RouteLocation>
   ): BeforeEachCallbackResult {
     const matched = to.matched.at(-1)
     if (matched && 'beforeEnter' in matched && typeof matched.beforeEnter === 'function') {
-      return matched.beforeEnter.call(this, to, from)
+      return matched.beforeEnter.call(this, to as any, from as any)
     }
-    return this._options.beforeEach?.call(this, to, from)
+    return this._options.beforeEach?.call(this, to as any, from as any)
   }
 
   /**
    * 触发路由后置守卫
    *
-   * @param {DeepReadonly<RouteLocation>} to - 路由目标对象
-   * @param {DeepReadonly<RouteLocation>} from - 前路由对象
+   * @param {Required<RouteLocation>} to - 路由目标对象
+   * @param {Required<RouteLocation>} from - 前路由对象
    */
-  protected onAfterEach(to: RouteLocation, from: RouteLocation): void {
+  protected onAfterEach(to: Required<RouteLocation>, from: Required<RouteLocation>): void {
     const matched = to.matched.at(-1)
-    if (matched && 'afterEnter' in matched && typeof matched.afterEach === 'function') {
-      return matched.afterEach.call(this, to as any, from as any)
+    if (matched && 'afterEnter' in matched && typeof matched.afterEnter === 'function') {
+      return matched.afterEnter.call(this, to as any, from as any)
     }
     return this._options.afterEach?.call(this, to as any, from as any)
   }

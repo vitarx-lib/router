@@ -1,4 +1,4 @@
-import type { InjectNamedProps, InjectProps, Route } from '../types.js'
+import type { InjectNamedProps, InjectProps, Route } from '../router-types.js'
 
 /**
  * 验证 injectProps 规则

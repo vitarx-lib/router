@@ -1,9 +1,9 @@
 import type { LazyLoader, Reactive, WidgetType } from 'vitarx'
-import MemoryRouter from './memory-router.js'
-import Router from './router.js'
-import type { LazyLoad, Route, RouteLocation, RouterOptions } from './types.js'
+import RouterCore from './router-core.js'
+import RouterHistory from './router-history.js'
+import RouterMemory from './router-memory.js'
+import type { LazyLoad, Route, RouteLocation, RouterOptions } from './router-types.js'
 import { LAZY_LOADER_SYMBOL } from './utils.js'
-import WebHistoryRouter from './web-history-router.js'
 
 /**
  * 定义路由表
@@ -35,9 +35,9 @@ export function defineRoute(route: Route): Route {
  * 你必须调用一次`router.replace(target)`方法来跳转到目标路由。
  *
  * @param {RouterOptions} options - 配置
- * @return {MemoryRouter} - 内存路由器实例
+ * @return {RouterMemory} - 内存路由器实例
  */
-export function createRouter(options: RouterOptions & { mode: 'memory' }): MemoryRouter
+export function createRouter(options: RouterOptions & { mode: 'memory' }): RouterMemory
 
 /**
  * 创建History路由器
@@ -48,7 +48,7 @@ export function createRouter(options: RouterOptions & { mode: 'memory' }): Memor
  * 内部会自动根据`window.location`去匹配路由。
  *
  * @param {RouterOptions} options - 路由配置
- * @return {WebHistoryRouter} - HistoryRouter实例
+ * @return {RouterHistory} - HistoryRouter实例
  */
 export function createRouter(
   options:
@@ -56,26 +56,26 @@ export function createRouter(
     | (RouterOptions & {
         mode: 'path' | 'hash'
       })
-): WebHistoryRouter
+): RouterHistory
 
 /**
  * 创建路由器
  *
  * @param {RouterOptions} options - 路由配置
- * @return {Router} - 路由器实例
+ * @return {RouterCore} - 路由器实例
  */
-export function createRouter(options: RouterOptions): Router {
-  let router: Router
+export function createRouter(options: RouterOptions): RouterCore {
+  let router: RouterCore
   // 如果非浏览器端，强制使用内存模式路由
   if (!window?.location && options.mode !== 'memory') {
     console.warn('当前环境非浏览器端，强制使用内存模式路由')
     options.mode = 'memory'
-    return new MemoryRouter(options as RouterOptions<'memory'>).initialize()
+    return new RouterMemory(options as RouterOptions<'memory'>).initialize()
   }
   if (options.mode === 'memory') {
-    router = new MemoryRouter(options as RouterOptions<'memory'>)
+    router = new RouterMemory(options as RouterOptions<'memory'>)
   } else {
-    router = new WebHistoryRouter(options as RouterOptions<'path' | 'hash'>)
+    router = new RouterHistory(options as RouterOptions<'path' | 'hash'>)
   }
   return router.initialize()
 }
@@ -85,11 +85,11 @@ export function createRouter(options: RouterOptions): Router {
  *
  * 与使用`Router.instance`静态属性获取是一致的效果。
  *
- * @return {Router} - 路由器实例
+ * @return {RouterCore} - 路由器实例
  * @throws {Error} - 如果路由器实例未初始化，则抛出异常
  */
-export function useRouter<T extends Router>(): T {
-  return Router.instance as T
+export function useRouter<T extends RouterCore>(): T {
+  return RouterCore.instance as T
 }
 
 /**
@@ -114,7 +114,7 @@ export function useRouter<T extends Router>(): T {
  * @return {Readonly<Reactive<RouteLocation>>} - 只读的`RouteLocation`对象
  */
 export function useRoute(): Readonly<Reactive<RouteLocation>> {
-  return Router.instance.currentRouteLocation
+  return RouterCore.instance.currentRouteLocation
 }
 
 /**
