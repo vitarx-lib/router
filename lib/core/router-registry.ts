@@ -136,8 +136,12 @@ export default abstract class RouterRegistry {
 
   /**
    * 添加路由
+   *
+   * @param {Object} route 路由对象
+   * @param {string} [parent] 父路由索引，可以是path也可以是name
+   * @returns {void}
    */
-  public addRoute(route: Route, parent?: string) {
+  public addRoute(route: Route, parent?: string): void {
     if (parent) {
       const parentRoute = this.findRoute(parent)
       if (!parentRoute) throw new Error(`[Vitarx.Router.addRoute][ERROR]：父路由${parent}不存在`)
@@ -150,6 +154,9 @@ export default abstract class RouterRegistry {
 
   /**
    * 查找路由
+   *
+   * @param {string|Object} target 路由索引或目标对象
+   * @returns {RouteNormalized|undefined} 匹配的路由对象，如果未找到则返回undefined
    */
   public findRoute(target: RouteIndex | RouteTarget): RouteNormalized | undefined {
     const isRouterTarget = typeof target === 'object'
