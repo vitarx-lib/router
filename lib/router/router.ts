@@ -247,7 +247,7 @@ export default abstract class Router {
    *
    * @return {Readonly<RouteLocation>} - 当前路由数据
    */
-  public get currentRouteLocation(): Readonly<Reactive<RouteLocation>> {
+  public get currentRouteLocation(): Reactive<Readonly<RouteLocation>> {
     return this._currentRouteLocation
   }
 
@@ -560,7 +560,7 @@ export default abstract class Router {
         if (typeof matched.redirect === 'string') {
           return performNavigation({ index: matched.redirect }, true)
         } else if (typeof matched.redirect === 'function') {
-          return performNavigation(matched.redirect(to), true)
+          return performNavigation(matched.redirect.call(this, to), true)
         }
       }
       // 创建导航结果
@@ -655,10 +655,7 @@ export default abstract class Router {
       // 滚动行为处理
       this.onScrollBehavior(this.currentRouteLocation, from, savedPosition).then()
       // 触发后置钩子
-      this.onAfterEach(
-        this.currentRouteLocation as unknown as DeepReadonly<RouteLocation>,
-        from as unknown as DeepReadonly<RouteLocation>
-      )
+      this.onAfterEach(this.currentRouteLocation, from)
     }
     if (data) {
       this.updateRouteLocation(data)
@@ -849,6 +846,10 @@ export default abstract class Router {
     to: DeepReadonly<RouteLocation>,
     from: DeepReadonly<RouteLocation>
   ): BeforeEachCallbackResult {
+    const matched = to.matched.at(-1)
+    if (matched && 'beforeEnter' in matched && typeof matched.beforeEnter === 'function') {
+      return matched.beforeEnter.call(this, to, from)
+    }
     return this._options.beforeEach?.call(this, to, from)
   }
 
@@ -858,8 +859,12 @@ export default abstract class Router {
    * @param {DeepReadonly<RouteLocation>} to - 路由目标对象
    * @param {DeepReadonly<RouteLocation>} from - 前路由对象
    */
-  protected onAfterEach(to: DeepReadonly<RouteLocation>, from: DeepReadonly<RouteLocation>): void {
-    return this._options.afterEach?.call(this, to, from)
+  protected onAfterEach(to: RouteLocation, from: RouteLocation): void {
+    const matched = to.matched.at(-1)
+    if (matched && 'afterEach' in matched && typeof matched.afterEach === 'function') {
+      return matched.afterEach.call(this, to as any, from as any)
+    }
+    return this._options.afterEach?.call(this, to as any, from as any)
   }
 
   /**

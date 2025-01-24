@@ -50,7 +50,7 @@ type AllowedRouteWidget = RouteWidget | NamedRouteWidget
 /**
  * 重定向处理器
  */
-type RedirectHandler = (to: RouteLocation) => RouteTarget
+type RedirectHandler = (this: Router, to: RouteLocation) => RouteTarget
 
 /**
  * 路由路线配置
@@ -333,14 +333,6 @@ interface HookCallBack {
    * @see AfterEachCallback
    */
   afterEach?: AfterEachCallback
-  /**
-   * 滚动行为
-   *
-   * 可以传入`ScrollBehavior`或`ScrollBehaviorHandler`函数自定义滚动行为。
-   *
-   * @default 'smooth'
-   */
-  scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
 }
 
 /**
@@ -399,6 +391,14 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> extends Hook
    * @default '/[\w.]+/'
    */
   pattern?: RegExp
+  /**
+   * 滚动行为
+   *
+   * 可以传入`ScrollBehavior`或`ScrollBehaviorHandler`函数自定义滚动行为。
+   *
+   * @default 'smooth'
+   */
+  scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
 }
 
 /**
