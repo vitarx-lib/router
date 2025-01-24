@@ -8,7 +8,8 @@ export default defineConfig({
     dtsPlugin({
       include: ['lib'],
       insertTypesEntry: true,
-      rollupTypes: true
+      rollupTypes: true,
+      tsconfigPath: './tsconfig.lib.json'
     })
   ],
   esbuild: {
