@@ -318,12 +318,8 @@ export default abstract class RouterRegistry {
    * 注册路由
    */
   private registerRoute(route: Route, group?: RouteNormalized) {
-    const normalizedRoute = normalizeRoute(route, group?.suffix ?? this.suffix)
-    if (group) {
-      normalizedRoute.path = formatPath(`${group.path}/${normalizedRoute.path}`)
-      this._parentRoute.set(normalizedRoute, group)
-    }
-
+    const normalizedRoute = normalizeRoute(route, group)
+    if (group) this._parentRoute.set(normalizedRoute, group)
     if (isRouteGroup(normalizedRoute)) {
       if (route.widget) {
         this.recordRoute(normalizedRoute)
