@@ -213,45 +213,45 @@ export default abstract class RouterRegistry {
     // 分割路径和后缀
     const { path: shortPath, suffix } = splitPathAndSuffix(path)
     // 构建可能的路径选项，包括当前路径和去除尾部index的路径
-    const possiblePaths = [shortPath, shortPath.replace(/\/index$/, '') || '/']
-
-    // 遍历可能的路径选项，尝试匹配静态路由
-    for (const possiblePath of possiblePaths) {
-      const staticRoute = this._pathRoutes.get(possiblePath)
-      if (staticRoute) {
-        // 验证后缀，如果匹配成功则返回结果，否则继续查找
-        return validateSuffix(suffix, staticRoute.suffix)
-          ? { route: staticRoute, params: undefined }
-          : undefined
-      }
+    const staticRoute = this._pathRoutes.get(shortPath)
+    if (staticRoute) {
+      // 验证后缀，如果匹配成功则返回结果，否则继续查找
+      return validateSuffix(suffix, staticRoute.suffix)
+        ? { route: staticRoute, params: undefined }
+        : undefined
     }
-
     // 计算路径段数，用于匹配动态路由
     const segmentCount = path.split('/').filter(Boolean).length
     const candidates = this._dynamicRoutes.get(segmentCount)
-    if (!candidates) return undefined
 
-    // 构建规范化路径，用于动态路由匹配
-    const normalizedPath = `${shortPath}/`
-
-    // 遍历候选动态路由，尝试匹配
-    for (const { regex, route } of candidates) {
-      const match = regex.exec(normalizedPath)
-      if (!match) continue
-      // 构建参数对象，存储匹配到的参数
-      const params: Record<string, string> = {}
-      const keys = Object.keys(route.pattern!)
-      for (let i = 0; i < keys.length; i++) {
-        params[keys[i]] = match[i + 1]
-      }
-      // 验证后缀，如果匹配成功则返回结果，包括路由和参数
-      if (validateSuffix(suffix, route.suffix)) {
-        return {
-          route,
-          params
+    // 如果存在候选动态路由
+    if (candidates) {
+      // 构建规范化路径，用于动态路由匹配
+      const normalizedPath = `${shortPath}/`
+      // 遍历候选动态路由，尝试匹配
+      for (const { regex, route } of candidates) {
+        const match = regex.exec(normalizedPath)
+        if (!match) continue
+        // 构建参数对象，存储匹配到的参数
+        const params: Record<string, string> = {}
+        const keys = Object.keys(route.pattern!)
+        for (let i = 0; i < keys.length; i++) {
+          params[keys[i]] = match[i + 1]
         }
+        // 验证后缀，如果匹配成功则返回结果，包括路由和参数
+        if (!validateSuffix(suffix, route.suffix)) break
+        return { route, params }
       }
-      break
+    }
+
+    // 如果没有找到匹配的动态路由，且没有使用后缀和/index结尾，尝试匹配index路由
+    if (!suffix && !shortPath.endsWith('/index')) {
+      const indexRoute = this._pathRoutes.get(`${shortPath}/index`)
+      if (indexRoute) {
+        return validateSuffix(suffix, indexRoute.suffix)
+          ? { route: indexRoute, params: undefined }
+          : undefined
+      }
     }
     // 如果没有找到匹配的路由，返回undefined
     return undefined
