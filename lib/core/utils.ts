@@ -342,10 +342,10 @@ export function isRouteLocationTypeObject(obj: any): obj is RouteLocation {
  * 规范化路由对象
  *
  * @param route
- * @param suffix
+ * @param group
  * @internal
  */
-export function normalizeRoute(route: Route, suffix: RouterOptions['suffix']): RouteNormalized {
+export function normalizeRoute(route: Route, group: RouteNormalized | undefined): RouteNormalized {
   // 初始化必要的属性
   route.meta = route.meta || {}
   route.pattern = route.pattern || {}
@@ -361,12 +361,16 @@ export function normalizeRoute(route: Route, suffix: RouterOptions['suffix']): R
     throw new TypeError(`[Vitarx.Router][TYPE_ERROR]：路由线路配置 path 不能为空`)
   }
   // 格式化路径
-  route.path = formatPath(route.path)
+  route.path = formatPath(group ? `${group.path}/${route.path}` : route.path)
   // 验证widget
   validateWidget(route)
   // 验证injectProps
   validateInjectProps(route)
-  route.suffix ??= suffix
+  // 合并父级的配置
+  route.suffix ??= group?.suffix
+  route.afterEnter ??= group?.afterEnter
+  route.beforeEnter ??= group?.beforeEnter
+  
   return route as RouteNormalized
 }
 
