@@ -343,9 +343,14 @@ export function isRouteLocationTypeObject(obj: any): obj is RouteLocation {
  *
  * @param route
  * @param group
+ * @param suffix
  * @internal
  */
-export function normalizeRoute(route: Route, group: RouteNormalized | undefined): RouteNormalized {
+export function normalizeRoute(
+  route: Route,
+  group: RouteNormalized | undefined,
+  suffix: RouterOptions['suffix']
+): RouteNormalized {
   // 初始化必要的属性
   route.meta = route.meta || {}
   route.pattern = route.pattern || {}
@@ -367,7 +372,7 @@ export function normalizeRoute(route: Route, group: RouteNormalized | undefined)
   // 验证injectProps
   validateInjectProps(route)
   // 合并父级的配置
-  route.suffix ??= group?.suffix
+  route.suffix ??= group?.suffix ?? suffix
   route.afterEnter ??= group?.afterEnter
   route.beforeEnter ??= group?.beforeEnter
 
@@ -389,9 +394,7 @@ export function validateSuffix(
   routePath: string
 ) {
   if (allowSuffix === '*') return true
-  if (allowSuffix === false) {
-    return inputPath === routePath
-  }
+  if (allowSuffix === false) return inputPath === routePath
   if (Array.isArray(allowSuffix)) return allowSuffix.includes(suffix)
   return suffix === allowSuffix
 }
