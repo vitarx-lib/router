@@ -1,6 +1,6 @@
 import type { WidgetType } from 'vitarx'
 import type { LAZY_LOADER_SYMBOL } from '../utils.js'
-import type { RouteMeta, RouteNormalized } from './route'
+import type { RouteNormalized } from './route'
 
 /**
  * 延迟加载/惰性加载
@@ -48,7 +48,7 @@ export type RouteName = string
  *
  * 可以是路径或命名路由
  */
-export type RouteIndex = VitarxRouterRouteIndexTyped
+export type RouteIndex = RouterRouteIndexTyped
 
 /**
  * 路由视图小部件
@@ -132,7 +132,7 @@ export interface RouteLocation {
   /**
    * 路由元数据
    */
-  meta: RouteMeta
+  meta: RouteMetaData
   /**
    * 匹配的路由记录
    */

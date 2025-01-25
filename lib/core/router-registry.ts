@@ -216,7 +216,7 @@ export default abstract class RouterRegistry {
     const staticRoute = this._pathRoutes.get(shortPath)
     if (staticRoute) {
       // 验证后缀，如果匹配成功则返回结果，否则继续查找
-      return validateSuffix(suffix, staticRoute.suffix)
+      return validateSuffix(suffix, staticRoute.suffix, path, staticRoute.path)
         ? { route: staticRoute, params: undefined }
         : undefined
     }
@@ -239,7 +239,7 @@ export default abstract class RouterRegistry {
           params[keys[i]] = match[i + 1]
         }
         // 验证后缀，如果匹配成功则返回结果，包括路由和参数
-        if (!validateSuffix(suffix, route.suffix)) break
+        if (!validateSuffix(suffix, route.suffix, path, path)) break
         return { route, params }
       }
     }
@@ -248,7 +248,7 @@ export default abstract class RouterRegistry {
     if (!suffix && !shortPath.endsWith('/index')) {
       const indexRoute = this._pathRoutes.get(`${shortPath}/index`)
       if (indexRoute) {
-        return validateSuffix(suffix, indexRoute.suffix)
+        return validateSuffix(suffix, indexRoute.suffix, path, indexRoute.path)
           ? { route: indexRoute, params: undefined }
           : undefined
       }

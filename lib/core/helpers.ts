@@ -51,11 +51,7 @@ export function createRouter(options: RouterOptions & { mode: 'memory' }): Route
  * @return {RouterHistory} - HistoryRouter实例
  */
 export function createRouter(
-  options:
-    | RouterOptions
-    | (RouterOptions & {
-        mode: 'path' | 'hash'
-      })
+  options: RouterOptions | (RouterOptions & { mode: 'path' | 'hash' })
 ): RouterHistory
 
 /**

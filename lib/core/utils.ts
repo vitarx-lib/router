@@ -370,7 +370,7 @@ export function normalizeRoute(route: Route, group: RouteNormalized | undefined)
   route.suffix ??= group?.suffix
   route.afterEnter ??= group?.afterEnter
   route.beforeEnter ??= group?.beforeEnter
-  
+
   return route as RouteNormalized
 }
 
@@ -379,9 +379,19 @@ export function normalizeRoute(route: Route, group: RouteNormalized | undefined)
  *
  * @param suffix
  * @param allowSuffix
+ * @param inputPath
+ * @param routePath
  */
-export function validateSuffix(suffix: string, allowSuffix: RouterOptions['suffix']) {
+export function validateSuffix(
+  suffix: string,
+  allowSuffix: RouterOptions['suffix'],
+  inputPath: string,
+  routePath: string
+) {
   if (allowSuffix === '*') return true
+  if (allowSuffix === false) {
+    return inputPath === routePath
+  }
   if (Array.isArray(allowSuffix)) return allowSuffix.includes(suffix)
   return suffix === allowSuffix
 }

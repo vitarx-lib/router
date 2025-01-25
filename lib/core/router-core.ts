@@ -22,7 +22,6 @@ import {
   NavigateStatus,
   type RouteIndex,
   type RouteLocation,
-  type RouteMeta,
   type RouteNormalized,
   type RoutePath,
   type RouterOptions,
@@ -370,7 +369,7 @@ export default abstract class RouterCore extends RouterRegistry {
     } else {
       path = formatPath(index)
     }
-    const meta: RouteMeta = route?.meta || ({} as RouteMeta)
+    const meta: RouteMetaData = route?.meta || ({} as RouteMetaData)
     const hashStr = formatHash(hash, true)
     const fullPath = this.makeFullPath(path, query, hashStr)
     return { index, path, hash: hashStr, fullPath, params, query, matched, meta }
