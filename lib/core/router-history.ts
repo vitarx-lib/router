@@ -179,10 +179,9 @@ export default class RouterHistory extends RouterCore {
    */
   private ensureHash() {
     const { pathname, search, hash } = window.location
-    if (!pathname.startsWith(this.basePath)) {
-      // 如果路径不是以 basePath 开头，直接重定向到 `/#/path`
-      const path = `${this.basePath}/#${pathname}${search}${hash}`
-      return window.location.replace(path)
+    if (!hash) {
+      const path = `${this.basePath}${search}#${pathname}`
+      window.location.replace(path)
     }
   }
 }

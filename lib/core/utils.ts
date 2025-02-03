@@ -276,12 +276,8 @@ export function urlToRouteTarget(
     // 使用 hash 来获取 path 和 hash
     const hashPart = hash.slice(1) // 去掉前缀 #
     const [fullPath, anchor] = hashPart.split('#') // 分离路径和锚点
-    // 分离 path 和查询参数
-    const [pathInHash, queryString] = fullPath.split('?')
-    path = formatPath(pathInHash || '') as RoutePath // 提取并格式化路径
+    path = formatPath(fullPath || '/') as RoutePath // 提取并格式化路径
     hash = anchor ? `#${anchor}` : ''
-    // 提取查询参数
-    query = queryStringToObject(queryString || '') // 安全处理无查询参数的情况
   }
   return { index: path, hash, query }
 }
