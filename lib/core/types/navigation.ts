@@ -135,6 +135,8 @@ export interface RouteLocation {
   meta: RouteMetaData
   /**
    * 匹配的路由记录
+   *
+   * 从根路由开始，到当前路由结束
    */
   matched: RouteNormalized[]
 }
