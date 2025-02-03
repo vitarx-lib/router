@@ -243,10 +243,9 @@ export default abstract class RouterRegistry {
         return { route, params }
       }
     }
-
     // 如果没有找到匹配的动态路由，且没有使用后缀和/index结尾，尝试匹配index路由
     if (!suffix && !shortPath.endsWith('/index')) {
-      const indexRoute = this._pathRoutes.get(`${shortPath}/index`)
+      const indexRoute = this._pathRoutes.get(`${shortPath === '/' ? '' : shortPath}/index`)
       if (indexRoute) {
         return validateSuffix(suffix, indexRoute.suffix, path, indexRoute.path)
           ? { route: indexRoute, params: undefined }
