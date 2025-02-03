@@ -458,7 +458,7 @@ export default abstract class RouterCore extends RouterRegistry {
         if (!to.matched.length) {
           return createNavigateResult({
             status: NavigateStatus.not_matched,
-            message: '未匹配到任何路由规则，被系统阻止！请检测目标索引是否正确。'
+            message: `未匹配到任何路由规则，被系统阻止！请检测目标索引(${to.index})是否已注册路由。`
           })
         }
 

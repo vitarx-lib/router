@@ -56,7 +56,11 @@ export default class RouterHistory extends RouterCore {
     // 初始化时监听 popstate 事件，处理历史记录返回时的路由恢复
     window.addEventListener('popstate', this.onPopState.bind(this))
     // 替换路由
-    this.replace(this.currentRouteTarget).then()
+    this.replace(this.currentRouteTarget).then(res => {
+      if (res.status !== NavigateStatus.success) {
+        console.warn(`[VitarxRouter.initializeRouter]：路由初始化匹配失败，${res.message}`)
+      }
+    })
   }
 
   /**
