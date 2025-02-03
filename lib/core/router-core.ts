@@ -597,7 +597,7 @@ export default abstract class RouterCore extends RouterRegistry {
     if (hash && !hash.startsWith('#')) hash = `#${hash}`
     if (typeof query === 'object') query = objectToQueryString(query)
     return this.mode === 'hash'
-      ? formatPath(`${this.basePath}/#${path}${query}${hash}`)
+      ? formatPath(`${this.basePath}/${query}#${path}${hash}`)
       : formatPath(`${this.basePath}${path}${query}${hash}`)
   }
 
