@@ -15,11 +15,10 @@ import { urlToRouteTarget } from './utils.js'
  */
 export default class RouterHistory extends RouterCore {
   constructor(options: RouterOptions<'path' | 'hash'>) {
-    super(options)
     // 守卫mode类型
-    if (!['path', 'hash'].includes(options.mode as string)) {
-      options.mode = 'path'
-    } else if (options.mode === 'hash') {
+    if (!['path', 'hash'].includes(options.mode as string)) options.mode = 'hash'
+    super(options)
+    if (options.mode === 'hash') {
       this.ensureHash()
     }
   }

@@ -26,7 +26,7 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
   /**
    * 指定路由的历史模式，可以是  'path' | 'hash' | 'memory'
    *
-   * @default 'path'
+   * @default 'hash'
    */
   mode?: T
 
