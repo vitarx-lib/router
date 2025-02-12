@@ -34,7 +34,7 @@
     "push": "npm publish --access=public"
   },
   "peerDependencies": {
-    "vitarx": "^1.0.0-beta.35"
+    "vitarx": "latest"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -42,7 +42,7 @@
     "typescript": "^5.2.2",
     "vite": "^6.0.5",
     "vite-plugin-dts": "^4.3.0",
-    "vite-plugin-vitarx": "^1.0.0-beta.13"
+    "@vitarx/vite-bundler": "latest"
   },
   "files": [
     "dist",

@@ -1,6 +1,6 @@
+import vitarxPlugin from '@vitarx/vite-bundler'
 import { defineConfig } from 'vite'
 import dtsPlugin from 'vite-plugin-dts'
-import vitarxPlugin from 'vite-plugin-vitarx'
 
 export default defineConfig({
   plugins: [
