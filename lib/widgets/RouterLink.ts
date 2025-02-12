@@ -94,7 +94,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
         style: this.props.style,
         class: this.props.class
       }
-      if (this.isActive) props.active = true
+      if (this.isActive) props['aria-current'] = 'page'
       if (this.isDisabled) props.disabled = true
       return props
     })
