@@ -203,55 +203,80 @@ export default abstract class RouterRegistry {
    */
   protected matchRoute(path: RoutePath): MatchResult | undefined {
     // 格式化路径，确保路径格式一致
-    path = formatPath(path)
-
+    let formattedPath = formatPath(path)
     // 如果不是严格匹配模式，将路径转换为小写
     if (!this._options.strict) {
-      path = path.toLowerCase() as RoutePath
+      formattedPath = formattedPath.toLowerCase() as RoutePath
     }
+    try {
+      // 分割路径和后缀
+      const { path: shortPath, suffix } = splitPathAndSuffix(formattedPath)
 
-    // 分割路径和后缀
-    const { path: shortPath, suffix } = splitPathAndSuffix(path)
-    // 构建可能的路径选项，包括当前路径和去除尾部index的路径
-    const staticRoute = this._pathRoutes.get(shortPath)
-    if (staticRoute) {
-      // 验证后缀，如果匹配成功则返回结果，否则继续查找
-      return validateSuffix(suffix, staticRoute.suffix, path, staticRoute.path)
-        ? { route: staticRoute, params: undefined }
-        : undefined
-    }
-    // 计算路径段数，用于匹配动态路由
-    const segmentCount = path.split('/').filter(Boolean).length
-    const candidates = this._dynamicRoutes.get(segmentCount)
-
-    // 如果存在候选动态路由
-    if (candidates) {
-      // 构建规范化路径，用于动态路由匹配
-      const normalizedPath = `${shortPath}/`
-      // 遍历候选动态路由，尝试匹配
-      for (const { regex, route } of candidates) {
-        const match = regex.exec(normalizedPath)
-        if (!match) continue
-        // 构建参数对象，存储匹配到的参数
-        const params: Record<string, string> = {}
-        const keys = Object.keys(route.pattern!)
-        for (let i = 0; i < keys.length; i++) {
-          params[keys[i]] = match[i + 1]
+      // 构建可能的路径选项，包括当前路径和去除尾部index的路径
+      const staticRoute = this._pathRoutes.get(shortPath)
+      if (staticRoute) {
+        // 验证后缀，如果匹配成功则返回结果，否则继续查找
+        if (validateSuffix(suffix, staticRoute.suffix, formattedPath, staticRoute.path)) {
+          return { route: staticRoute, params: undefined }
         }
-        // 验证后缀，如果匹配成功则返回结果，包括路由和参数
-        if (!validateSuffix(suffix, route.suffix, path, path)) break
-        return { route, params }
       }
-    }
-    // 如果没有找到匹配的动态路由，且没有使用后缀和/index结尾，尝试匹配index路由
-    if (!suffix && !shortPath.endsWith('/index')) {
-      const indexRoute = this._pathRoutes.get(`${shortPath === '/' ? '' : shortPath}/index`)
-      if (indexRoute) {
-        return validateSuffix(suffix, indexRoute.suffix, path, indexRoute.path)
-          ? { route: indexRoute, params: undefined }
-          : undefined
+
+      // 计算路径段数，用于匹配动态路由
+      const segmentCount = shortPath.split('/').filter(Boolean).length
+      const candidates = this._dynamicRoutes.get(segmentCount)
+
+      // 如果存在候选动态路由
+      if (candidates) {
+        // 构建规范化路径，用于动态路由匹配
+        const normalizedPath = `${shortPath}/`
+
+        // 缓存正则表达式
+        const regexCache = new Map<string, RegExp>()
+
+        // 遍历候选动态路由，尝试匹配
+        for (const { regex, route } of candidates) {
+          // 使用缓存的正则表达式
+          const cachedRegex = regexCache.get(regex.source) || regex
+          const match = cachedRegex.exec(normalizedPath)
+          if (!match) continue
+
+          // 构建参数对象，存储匹配到的参数
+          const params: Record<string, string> = {}
+          const keys = Object.keys(route.pattern!)
+          for (let i = 0; i < keys.length; i++) {
+            params[keys[i]] = match[i + 1]
+          }
+
+          // 验证后缀，如果匹配成功则返回结果，包括路由和参数
+          if (validateSuffix(suffix, route.suffix, formattedPath, formattedPath)) {
+            return { route, params }
+          }
+        }
       }
+
+      // 如果没有找到匹配的动态路由，且没有使用后缀和/index结尾，尝试匹配index路由
+      if (!suffix && !shortPath.endsWith('/index')) {
+        const indexRoute = this._pathRoutes.get(`${shortPath === '/' ? '' : shortPath}/index`)
+        if (
+          indexRoute &&
+          validateSuffix(suffix, indexRoute.suffix, formattedPath, indexRoute.path)
+        ) {
+          return { route: indexRoute, params: undefined }
+        }
+      } else if (shortPath === '/index') {
+        const indexRoute = this._pathRoutes.get('/')
+        if (
+          indexRoute &&
+          validateSuffix(suffix, indexRoute.suffix, formattedPath, indexRoute.path)
+        ) {
+          return { route: indexRoute, params: undefined }
+        }
+      }
+    } catch (error) {
+      console.error('Error in matchRoute:', error)
+      return undefined
     }
+
     // 如果没有找到匹配的路由，返回undefined
     return undefined
   }
