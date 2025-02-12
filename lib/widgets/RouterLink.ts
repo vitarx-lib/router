@@ -34,6 +34,23 @@ export interface RouterLinkProps {
    * @default false
    */
   disabled?: boolean
+  /**
+   * 激活状态计算
+   *
+   * 如果启用了激活状态计算，那么当路由匹配到当前路由时，a标签会添加`aria-current="page"`属性，
+   *
+   * 算法：
+   * - 如果路由索引以/开头，严格匹配`Router.instance.currentRouteLocation.path === to.index`，模糊匹配`Router.instance.currentRouteLocation.fullPath.startsWith(to.index)`
+   * - 如果路由索引不以/开头，则会匹配`Router.instance.currentRouteLocation.matched[i].name`，仅支持严格匹配
+   *
+   * 可选值：
+   * - none：不计算激活状态
+   * - obscure：模糊匹配，只要目标路由的路径包含当前路由的路径，就认为当前路由处于激活状态
+   * - strict：严格匹配，只有目标路由的路径完全匹配当前路由的路径，才认为当前路由处于激活状态
+   *
+   * @default 'none'
+   */
+  active?: 'none' | 'obscure' | 'strict'
 }
 
 /**
@@ -66,7 +83,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    *
    * @protected
    */
-  protected active: Computed<boolean>
+  protected active: Computed<boolean> | undefined = undefined
   protected htmlProps: Computed<WebRuntimeDom.HtmlProperties<HTMLAnchorElement>>
 
   constructor(props: RouterLinkProps) {
@@ -83,9 +100,23 @@ export class RouterLink extends Widget<RouterLinkProps> {
       }
       return markRaw(location)
     })
-    this.active = new Computed(() => {
-      return this.location.value.fullPath === Router.instance.currentRouteLocation.fullPath
-    })
+    if (props.active !== undefined && props.active !== 'none') {
+      this.active = new Computed(() => {
+        if (this.target.value.index.startsWith('/')) {
+          if (props.active === 'obscure') {
+            return Router.instance.currentRouteLocation.fullPath.startsWith(
+              this.location.value.path
+            )
+          } else {
+            return this.location.value.path === Router.instance.currentRouteLocation.path
+          }
+        } else {
+          return !!Router.instance.currentRouteLocation.matched.find(
+            route => route.name === this.target.value.index
+          )
+        }
+      })
+    }
     this.htmlProps = new Computed(() => {
       const props: WebRuntimeDom.HtmlProperties<HTMLAnchorElement> = {
         href: this.href,
@@ -104,7 +135,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    * 当前是否处于激活状态
    */
   get isActive() {
-    return this.active.value && !this.isDisabled
+    return this.active?.value && !this.isDisabled
   }
 
   get isDisabled() {
