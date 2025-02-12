@@ -1,31 +1,25 @@
 import { createApp } from 'vitarx'
-import { HistoryRouter } from '../lib/index.js'
+import { createRouter } from '../lib/index.js'
 import App from './App.js'
 import Page1 from './Page/Page1.js'
 import Page2 from './Page/Page2.js'
 
-const router = new HistoryRouter({
+const router = createRouter({
   base: '/',
+  mode: undefined,
   routes: [
     {
       name: 'home',
       path: '/test',
-      widget: Page1,
-      children: [
-        {
-          name: 'page2',
-          path: '/page2',
-          widget: Page2
-        }
-      ]
+      widget: Page1
     },
     {
       name: 'page1',
-      path: '/page1-{name?}',
+      path: '/index',
       widget: Page2
     }
   ]
 })
 router.initialize()
-console.log(router.routes)
+console.log(router)
 createApp('#root').render(App)
