@@ -36,6 +36,8 @@ export class RouterView extends Widget<RouteOptions> {
   private readonly _$index: number
   // 当前匹配的路由配置
   private _$currentRoute?: RouteNormalized
+  // 当前视图元素
+  private _$currentElement = shallowRef<VNode<WidgetType>>()
 
   constructor(props: RouteOptions) {
     super(props)
@@ -84,9 +86,6 @@ export class RouterView extends Widget<RouteOptions> {
     return this.location.matched[this.index]
   }
 
-  // 当前视图元素
-  private _$currentElement = shallowRef<VNode<WidgetType>>()
-
   /**
    * 当前路由器视图要显示的虚拟节点
    *
@@ -94,7 +93,7 @@ export class RouterView extends Widget<RouteOptions> {
    *
    * @protected
    */
-  protected get $currentElement(): VNode | undefined {
+  protected get currentElement(): VNode | undefined {
     return this._$currentElement.value
   }
 
@@ -139,7 +138,7 @@ export class RouterView extends Widget<RouteOptions> {
    * @protected
    */
   protected build(): Element {
-    return this.$currentElement || createElement(Fragment)
+    return this.currentElement || createElement(Fragment)
   }
 
   /**
