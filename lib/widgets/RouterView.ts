@@ -98,7 +98,7 @@ export class RouterView extends Widget<RouteOptions> {
    *
    * @protected
    */
-  protected get currentElement(): VNode | undefined {
+  protected get currentElement(): VNode<WidgetType> | undefined {
     return this._$currentElement.value
   }
 
