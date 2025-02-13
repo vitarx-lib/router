@@ -82,6 +82,11 @@ export class RouterView extends Widget<RouteOptions> {
     return this.props.name || 'default'
   }
 
+  /**
+   * 获取当前匹配的路线配置
+   *
+   * 注意未匹配时会返回`undefined`，匹配成功时返回的是`RouteNormalized`
+   */
   public get matchedRoute(): RouteNormalized | undefined {
     return this.location.matched[this.index]
   }
@@ -95,6 +100,15 @@ export class RouterView extends Widget<RouteOptions> {
    */
   protected get currentElement(): VNode | undefined {
     return this._$currentElement.value
+  }
+
+  /**
+   * 当前路由器视图要显示的组件
+   *
+   * @protected
+   */
+  protected get currentWidget(): WidgetType | undefined {
+    return this._$currentElement.value?.type
   }
 
   /**
@@ -123,16 +137,16 @@ export class RouterView extends Widget<RouteOptions> {
   /**
    * ## 构建视图
    *
-   * 可以重写该方法添加自定义的视图元素
+   * 可以重写该方法实现自定义的视图构建逻辑。
    *
-   * 例如，使用`KeepAlive`组件缓存当前视图元素：
+   * 例如，使用`KeepAlive`小部件进行页面缓存：
    * ```tsx
    * protected build() {
-   *   // 不可省略，因为`KeepAlive`不能渲染非组件节点。
-   *   if (!this.currentElement) return <></> // 使用空片段节点占位
+   *   // 使用空片段节点占位
+   *   if (!this.currentWidget) return <></> // 不可省略，因为`KeepAlive`不能渲染非组件节点。
    *
-   *   // 将当前显示的视图元素(VNode<WidgetType>对象)传递给`KeepAlive`插槽，使用缓存功能。
-   *   return <KeepAlive onlyKey={this.matchedRoute?.path}>{this.currentElement}</KeepAlive>
+   *   // 将当前要进行展示的小部件构造函数传递给`KeepAlive`插槽，并指定`onlyKey`属性，会在切换页面时缓存当前页面。
+   *   return <KeepAlive onlyKey={this.matchedRoute?.path}>{this.currentWidget}</KeepAlive>
    * }
    * ```
    * @protected
