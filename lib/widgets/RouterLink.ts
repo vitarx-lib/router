@@ -88,6 +88,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
 
   constructor(props: RouterLinkProps) {
     super(props)
+    if (!this.props.to) throw new Error('[VitarxRouter.RouterLink]：to属性不能为空')
     this.target = new Computed(() => {
       return markRaw(isString(props.to) ? { index: props.to } : props.to)
     })
