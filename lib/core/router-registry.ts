@@ -345,9 +345,7 @@ export default abstract class RouterRegistry {
     const normalizedRoute = normalizeRoute(route, group, this.suffix)
     if (group) this._parentRoute.set(normalizedRoute, group)
     if (isRouteGroup(normalizedRoute)) {
-      if (route.widget) {
-        this.recordRoute(normalizedRoute)
-      }
+      this.recordRoute(normalizedRoute)
       for (const child of normalizedRoute.children) {
         this.registerRoute(child, normalizedRoute)
       }
