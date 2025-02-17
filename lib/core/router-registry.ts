@@ -351,6 +351,23 @@ export default abstract class RouterRegistry {
       for (const child of normalizedRoute.children) {
         this.registerRoute(child, normalizedRoute)
       }
+      if (!normalizedRoute.redirect) {
+        // 如果没有widget，尝试找到第一个有widget的路由作为重定向目标
+        let first = normalizedRoute.children[0]
+        while (first) {
+          if (first.redirect) {
+            normalizedRoute.redirect = first.redirect
+            break
+          }
+          if (first.widget) {
+            normalizedRoute.redirect = {
+              index: first.path
+            }
+            break
+          }
+          first = first.children[0]
+        }
+      }
     } else {
       this.recordRoute(normalizedRoute)
     }
