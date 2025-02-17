@@ -7,7 +7,13 @@ import {
   type WebRuntimeDom,
   Widget
 } from 'vitarx'
-import { type RouteIndex, type RouteLocation, Router, type RouteTarget } from '../core/index.js'
+import {
+  NavigateStatus,
+  type RouteIndex,
+  type RouteLocation,
+  Router,
+  type RouteTarget
+} from '../core/index.js'
 
 export interface RouterLinkProps {
   /**
@@ -67,7 +73,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    *
    * @protected
    */
-  protected target: Computed<RouteTarget>
+  protected target: Computed<RouteTarget | undefined>
   /**
    * 路由目标对应的`RouteLocation`对象
    *
@@ -75,7 +81,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    *
    * @protected
    */
-  protected location: Computed<RouteLocation>
+  protected location: Computed<RouteLocation | undefined>
   /**
    * 激活状态
    *
@@ -88,11 +94,12 @@ export class RouterLink extends Widget<RouterLinkProps> {
 
   constructor(props: RouterLinkProps) {
     super(props)
-    if (!this.props.to) throw new Error('[VitarxRouter.RouterLink]：to属性不能为空')
     this.target = new Computed(() => {
+      if (!this.props.to) return undefined
       return markRaw(isString(props.to) ? { index: props.to } : props.to)
     })
     this.location = new Computed(() => {
+      if (!this.target.value) return undefined
       const location = Router.instance.createRouteLocation(this.target.value)
       if (!location.matched.length) {
         console.warn(
@@ -103,6 +110,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
     })
     if (props.active !== undefined && props.active !== 'none') {
       this.active = new Computed(() => {
+        if (!this.target.value || !this.location.value) return false
         if (this.target.value.index.startsWith('/')) {
           if (props.active === 'obscure') {
             return Router.instance.currentRouteLocation.fullPath.startsWith(
@@ -113,7 +121,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
           }
         } else {
           return !!Router.instance.currentRouteLocation.matched.find(
-            route => route.name === this.target.value.index
+            route => route.name === this.target.value?.index
           )
         }
       })
@@ -147,7 +155,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    * 路由目标地址
    */
   get href(): string {
-    return this.location.value.fullPath
+    return this.location.value?.fullPath || 'javascript:void(0)'
   }
 
   /**
@@ -158,9 +166,17 @@ export class RouterLink extends Widget<RouterLinkProps> {
    * @param e
    */
   protected navigate(e: MouseEvent) {
-    e.stopPropagation()
     e.preventDefault()
-    !this.isDisabled && Router.instance.navigate(this.location.value).then()
+    if (this.location.value) {
+      !this.isDisabled &&
+        Router.instance.navigate(this.location.value).then(res => {
+          if (res.status !== NavigateStatus.success) {
+            console.warn(
+              `[Vitarx.RouterLink][WARN]：导航到索引：${this.target.value?.index}失败，${res.message}`
+            )
+          }
+        })
+    }
   }
 
   protected build(): Element {
