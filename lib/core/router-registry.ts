@@ -352,20 +352,22 @@ export default abstract class RouterRegistry {
         this.registerRoute(child, normalizedRoute)
       }
       if (!normalizedRoute.redirect) {
-        // 如果没有widget，尝试找到第一个有widget的路由作为重定向目标
-        let first = normalizedRoute.children[0]
-        while (first) {
-          if (first.redirect) {
-            normalizedRoute.redirect = first.redirect
-            break
-          }
-          if (first.widget) {
-            normalizedRoute.redirect = {
-              index: first.path
+        normalizedRoute.redirect = function (to) {
+          // 如果没有widget，尝试找到第一个有widget的路由作为重定向目标
+          let first = normalizedRoute.children[0]
+          while (first) {
+            if (first.redirect) {
+              return typeof first.redirect === 'function'
+                ? first.redirect.call(this, to)
+                : first.redirect
             }
-            break
+            if (first.widget) return { index: first.path }
+            first = first.children?.[0]
           }
-          first = first.children[0]
+          console.error(
+            `[Vitarx.Router][ERROR]：${normalizedRoute.path} 分组路由在没有配置重定向的情况下，它的第一个子路由必须具有widget或redirect，否则无法匹配视图`,
+            normalizedRoute
+          )
         }
       }
     } else {
