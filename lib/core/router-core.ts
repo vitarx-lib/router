@@ -403,14 +403,13 @@ export default abstract class RouterCore extends RouterRegistry {
       const matched = to.matched.at(-1)
       // 处理路由重定向
       if (matched?.redirect) {
-        if (typeof matched.redirect === 'string') {
+        if (typeof matched.redirect === 'object' && matched.redirect.index) {
+          return performNavigation(matched.redirect, true)
+        } else if (typeof matched.redirect === 'string') {
           return performNavigation({ index: matched.redirect }, true)
         } else if (typeof matched.redirect === 'function') {
           return performNavigation(matched.redirect.call(this, to), true)
         }
-      } else if (to.matched.length === 1 && matched!.children.length) {
-        // 如果是分组路由，且没有配置重定向，则默认加载第一个子路由
-        to.matched.push(matched!.children[0])
       }
 
       // 创建导航结果对象的工具函数
