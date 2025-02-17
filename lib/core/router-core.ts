@@ -2,6 +2,7 @@ import {
   createElement,
   deepClone,
   isDeepEqual,
+  isObject,
   LazyWidget,
   markRaw,
   reactive,
@@ -403,13 +404,18 @@ export default abstract class RouterCore extends RouterRegistry {
       const matched = to.matched.at(-1)
       // 处理路由重定向
       if (matched?.redirect) {
+        let redirectTarget: RouteTarget | undefined
         if (typeof matched.redirect === 'object' && matched.redirect.index) {
-          return performNavigation(matched.redirect, true)
+          redirectTarget = matched.redirect
         } else if (typeof matched.redirect === 'string') {
-          return performNavigation({ index: matched.redirect }, true)
+          redirectTarget = { index: matched.redirect }
         } else if (typeof matched.redirect === 'function') {
-          return performNavigation(matched.redirect.call(this, to), true)
+          const redirectHandleResult = matched.redirect.call(this, to)
+          if (isObject(redirectHandleResult)) {
+            redirectTarget = redirectHandleResult
+          }
         }
+        if (redirectTarget?.index) return performNavigation(redirectTarget, true)
       }
 
       // 创建导航结果对象的工具函数
