@@ -12,7 +12,7 @@ export default function validateWidget(route: Route): void {
     // 如果没有 widget 且没有子路由，则报错
     if (route.children!.length === 0) {
       throw new TypeError(
-        `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置的 widget 属性缺失，它可以是函数式小部件、类小部件，亦或是一个惰性加载器。`
+        `[Vitarx.Router][ERROR]：${route.path} 路由线路配置的 widget 属性缺失，且没有children，它是一个不规范的路由。`
       )
     }
     route.widget = undefined
@@ -30,14 +30,14 @@ export default function validateWidget(route: Route): void {
       for (const k in route.widget) {
         if (typeof route.widget[k] !== 'function') {
           throw new TypeError(
-            `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置的 widget 命名视图 ${k} 类型有误，它可以是函数式小部件、类小部件，亦或是一个惰性加载器。`
+            `[Vitarx.Router][ERROR]：${route.path} 路由线路配置的 widget 命名视图 ${k} 类型有误，它可以是函数式小部件、类小部件，亦或是一个惰性加载器。`
           )
         }
       }
     }
   } else {
     throw new TypeError(
-      `[Vitarx.Router][TYPE_ERROR]：${route.path} 路由线路配置的 widget 类型有误，它可以是函数式小部件、类小部件，亦或是一个惰性加载器。`
+      `[Vitarx.Router][ERROR]：${route.path} 路由线路配置的 widget 类型有误，它可以是函数式小部件、类小部件，亦或是一个惰性加载器。`
     )
   }
 }
