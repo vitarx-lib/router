@@ -8,6 +8,7 @@ import {
   Widget
 } from 'vitarx'
 import {
+  type NavigateResult,
   NavigateStatus,
   type RouteIndex,
   type RouteLocation,
@@ -57,6 +58,7 @@ export interface RouterLinkProps {
    * @default 'none'
    */
   active?: 'none' | 'obscure' | 'strict'
+  callback?: (result: NavigateResult) => void
 }
 
 /**
@@ -175,6 +177,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
               `[Vitarx.RouterLink][WARN]：导航到索引：${this.target.value?.index}失败，${res.message}`
             )
           }
+          if (this.props.callback) this.props.callback(res)
         })
     }
   }
