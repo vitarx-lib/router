@@ -58,6 +58,11 @@ export interface RouterLinkProps {
    * @default 'none'
    */
   active?: 'none' | 'obscure' | 'strict'
+  /**
+   * 导航回调函数
+   *
+   * @param {NavigateResult} result - 导航结果
+   */
   callback?: (result: NavigateResult) => void
 }
 
