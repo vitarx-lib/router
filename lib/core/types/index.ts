@@ -58,7 +58,11 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
   /**
    * 指定路由的后缀
    *
-   * 可以是星号表示任意后缀，字符串或字符串数组表示具体的后缀，false表示完全匹配
+   * 可选值：
+   * - '*'：表示匹配任何后缀
+   * - 字符串：表示匹配指定后缀
+   * - 字符串数组：表示匹配多个后缀
+   * - false：表示完全匹配路径路由path
    *
    * @default '*'
    */
