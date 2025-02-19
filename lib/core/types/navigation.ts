@@ -118,7 +118,7 @@ export interface RouteLocation {
    *
    * 如果没有后缀则为空字符串
    */
-  suffix: string
+  suffix: '' | `.${string}`
   /**
    * 路由路径
    *
