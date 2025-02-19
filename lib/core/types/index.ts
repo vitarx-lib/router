@@ -67,7 +67,14 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    * @default '*'
    */
   suffix?: '*' | string | string[] | false
-
+  /**
+   * 默认的后缀
+   *
+   * 如需使url地址看起来更符合静态网站特征，可以指定一个默认的后缀，例如'.html'。
+   *
+   * @default ''
+   */
+  defaultSuffix?: string
   /**
    * 默认的动态路由匹配模式
    *

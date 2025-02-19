@@ -355,6 +355,7 @@ export default abstract class RouterCore extends RouterRegistry {
     const matched: RouteNormalized[] = []
     if (route) {
       let suffix = getPathSuffix(index)
+      // 如果路由定义的path路径不包含后缀，则添加后缀
       if (this.suffix && suffix && !route.path.endsWith(suffix)) {
         path = mergePathParams((route.path + suffix) as RoutePath, params)
       } else {
@@ -604,6 +605,10 @@ export default abstract class RouterCore extends RouterRegistry {
   ): `/${string}` {
     if (hash && !hash.startsWith('#')) hash = `#${hash}`
     if (typeof query === 'object') query = objectToQueryString(query)
+    // 如果path存在默认后缀，且path没有后缀则添加后缀
+    if (!path.endsWith('/') && this._options.defaultSuffix && !path.includes('.')) {
+      path += `.${this._options.defaultSuffix}`
+    }
     return this.mode === 'hash'
       ? formatPath(`${this.basePath}/${query}#${path}${hash}`)
       : formatPath(`${this.basePath}${path}${query}${hash}`)
