@@ -114,7 +114,15 @@ export interface RouteLocation {
    */
   fullPath: string
   /**
+   * `index`所带的后缀
+   *
+   * 如果没有后缀则为空字符串
+   */
+  suffix: string
+  /**
    * 路由路径
+   *
+   * 如果匹配到路由则为路由的`path`属性
    */
   path: `/${string}`
   /**
