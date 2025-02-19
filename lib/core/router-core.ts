@@ -32,6 +32,7 @@ import {
 } from './router-types.js'
 import { patchUpdate } from './update.js'
 import {
+  addPathSuffix,
   formatHash,
   formatPath,
   getPathSuffix,
@@ -98,7 +99,8 @@ export default abstract class RouterCore extends RouterRegistry {
       params: {},
       query: {},
       matched: shallowReactive([]),
-      meta: markRaw({})
+      meta: markRaw({}),
+      suffix: ''
     })
   }
 
@@ -351,16 +353,9 @@ export default abstract class RouterCore extends RouterRegistry {
     // 获取路由对象
     const route = this.findRoute(target)
     const { index, query = {}, params = {}, hash = '' } = target
-    let path: RoutePath
+    const path: RoutePath = route ? mergePathParams(route.path, params) : formatPath(index)
     const matched: RouteNormalized[] = []
     if (route) {
-      let suffix = getPathSuffix(index)
-      // 如果路由定义的path路径不包含后缀，则添加后缀
-      if (this.suffix && suffix && !route.path.endsWith(suffix)) {
-        path = mergePathParams((route.path + suffix) as RoutePath, params)
-      } else {
-        path = mergePathParams(route.path, params)
-      }
       let parent = this.findParentRoute(route)
       while (parent) {
         // 如果父路由具有`widget`则添加到匹配的路由栈中
@@ -368,13 +363,12 @@ export default abstract class RouterCore extends RouterRegistry {
         parent = this.findParentRoute(parent)
       }
       matched.push(route)
-    } else {
-      path = formatPath(index)
     }
     const meta: RouteMetaData = route?.meta || ({} as RouteMetaData)
     const hashStr = formatHash(hash, true)
-    const fullPath = this.makeFullPath(path, query, hashStr)
-    return { index, path, hash: hashStr, fullPath, params, query, matched, meta }
+    const suffix = getPathSuffix(index)
+    const fullPath = this.makeFullPath(path, query, hashStr, suffix)
+    return { index, path, hash: hashStr, fullPath, params, query, matched, meta, suffix }
   }
 
   /**
@@ -508,7 +502,8 @@ export default abstract class RouterCore extends RouterRegistry {
       this._currentRouteLocation.fullPath = this.makeFullPath(
         this._currentRouteLocation.path,
         query,
-        this._currentRouteLocation.hash
+        this._currentRouteLocation.hash,
+        this._currentRouteLocation.suffix
       )
     }
   }
@@ -532,7 +527,8 @@ export default abstract class RouterCore extends RouterRegistry {
       this._currentRouteLocation.fullPath = this.makeFullPath(
         this._currentRouteLocation.path,
         this._currentRouteLocation.query,
-        newHash
+        newHash,
+        this._currentRouteLocation.suffix
       )
     }
   }
@@ -596,19 +592,18 @@ export default abstract class RouterCore extends RouterRegistry {
    * @param path - 路径
    * @param query - ?查询参数
    * @param hash - #哈希值
+   * @param suffix - 路径后缀
    * @return {string}
    */
   protected makeFullPath(
     path: string,
     query: `?${string}` | '' | Record<string, string>,
-    hash: HashStr
+    hash: HashStr,
+    suffix: string
   ): `/${string}` {
     if (hash && !hash.startsWith('#')) hash = `#${hash}`
     if (typeof query === 'object') query = objectToQueryString(query)
-    // 如果path存在默认后缀，且path没有后缀则添加后缀
-    if (!path.endsWith('/') && this._options.defaultSuffix && !path.includes('.')) {
-      path += `.${this._options.defaultSuffix}`
-    }
+    path = addPathSuffix(path, suffix || this._options.defaultSuffix)
     return this.mode === 'hash'
       ? formatPath(`${this.basePath}/${query}#${path}${hash}`)
       : formatPath(`${this.basePath}${path}${query}${hash}`)
