@@ -494,6 +494,49 @@ export default abstract class RouterCore extends RouterRegistry {
   }
 
   /**
+   * 更新当前导航数据中的query参数
+   *
+   * 会同步更新`fullPath`
+   *
+   * @param {Record<string, string>} query - 新的query参数对象
+   * @public
+   */
+  public updateQuery(query: Record<string, string>) {
+    if (!isDeepEqual(this._currentRouteLocation.query, query)) {
+      this._currentRouteLocation.query = query
+      this._currentRouteLocation.fullPath = this.makeFullPath(
+        this._currentRouteLocation.path,
+        query,
+        this._currentRouteLocation.hash
+      )
+    }
+  }
+
+  /**
+   * 更新当前导航数据中的hash参数
+   *
+   * 会同步更新`fullPath`
+   *
+   * @param {`#${string}` | ''} hash - 新的hash参数，如果为空则表示无hash
+   * @protected
+   */
+  public updateHash(hash: `#${string}` | '') {
+    if (typeof hash !== 'string') {
+      console.warn(`[Vitarx.Router.updateHash][WARN]：hash值只能是字符串类型，给定${hash}`)
+    }
+    const newHash = formatHash(hash, true)
+    if (newHash !== this._currentRouteLocation.hash) {
+      this._currentRouteLocation.hash = newHash
+      // 更新完整的path
+      this._currentRouteLocation.fullPath = this.makeFullPath(
+        this._currentRouteLocation.path,
+        this._currentRouteLocation.query,
+        newHash
+      )
+    }
+  }
+
+  /**
    * 该方法提供给`RouterView`完成渲染时调用
    *
    * @internal
@@ -534,49 +577,6 @@ export default abstract class RouterCore extends RouterRegistry {
     // 清理等待状态
     this._pendingReplace = null
     this._pendingPush = null
-  }
-
-  /**
-   * 更新当前导航数据中的query参数
-   *
-   * 会同步更新`fullPath`
-   *
-   * @param {Record<string, string>} query - 新的query参数对象
-   * @protected
-   */
-  protected updateQuery(query: Record<string, string>) {
-    if (!isDeepEqual(this._currentRouteLocation.query, query)) {
-      this._currentRouteLocation.query = query
-      this._currentRouteLocation.fullPath = this.makeFullPath(
-        this._currentRouteLocation.path,
-        query,
-        this._currentRouteLocation.hash
-      )
-    }
-  }
-
-  /**
-   * 更新当前导航数据中的hash参数
-   *
-   * 会同步更新`fullPath`
-   *
-   * @param {`#${string}` | ''} hash - 新的hash参数，如果为空则表示无hash
-   * @protected
-   */
-  protected updateHash(hash: `#${string}` | '') {
-    if (typeof hash !== 'string') {
-      console.warn(`[Vitarx.Router.updateHash][WARN]：hash值只能是字符串类型，给定${hash}`)
-    }
-    const newHash = formatHash(hash, true)
-    if (newHash !== this._currentRouteLocation.hash) {
-      this._currentRouteLocation.hash = newHash
-      // 更新完整的path
-      this._currentRouteLocation.fullPath = this.makeFullPath(
-        this._currentRouteLocation.path,
-        this._currentRouteLocation.query,
-        newHash
-      )
-    }
   }
 
   /**
