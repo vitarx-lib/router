@@ -1,5 +1,3 @@
-// noinspection JSUnusedGlobalSymbols
-
 import type { WidgetType } from 'vitarx'
 import type {
   HashStr,
@@ -305,8 +303,10 @@ export function splitPathAndSuffix(path: string): { path: string; suffix: string
  * @return {string} 有则返回`.${string}`无则返回空字符串
  */
 export function getPathSuffix(path: string): `.${string}` | '' {
-  const match = path.match(/^(.*?)(\.[a-zA-Z0-9]+)$/)
-  if (match) return match[2] as `.${string}`
+  const lastDotIndex = path.lastIndexOf('.')
+  if (lastDotIndex !== -1 && lastDotIndex < path.length - 1) {
+    return `.${path.substring(lastDotIndex + 1)}`
+  }
   return ''
 }
 
@@ -393,4 +393,18 @@ export function validateSuffix(
   if (allowSuffix === false) return inputPath === routePath
   if (Array.isArray(allowSuffix)) return allowSuffix.includes(suffix)
   return suffix === allowSuffix
+}
+
+/**
+ * 添加路径后缀
+ *
+ * @param {string} path
+ * @param {string} suffix
+ */
+export function addPathSuffix(path: string, suffix: string) {
+  if (!suffix) return path
+  if (!path.endsWith('/') && !path.includes('.')) {
+    path += suffix.startsWith('.') ? suffix : `.${suffix}`
+  }
+  return path
 }
