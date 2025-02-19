@@ -48,9 +48,20 @@ export default abstract class RouterRegistry {
       scrollBehavior: 'smooth',
       suffix: '*',
       pattern: /[\w.]+/,
+      defaultSuffix: '',
       ...options
     }
     this._options.base = `/${this._options.base.replace(/^\/+|\/+$/g, '')}`
+    // 格式化 suffix
+    if (typeof this._options.suffix === 'string') {
+      this._options.suffix = this._options.suffix.replace(/\./g, '')
+    } else if (Array.isArray(this._options.suffix)) {
+      this._options.suffix = this._options.suffix.map(item => item.replace(/\./g, ''))
+    }
+    // 格式化 默认后缀
+    if (this._options.defaultSuffix) {
+      this._options.defaultSuffix = this._options.defaultSuffix.replace(/\./g, '')
+    }
   }
 
   /**
