@@ -1,5 +1,10 @@
 import RouterCore from './router-core.js'
-import { NavigateStatus, type RouteLocation, type RouterOptions } from './router-types.js'
+import {
+  NavigateStatus,
+  type ReadonlyRouteLocation,
+  type RouteLocation,
+  type RouterOptions
+} from './router-types.js'
 
 /**
  * 基于内存实现的路由器
@@ -10,7 +15,7 @@ import { NavigateStatus, type RouteLocation, type RouterOptions } from './router
  */
 export default class RouterMemory extends RouterCore {
   // 路由历史记录数组
-  protected _history: RouteLocation[] = []
+  protected _history: ReadonlyRouteLocation[] = []
   // 标记是否有go方法触发的导航
   protected _pendingGo: number | null = null
 
