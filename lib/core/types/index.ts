@@ -4,7 +4,7 @@ export * from './hooks.js'
 export * from './navigation.js'
 
 import type { AfterEnterCallback, BeforeEnterCallback } from './hooks.js'
-import type { HistoryMode } from './navigation.js'
+import type { HistoryMode, RouteWidget } from './navigation.js'
 import type { Route } from './route.js'
 import type { _ScrollBehavior, ScrollBehaviorHandler } from './scroll.js'
 
@@ -67,6 +67,7 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    * @default '*'
    */
   suffix?: '*' | string | string[] | false
+
   /**
    * 默认的后缀
    *
@@ -75,6 +76,7 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    * @default ''
    */
   defaultSuffix?: string
+
   /**
    * 默认的动态路由匹配模式
    *
@@ -104,6 +106,12 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    * 允许用户在路由激活之后执行逻辑，例如页面初始化
    */
   afterEach?: AfterEnterCallback
+  /**
+   * 未匹配到路由时使用的组件
+   *
+   * 设置此属性可以在未匹配到路由时显示一个默认组件
+   */
+  missing?: RouteWidget
 }
 
 /**
@@ -111,5 +119,5 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
  */
 export type InitializedRouterOptions = MakeRequired<
   RouterOptions,
-  Exclude<keyof RouterOptions, 'beforeEach' | 'afterEach'>
+  Exclude<keyof RouterOptions, 'beforeEach' | 'afterEach' | 'missing'>
 >
