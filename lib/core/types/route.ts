@@ -36,27 +36,73 @@ export type RedirectHandler = (this: RouterCore, to: RouteLocation) => RouteTarg
  * @template T - 指定路由组件的类型，必须是 AllowedRouteWidget 的子类型
  */
 export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
-  // 路由的路径，用于URL匹配
+  /**
+   * 路由的路径，用于URL匹配
+   *
+   * 支持动态路径匹配，如：/user/{id}，可选变量：/user/{id?}
+   */
   path: RoutePath
-  // 路由路径的正则表达式模式，用于复杂匹配规则
+  /**
+   * 动态路由匹配模式
+   *
+   * 默认会继承`RouterOptions.pattern`
+   */
   pattern?: Record<string, RegExp>
-  // 路由的名称，用于识别和引用路由
+  /**
+   * 路由的名称，用于识别和引用路由
+   */
   name?: string
-  // 路由对应的组件或页面
+  /**
+   * 路由对应的视图组件
+   *
+   * 支持命名视图
+   *
+   * @example
+   * ```ts
+   * {
+   *   path: '/user/{id}',
+   *   name: 'user',
+   *   widget: {
+   *     default: User,
+   *     detail: UserDetail,
+   *   }
+   * }
+   * ```
+   */
   widget?: T
-  // 路由重定向的目标地址或处理函数
+  /**
+   * 路由重定向的目标地址或处理函数
+   */
   redirect?: RouteTarget | RedirectHandler
-  // 子路由配置，用于嵌套路由
+  /**
+   * 子路由配置，用于嵌套路由
+   */
   children?: Route[]
-  // 路由的元数据，用于存储附加信息
+  /**
+   * 路由的元数据，用于存储附加信息
+   */
   meta?: RouteMetaData
-  // 路由的后缀配置，决定是否支持通配符或指定后缀
+  /**
+   * 路由的后缀配置，决定是否支持通配符或指定后缀
+   *
+   * 默认继承`RouterOptions.suffix`
+   */
   suffix?: '*' | string | string[] | false
-  // 注入到路由组件的属性配置，或直接注入所有属性
+  /**
+   * 需要给路由`Widget`注入的属性
+   */
   injectProps?: (T extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps) | boolean
-  // 路由进入前的钩子函数，用于权限控制或数据预加载
+  /**
+   * 路由进入前的钩子函数，用于权限控制或数据预加载
+   *
+   * 默认继承`RouterOptions.beforeEach`
+   */
   beforeEnter?: BeforeEnterCallback
-  // 路由进入后的钩子函数，用于处理进入路由后的逻辑
+  /**
+   * 路由进入后的钩子函数，用于处理进入路由后的逻辑
+   *
+   * 默认继承`RouterOptions.afterEach`
+   */
   afterEnter?: AfterEnterCallback
 }
 
