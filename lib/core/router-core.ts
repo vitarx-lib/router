@@ -1,5 +1,4 @@
 import {
-  deepClone,
   isDeepEqual,
   isObject,
   markRaw,
@@ -34,6 +33,7 @@ import {
 import { patchUpdate } from './update.js'
 import {
   addPathSuffix,
+  cloneRouteLocation,
   createViewElement,
   formatHash,
   formatPath,
@@ -400,7 +400,7 @@ export default abstract class RouterCore extends RouterRegistry {
     const isCurrentTask = () => this._currentTaskId === taskId
 
     // 保存当前路由状态的深拷贝
-    const from = deepClone(this.currentRouteLocation) as RouteLocation
+    const from = cloneRouteLocation(this.currentRouteLocation) as RouteLocation
 
     const performNavigation = async (
       _target: RouteTarget,
@@ -591,7 +591,7 @@ export default abstract class RouterCore extends RouterRegistry {
    */
   protected completeNavigation(data?: RouteLocation, savedPosition?: _ScrollToOptions) {
     // 克隆当前路由状态用于后置钩子
-    const from = deepClone(this.currentRouteLocation)
+    const from = cloneRouteLocation(this.currentRouteLocation)
 
     // 设置视图渲染完成后的回调
     this._completeViewRender = () => {

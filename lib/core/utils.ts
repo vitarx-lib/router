@@ -2,6 +2,7 @@ import { createElement, LazyWidget, type WidgetType } from 'vitarx'
 import type {
   HashStr,
   LazyLoad,
+  ReadonlyRouteLocation,
   Route,
   RouteLocation,
   RouteNormalized,
@@ -380,4 +381,22 @@ export function createViewElement(widget: RouteWidget, props: Record<string, any
   } else {
     return createElement(widget, props)
   }
+}
+
+/**
+ * 克隆路由位置对象
+ *
+ * @param {RouteLocation} route
+ * @return {RouteLocation} - 克隆过后的对象
+ */
+export function cloneRouteLocation(route: RouteLocation | ReadonlyRouteLocation): RouteLocation {
+  const { matched, ...other } = route
+  Object.assign(other, {
+    matched: Array.from(matched),
+    query: { ...other.query },
+    params: { ...other.params },
+    meta: { ...other.meta }
+  })
+
+  return other as RouteLocation
 }
