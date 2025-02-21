@@ -45,14 +45,16 @@ export class RouterView extends Widget<RouteOptions> {
     this._$index = parentIndex + 1
     provide(INDEX_SYMBOL, this._$index, this)
     this._$currentRoute = this.matchedRoute
-    if (this._$currentRoute) {
-      this._$currentElement.value = Router.routeView(this._$currentRoute, this.name)
-    }
+    this._$currentElement.value = Router['routeViewElement'](
+      this._$currentRoute,
+      this.name,
+      this._$index
+    )
     watch(this.location.matched, (_c, o) => {
       const newRoute = o[this.index]
       if (newRoute !== this._$currentRoute) {
         this._$currentRoute = newRoute
-        this._$currentElement.value = newRoute ? Router.routeView(newRoute, this.name) : undefined
+        this._$currentElement.value = Router['routeViewElement'](newRoute, this.name, this._$index)
       }
     })
   }

@@ -1,12 +1,11 @@
 import {
-  createElement,
   deepClone,
   isDeepEqual,
   isObject,
-  LazyWidget,
   markRaw,
   reactive,
   type Reactive,
+  readonly,
   shallowReactive,
   type VNode,
   type WidgetType
@@ -21,6 +20,8 @@ import {
   type InitializedRouterOptions,
   type NavigateResult,
   NavigateStatus,
+  type ReadonlyRouteLocation,
+  type ReadonlyRouteNormalized,
   type RouteIndex,
   type RouteLocation,
   type RouteNormalized,
@@ -33,10 +34,10 @@ import {
 import { patchUpdate } from './update.js'
 import {
   addPathSuffix,
+  createViewElement,
   formatHash,
   formatPath,
   getPathSuffix,
-  isLazyLoad,
   isRouteLocationTypeObject,
   mergePathParams,
   objectToQueryString
@@ -78,6 +79,12 @@ export default abstract class RouterCore extends RouterRegistry {
    * 包含当前路由的完整信息，如路径、参数、查询字符串等
    */
   private readonly _currentRouteLocation: Reactive<RouteLocation>
+  /**
+   * 只读路由位置数据
+   *
+   * @private
+   */
+  private readonly _readonlyRouteLocation: ReadonlyRouteLocation
 
   /**
    * 路由器构造函数
@@ -98,10 +105,11 @@ export default abstract class RouterCore extends RouterRegistry {
       fullPath: this._options.base,
       params: {},
       query: {},
-      matched: shallowReactive([]),
+      matched: shallowReactive<RouteNormalized[]>([]),
       meta: markRaw({}),
       suffix: ''
     })
+    this._readonlyRouteLocation = readonly(this._currentRouteLocation)
   }
 
   /**
@@ -179,12 +187,12 @@ export default abstract class RouterCore extends RouterRegistry {
   /**
    * 当前路由数据
    *
-   * 它是只读的，不要在外部修改它！
+   * 它是只读的，但它是响应式的，所以你可以在监听其变化。
    *
-   * @return {Readonly<RouteLocation>} - 当前路由数据
+   * @return {ReadonlyRouteLocation} - 当前路由数据
    */
-  public get currentRouteLocation(): Reactive<Readonly<RouteLocation>> {
-    return this._currentRouteLocation
+  public get currentRouteLocation(): ReadonlyRouteLocation {
+    return this._readonlyRouteLocation
   }
 
   /**
@@ -220,19 +228,24 @@ export default abstract class RouterCore extends RouterRegistry {
    * 内部方法，用于获取路由线路对应的视图元素虚拟节点。
    *
    * @internal
-   * @param {RouteNormalized} route - 路由对象
+   * @param {ReadonlyRouteNormalized} route - 路由对象
    * @param {string} name - 视图名称
+   * @param {number} index - `RouterView`的索引
    * @return {VNode<WidgetType> | undefined} - 视图元素虚拟节点
    */
-  static routeView(route: RouteNormalized, name: string): VNode<WidgetType> | undefined {
-    const widgetMap = route.widget
-    if (!widgetMap) return undefined
-    if (!(name in widgetMap)) return undefined
-    const widget = widgetMap[name]
-    if (isLazyLoad(widget)) {
-      return createElement(LazyWidget, { children: widget, key: route.path })
+  protected static routeViewElement(
+    route: ReadonlyRouteNormalized | undefined,
+    name: string,
+    index: number
+  ): VNode<WidgetType> | undefined {
+    if (!route) {
+      if (index === 0 && name === 'default') {
+        return this.instance.missing ? createViewElement(this.instance.missing, {}) : undefined
+      } else {
+        return undefined
+      }
     } else {
-      return createElement(widget)
+      this.instance.createRouteViewElement(route, name)
     }
   }
 
@@ -316,7 +329,6 @@ export default abstract class RouterCore extends RouterRegistry {
    * 此方法用于浏览器端滚动到指定位置
    *
    * @param scrollTarget
-   * @protected
    */
   public scrollTo(scrollTarget: ScrollTarget | undefined): void {
     if (this.isBrowser || !scrollTarget || typeof scrollTarget !== 'object') return
@@ -373,6 +385,7 @@ export default abstract class RouterCore extends RouterRegistry {
 
   /**
    * 路由导航方法
+   *
    * 处理所有的路由跳转请求，包括 push 和 replace
    *
    * @param {RouteTarget} target - 导航目标
@@ -387,7 +400,7 @@ export default abstract class RouterCore extends RouterRegistry {
     const isCurrentTask = () => this._currentTaskId === taskId
 
     // 保存当前路由状态的深拷贝
-    const from = deepClone(this.currentRouteLocation)
+    const from = deepClone(this.currentRouteLocation) as RouteLocation
 
     const performNavigation = async (
       _target: RouteTarget,
@@ -424,7 +437,7 @@ export default abstract class RouterCore extends RouterRegistry {
       })
 
       // 检查是否导航到相同路由
-      if (this.isSameNavigate(to, this.currentRouteLocation)) {
+      if (isDeepEqual(to, this.currentRouteLocation)) {
         return createNavigateResult({
           status: NavigateStatus.duplicated,
           message: '导航到相同的路由，被系统阻止！'
@@ -433,7 +446,7 @@ export default abstract class RouterCore extends RouterRegistry {
 
       try {
         // 执行前置守卫
-        const result = await this.onBeforeEach(to, this.currentRouteLocation)
+        const result = await this.onBeforeEach(to, from)
 
         // 如果前置守卫返回false，取消导航
         if (result === false) {
@@ -458,7 +471,7 @@ export default abstract class RouterCore extends RouterRegistry {
         }
 
         // 检查路由匹配结果
-        if (!to.matched.length) {
+        if (!to.matched.length && !this.missing) {
           return createNavigateResult({
             status: NavigateStatus.not_matched,
             message: `未匹配到任何路由规则，被系统阻止！请检测目标索引(${to.index})是否已注册路由。`
@@ -534,6 +547,34 @@ export default abstract class RouterCore extends RouterRegistry {
   }
 
   /**
+   * 创建路由元素
+   *
+   * @param route
+   * @param name
+   * @protected
+   */
+  protected createRouteViewElement(
+    route: ReadonlyRouteNormalized,
+    name: string
+  ): VNode<WidgetType> | undefined {
+    const widget = route.widget?.[name]
+    if (!widget) return undefined
+    const injectPropsConfig = route.injectProps?.[name]
+    let props: Record<string, any>
+    if (injectPropsConfig === false) {
+      props = {}
+    } else if (injectPropsConfig === true) {
+      props = this._currentRouteLocation.params
+    } else if (typeof injectPropsConfig === 'function') {
+      props = injectPropsConfig(this.currentRouteLocation)
+    } else {
+      props = injectPropsConfig ?? {}
+    }
+    props.key = route.path
+    return createViewElement(widget, props)
+  }
+
+  /**
    * 该方法提供给`RouterView`完成渲染时调用
    *
    * @internal
@@ -549,8 +590,8 @@ export default abstract class RouterCore extends RouterRegistry {
    * @protected
    */
   protected completeNavigation(data?: RouteLocation, savedPosition?: _ScrollToOptions) {
-    // 保存当前路由状态用于后续钩子
-    const from = this._currentRouteLocation
+    // 克隆当前路由状态用于后置钩子
+    const from = deepClone(this.currentRouteLocation)
 
     // 设置视图渲染完成后的回调
     this._completeViewRender = () => {
@@ -630,27 +671,13 @@ export default abstract class RouterCore extends RouterRegistry {
   protected abstract replaceHistory(data: RouteLocation): void
 
   /**
-   * 判断是否相同的导航请求
-   *
-   * @param to
-   * @param from
-   * @protected
-   */
-  protected isSameNavigate(to: RouteLocation, from: RouteLocation): boolean {
-    return isDeepEqual(to, from)
-  }
-
-  /**
    * 触发路由前置守卫
    *
-   * @param {Required<RouteLocation>} to - 路由目标对象
-   * @param {Required<RouteLocation>} from - 前路由对象
+   * @param {RouteLocation} to - 路由目标对象
+   * @param {RouteLocation} from - 前路由对象
    * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
-  protected onBeforeEach(
-    to: Required<RouteLocation>,
-    from: Required<RouteLocation>
-  ): BeforeEachCallbackResult {
+  protected onBeforeEach(to: RouteLocation, from: RouteLocation): BeforeEachCallbackResult {
     const matched = to.matched.at(-1)
     if (matched && 'beforeEnter' in matched && typeof matched.beforeEnter === 'function') {
       return matched.beforeEnter.call(this, to as any, from as any)
@@ -661,10 +688,10 @@ export default abstract class RouterCore extends RouterRegistry {
   /**
    * 触发路由后置守卫
    *
-   * @param {Required<RouteLocation>} to - 路由目标对象
-   * @param {Required<RouteLocation>} from - 前路由对象
+   * @param {ReadonlyRouteLocation} to - 路由目标对象
+   * @param {ReadonlyRouteLocation} from - 前路由对象
    */
-  protected onAfterEach(to: Required<RouteLocation>, from: Required<RouteLocation>): void {
+  protected onAfterEach(to: ReadonlyRouteLocation, from: ReadonlyRouteLocation): void {
     const matched = to.matched.at(-1)
     if (matched && 'afterEnter' in matched && typeof matched.afterEnter === 'function') {
       return matched.afterEnter.call(this, to as any, from as any)
@@ -687,14 +714,14 @@ export default abstract class RouterCore extends RouterRegistry {
    * 处理滚动行为
    * 根据配置和保存的位置信息处理页面滚动
    *
-   * @param {RouteLocation} to - 目标路由
-   * @param {RouteLocation} from - 当前路由
+   * @param {ReadonlyRouteLocation} to - 目标路由
+   * @param {ReadonlyRouteLocation} from - 当前路由
    * @param {_ScrollToOptions} savedPosition - 保存的滚动位置
    * @private
    */
   private async onScrollBehavior(
-    to: RouteLocation,
-    from: RouteLocation,
+    to: ReadonlyRouteLocation,
+    from: ReadonlyRouteLocation,
     savedPosition: _ScrollToOptions | undefined
   ): Promise<void> {
     try {
