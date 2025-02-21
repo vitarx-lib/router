@@ -52,28 +52,23 @@ import {
 export default abstract class RouterCore extends RouterRegistry {
   // 当前执行的导航任务ID，用于处理并发导航请求
   private _currentTaskId: number | null = null
-
   // 任务计数器，用于生成唯一的任务ID
   private _taskCounter = 0
-
   /**
    * 等待执行的 replace 操作数据
    * 如果不为 null，表示当前有一个等待完成的 replace 导航
    */
   private _pendingReplace: RouteLocation | null = null
-
   /**
    * 等待执行的 push 操作数据
    * 如果不为 null，表示当前有一个等待完成的 push 导航
    */
   private _pendingPush: RouteLocation | null = null
-
   /**
    * 滚动行为处理器
    * 用于自定义路由切换时的滚动行为
    */
   private _scrollBehaviorHandler: ScrollBehaviorHandler | undefined = undefined
-
   /**
    * 当前路由数据
    * 包含当前路由的完整信息，如路径、参数、查询字符串等
@@ -132,6 +127,17 @@ export default abstract class RouterCore extends RouterRegistry {
   }
 
   /**
+   * 判断路由器是否初始化完成
+   *
+   * 如果存在单例则代表初始化完成，没有单例则代表未初始化。
+   *
+   * @return {boolean} - 如果初始化完成，返回true，否则返回false
+   */
+  get initialized(): boolean {
+    return RouterCore._instance !== undefined
+  }
+
+  /**
    * 是否运行在浏览器环境
    * 用于区分服务端渲染和客户端渲染
    */
@@ -173,15 +179,6 @@ export default abstract class RouterCore extends RouterRegistry {
    */
   get mode(): HistoryMode {
     return this._options.mode
-  }
-
-  /**
-   * 判断路由器是否初始化完成
-   *
-   * @return {boolean} - 如果初始化完成，返回true，否则返回false
-   */
-  get initialized(): boolean {
-    return RouterCore._instance !== undefined
   }
 
   /**
@@ -239,8 +236,13 @@ export default abstract class RouterCore extends RouterRegistry {
     index: number
   ): VNode<WidgetType> | undefined {
     if (!route) {
-      if (index === 0 && name === 'default') {
-        return this.instance.missing ? createViewElement(this.instance.missing, {}) : undefined
+      if (
+        index === 0 &&
+        name === 'default' &&
+        this.instance.missing &&
+        !this.instance.isPendingNavigation
+      ) {
+        return createViewElement(this.instance.missing, {})
       } else {
         return undefined
       }
@@ -604,10 +606,10 @@ export default abstract class RouterCore extends RouterRegistry {
     // 根据不同情况更新路由状态
     if (data) {
       this.updateRouteLocation(data)
-    } else if (this._pendingReplace) {
-      this.updateRouteLocation(this._pendingReplace)
-    } else if (this._pendingPush) {
-      this.updateRouteLocation(this._pendingPush)
+    } else if (this.pendingReplaceData) {
+      this.updateRouteLocation(this.pendingReplaceData)
+    } else if (this.pendingPushData) {
+      this.updateRouteLocation(this.pendingPushData)
     } else {
       throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
     }
