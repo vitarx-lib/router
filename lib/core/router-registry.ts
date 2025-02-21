@@ -1,3 +1,4 @@
+import normalizeRoute from './normalize/index.js'
 import {
   type DynamicRouteRecord,
   type HistoryMode,
@@ -9,14 +10,14 @@ import {
   type RouteNormalized,
   type RoutePath,
   type RouterOptions,
-  type RouteTarget
+  type RouteTarget,
+  type RouteWidget
 } from './router-types.js'
 import {
   createDynamicPattern,
   formatPath,
   isRouteGroup,
   isVariablePath,
-  normalizeRoute,
   optionalVariableCount,
   splitPathAndSuffix,
   validateSuffix
@@ -27,10 +28,7 @@ import {
  */
 export default abstract class RouterRegistry {
   // 配置
-  protected readonly _options: MakeRequired<
-    RouterOptions,
-    Exclude<keyof RouterOptions, 'beforeEach' | 'afterEach'>
-  >
+  protected readonly _options: Readonly<InitializedRouterOptions>
   // 命名路由映射
   protected readonly _namedRoutes = new Map<string, RouteNormalized>()
   // 动态路由正则，按长度分组
@@ -41,7 +39,7 @@ export default abstract class RouterRegistry {
   protected readonly _parentRoute = new WeakMap<RouteNormalized, RouteNormalized>()
 
   protected constructor(options: RouterOptions) {
-    this._options = {
+    const config: InitializedRouterOptions = {
       base: '/',
       strict: false,
       mode: 'path',
@@ -51,17 +49,18 @@ export default abstract class RouterRegistry {
       defaultSuffix: '',
       ...options
     }
-    this._options.base = `/${this._options.base.replace(/^\/+|\/+$/g, '')}`
+    config.base = `/${config.base.replace(/^\/+|\/+$/g, '')}`
     // 格式化 suffix
-    if (typeof this._options.suffix === 'string') {
-      this._options.suffix = this._options.suffix.replace(/\./g, '')
-    } else if (Array.isArray(this._options.suffix)) {
-      this._options.suffix = this._options.suffix.map(item => item.replace(/\./g, ''))
+    if (typeof config.suffix === 'string') {
+      config.suffix = config.suffix.replace(/\./g, '')
+    } else if (Array.isArray(config.suffix)) {
+      config.suffix = config.suffix.map(item => item.replace(/\./g, ''))
     }
     // 格式化 默认后缀
-    if (this._options.defaultSuffix) {
-      this._options.defaultSuffix = this._options.defaultSuffix.replace(/\./g, '')
+    if (config.defaultSuffix) {
+      config.defaultSuffix = config.defaultSuffix.replace(/\./g, '')
     }
+    this._options = config
   }
 
   /**
@@ -79,16 +78,23 @@ export default abstract class RouterRegistry {
   }
 
   /**
+   * 未匹配到路由时使用的组件
+   */
+  get missing(): RouteWidget | undefined {
+    return this._options.missing
+  }
+
+  /**
    * 获取所有路由映射
    */
-  get pathRoutes(): ReadonlyMap<string, Route> {
+  get pathRoutes(): ReadonlyMap<string, RouteNormalized> {
     return this._pathRoutes
   }
 
   /**
    * 获取所有命名路由映射
    */
-  get namedRoutes(): ReadonlyMap<string, Route> {
+  get namedRoutes(): ReadonlyMap<string, RouteNormalized> {
     return this._namedRoutes
   }
 
