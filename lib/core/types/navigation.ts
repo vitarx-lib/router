@@ -150,6 +150,11 @@ export interface RouteLocation {
 }
 
 /**
+ * 只读路由位置对象
+ */
+export type ReadonlyRouteLocation = DeepReadonly<RouteLocation>
+
+/**
  * 导航结果
  *
  * 枚举值：
@@ -206,11 +211,11 @@ export interface NavigateResult {
   /**
    * 最终的导航数据
    */
-  to: Readonly<RouteLocation>
+  to: ReadonlyRouteLocation
   /**
    * 导航完成前的路由数据
    */
-  from: Readonly<RouteLocation>
+  from: ReadonlyRouteLocation
   /**
    * 如果在守卫过程中被重定向，则为最初的路由目标
    */
