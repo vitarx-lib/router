@@ -10,7 +10,7 @@ import {
   Widget,
   type WidgetType
 } from 'vitarx'
-import { type RouteNormalized, Router } from '../core/index.js'
+import { type ReadonlyRouteNormalized, Router } from '../core/index.js'
 
 export interface RouteOptions {
   /**
@@ -35,7 +35,7 @@ export class RouterView extends Widget<RouteOptions> {
   // 自身index
   private readonly _$index: number
   // 当前匹配的路由配置
-  private _$currentRoute?: RouteNormalized
+  private _$currentRoute?: ReadonlyRouteNormalized
   // 当前视图元素
   private _$currentElement = shallowRef<VNode<WidgetType>>()
 
@@ -85,9 +85,9 @@ export class RouterView extends Widget<RouteOptions> {
   /**
    * 获取当前匹配的路线配置
    *
-   * 注意未匹配时会返回`undefined`，匹配成功时返回的是`RouteNormalized`
+   * 注意未匹配时会返回`undefined`，匹配成功时返回的是`ReadonlyRouteNormalized`
    */
-  public get matchedRoute(): RouteNormalized | undefined {
+  public get matchedRoute(): ReadonlyRouteNormalized | undefined {
     return this.location.matched[this.index]
   }
 
@@ -143,10 +143,10 @@ export class RouterView extends Widget<RouteOptions> {
    * ```tsx
    * protected build() {
    *   // 使用空片段节点占位
-   *   if (!this.currentWidget) return <></> // 不可省略，因为`KeepAlive`不能渲染非组件节点。
+   *   if (!this.currentElement) return <></> // 不可省略，因为`KeepAlive`不能渲染非组件节点。
    *
-   *   // 将当前要进行展示的小部件构造函数传递给`KeepAlive`插槽，并指定`onlyKey`属性，会在切换页面时缓存当前页面。
-   *   return <KeepAlive onlyKey={this.matchedRoute?.path}>{this.currentWidget}</KeepAlive>
+   *   // 将当前要进行展示的小部件构造函数传递给`KeepAlive`插槽，会在切换页面时缓存当前页面状态。
+   *   return <KeepAlive>{this.currentElement}</KeepAlive>
    * }
    * ```
    * @protected
