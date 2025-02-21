@@ -1,6 +1,6 @@
 {
   "name": "vitarx-router",
-  "version": "1.0.0-beta.15",
+  "version": "1.0.0-beta.16",
   "description": "Vitarx前端框架的配套路由器",
   "type": "module",
   "main": "dist/vitarx-router.umd.js",
