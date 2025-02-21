@@ -2,6 +2,7 @@ import RouterCore from './router-core.js'
 import {
   type HashStr,
   NavigateStatus,
+  type ReadonlyRouteLocation,
   type RouteLocation,
   type RouterOptions,
   type RouteTarget
@@ -115,10 +116,10 @@ export default class RouterHistory extends RouterCore {
    * @private
    */
   private createState(
-    data: RouteLocation,
+    data: ReadonlyRouteLocation,
     hash?: HashStr,
     query?: Record<string, string>
-  ): Omit<RouteLocation, 'matched'> {
+  ): Omit<ReadonlyRouteLocation, 'matched'> {
     const { matched, ...state } = data
     if (typeof hash === 'string') {
       state.hash = hash
