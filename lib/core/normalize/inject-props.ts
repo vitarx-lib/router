@@ -39,4 +39,5 @@ export default function normalizeInjectProps(route: Route): void {
       `[Vitarx.Router][ERROR]：请检查 ${route.path} 路由线路配置，injectProps属性配置错误，仅支持boolean、{key:boolean|function}、function类型`
     )
   }
+  route.injectProps = injectProps
 }
