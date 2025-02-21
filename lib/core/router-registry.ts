@@ -60,6 +60,9 @@ export default abstract class RouterRegistry {
     if (config.defaultSuffix) {
       config.defaultSuffix = config.defaultSuffix.replace(/\./g, '')
     }
+    if (config.missing && typeof config.missing !== 'function') {
+      throw new TypeError(`[VitarxRouter][ERROR]：missing配置无效`)
+    }
     this._options = config
   }
 
