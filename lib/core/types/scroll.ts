@@ -1,4 +1,4 @@
-import type { RouteTarget } from './navigation.js'
+import type { ReadonlyRouteLocation } from './navigation.js'
 
 /**
  * 滚动行为
@@ -35,7 +35,7 @@ export type ScrollResult = ScrollTarget | false
  * 滚动行为处理器
  */
 export type ScrollBehaviorHandler = (
-  to: RouteTarget,
-  from: RouteTarget,
+  to: ReadonlyRouteLocation,
+  from: ReadonlyRouteLocation,
   savedPosition: _ScrollToOptions | undefined
 ) => ScrollResult | Promise<ScrollResult>
