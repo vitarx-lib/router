@@ -3,6 +3,7 @@ import type { AfterEnterCallback, BeforeEnterCallback } from './hooks.js'
 import type {
   AllowedRouteWidget,
   NamedRouteWidget,
+  ReadonlyRouteLocation,
   RouteLocation,
   RoutePath,
   RouteTarget,
@@ -10,12 +11,17 @@ import type {
 } from './navigation.js'
 
 /**
+ * 注入参数处理函数
+ *
+ * @param {ReadonlyRouteLocation} location 路由匹配的位置信息
+ * @return {Record<string, any>} 注入的参数
+ */
+export type InjectPropsHandler = (location: ReadonlyRouteLocation) => Record<string, any>
+
+/**
  * 路由参数注入
  */
-export type InjectProps =
-  | boolean
-  | Record<string, any>
-  | ((route: RouteLocation) => Record<string, any>)
+export type InjectProps = boolean | Record<string, any> | InjectPropsHandler
 
 /**
  * 命名的props
@@ -89,7 +95,17 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
    */
   suffix?: '*' | string | string[] | false
   /**
-   * 需要给路由`Widget`注入的属性
+   * 需要给路由`Widget`注入的参数
+   *
+   * 可选值：
+   * - `true`：表示仅注入匹配到的动态参数
+   * - `false`：表示不注入任何参数
+   * - `{key: value}`：表示注入指定参数，其中`key`为参数名，`any`为参数值
+   * - `(location: RouteLocation) => {key: value}`：自定义一个处理函数，返回一个对象用于注入参数
+   *
+   * > 注意：如果是命名视图，则需要以键值对形式传入：{视图名称:injectProps配置}
+   *
+   * @default true
    */
   injectProps?: (T extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps) | boolean
   /**
@@ -107,13 +123,18 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
 }
 
 /**
- * 规范化过后的路由线路配置
+ * 规范化路由线路配置
  */
 export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern' | 'suffix'> {
   children: RouteNormalized[]
   widget: undefined | Record<string, RouteWidget>
   injectProps: undefined | InjectNamedProps
 }
+
+/**
+ * 只读规范化路由线路配置
+ */
+export type ReadonlyRouteNormalized = DeepReadonly<RouteNormalized>
 
 /**
  * 动态路由记录
