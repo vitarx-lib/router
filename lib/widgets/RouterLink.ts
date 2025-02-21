@@ -26,7 +26,7 @@ export interface RouterLinkProps {
   /**
    * 子节点插槽
    */
-  children: Element | Element[] | string
+  children?: Element | Element[] | string
   /**
    * a 标签的style属性
    */
@@ -137,7 +137,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
       const props: WebRuntimeDom.HtmlProperties<HTMLAnchorElement> = {
         href: this.href,
         onClick: e => this.navigate(e),
-        children: this.children,
+        children: this.children ?? this.location.value?.index,
         style: this.props.style,
         class: this.props.class
       }
