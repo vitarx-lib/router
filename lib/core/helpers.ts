@@ -1,8 +1,8 @@
-import type { LazyLoader, Reactive, WidgetType } from 'vitarx'
+import type { LazyLoader, WidgetType } from 'vitarx'
 import RouterCore from './router-core.js'
 import RouterHistory from './router-history.js'
 import RouterMemory from './router-memory.js'
-import type { LazyLoad, Route, RouteLocation, RouterOptions } from './router-types.js'
+import type { LazyLoad, ReadonlyRouteLocation, Route, RouterOptions } from './router-types.js'
 import { LAZY_LOADER_SYMBOL } from './utils.js'
 
 /**
@@ -107,9 +107,9 @@ export function useRouter<T extends RouterCore>(): T {
  * }
  * ```
  *
- * @return {Readonly<Reactive<RouteLocation>>} - 只读的`RouteLocation`对象
+ * @return {ReadonlyRouteLocation} - 只读的`RouteLocation`对象
  */
-export function useRoute(): Readonly<Reactive<RouteLocation>> {
+export function useRoute(): ReadonlyRouteLocation {
   return RouterCore.instance.currentRouteLocation
 }
 
