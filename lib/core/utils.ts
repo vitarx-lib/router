@@ -1,4 +1,4 @@
-import type { WidgetType } from 'vitarx'
+import { type WidgetType } from 'vitarx'
 import type {
   HashStr,
   LazyLoad,
