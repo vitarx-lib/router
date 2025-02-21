@@ -245,7 +245,7 @@ export default abstract class RouterCore extends RouterRegistry {
         return undefined
       }
     } else {
-      this.instance.createRouteViewElement(route, name)
+      return this.instance.createRouteViewElement(route, name)
     }
   }
 
