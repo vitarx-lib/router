@@ -1,5 +1,5 @@
 import type RouterCore from '../router-core.js'
-import type { RouteLocation, RouteTarget } from './navigation.js'
+import type { ReadonlyRouteLocation, RouteTarget } from './navigation.js'
 
 /**
  * 路由前置钩子返回值
@@ -26,8 +26,8 @@ export type BeforeEachCallbackResult =
  */
 export type BeforeEnterCallback = (
   this: RouterCore,
-  to: DeepReadonly<RouteLocation>,
-  from: DeepReadonly<RouteLocation>
+  to: ReadonlyRouteLocation,
+  from: ReadonlyRouteLocation
 ) => BeforeEachCallbackResult
 
 /**
@@ -41,6 +41,6 @@ export type BeforeEnterCallback = (
  */
 export type AfterEnterCallback = (
   this: RouterCore,
-  to: DeepReadonly<RouteLocation>,
-  from: DeepReadonly<RouteLocation>
+  to: ReadonlyRouteLocation,
+  from: ReadonlyRouteLocation
 ) => void
