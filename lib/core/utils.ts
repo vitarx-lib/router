@@ -391,6 +391,5 @@ export function createViewElement(widget: RouteWidget, props: Record<string, any
  */
 export function cloneRouteLocation(route: RouteLocation | ReadonlyRouteLocation): RouteLocation {
   const { matched, ...other } = route
-  Object.assign(deepClone(other), { matched: Array.from(matched) })
-  return other as RouteLocation
+  return Object.assign(deepClone(other), { matched: Array.from(matched) }) as RouteLocation
 }
