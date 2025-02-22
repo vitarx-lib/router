@@ -682,9 +682,9 @@ export default abstract class RouterCore extends RouterRegistry {
   protected onBeforeEach(to: RouteLocation, from: RouteLocation): BeforeEachCallbackResult {
     const matched = to.matched.at(-1)
     if (matched && 'beforeEnter' in matched && typeof matched.beforeEnter === 'function') {
-      return matched.beforeEnter.call(this, to as any, from as any)
+      return matched.beforeEnter.call(this, to, from)
     }
-    return this._options.beforeEach?.call(this, to as any, from as any)
+    return this._options.beforeEach?.call(this, to, from)
   }
 
   /**
@@ -695,10 +695,12 @@ export default abstract class RouterCore extends RouterRegistry {
    */
   protected onAfterEach(to: ReadonlyRouteLocation, from: ReadonlyRouteLocation): void {
     const matched = to.matched.at(-1)
-    if (matched && 'afterEnter' in matched && typeof matched.afterEnter === 'function') {
-      return matched.afterEnter.call(this, to as any, from as any)
+    // 未匹配到路由时不触发后置守卫
+    if (!matched) return void 0
+    if ('afterEnter' in matched && typeof matched.afterEnter === 'function') {
+      return matched.afterEnter.call(this, to, from)
     }
-    return this._options.afterEach?.call(this, to as any, from as any)
+    return this._options.afterEach?.call(this, to, from)
   }
 
   /**
