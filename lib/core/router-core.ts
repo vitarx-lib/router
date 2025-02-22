@@ -1,4 +1,5 @@
 import {
+  deepClone,
   isDeepEqual,
   isObject,
   markRaw,
@@ -378,7 +379,7 @@ export default abstract class RouterCore extends RouterRegistry {
       }
       matched.push(route)
     }
-    const meta: RouteMetaData = route?.meta || ({} as RouteMetaData)
+    const meta: RouteMetaData = route?.meta ? deepClone(route.meta) : ({} as RouteMetaData)
     const hashStr = formatHash(hash, true)
     const suffix = getPathSuffix(index)
     const fullPath = this.makeFullPath(path, query, hashStr, suffix)

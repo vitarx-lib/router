@@ -1,4 +1,4 @@
-import { createElement, LazyWidget, type WidgetType } from 'vitarx'
+import { createElement, deepClone, LazyWidget, type WidgetType } from 'vitarx'
 import type {
   HashStr,
   LazyLoad,
@@ -391,12 +391,6 @@ export function createViewElement(widget: RouteWidget, props: Record<string, any
  */
 export function cloneRouteLocation(route: RouteLocation | ReadonlyRouteLocation): RouteLocation {
   const { matched, ...other } = route
-  Object.assign(other, {
-    matched: Array.from(matched),
-    query: { ...other.query },
-    params: { ...other.params },
-    meta: { ...other.meta }
-  })
-
+  Object.assign(deepClone(other), { matched: Array.from(matched) })
   return other as RouteLocation
 }
