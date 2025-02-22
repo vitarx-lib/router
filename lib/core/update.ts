@@ -52,16 +52,15 @@ function diffUpdateArrays(a: any[], b: any[]): void {
  * @param b
  */
 function diffUpdateObjects(a: Record<string, any>, b: Record<string, any>): void {
-  const aKeys = Object.keys(a)
+  const aKeys = new Set(Object.keys(a))
   const bKeys = Object.keys(b)
   // 遍历 b 中的属性，将 b 的值赋给 a
   for (const key of bKeys) {
-    if (Object.prototype.hasOwnProperty.call(b, key)) {
-      a[key] = b[key]
-    }
+    a[key] = b[key]
+    aKeys.delete(key)
   }
   // 遍历 a 中的属性，删除 a 中存在但 b 中不存在的属性
-  for (const key in aKeys) {
-    if (!(key in b)) delete a[key]
+  for (const key of aKeys) {
+    delete a[key]
   }
 }
