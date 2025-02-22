@@ -139,7 +139,8 @@ export class RouterLink extends Widget<RouterLinkProps> {
         onClick: e => this.navigate(e),
         children: this.children ?? this.location.value?.index,
         style: this.props.style,
-        class: this.props.class
+        class: this.props.class,
+        draggable: false
       }
       if (this.isActive) props['aria-current'] = 'page'
       if (this.isDisabled) props.disabled = true
