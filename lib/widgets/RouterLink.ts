@@ -120,9 +120,13 @@ export class RouterLink extends Widget<RouterLinkProps> {
         if (!this.target.value || !this.location.value) return false
         if (this.target.value.index.startsWith('/')) {
           if (props.active === 'obscure') {
-            return Router.instance.currentRouteLocation.fullPath.startsWith(
-              this.location.value.path
-            )
+            if (this.location.value.path === '/') {
+              return Router.instance.currentRouteLocation.path === '/'
+            } else {
+              return Router.instance.currentRouteLocation.fullPath.startsWith(
+                this.location.value.path
+              )
+            }
           } else {
             return this.location.value.path === Router.instance.currentRouteLocation.path
           }
