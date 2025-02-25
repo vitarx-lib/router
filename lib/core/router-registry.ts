@@ -131,6 +131,10 @@ export default abstract class RouterRegistry {
 
   /**
    * 删除路由
+   *
+   * @param {string} index path或name
+   * @param {boolean} isRemoveFromRoutes - 此参数内部递归使用，勿传值！
+   * @returns {void}
    */
   public removeRoute(index: RouteIndex, isRemoveFromRoutes: boolean = true): void {
     const deleteRoute = this.findRoute(index)
@@ -158,7 +162,7 @@ export default abstract class RouterRegistry {
    * 添加路由
    *
    * @param {Object} route 路由对象
-   * @param {string} [parent] 父路由索引，可以是path也可以是name
+   * @param {string} [parent] 父路由索引，可以是path|name
    * @returns {void}
    */
   public addRoute(route: Route, parent?: string): void {
@@ -173,7 +177,7 @@ export default abstract class RouterRegistry {
   }
 
   /**
-   * 查找路由
+   * 根据索引或路由目标查找路由
    *
    * @param {string|Object} target 路由索引或目标对象
    * @returns {RouteNormalized|undefined} 匹配的路由对象，如果未找到则返回undefined
@@ -198,7 +202,20 @@ export default abstract class RouterRegistry {
   }
 
   /**
+   * 根据path查找路由
+   *
+   * @param {string} path - 路由路径
+   * @returns {RouteNormalized|undefined} - 路由对象，如果未找到则返回undefined
+   */
+  public findPathRoute(path: RoutePath): RouteNormalized | undefined {
+    return this._pathRoutes.get(path)
+  }
+
+  /**
    * 查找命名路由
+   *
+   * @param {string} name
+   * @returns {RouteNormalized|undefined} - 路由对象，如果未找到则返回undefined
    */
   public findNamedRoute(name: RouteName): RouteNormalized | undefined {
     return this._namedRoutes.get(name)
@@ -219,9 +236,9 @@ export default abstract class RouterRegistry {
    * 匹配成功后，验证路径的后缀是否符合要求，如果符合则返回匹配结果，包括路由和参数（如果有）
    *
    * @param path 要匹配的路径
-   * @returns 如果找到匹配的路由，则返回匹配结果对象；否则返回undefined
+   * @returns {object|undefined} 如果找到匹配的路由，则返回匹配结果对象；否则返回undefined
    */
-  protected matchRoute(path: RoutePath): MatchResult | undefined {
+  public matchRoute(path: RoutePath): MatchResult | undefined {
     // 格式化路径，确保路径格式一致
     let formattedPath = formatPath(path)
     // 如果不是严格匹配模式，将路径转换为小写
