@@ -133,19 +133,12 @@ export default abstract class RouterRegistry {
    * 删除路由
    *
    * @param {string} index path或name
-   * @param {boolean} isRemoveFromRoutes - 此参数内部递归使用，勿传值！
-   * @returns {void}
+   * @returns {RouteNormalized|undefined} - 删除成功返回被删除的路由对象，否则返回undefined
    */
-  public removeRoute(index: RouteIndex, isRemoveFromRoutes: boolean = true): void {
+  public removeRoute(index: RouteIndex): RouteNormalized | undefined {
     const deleteRoute = this.findRoute(index)
 
-    if (!deleteRoute) return
-
-    if (isRouteGroup(deleteRoute)) {
-      for (const child of deleteRoute.children) {
-        this.removeRoute(child.path, false)
-      }
-    }
+    if (!deleteRoute) return undefined
 
     this._pathRoutes.delete(deleteRoute.path)
 
@@ -155,7 +148,8 @@ export default abstract class RouterRegistry {
 
     this.removeDynamicRoute(deleteRoute.path)
 
-    if (isRemoveFromRoutes) this.removedFromRoutes(deleteRoute)
+    this.removedFromRoutes(deleteRoute)
+    return deleteRoute
   }
 
   /**
@@ -169,7 +163,10 @@ export default abstract class RouterRegistry {
     if (parent) {
       const parentRoute = this.findRoute(parent)
       if (!parentRoute) throw new Error(`[Vitarx.Router.addRoute][ERROR]：父路由${parent}不存在`)
-      this.registerRoute(route, parentRoute)
+      if (!parentRoute.children.includes(parentRoute)) {
+        // 父路由不存在子路由，则添加子路由
+        parentRoute.children.push(this.registerRoute(route, parentRoute))
+      }
     } else {
       this.registerRoute(route)
       this._options.routes.push(route)
@@ -332,17 +329,14 @@ export default abstract class RouterRegistry {
    */
   private removedFromRoutes(route: RouteNormalized) {
     const parent = this.findParentRoute(route)
+    // 从父路由中删除子路由
     if (parent?.children) {
       const index = parent.children.indexOf(route)
-      if (index !== -1) {
-        parent.children.splice(index, 1)
-      }
-    } else {
-      const index = this._options.routes.indexOf(route)
-      if (index !== -1) {
-        this._options.routes.splice(index, 1)
-      }
+      if (index !== -1) parent.children.splice(index, 1)
     }
+    // 从源路由表中删除路由
+    const index = this._options.routes.indexOf(route)
+    if (index !== -1) this._options.routes.splice(index, 1)
   }
 
   /**
@@ -377,8 +371,12 @@ export default abstract class RouterRegistry {
 
   /**
    * 注册路由
+   *
+   * @param route 要注册的路由对象
+   * @param group 父路由对象
+   * @returns {RouteNormalized} 规范化的路由对象
    */
-  private registerRoute(route: Route, group?: RouteNormalized) {
+  private registerRoute(route: Route, group?: RouteNormalized): RouteNormalized {
     const normalizedRoute = normalizeRoute(route, group, this.suffix)
     if (group) this._parentRoute.set(normalizedRoute, group)
     if (isRouteGroup(normalizedRoute)) {
@@ -408,6 +406,7 @@ export default abstract class RouterRegistry {
     } else {
       this.recordRoute(normalizedRoute)
     }
+    return normalizedRoute
   }
 
   /**
