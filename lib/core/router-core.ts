@@ -747,4 +747,19 @@ export default abstract class RouterCore extends RouterRegistry {
       console.error("[Vitarx.Router.onScrollBehavior]['ERROR']：处理滚动行为时捕获到了异常", e)
     }
   }
+
+  /**
+   * @inheritDoc
+   */
+  public override removeRoute(index: RouteIndex) {
+    const removed = super.removeRoute(index)
+    if (removed) {
+      const index = this._currentRouteLocation.matched.indexOf(removed)
+      if (index !== -1) {
+        // 删除匹配的路由记录
+        this._currentRouteLocation.matched.splice(index, 1)
+      }
+    }
+    return removed
+  }
 }
