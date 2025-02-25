@@ -81,7 +81,7 @@ export default abstract class RouterRegistry {
   }
 
   /**
-   * 未匹配到路由时使用的组件
+   * 未匹配到路由时在根路由器视图中要渲染的组件
    */
   get missing(): RouteWidget | undefined {
     return this._options.missing

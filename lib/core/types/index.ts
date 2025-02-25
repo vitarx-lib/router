@@ -107,9 +107,13 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    */
   afterEach?: AfterEnterCallback
   /**
-   * 未匹配到路由时使用的组件
+   * 未匹配到路由时要渲染的组件（仅在根`RouterView`渲染）
    *
-   * 设置此属性可以在未匹配到路由时显示一个默认组件
+   * 如果你需要在未匹配到路由时重定向到指定的页面，你不应该使用`missing`选项，
+   * 而是应该在路由`beforeEach`钩子中判断`to.matched.length === 0`时返回重定向目标。
+   *
+   * > 注意：如果你设置了`missing`选项，新路由没有匹配时也会更新`URL`地址，然后渲染`missing`组件，
+   * 你可以通过`useRoute().matched.length`来判断是否真正匹配到了路由。
    */
   missing?: RouteWidget
 }

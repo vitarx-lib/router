@@ -455,7 +455,7 @@ export default abstract class RouterCore extends RouterRegistry {
         if (result === false) {
           return createNavigateResult({
             status: NavigateStatus.aborted,
-            message: '导航被前置守卫钩子阻止'
+            message: `导航到${to.index}目标时被前置守卫钩子阻止！`
           })
         }
 
@@ -490,7 +490,14 @@ export default abstract class RouterCore extends RouterRegistry {
           this.pushHistory(to)
         }
 
-        return createNavigateResult()
+        return createNavigateResult(
+          !to.matched.length && this.missing
+            ? {
+                status: NavigateStatus.not_matched,
+                message: `${to.fullPath}未匹配到任何路由规则，被系统允许访问，因为系统定义了missing视图。`
+              }
+            : undefined
+        )
       } catch (error) {
         console.error(`[Vitarx.Router.navigate][ERROR]：导航时捕获到了异常`, error)
         return createNavigateResult({
