@@ -348,8 +348,6 @@ export default abstract class RouterCore extends RouterRegistry {
             left: element.getBoundingClientRect().left + window.scrollX
           })
         }
-      } else {
-        console.warn(`[Vitarx.Router.scrollTo][WARN]：元素${el}不存在，无法完成滚动到目标元素操作`)
       }
       return
     }
