@@ -335,23 +335,30 @@ export default abstract class RouterCore extends RouterRegistry {
    */
   public scrollTo(scrollTarget: ScrollTarget | undefined): void {
     if (!this.isBrowser || !scrollTarget || typeof scrollTarget !== 'object') return
-    if ('el' in scrollTarget) {
-      const { el, ...rest } = scrollTarget
-      const element = typeof el === 'string' ? document.querySelector(el) : el
-      if (element && element instanceof Element) {
-        if (element.scrollIntoView) {
-          element.scrollIntoView({ behavior: this.scrollBehavior, ...rest })
-        } else {
-          window.scrollTo({
-            behavior: this.scrollBehavior,
-            top: element.getBoundingClientRect().top + window.scrollY, // 获取元素位置并滚动
-            left: element.getBoundingClientRect().left + window.scrollX
-          })
+    try {
+      if ('el' in scrollTarget) {
+        const { el, ...rest } = scrollTarget
+        const element = typeof el === 'string' ? document.querySelector(el) : el
+        if (element && element instanceof Element) {
+          if (element.scrollIntoView) {
+            element.scrollIntoView({ behavior: this.scrollBehavior, ...rest })
+          } else {
+            window.scrollTo({
+              behavior: this.scrollBehavior,
+              top: element.getBoundingClientRect().top + window.scrollY, // 获取元素位置并滚动
+              left: element.getBoundingClientRect().left + window.scrollX
+            })
+          }
         }
+        return
       }
-      return
+      window.scrollTo({ behavior: this.scrollBehavior, ...scrollTarget })
+    } catch (e) {
+      console.error(
+        `[Vitarx.Router.scrollTo][WARN]：滚动到指定位置时发生错误，请检查滚动目标参数是否正确`,
+        e
+      )
     }
-    window.scrollTo({ behavior: this.scrollBehavior, ...scrollTarget })
   }
 
   /**
