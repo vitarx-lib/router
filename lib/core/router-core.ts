@@ -98,7 +98,7 @@ export default abstract class RouterCore extends RouterRegistry {
       index: this._options.base,
       path: this._options.base,
       hash: '',
-      fullPath: this._options.base,
+      fullPath: '',
       params: {},
       query: {},
       matched: shallowReactive<RouteNormalized[]>([]),
@@ -440,7 +440,7 @@ export default abstract class RouterCore extends RouterRegistry {
       })
 
       // 检查是否导航到相同路由
-      if (isDeepEqual(to, this.currentRouteLocation)) {
+      if (to.fullPath === this.currentRouteLocation.fullPath) {
         return createNavigateResult({
           status: NavigateStatus.duplicated,
           message: '导航到相同的路由，被系统阻止！'
