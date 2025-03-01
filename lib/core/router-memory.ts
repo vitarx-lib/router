@@ -106,7 +106,7 @@ export default class RouterMemory extends RouterCore {
       }
     }
     this._currentIndex = newIndex
-    this.completeNavigation(data)
+    this.completeNavigation()
     this._pendingGo = null
   }
 }

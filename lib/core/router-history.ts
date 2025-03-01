@@ -1,3 +1,4 @@
+import { nextTick } from 'vitarx'
 import RouterCore from './router-core.js'
 import {
   type HashStr,
@@ -71,7 +72,12 @@ export default class RouterHistory extends RouterCore {
     this.saveCurrentScrollPosition()
     // 跳转到新路由
     this.webHistory.pushState(this.createState(data), '', data.fullPath)
-    this.completeNavigation(data)
+    this.completeNavigation()
+    if (data.hash) {
+      nextTick(() => {
+        this.scrollTo({ el: data.hash })
+      })
+    }
   }
 
   /**
@@ -81,7 +87,7 @@ export default class RouterHistory extends RouterCore {
     // 还原滚动位置 this.webHistory.state 存在则是回退或前进所触发的替换状态
     const scrollPosition = this.webHistory.state?.scrollPosition
     this.webHistory.replaceState(this.createState(data), '', data.fullPath)
-    this.completeNavigation(data, scrollPosition)
+    this.completeNavigation(scrollPosition)
   }
 
   /**

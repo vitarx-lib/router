@@ -595,14 +595,16 @@ export default abstract class RouterCore extends RouterRegistry {
    * 完成导航过程
    * 更新路由状态并触发相关的生命周期钩子
    *
-   * @param {RouteLocation} data - 新的路由数据
    * @param {_ScrollToOptions} savedPosition - 保存的滚动位置
    * @protected
    */
-  protected completeNavigation(data?: RouteLocation, savedPosition?: _ScrollToOptions) {
+  protected completeNavigation(savedPosition?: _ScrollToOptions) {
+    const newData = this.pendingReplaceData || this.pendingPushData
+    if (!newData) {
+      throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
+    }
     // 克隆当前路由状态用于后置钩子
     const from = cloneRouteLocation(this.currentRouteLocation)
-
     // 设置视图渲染完成后的回调
     this._completeViewRender = () => {
       // 处理滚动行为
@@ -610,18 +612,7 @@ export default abstract class RouterCore extends RouterRegistry {
       // 触发后置守卫
       this.onAfterEach(this.currentRouteLocation, from)
     }
-
-    // 根据不同情况更新路由状态
-    if (data) {
-      this.updateRouteLocation(data)
-    } else if (this.pendingReplaceData) {
-      this.updateRouteLocation(this.pendingReplaceData)
-    } else if (this.pendingPushData) {
-      this.updateRouteLocation(this.pendingPushData)
-    } else {
-      throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
-    }
-
+    this.updateRouteLocation(newData)
     // 清理等待状态
     this._pendingReplace = null
     this._pendingPush = null
@@ -663,22 +654,22 @@ export default abstract class RouterCore extends RouterRegistry {
   /**
    * 添加历史记录
    *
-   * 子类必须实现该方法
+   * 子类必须实现该方法，且需要调用`this.completeNavigation(routeLocation)`方法标记完成导航！
    *
-   * @param data
+   * @param {RouteLocation} routeLocation - 新的路由位置对象
    * @protected
    */
-  protected abstract pushHistory(data: RouteLocation): void
+  protected abstract pushHistory(routeLocation: RouteLocation): void
 
   /**
    * 替换历史记录
    *
-   * 子类必须实现该方法
+   * 子类必须实现该方法，且需要调用`this.completeNavigation(routeLocation)`方法标记完成导航！
    *
-   * @param {RouteLocation} data - 目标路由
+   * @param {RouteLocation} routeLocation - 新的路由位置对象
    * @protected
    */
-  protected abstract replaceHistory(data: RouteLocation): void
+  protected abstract replaceHistory(routeLocation: RouteLocation): void
 
   /**
    * 触发路由前置守卫
