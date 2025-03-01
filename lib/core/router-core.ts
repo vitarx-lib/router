@@ -722,7 +722,7 @@ export default abstract class RouterCore extends RouterRegistry {
    * @param {_ScrollToOptions} savedPosition - 保存的滚动位置
    * @private
    */
-  private async onScrollBehavior(
+  protected async onScrollBehavior(
     to: ReadonlyRouteLocation,
     from: ReadonlyRouteLocation,
     savedPosition: _ScrollToOptions | undefined
@@ -732,7 +732,11 @@ export default abstract class RouterCore extends RouterRegistry {
         const scrollTarget = await this._scrollBehaviorHandler(to, from, savedPosition)
         if (scrollTarget) this.scrollTo(scrollTarget)
       } else {
-        this.scrollTo(savedPosition)
+        if (!savedPosition && !to.hash) {
+          this.scrollTo({ left: 0, top: 0 })
+        } else {
+          this.scrollTo(savedPosition ?? { el: to.hash })
+        }
       }
     } catch (e) {
       console.error("[Vitarx.Router.onScrollBehavior]['ERROR']：处理滚动行为时捕获到了异常", e)
