@@ -334,7 +334,7 @@ export default abstract class RouterCore extends RouterRegistry {
    * @param scrollTarget
    */
   public scrollTo(scrollTarget: ScrollTarget | undefined): void {
-    if (this.isBrowser || !scrollTarget || typeof scrollTarget !== 'object') return
+    if (!this.isBrowser || !scrollTarget || typeof scrollTarget !== 'object') return
     if ('el' in scrollTarget) {
       const { el, ...rest } = scrollTarget
       const element = typeof el === 'string' ? document.querySelector(el) : el
