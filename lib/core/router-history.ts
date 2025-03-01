@@ -1,4 +1,3 @@
-import { nextTick } from 'vitarx'
 import RouterCore from './router-core.js'
 import {
   type HashStr,
@@ -73,11 +72,6 @@ export default class RouterHistory extends RouterCore {
     // 跳转到新路由
     this.webHistory.pushState(this.createState(data), '', data.fullPath)
     this.completeNavigation()
-    if (data.hash) {
-      nextTick(() => {
-        this.scrollTo({ el: data.hash })
-      })
-    }
   }
 
   /**
