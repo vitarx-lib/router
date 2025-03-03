@@ -1,12 +1,4 @@
-import {
-  Computed,
-  createElement,
-  type Element,
-  isString,
-  markRaw,
-  type WebRuntimeDom,
-  Widget
-} from 'vitarx'
+import { Computed, createElement, type Element, isString, type WebRuntimeDom, Widget } from 'vitarx'
 import {
   type NavigateResult,
   NavigateStatus,
@@ -36,6 +28,12 @@ export interface RouterLinkProps {
    */
   class?: WebRuntimeDom.HTMLClassProperties
   /**
+   * a 标签的target属性
+   *
+   * 仅http或https外部连接支持此属性
+   */
+  target?: '_blank' | '_self' | '_parent' | '_top'
+  /**
    * 是否禁用
    *
    * @default false
@@ -64,8 +62,14 @@ export interface RouterLinkProps {
    * @param {NavigateResult} result - 导航结果
    */
   callback?: (result: NavigateResult) => void
+  /**
+   * 是否可拖拽
+   *
+   * @default false
+   */
+  draggable?: boolean
 }
-
+type HttpUrl = `http://${string}`
 /**
  * # 路由跳转小部件
  *
@@ -80,7 +84,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    *
    * @protected
    */
-  protected target: Computed<RouteTarget | undefined>
+  protected target: Computed<RouteTarget | HttpUrl | undefined>
   /**
    * 路由目标对应的`RouteLocation`对象
    *
@@ -98,27 +102,33 @@ export class RouterLink extends Widget<RouterLinkProps> {
    */
   protected active: Computed<boolean> | undefined = undefined
   protected htmlProps: Computed<WebRuntimeDom.HtmlProperties<HTMLAnchorElement>>
-
+  private static isHttpOrHttpsUrl(url: string): url is HttpUrl {
+    const regex = /^(https?):\/\/[^\s\/$.?#].\S*$/i
+    return regex.test(url)
+  }
   constructor(props: RouterLinkProps) {
     super(props)
     this.target = new Computed(() => {
       if (!this.props.to) return undefined
-      return markRaw(isString(props.to) ? { index: props.to } : props.to)
+      const to = isString(props.to) ? { index: props.to } : props.to
+      if (RouterLink.isHttpOrHttpsUrl(to.index)) return to.index
+      return to
     })
     this.location = new Computed(() => {
-      if (!this.target.value) return undefined
+      if (!this.target.value || typeof this.target.value === 'string') return undefined
       const location = Router.instance.createRouteLocation(this.target.value)
       if (!location.matched.length) {
         console.warn(
           `[Vitarx.RouterLink][WARN]：索引：${this.target.value.index}，未匹配到任何有效的路由线路，请检查to属性是否配置正确！`
         )
       }
-      return markRaw(location)
+      return location
     })
     if (props.active !== undefined && props.active !== 'none') {
       this.active = new Computed(() => {
-        if (!this.target.value || !this.location.value) return false
-        if (this.target.value.index.startsWith('/')) {
+        if (!this.location.value) return false
+        if (typeof this.target.value === 'string' || !this.target.value) return false
+        if (this.target.value!.index.startsWith('/')) {
           if (props.active === 'obscure') {
             if (this.location.value.path === '/') {
               return Router.instance.currentRouteLocation.path === '/'
@@ -132,7 +142,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
           }
         } else {
           return !!Router.instance.currentRouteLocation.matched.find(
-            route => route.name === this.target.value?.index
+            route => route.name === (this.target.value as RouteTarget).index
           )
         }
       })
@@ -144,7 +154,8 @@ export class RouterLink extends Widget<RouterLinkProps> {
         children: this.children ?? this.location.value?.index,
         style: this.props.style,
         class: this.props.class,
-        draggable: false
+        target: this.props.target,
+        draggable: this.props.draggable ?? false
       }
       if (this.isActive) props['aria-current'] = 'page'
       if (this.isDisabled) props.disabled = true
@@ -167,6 +178,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    * 路由目标地址
    */
   get href(): string {
+    if (typeof this.target.value === 'string') return this.target.value
     return this.location.value?.fullPath || 'javascript:void(0)'
   }
 
@@ -178,17 +190,18 @@ export class RouterLink extends Widget<RouterLinkProps> {
    * @param e
    */
   protected navigate(e: MouseEvent) {
-    e.preventDefault()
-    if (this.location.value) {
-      !this.isDisabled &&
+    if (typeof this.target !== 'string') {
+      e.preventDefault()
+      if (this.location.value && !this.isDisabled) {
         Router.instance.navigate(this.location.value).then(res => {
           if (res.status !== NavigateStatus.success) {
             console.warn(
-              `[Vitarx.RouterLink][WARN]：导航到索引：${this.target.value?.index}失败，${res.message}`
+              `[Vitarx.RouterLink][WARN]：导航到索引：${(this.target.value as RouteTarget)?.index}失败，${res.message}`
             )
           }
           if (this.props.callback) this.props.callback(res)
         })
+      }
     }
   }
 
