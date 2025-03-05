@@ -2,6 +2,7 @@ import {
   deepClone,
   isDeepEqual,
   isObject,
+  isRecordObject,
   markRaw,
   reactive,
   type Reactive,
@@ -576,14 +577,16 @@ export default abstract class RouterCore extends RouterRegistry {
     if (!widget) return undefined
     const injectPropsConfig = route.injectProps?.[name]
     let props: Record<string, any>
-    if (injectPropsConfig === false) {
-      props = {}
-    } else if (injectPropsConfig === true) {
+    if (injectPropsConfig === true) {
       props = this._currentRouteLocation.params
+    } else if (injectPropsConfig === false) {
+      props = {}
     } else if (typeof injectPropsConfig === 'function') {
       props = injectPropsConfig(this.currentRouteLocation)
+    } else if (isRecordObject(injectPropsConfig)) {
+      props = injectPropsConfig
     } else {
-      props = injectPropsConfig ?? {}
+      props = {}
     }
     props.key = route.path
     return createViewElement(widget, props)
