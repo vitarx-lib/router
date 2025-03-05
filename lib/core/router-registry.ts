@@ -205,6 +205,10 @@ export default abstract class RouterRegistry {
    * @returns {RouteNormalized|undefined} - 路由对象，如果未找到则返回undefined
    */
   public findPathRoute(path: RoutePath): RouteNormalized | undefined {
+    // 如果不是严格匹配模式，将路径转换为小写
+    if (!this._options.strict) {
+      path = path.toLowerCase() as RoutePath
+    }
     return this._pathRoutes.get(path)
   }
 
