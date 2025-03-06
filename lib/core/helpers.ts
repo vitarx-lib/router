@@ -95,7 +95,7 @@ export function useRouter<T extends RouterCore>(): T {
  *
  * 简单示例：
  * ```jsx
- * import { useRoute } from 'vitarx-router'
+ * import { useRoute,watch } from 'vitarx-router'
  *
  * // 监听路由参数变化示例
  * export default function App() {
