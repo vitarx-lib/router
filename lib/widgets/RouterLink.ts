@@ -1,4 +1,13 @@
-import { Computed, createElement, type Element, isString, type WebRuntimeDom, Widget } from 'vitarx'
+import {
+  Computed,
+  createElement,
+  type Element,
+  type HTMLClassProperties,
+  type HTMLProperties,
+  type HTMLStyleProperties,
+  isString,
+  Widget
+} from 'vitarx'
 import {
   type NavigateResult,
   NavigateStatus,
@@ -22,11 +31,11 @@ export interface RouterLinkProps {
   /**
    * a 标签的style属性
    */
-  style?: WebRuntimeDom.HTMLStyleProperties
+  style?: HTMLStyleProperties
   /**
    * a 标签的class属性
    */
-  class?: WebRuntimeDom.HTMLClassProperties
+  class?: HTMLClassProperties
   /**
    * a 标签的target属性
    *
@@ -70,6 +79,7 @@ export interface RouterLinkProps {
   draggable?: boolean
 }
 type HttpUrl = `http://${string}`
+
 /**
  * # 路由跳转小部件
  *
@@ -101,7 +111,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    * @protected
    */
   protected active: Computed<boolean> | undefined = undefined
-  protected htmlProps: Computed<WebRuntimeDom.HtmlProperties<HTMLAnchorElement>>
+  protected htmlProps: Computed<HTMLProperties<HTMLAnchorElement>>
   private static isHttpOrHttpsUrl(url: string): url is HttpUrl {
     const regex = /^(https?):\/\/[^\s\/$.?#].\S*$/i
     return regex.test(url)
@@ -148,12 +158,25 @@ export class RouterLink extends Widget<RouterLinkProps> {
       })
     }
     this.htmlProps = new Computed(() => {
-      const props: WebRuntimeDom.HtmlProperties<HTMLAnchorElement> = {
+      const props: HTMLProperties<HTMLAnchorElement> = {
         href: this.href,
         onClick: e => this.navigate(e),
         children: this.children ?? this.location.value?.index,
         draggable: this.props.draggable ?? false,
-        'v-bind': [this.props, ['href', 'children', 'children', 'onClick', 'onclick']]
+        'v-bind': [
+          this.props,
+          [
+            'to',
+            'children',
+            'href',
+            'disabled',
+            'active',
+            'callback',
+            'onClick',
+            'onclick',
+            'aria-current'
+          ]
+        ]
       }
       if (this.isActive) props['aria-current'] = 'page'
       if (this.isDisabled) props.disabled = true
