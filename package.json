@@ -1,6 +1,6 @@
 {
   "name": "vitarx-router",
-  "version": "1.0.0-beta.17",
+  "version": "1.0.0",
   "description": "Vitarx前端框架的配套路由器",
   "type": "module",
   "main": "dist/vitarx-router.umd.js",
@@ -24,17 +24,13 @@
     }
   },
   "scripts": {
-    "dev": "vite dev --force",
-    "vite:lib": "vite --config vite.config.lib.ts build",
     "build:script": "tsc --p tsconfig.script.json",
-    "build:lib": "rimraf dist && tsc && npm run vite:lib && npm run build:script",
-    "build:web": "rimraf dist-web && tsc && vite build",
-    "preview": "vite preview",
-    "prepublishOnly": "npm run build:lib",
+    "build": "rimraf dist && tsc && vite build && npm run build:script",
+    "prepublishOnly": "npm run build",
     "push": "npm publish --access=public"
   },
   "peerDependencies": {
-    "vitarx": "latest"
+    "vitarx": "^1.0.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -42,7 +38,7 @@
     "typescript": "^5.2.2",
     "vite": "^6.0.5",
     "vite-plugin-dts": "^4.3.0",
-    "@vitarx/vite-bundler": "latest"
+    "@vitarx/vite-bundler": "^1.0.0"
   },
   "files": [
     "dist",
