@@ -1,9 +1,35 @@
-import vitarx from '@vitarx/vite-bundler'
+import vitarxPlugin from '@vitarx/vite-bundler'
 import { defineConfig } from 'vite'
+import dtsPlugin from 'vite-plugin-dts'
 
 export default defineConfig({
-  plugins: [vitarx()],
+  plugins: [
+    vitarxPlugin(),
+    dtsPlugin({
+      include: ['lib'],
+      insertTypesEntry: true,
+      rollupTypes: true
+    })
+  ],
+  esbuild: {
+    // 不压缩标识符（如函数名）
+    minifyIdentifiers: false
+  },
   build: {
-    outDir: 'dist-demo'
+    lib: {
+      entry: 'src/index.ts',
+      name: 'VitarxRouter',
+      fileName: format => `vitarx-router.${format}.js`,
+      formats: ['es', 'umd']
+    },
+    rollupOptions: {
+      external: ['vitarx', 'vitarx/jsx-runtime'],
+      output: {
+        globals: {
+          vitarx: 'Vitarx',
+          'vitarx/jsx-runtime': 'Vitarx'
+        }
+      }
+    }
   }
 })
