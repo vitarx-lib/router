@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [
     vitarxPlugin(),
     dtsPlugin({
-      include: ['lib'],
+      include: ['src'],
       insertTypesEntry: true,
       rollupTypes: true
     })
