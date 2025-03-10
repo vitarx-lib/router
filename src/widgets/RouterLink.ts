@@ -211,7 +211,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    * @param e
    */
   protected navigate(e: MouseEvent) {
-    if (typeof this.target !== 'string') {
+    if (typeof this.target.value !== 'string') {
       e.preventDefault()
       if (this.location.value && !this.isDisabled) {
         Router.instance.navigate(this.location.value).then(res => {
