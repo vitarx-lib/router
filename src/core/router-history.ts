@@ -27,12 +27,37 @@ export default class RouterHistory extends RouterCore {
   /**
    * @inheritDoc
    */
-  updateHash(hash: `#${string}` | '') {
+  public override updateHash(hash: `#${string}` | '') {
     super.updateHash(hash)
-    if (window.location.hash !== hash) {
-      // 更新浏览器的 hash，使其滚动到对应的锚点
-      window.location.hash = hash
+    // 保存滚动位置
+    this.saveCurrentScrollPosition()
+    // 更新hash地址
+    this.webHistory.pushState(
+      this.createState(this.currentRouteLocation),
+      '',
+      this.currentRouteLocation.fullPath
+    )
+    if (!hash.trim()) {
+      window.scrollTo(0, 0)
+    } else {
+      const anchorId = hash.startsWith('#') ? hash.slice(1) : hash
+      const element = window.document.getElementById(anchorId)
+      if (element) {
+        element.scrollIntoView({ behavior: this.scrollBehavior })
+      }
     }
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public override updateQuery(query: Record<string, string>) {
+    super.updateQuery(query)
+    this.webHistory.pushState(
+      this.createState(this.currentRouteLocation),
+      '',
+      this.currentRouteLocation.fullPath
+    )
   }
 
   /**
@@ -170,11 +195,6 @@ export default class RouterHistory extends RouterCore {
             }
             // 更新hash记录值
             this.updateHash(`#${anchorId}`)
-            this.webHistory.replaceState(
-              this.createState(this.currentRouteLocation),
-              '',
-              this.currentRouteLocation.fullPath
-            )
           }
         } else if (res.status === NavigateStatus.duplicated) {
           this.webHistory.replaceState(
