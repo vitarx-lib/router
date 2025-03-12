@@ -349,6 +349,7 @@ export function validateSuffix(
   inputPath: string,
   routePath: string
 ) {
+  if (inputPath === '/') return true
   if (allowSuffix === '*') return true
   if (allowSuffix === false) return inputPath === routePath
   if (Array.isArray(allowSuffix)) return allowSuffix.includes(suffix)
