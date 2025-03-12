@@ -561,7 +561,7 @@ export default abstract class RouterCore extends RouterRegistry {
    */
   public updateHash(hash: `#${string}` | '') {
     if (typeof hash !== 'string') {
-      console.warn(`[Vitarx.Router.updateHash][WARN]：hash值只能是字符串类型，给定${hash}`)
+      throw new TypeError(`[Vitarx.Router.updateHash][WARN]：hash值只能是字符串类型，给定${hash}`)
     }
     const newHash = formatHash(hash, true)
     if (newHash !== this._currentRouteLocation.hash) {
