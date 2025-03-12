@@ -1,7 +1,20 @@
 {
   "name": "vitarx-router",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Vitarx前端框架的配套路由器",
+  "author": "ZhuChongLin <8210856@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vitarx-lib/router"
+  },
+  "homepage": "https://vitarx.cn/router",
+  "keywords": [
+    "vitarx",
+    "router",
+    "vitarx-router",
+    "vitarx-router-lib"
+  ],
   "type": "module",
   "main": "dist/vitarx-router.umd.js",
   "module": "dist/vitarx-router.es.js",
