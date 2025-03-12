@@ -25,6 +25,17 @@ export default class RouterHistory extends RouterCore {
   }
 
   /**
+   * @inheritDoc
+   */
+  updateHash(hash: `#${string}` | '') {
+    super.updateHash(hash)
+    if (window.location.hash !== hash) {
+      // 更新浏览器的 hash，使其滚动到对应的锚点
+      window.location.hash = hash
+    }
+  }
+
+  /**
    * 当前路由目标
    *
    * @returns {RouteTarget} - 包含 index、hash 和 query 的对象
