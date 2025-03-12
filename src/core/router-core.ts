@@ -400,7 +400,7 @@ export default abstract class RouterCore extends RouterRegistry {
    * @param {RouteTarget} target - 导航目标
    * @return {Promise<NavigateResult>} 导航结果
    */
-  public navigate(target: RouteTarget): Promise<NavigateResult> {
+  public navigate(target: RouteTarget | RouteLocation): Promise<NavigateResult> {
     // 生成新的任务ID并更新当前任务
     const taskId = ++this._taskCounter
     this._currentTaskId = taskId
@@ -412,13 +412,45 @@ export default abstract class RouterCore extends RouterRegistry {
     const from = cloneRouteLocation(this.currentRouteLocation) as RouteLocation
 
     const performNavigation = async (
-      _target: RouteTarget,
+      _target: RouteTarget | RouteLocation,
       isRedirect: boolean
     ): Promise<NavigateResult> => {
+      // 创建导航结果对象的工具函数
+      const createNavigateResult = (overrides: Partial<NavigateResult> = {}): NavigateResult => ({
+        from,
+        to,
+        status: NavigateStatus.success,
+        message: '导航成功',
+        redirectFrom: isRedirect ? target : undefined,
+        ...overrides
+      })
+
       // 创建标准化的路由位置对象
-      const to = this.createRouteLocation(_target)
+      const to =
+        'fullPath' in _target && 'matched' in _target ? _target : this.createRouteLocation(_target)
+
+      // 检查是否导航到相同路由
+      if (to.fullPath === this.currentRouteLocation.fullPath) {
+        return createNavigateResult({
+          status: NavigateStatus.duplicated,
+          message: '导航到相同的路由，被系统阻止！'
+        })
+      } else if (
+        to.matched.at(-1) === this.currentRouteLocation.matched.at(-1) &&
+        to.path === this.currentRouteLocation.path &&
+        isDeepEqual(to.query, this.currentRouteLocation.query) &&
+        to.hash !== to.hash
+      ) {
+        this.updateHash(to.hash)
+        return createNavigateResult({
+          status: NavigateStatus.success,
+          message: '仅hash变化，导航成功！'
+        })
+      }
+
       // 获取当前路由的最后一个匹配项
       const matched = to.matched.at(-1)
+
       // 处理路由重定向
       if (matched?.redirect) {
         let redirectTarget: RouteTarget | undefined
@@ -433,24 +465,6 @@ export default abstract class RouterCore extends RouterRegistry {
           }
         }
         if (redirectTarget?.index) return performNavigation(redirectTarget, true)
-      }
-
-      // 创建导航结果对象的工具函数
-      const createNavigateResult = (overrides: Partial<NavigateResult> = {}): NavigateResult => ({
-        from,
-        to,
-        status: NavigateStatus.success,
-        message: '导航成功',
-        redirectFrom: isRedirect ? target : undefined,
-        ...overrides
-      })
-
-      // 检查是否导航到相同路由
-      if (to.fullPath === this.currentRouteLocation.fullPath) {
-        return createNavigateResult({
-          status: NavigateStatus.duplicated,
-          message: '导航到相同的路由，被系统阻止！'
-        })
       }
 
       try {
@@ -488,7 +502,7 @@ export default abstract class RouterCore extends RouterRegistry {
         }
 
         // 更新路由历史
-        if (_target.isReplace) {
+        if ('isReplace' in _target && _target.isReplace) {
           this._pendingReplace = to
           this.replaceHistory(to)
         } else {
