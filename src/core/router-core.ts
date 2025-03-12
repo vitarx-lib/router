@@ -436,10 +436,10 @@ export default abstract class RouterCore extends RouterRegistry {
           message: '导航到相同的路由，被系统阻止！'
         })
       } else if (
-        to.matched.at(-1) === this.currentRouteLocation.matched.at(-1) &&
-        to.path === this.currentRouteLocation.path &&
-        isDeepEqual(to.query, this.currentRouteLocation.query) &&
-        to.hash !== to.hash
+        to.matched.at(-1) === this._currentRouteLocation.matched.at(-1) &&
+        to.path === this._currentRouteLocation.path &&
+        isDeepEqual(to.query, this._currentRouteLocation.query) &&
+        to.hash !== this._currentRouteLocation.hash
       ) {
         this.updateHash(to.hash)
         return createNavigateResult({
