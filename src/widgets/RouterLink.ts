@@ -23,7 +23,7 @@ export interface RouterLinkProps {
    *
    * 可以是路由目标对象，也可以是路由索引
    */
-  to: RouteTarget | RouteIndex
+  to: RouteTarget | RouteIndex | HttpUrl | Hash
   /**
    * 子节点插槽
    */
@@ -78,7 +78,9 @@ export interface RouterLinkProps {
    */
   draggable?: boolean
 }
+
 type HttpUrl = `http://${string}`
+type Hash = `#${string}`
 
 /**
  * # 路由跳转小部件
@@ -94,7 +96,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    *
    * @protected
    */
-  protected target: Computed<RouteTarget | HttpUrl | undefined>
+  protected target: Computed<RouteTarget | HttpUrl | Hash | undefined>
   /**
    * 路由目标对应的`RouteLocation`对象
    *
@@ -121,7 +123,10 @@ export class RouterLink extends Widget<RouterLinkProps> {
     this.target = new Computed(() => {
       if (!this.props.to) return undefined
       const to = isString(props.to) ? { index: props.to } : props.to
-      if (RouterLink.isHttpOrHttpsUrl(to.index)) return to.index
+      // 如果是外部连接，或是锚点链接，直接返回目标路由索引
+      if (RouterLink.isHttpOrHttpsUrl(to.index) || to.index.startsWith('#')) {
+        return to.index as HttpUrl | Hash
+      }
       return to
     })
     this.location = new Computed(() => {
