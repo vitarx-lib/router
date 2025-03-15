@@ -1,3 +1,4 @@
+import type { LazyLoadWidget } from 'vitarx'
 import RouterCore from './router-core.js'
 import RouterHistory from './router-history.js'
 import RouterMemory from './router-memory.js'
@@ -139,4 +140,17 @@ export function useRouter<T extends RouterCore>(): T {
  */
 export function useRoute(): ReadonlyRouteLocation {
   return RouterCore.instance.currentRouteLocation
+}
+
+/**
+ * 标记懒加载
+ *
+ * 从Vitarx 1.2.0开始，Vitarx 支持 ()=>Promise<WidgetType> 直接当做组件渲染。
+ *
+ * @deprecated 已弃用，路由器 1.1.0 版本开始不再需要使用此函数，仅用于兼容旧版本。
+ * @param lazyLoader - ()=>import('xxx')
+ * @returns lazyLoader
+ */
+export function lazy<T extends LazyLoadWidget>(lazyLoader: T): T {
+  return lazyLoader
 }
