@@ -1,4 +1,5 @@
 import {
+  createElement,
   deepClone,
   isDeepEqual,
   isObject,
@@ -36,7 +37,6 @@ import { patchUpdate } from './update.js'
 import {
   addPathSuffix,
   cloneRouteLocation,
-  createViewElement,
   formatHash,
   formatPath,
   getPathSuffix,
@@ -224,15 +224,13 @@ export default abstract class RouterCore extends RouterRegistry {
   /**
    * 路由视图
    *
-   * 内部方法，用于获取路由线路对应的视图元素虚拟节点。
-   *
-   * @internal
+   * @internal 内部核心方法，用于获取路由线路对应的视图元素虚拟节点。
    * @param {ReadonlyRouteNormalized} route - 路由对象
    * @param {string} name - 视图名称
    * @param {number} index - `RouterView`的索引
    * @return {VNode<WidgetType> | undefined} - 视图元素虚拟节点
    */
-  protected static routeViewElement(
+  public static routeViewElement(
     route: ReadonlyRouteNormalized | undefined,
     name: string,
     index: number
@@ -244,7 +242,7 @@ export default abstract class RouterCore extends RouterRegistry {
         this.instance.missing &&
         !this.instance.isPendingNavigation
       ) {
-        return createViewElement(this.instance.missing, {})
+        return createElement(this.instance.missing)
       } else {
         return undefined
       }
@@ -603,7 +601,7 @@ export default abstract class RouterCore extends RouterRegistry {
       props = {}
     }
     props.key = route.path
-    return createViewElement(widget, props)
+    return createElement(widget, props)
   }
 
   /**
