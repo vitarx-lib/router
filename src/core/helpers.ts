@@ -33,22 +33,55 @@ export function defineRoute(route: Route): Route {
  * 你必须调用一次`router.replace(target)`方法来跳转到目标路由。
  *
  * @param {RouterOptions} options - 配置
- * @return {RouterMemory} - 内存路由器实例
+ * @return {RouterMemory} - `RouterMemory`内存路由器实例
  */
-export function createRouter(options: RouterOptions<'memory'>): RouterMemory
+export function createRouter(options: MakeRequired<RouterOptions<'memory'>, 'mode'>): RouterMemory
 
 /**
- * 创建History路由器
+ * 创建WebHistory路由器，path模式
  *
  * 基于History API实现路由功能，支持浏览器前进后退、刷新等操作。
  *
- * 它与`MemoryRouter`路由不同的是，它不需要初始化过后调用`router.replace(target)`方法来替换默认路由，
- * 内部会自动根据`window.location`去匹配路由。
+ * @remarks
+ * 部署到服务器上时需要配置重定向，否则会出现404错误。
+ *
+ * nginx
+ * ```nginx
+ * location / {
+ *   try_files $uri $uri/ /index.html;
+ * }
+ * ```
+ * Apache
+ * ```Apache
+ * <IfModule mod_negotiation.c>
+ *   Options -MultiViews
+ * </IfModule>
+ *
+ * <IfModule mod_rewrite.c>
+ *   RewriteEngine On
+ *   RewriteBase /
+ *   RewriteRule ^index\.html$ - [L]
+ *   RewriteCond %{REQUEST_FILENAME} !-f
+ *   RewriteCond %{REQUEST_FILENAME} !-d
+ *   RewriteRule . /index.html [L]
+ * </IfModule>
+ * ```
  *
  * @param {RouterOptions} options - 路由配置
- * @return {RouterHistory} - HistoryRouter实例
+ * @return {RouterHistory} - `RouterHistory`路由器实例
  */
-export function createRouter(options: RouterOptions<'path' | 'hash'>): RouterHistory
+export function createRouter(options: MakeRequired<RouterOptions<'path'>, 'mode'>): RouterHistory
+
+/**
+ * 创建history路由器，hash模式
+ *
+ * 基于History API实现路由功能，支持浏览器前进后退、刷新等操作。
+ *
+ * @param {RouterOptions} options - 路由配置
+ * @return {RouterHistory} - `RouterHistory`路由器实例
+ */
+export function createRouter(options: RouterOptions<'hash'>): RouterHistory
+
 /**
  * 创建路由器
  *
@@ -58,7 +91,7 @@ export function createRouter(options: RouterOptions<'path' | 'hash'>): RouterHis
 export function createRouter(options: RouterOptions): RouterCore {
   let router: RouterCore
   // 如果非浏览器端，强制使用内存模式路由
-  if (!window?.location && options.mode !== 'memory') {
+  if (typeof window === 'undefined' && options.mode !== 'memory') {
     console.warn('当前环境非浏览器端，强制使用内存模式路由')
     options.mode = 'memory'
     return new RouterMemory(options as RouterOptions<'memory'>).initialize()
