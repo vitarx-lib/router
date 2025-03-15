@@ -62,7 +62,6 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
    * 路由对应的视图组件
    *
    * 支持命名视图
-   *
    * @example
    * ```ts
    * {
@@ -72,6 +71,15 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
    *     default: User,
    *     detail: UserDetail,
    *   }
+   * }
+   * ```
+   *
+   * 支持懒加载
+   * @example
+   * ```ts
+   * {
+   *   path: '/user/{id}',
+   *   widget: () => import('./User.js')
    * }
    * ```
    */
