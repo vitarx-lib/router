@@ -35,7 +35,7 @@ export function defineRoute(route: Route): Route {
  * @param {RouterOptions} options - 配置
  * @return {RouterMemory} - 内存路由器实例
  */
-export function createRouter(options: RouterOptions & { mode: 'memory' }): RouterMemory
+export function createRouter(options: RouterOptions<'memory'>): RouterMemory
 
 /**
  * 创建History路由器
@@ -48,10 +48,7 @@ export function createRouter(options: RouterOptions & { mode: 'memory' }): Route
  * @param {RouterOptions} options - 路由配置
  * @return {RouterHistory} - HistoryRouter实例
  */
-export function createRouter(
-  options: RouterOptions | (RouterOptions & { mode: 'path' | 'hash' })
-): RouterHistory
-
+export function createRouter(options: RouterOptions<'path' | 'hash'>): RouterHistory
 /**
  * 创建路由器
  *
