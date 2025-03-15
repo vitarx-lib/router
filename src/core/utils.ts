@@ -1,7 +1,6 @@
-import { deepClone, type WidgetType } from 'vitarx'
+import { deepClone } from 'vitarx'
 import type {
   HashStr,
-  LazyLoad,
   ReadonlyRouteLocation,
   Route,
   RouteLocation,
@@ -10,9 +9,6 @@ import type {
   RouterOptions,
   RouteTarget
 } from './router-types.js'
-
-export const LAZY_LOADER_SYMBOL = Symbol('LazyLoader')
-export type LAZY_LOADER_SYMBOL = typeof LAZY_LOADER_SYMBOL
 
 /**
  * 判断path是否包含变量
@@ -173,16 +169,6 @@ export function mergePathParams(path: RoutePath, params: Record<string, string>)
     return String(params[paramName]).replace(/\s+/g, '_')
   }) as RoutePath
   return formatPath(path)
-}
-
-/**
- * ## 判断一个函数是否为延迟加载器
- *
- * @param lazyLoader
- * @return {boolean}
- */
-export function isLazyLoad(lazyLoader: any): lazyLoader is LazyLoad<WidgetType> {
-  return typeof lazyLoader === 'function' && lazyLoader[LAZY_LOADER_SYMBOL]
 }
 
 /**
