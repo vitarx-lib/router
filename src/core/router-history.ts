@@ -19,9 +19,7 @@ export default class RouterHistory extends RouterCore {
     // 守卫mode类型
     if (!['path', 'hash'].includes(options.mode as string)) options.mode = 'hash'
     super(options)
-    if (options.mode === 'hash') {
-      this.ensureHash()
-    }
+    if (options.mode === 'hash') this.ensureHash()
   }
 
   /**
