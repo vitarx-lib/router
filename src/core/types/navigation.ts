@@ -55,7 +55,7 @@ export type RouteIndex = RouterRouteIndexTyped
  *
  * 可以是普通组件或懒加载组件
  */
-export type RouteWidget = WidgetType | LazyLoad<WidgetType>
+export type RouteWidget = WidgetType
 
 /**
  * 命名的路由视图小部件
