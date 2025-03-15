@@ -1,17 +1,5 @@
 import type { WidgetType } from 'vitarx'
-import type { LAZY_LOADER_SYMBOL } from '../utils.js'
 import type { RouteNormalized } from './route'
-
-/**
- * 延迟加载/惰性加载
- *
- * 用于实现代码分块和懒加载功能
- */
-export interface LazyLoad<T> {
-  [LAZY_LOADER_SYMBOL]: boolean
-
-  (): Promise<{ default: T }>
-}
 
 /**
  * hash字符串类型
