@@ -87,13 +87,21 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
   pattern?: RegExp
 
   /**
-   * 定义滚动行为
+   * 切换页面时的滚动行为
    *
    * 可以是一个函数或行为标识符，决定了当路由变化时如何滚动页面
    *
    * @default 'auto'
    */
   scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
+  /**
+   * 锚点跳转时的滚动行为
+   *
+   * 仅支持 'auto' | 'smooth' | 'instant'
+   *
+   * @default 'auto'
+   */
+  anchorsScrollBehavior?: _ScrollBehavior
 
   /**
    * 在每个路由进入之前调用的钩子函数

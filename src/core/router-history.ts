@@ -41,7 +41,7 @@ export default class RouterHistory extends RouterCore {
       const anchorId = hash.startsWith('#') ? hash.slice(1) : hash
       const element = window.document.getElementById(anchorId)
       if (element) {
-        element.scrollIntoView({ behavior: this.scrollBehavior })
+        element.scrollIntoView({ behavior: this.options.anchorsScrollBehavior })
       }
     }
   }
