@@ -54,7 +54,7 @@ export class RouterView extends Widget<RouteOptions> {
       const newRoute = o[this.index]
       if (newRoute !== this._$currentRoute) {
         this._$currentRoute = newRoute
-        this._$currentElement.value = Router['routeViewElement'](newRoute, this.name, this._$index)
+        this._$currentElement.value = Router.routeViewElement(newRoute, this.name, this._$index)
       }
     })
   }
