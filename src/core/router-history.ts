@@ -39,9 +39,13 @@ export default class RouterHistory extends RouterCore {
       window.scrollTo(0, 0)
     } else {
       const anchorId = hash.startsWith('#') ? hash.slice(1) : hash
-      const element = window.document.getElementById(anchorId)
-      if (element) {
-        element.scrollIntoView({ behavior: this.options.anchorsScrollBehavior })
+      try {
+        const element = window.document.getElementById(anchorId)
+        if (element) {
+          element.scrollIntoView({ behavior: this.options.anchorsScrollBehavior })
+        }
+      } catch (e) {
+        console.error(`滚动到目标锚点${hash}失败`, e)
       }
     }
   }
