@@ -1,4 +1,4 @@
-import { createElement, deepClone, LazyWidget, type WidgetType } from 'vitarx'
+import { deepClone, type WidgetType } from 'vitarx'
 import type {
   HashStr,
   LazyLoad,
@@ -8,8 +8,7 @@ import type {
   RouteNormalized,
   RoutePath,
   RouterOptions,
-  RouteTarget,
-  RouteWidget
+  RouteTarget
 } from './router-types.js'
 
 export const LAZY_LOADER_SYMBOL = Symbol('LazyLoader')
@@ -368,20 +367,6 @@ export function addPathSuffix(path: string, suffix: string) {
     path += suffix.startsWith('.') ? suffix : `.${suffix}`
   }
   return path
-}
-
-/**
- * 创建视图元素
- *
- * @param widget
- * @param props
- */
-export function createViewElement(widget: RouteWidget, props: Record<string, any>) {
-  if (isLazyLoad(widget)) {
-    return createElement(LazyWidget, { children: widget, ...props })
-  } else {
-    return createElement(widget, props)
-  }
 }
 
 /**
