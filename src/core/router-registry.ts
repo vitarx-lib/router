@@ -43,7 +43,7 @@ export default abstract class RouterRegistry {
       base: '/',
       strict: false,
       mode: 'path',
-      scrollBehavior: 'smooth',
+      scrollBehavior: 'auto',
       suffix: '*',
       pattern: /[\w.]+/,
       defaultSuffix: '',

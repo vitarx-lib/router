@@ -91,7 +91,7 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    *
    * 可以是一个函数或行为标识符，决定了当路由变化时如何滚动页面
    *
-   * @default 'smooth'
+   * @default 'auto'
    */
   scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
 
