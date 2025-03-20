@@ -9,6 +9,7 @@ import {
   Widget
 } from 'vitarx'
 import {
+  type HashStr,
   type NavigateResult,
   NavigateStatus,
   type RouteIndex,
@@ -23,7 +24,7 @@ export interface RouterLinkProps {
    *
    * 可以是路由目标对象，也可以是路由索引
    */
-  to: RouteTarget | RouteIndex | HttpUrl | Hash
+  to: RouteTarget | RouteIndex | HttpUrl | Hash | `${RouteIndex}${HashStr}`
   /**
    * 子节点插槽
    */
