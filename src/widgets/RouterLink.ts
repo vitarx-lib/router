@@ -122,10 +122,17 @@ export class RouterLink extends Widget<RouterLinkProps> {
     super(props)
     this.target = new Computed(() => {
       if (!this.props.to) return undefined
-      const to = isString(props.to) ? { index: props.to } : props.to
+      const to: RouteTarget = isString(props.to)
+        ? { index: decodeURIComponent(props.to) }
+        : props.to
       // 如果是外部连接，或是锚点链接，直接返回目标路由索引
       if (RouterLink.isHttpOrHttpsUrl(to.index) || to.index.startsWith('#')) {
         return to.index as HttpUrl | Hash
+      }
+      if (to.index.includes('#')) {
+        const [index, hash] = to.index.split('#', 2)
+        to.index = index
+        to.hash = `#${hash}`
       }
       return to
     })
