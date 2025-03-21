@@ -1,5 +1,5 @@
 import type RouterCore from '../router-core.js'
-import type { ReadonlyRouteLocation, RouteTarget } from './navigation.js'
+import type { ReadonlyRouteLocation, RouteIndex, RouteTarget } from './navigation.js'
 
 /**
  * 路由前置钩子返回值
@@ -13,7 +13,7 @@ import type { ReadonlyRouteLocation, RouteTarget } from './navigation.js'
 export type BeforeEachCallbackResult =
   | boolean
   | RouteTarget
-  | string
+  | RouteIndex
   | void
   | Promise<boolean | RouteTarget | string | void>
 
