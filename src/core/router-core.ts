@@ -426,11 +426,13 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       })
 
       // 创建标准化的路由位置对象
-      const to =
-        'fullPath' in _target && 'matched' in _target ? _target : this.createRouteLocation(_target)
+      const to = this.createRouteLocation(_target)
 
       // 检查是否导航到相同路由
-      if (to.fullPath === this.currentRouteLocation.fullPath) {
+      if (
+        to.fullPath === this.currentRouteLocation.fullPath &&
+        isDeepEqual(to.params, this.currentRouteLocation.params)
+      ) {
         return createNavigateResult({
           status: NavigateStatus.duplicated,
           message: '导航到相同的路由，被系统阻止！'
