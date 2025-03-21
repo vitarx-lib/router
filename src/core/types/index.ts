@@ -114,6 +114,7 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    * 允许用户在路由激活之后执行逻辑，例如页面初始化
    */
   afterEach?: AfterEnterCallback
+
   /**
    * 未匹配到路由时要渲染的组件（仅在根`RouterView`渲染）
    *
