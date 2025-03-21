@@ -64,3 +64,28 @@ function diffUpdateObjects(a: Record<string, any>, b: Record<string, any>): void
     delete a[key]
   }
 }
+
+/**
+ * 差异化更新属性
+ *
+ * @param oldProps
+ * @param newProps
+ * @internal
+ */
+export function diffUpdateProps(oldProps: Record<string, any>, newProps: Record<string, any>) {
+  const removeKeys = new Set(Object.keys(oldProps))
+  const bKeys = Object.keys(newProps)
+  const changes = []
+  // 遍历 b 中的属性，将 b 的值赋给 a
+  for (const key of bKeys) {
+    oldProps[key] = newProps[key]
+    removeKeys.delete(key)
+    changes.push(key)
+  }
+  changes.push(...removeKeys)
+  // 遍历 a 中的属性，删除 a 中存在但 b 中不存在的属性
+  for (const key of removeKeys) {
+    delete oldProps[key]
+  }
+  return changes
+}
