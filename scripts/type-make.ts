@@ -66,7 +66,7 @@ function buildRouteIndex(routes: Route[]): { paths: string[]; names: string[] } 
  *
  * @param {Route[]} routes - 路由表
  * @param {string[]} custom - 自定义的名称或路径，例如['/home', 'home']
- * @param {string} [writePath] - 要写入的路径，完整的路径！例如'/Users/Vitarx/vitarx/route.type.d.ts'，默认为当前工作目录下的route.type.d.ts
+ * @param {string} [writePath] - 要写入的路径，绝对路径！例如'/Users/Vitarx/vitarx/route.type.d.ts'，默认为当前工作目录下的route.type.d.ts
  * @return {void}
  */
 export default function makeTypeRoute(
