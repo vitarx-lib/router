@@ -578,6 +578,29 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       )
     }
   }
+  /**
+   * 创建路由视图的props
+   *
+   * @param {ReadonlyRouteNormalized} route - 路由记录
+   * @param {string} name - 视图名称
+   * @returns {Record<string, any>} - 需要传递给路由视图的props
+   */
+  public createViewProps(route: ReadonlyRouteNormalized, name: string): Record<string, any> {
+    const injectProps = route.injectProps?.[name]
+    let props: Record<string, any>
+    if (injectProps === true) {
+      props = JSON.parse(JSON.stringify(this._currentRouteLocation.params))
+    } else if (injectProps === false) {
+      props = {}
+    } else if (typeof injectProps === 'function') {
+      props = injectProps(this.currentRouteLocation)
+    } else if (isRecordObject(injectProps)) {
+      props = injectProps
+    } else {
+      props = {}
+    }
+    return props
+  }
 
   /**
    * 创建路由元素
@@ -592,20 +615,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   ): VNode<WidgetType> | undefined {
     const widget = route.widget?.[name]
     if (!widget) return undefined
-    const injectPropsConfig = route.injectProps?.[name]
-    let props: Record<string, any>
-    if (injectPropsConfig === true) {
-      props = this._currentRouteLocation.params
-    } else if (injectPropsConfig === false) {
-      props = {}
-    } else if (typeof injectPropsConfig === 'function') {
-      props = injectPropsConfig(this.currentRouteLocation)
-    } else if (isRecordObject(injectPropsConfig)) {
-      props = injectPropsConfig
-    } else {
-      props = {}
-    }
-    props.key = route.path
+    const props = this.createViewProps(route, name)
     return createElement(widget, props)
   }
 
