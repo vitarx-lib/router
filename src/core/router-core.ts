@@ -1,4 +1,7 @@
+import * as console from 'node:console'
 import {
+  App,
+  type AppObjectPlugin,
   createElement,
   deepClone,
   isDeepEqual,
@@ -51,7 +54,7 @@ import {
  * 继承自 RouterRegistry，负责处理路由导航、历史记录管理、生命周期等核心功能。
  * 采用单例模式，确保全局只有一个路由器实例。
  */
-export default abstract class RouterCore extends RouterRegistry {
+export default abstract class RouterCore extends RouterRegistry implements AppObjectPlugin<{}> {
   // 当前执行的导航任务ID，用于处理并发导航请求
   private _currentTaskId: number | null = null
   // 任务计数器，用于生成唯一的任务ID
@@ -776,5 +779,28 @@ export default abstract class RouterCore extends RouterRegistry {
       }
     }
     return removed
+  }
+
+  /**
+   * 安装路由器
+   *
+   * 此方法用于安装路由器，将路由器实例添加到应用程序中。
+   *
+   * 安装路由器后，应用程序就可以使用`app.get('router')`访问路由器实例。
+   *
+   * @example
+   * import { createApp } from 'vitarx'
+   * import { createRouter } from 'vitarx'
+   * import AppHome from './App.js'
+   *
+   * const router = createRouter({// 相关配置})
+   * const app = createApp('#root').use(router)
+   * app.render(AppHome)
+   *
+   * @param {App} app - 应用程序实例
+   * @returns {void}
+   */
+  install(app: App): void {
+    app.register('router', this)
   }
 }
