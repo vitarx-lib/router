@@ -492,6 +492,8 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
         if (typeof result === 'object' && result.index !== _target.index) {
           result.isReplace ??= false
           return performNavigation(result, true)
+        } else if (typeof result === 'string' && result !== _target.index) {
+          return performNavigation({ index: result, isReplace: false }, true)
         }
 
         // 检查路由匹配结果
