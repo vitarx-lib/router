@@ -12,7 +12,7 @@ npm install vitarx-router
 ## 简单示例
 
 ```js
-import { defineRoutes, lazy , useRouter } from 'vitarx-router'
+import { defineRoutes, useRouter } from 'vitarx-router'
 import AppHomePage from '@/pages/Home/index.js'
 
 // 定义路由线路
@@ -25,7 +25,7 @@ const routes = defineRoutes(
   {
     path: '/about',
     name: 'about',
-    widget: lazy(() => import('@/pages/About/index.js')) // 懒加载
+    widget: () => import('@/pages/About/index.js') // 懒加载
   }
 )
 
@@ -36,7 +36,7 @@ const router = createRouter({
   /** 其他配置查看文档 */
 })
 
-// 在组件中使用
+// 导航
 useRouter().push('/about') // 导航到路径
 useRouter().push({ name: 'about' }) // 导航到路由名称
 useRouter().psuh('about') // 不以/开头的字符串，也会被认为是路由名称
