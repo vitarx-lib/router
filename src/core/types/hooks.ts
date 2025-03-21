@@ -15,7 +15,7 @@ export type BeforeEachCallbackResult =
   | RouteTarget
   | RouteIndex
   | void
-  | Promise<boolean | RouteTarget | string | void>
+  | Promise<boolean | RouteTarget | RouteIndex | void>
 
 /**
  * 路由前置钩子
