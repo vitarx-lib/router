@@ -55,23 +55,27 @@ export class RouterView extends Widget<RouteOptions> {
     )
     const router = useRouter()
     let paramStr = JSON.stringify(this.location.params)
+    // 路由变化时更新
     watch(this.location.matched, (_c, o) => {
       const newRoute = o[this.index]
       if (newRoute !== this._$currentRoute) {
         this._$currentRoute = newRoute
         this._$currentElement.value = Router.routeViewElement(newRoute, this.name, this._$index)
-      } else if (newRoute) {
-        // 判断参数是否有发生变化，如果有变化则更新
-        const newParams = JSON.stringify(this.location.params)
-        if (newParams !== paramStr) {
-          paramStr = newParams
-          const newProps = router.createViewProps(newRoute, this.name)
-          const oldProps = toRaw(this._$currentElement.value!.props)
-          const changes = diffUpdateProps(oldProps, newProps)
-          // 如果有变化，则更新
-          if (changes.length > 0) {
-            Observers.trigger(this._$currentElement.value!.props, changes)
-          }
+      }
+    })
+    // 参数变化时更新
+    watch(this.location.params, () => {
+      if (!this._$currentRoute) return
+      // 判断参数是否有发生变化，如果有变化则更新
+      const newParams = JSON.stringify(this.location.params)
+      if (newParams !== paramStr) {
+        paramStr = newParams
+        const newProps = router.createViewProps(this._$currentRoute, this.name)
+        const oldProps = toRaw(this._$currentElement.value!.props)
+        const changes = diffUpdateProps(oldProps, newProps)
+        // 如果有变化，则更新
+        if (changes.length > 0) {
+          Observers.trigger(this._$currentElement.value!.props, changes)
         }
       }
     })
