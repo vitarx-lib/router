@@ -16,9 +16,11 @@
     "vitarx-router-lib"
   ],
   "type": "module",
-  "main": "dist/vitarx-router.umd.js",
-  "module": "dist/vitarx-router.es.js",
-  "types": "dist/vitarx-router.d.ts",
+  "main": "./dist/vitarx-router.umd.js",
+  "module": "./dist/vitarx-router.es.js",
+  "types": "./dist/vitarx-router.d.ts",
+  "unpkg": "./dist/vitarx-router.umd.js",
+  "jsdelivr": "./dist/vitarx-router.umd.js",
   "exports": {
     ".": {
       "require": {
