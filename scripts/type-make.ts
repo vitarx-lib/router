@@ -69,7 +69,11 @@ function buildRouteIndex(routes: Route[]): { paths: string[]; names: string[] } 
  * @param {string} [writePath] - 要写入的路径，完整的路径！例如'/Users/Vitarx/vitarx/route.type.d.ts'，默认为当前工作目录下的route.type.d.ts
  * @return {void}
  */
-export default function make(routes: Route[], custom: string[] = [], writePath: string = ''): void {
+export default function makeTypeRoute(
+  routes: Route[],
+  custom: string[] = [],
+  writePath: string = ''
+): void {
   const { paths, names } = buildRouteIndex(routes)
   const all = [...paths, ...names, ...custom]
   // 构造类型声明字符串
