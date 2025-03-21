@@ -78,6 +78,7 @@ export function diffUpdateProps(oldProps: Record<string, any>, newProps: Record<
   const changes = []
   // 遍历 b 中的属性，将 b 的值赋给 a
   for (const key of bKeys) {
+    if (key === 'key') continue
     if (oldProps[key] !== newProps[key]) {
       oldProps[key] = newProps[key]
       changes.push(key)
