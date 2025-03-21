@@ -14,7 +14,7 @@ import type {
  * 注入参数处理函数
  *
  * @param {ReadonlyRouteLocation} location 路由匹配的位置信息
- * @return {Record<string, any>} 注入的参数
+ * @return {Record<string, any>} 注入的参数，必须是可JSON序列化的对象
  */
 export type InjectPropsHandler = (location: ReadonlyRouteLocation) => Record<string, any>
 
