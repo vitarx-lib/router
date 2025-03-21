@@ -617,6 +617,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     const widget = route.widget?.[name]
     if (!widget) return undefined
     const props = this.createViewProps(route, name)
+    props.key = route.path
     return createElement(widget, props)
   }
 
