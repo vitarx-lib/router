@@ -167,7 +167,7 @@ export class RouterView extends Widget<RouteOptions> {
    * ```tsx
    * protected build() {
    *   // 使用空片段节点占位
-   *   if (!this.currentElement) return <></> // 不可省略，因为`KeepAlive`不能渲染非组件节点。
+   *   if (!this.currentElement) return null // 不可省略，因为`KeepAlive`不能渲染非组件节点。
    *
    *   // 将当前要进行展示的小部件构造函数传递给`KeepAlive`插槽，会在切换页面时缓存当前页面状态。
    *   return <KeepAlive>{this.currentElement}</KeepAlive>
