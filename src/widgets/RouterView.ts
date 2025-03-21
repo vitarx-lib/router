@@ -3,14 +3,17 @@ import {
   type Element,
   Fragment,
   inject,
+  Observers,
   provide,
   shallowRef,
+  toRaw,
   type VNode,
   watch,
   Widget,
   type WidgetType
 } from 'vitarx'
-import { type ReadonlyRouteNormalized, Router } from '../core/index.js'
+import { type ReadonlyRouteNormalized, Router, useRouter } from '../core/index.js'
+import { diffUpdateProps } from '../core/update.js'
 
 export interface RouteOptions {
   /**
@@ -50,11 +53,26 @@ export class RouterView extends Widget<RouteOptions> {
       this.name,
       this._$index
     )
+    const router = useRouter()
+    let paramStr = JSON.stringify(this.location.params)
     watch(this.location.matched, (_c, o) => {
       const newRoute = o[this.index]
       if (newRoute !== this._$currentRoute) {
         this._$currentRoute = newRoute
         this._$currentElement.value = Router.routeViewElement(newRoute, this.name, this._$index)
+      } else if (newRoute) {
+        // 判断参数是否有发生变化，如果有变化则更新
+        const newParams = JSON.stringify(this.location.params)
+        if (newParams !== paramStr) {
+          paramStr = newParams
+          const newProps = router.createViewProps(newRoute, this.name)
+          const oldProps = toRaw(this._$currentElement.value!.props)
+          const changes = diffUpdateProps(oldProps, newProps)
+          // 如果有变化，则更新
+          if (changes.length > 0) {
+            Observers.trigger(this._$currentElement.value!.props, changes)
+          }
+        }
       }
     })
   }
