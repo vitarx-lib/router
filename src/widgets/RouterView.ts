@@ -33,6 +33,8 @@ const INDEX_SYMBOL = Symbol('RouterViewCounter')
  * 用于渲染路由线路配置的`widget`，可以在子组件中嵌套`RouterView`，但应用内只能存在一个根视图。
  *
  * 如需实现页面缓存等功能，可以重写该类的{@link build}方法。
+ *
+ * @see https://vitarx.cn/router/advanced/router-view.html 文档
  */
 export class RouterView extends Widget<RouteOptions> {
   // 自身index
