@@ -88,6 +88,8 @@ type Hash = `#${string}`
  *
  * 它只是简单的实现了一个a标签，点击后跳转到目标路由，
  * 如果有更高级的定制需求，往往你可以项目中自行编写一个小部件来实现任何你想要的效果。
+ *
+ * @see https://vitarx.cn/router/basis/navigation.html 文档
  */
 export class RouterLink extends Widget<RouterLinkProps> {
   /**
