@@ -80,14 +80,28 @@ export function createRouter(options: MakeRequired<RouterOptions<'path'>, 'mode'
  * @param {RouterOptions} options - 路由配置
  * @return {RouterHistory} - `RouterHistory`路由器实例
  */
-export function createRouter(options: RouterOptions<'hash'>): RouterHistory
+export function createRouter(options: MakeRequired<RouterOptions<'hash'>, 'mode'>): RouterHistory
 
 /**
- * 创建路由器
+ * 创建history路由器，默认hash模式
+ *
+ * 基于History API实现路由功能，支持浏览器前进后退、刷新等操作。
  *
  * @param {RouterOptions} options - 路由配置
- * @return {RouterCore} - 路由器实例
+ * @return {RouterHistory} - `RouterHistory`路由器实例
  */
+export function createRouter(options: Omit<RouterOptions, 'mode'>): RouterHistory
+
+/**
+ * 创建history路由器，默认hash模式
+ *
+ * 基于History API实现路由功能，支持浏览器前进后退、刷新等操作。
+ *
+ * @param {RouterOptions} options - 路由配置
+ * @return {RouterHistory|RouterMemory} - 返回对应的路由器实例
+ */
+export function createRouter(options: RouterOptions): RouterHistory | RouterMemory
+
 export function createRouter(options: RouterOptions): RouterCore {
   let router: RouterCore
   // 如果非浏览器端，强制使用内存模式路由
