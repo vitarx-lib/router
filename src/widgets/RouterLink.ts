@@ -1,11 +1,11 @@
 import {
+  type ClassProperties,
   Computed,
   createElement,
   type Element,
-  type HTMLClassProperties,
-  type HTMLProperties,
-  type HTMLStyleProperties,
+  type ElementProperties,
   isString,
+  type StyleProperties,
   Widget
 } from 'vitarx'
 import {
@@ -32,11 +32,11 @@ export interface RouterLinkProps {
   /**
    * a 标签的style属性
    */
-  style?: HTMLStyleProperties
+  style?: StyleProperties
   /**
    * a 标签的class属性
    */
-  class?: HTMLClassProperties
+  class?: ClassProperties
   /**
    * a 标签的target属性
    *
@@ -116,7 +116,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    * @protected
    */
   protected active: Computed<boolean> | undefined = undefined
-  protected htmlProps: Computed<HTMLProperties<HTMLAnchorElement>>
+  protected htmlProps: Computed<ElementProperties<HTMLAnchorElement>>
   private static isHttpOrHttpsUrl(url: string): url is HttpUrl {
     const regex = /^(https?):\/\/[^\s\/$.?#].\S*$/i
     return regex.test(url)
@@ -173,7 +173,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
       })
     }
     this.htmlProps = new Computed(() => {
-      const props: HTMLProperties<HTMLAnchorElement> = {
+      const props: ElementProperties<HTMLAnchorElement> = {
         href: this.href,
         onClick: e => this.navigate(e),
         children: this.children ?? this.location.value?.index,
@@ -241,7 +241,12 @@ export class RouterLink extends Widget<RouterLinkProps> {
     }
   }
 
-  protected build(): Element {
+  /**
+   * @inheritDoc
+   */
+  build(): Element {
+    // 使用createElement方法创建a标签元素
+    // 并传入this.htmlProps.value作为属性值
     return createElement('a', this.htmlProps.value)
   }
 }
