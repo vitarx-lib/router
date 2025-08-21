@@ -1,6 +1,6 @@
 {
   "name": "vitarx-router",
-  "version": "2.0.1",
+  "version": "3.0.0-alpha.1",
   "description": "Vitarx前端框架的配套路由器",
   "author": "ZhuChongLin <8210856@qq.com>",
   "license": "MIT",
@@ -45,15 +45,15 @@
     "push": "npm publish --access=public"
   },
   "peerDependencies": {
-    "vitarx": "^2.0.0"
+    "vitarx": "^3.0.0-alpha.5"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "prettier": "^3.3.1",
-    "typescript": "^5.2.2",
-    "vite": "^6.0.5",
-    "vite-plugin-dts": "^4.3.0",
-    "@vitarx/vite-bundler": "^1.0.0"
+    "@types/node": "^22.17.2",
+    "@vitarx/vite-bundler": "3.0.0-alpha.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4"
   },
   "files": [
     "dist",
