@@ -3,6 +3,7 @@ export * from './scroll.js'
 export * from './hooks.js'
 export * from './navigation.js'
 
+import type { MakeRequired } from 'vitarx'
 import type { AfterEnterCallback, BeforeEnterCallback } from './hooks.js'
 import type { HistoryMode, RouteWidget } from './navigation.js'
 import type { Route } from './route.js'
