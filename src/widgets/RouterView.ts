@@ -3,7 +3,7 @@ import {
   type Element,
   Fragment,
   inject,
-  Observers,
+  Observer,
   provide,
   shallowRef,
   toRaw,
@@ -30,7 +30,7 @@ const INDEX_SYMBOL = Symbol('RouterViewCounter')
 /**
  * # 路由器视图
  *
- * 用于渲染路由线路配置的`widget`，可以在子组件中嵌套`RouterView`，但应用内只能存在一个根视图。
+ * 用于渲染路由线路配置的`Widget`，可以在子组件中嵌套`RouterView`，但应用内只能存在一个根视图。
  *
  * 如需实现页面缓存等功能，可以重写该类的{@link build}方法。
  *
@@ -46,9 +46,9 @@ export class RouterView extends Widget<RouteOptions> {
 
   constructor(props: RouteOptions) {
     super(props)
-    const parentIndex = inject(INDEX_SYMBOL, -1, this)
+    const parentIndex = inject(INDEX_SYMBOL, -1)
     this._$index = parentIndex + 1
-    provide(INDEX_SYMBOL, this._$index, this)
+    provide(INDEX_SYMBOL, this._$index)
     this._$currentRoute = this.matchedRoute
     this._$currentElement.value = Router['routeViewElement'](
       this._$currentRoute,
@@ -77,7 +77,7 @@ export class RouterView extends Widget<RouteOptions> {
         const changes = diffUpdateProps(oldProps, newProps)
         // 如果有变化，则更新
         if (changes.length > 0) {
-          Observers.trigger(this._$currentElement.value!.props, changes)
+          Observer.notify(this._$currentElement.value!.props, changes)
         }
       }
     })
@@ -149,14 +149,14 @@ export class RouterView extends Widget<RouteOptions> {
   /**
    * @inheritDoc
    */
-  protected onMounted() {
+  override onMounted() {
     this.completeViewRender()
   }
 
   /**
    * @inheritDoc
    */
-  protected override onUpdated() {
+  override onUpdated() {
     this.completeViewRender()
   }
 
@@ -177,7 +177,7 @@ export class RouterView extends Widget<RouteOptions> {
    * ```
    * @protected
    */
-  protected build(): Element {
+  build(): Element {
     return this.currentElement || createElement(Fragment)
   }
 
