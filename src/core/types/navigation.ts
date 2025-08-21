@@ -1,4 +1,4 @@
-import type { WidgetType } from 'vitarx'
+import type { DeepReadonly, WidgetType } from 'vitarx'
 import type { RouteNormalized } from './route'
 
 /**
