@@ -800,7 +800,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    *
    * 此方法用于安装路由器，将路由器实例添加到应用程序中。
    *
-   * 安装路由器后，应用程序就可以使用`app.get('router')`访问路由器实例。
+   * 安装路由器后，应用程序就可以使用`inject('router')`访问路由器实例。
    *
    * @example
    * import { createApp } from 'vitarx'
@@ -808,13 +808,13 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * import AppHome from './App.js'
    *
    * const router = createRouter({// 相关配置})
-   * const app = createApp('#root').use(router)
-   * app.render(AppHome)
+   * const app = createApp(AppHome).use(router)
+   * app.mount('#root')
    *
    * @param {App} app - 应用程序实例
    * @returns {void}
    */
   install(app: App): void {
-    app.register('router', this)
+    app.provide('router', this)
   }
 }
