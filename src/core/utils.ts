@@ -1,4 +1,4 @@
-import { deepClone } from 'vitarx'
+import { deepClone, type MakeRequired } from 'vitarx'
 import type {
   HashStr,
   ReadonlyRouteLocation,
