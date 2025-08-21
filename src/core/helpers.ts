@@ -1,3 +1,4 @@
+import type { MakeRequired } from 'vitarx'
 import RouterCore from './router-core.js'
 import RouterHistory from './router-history.js'
 import RouterMemory from './router-memory.js'
