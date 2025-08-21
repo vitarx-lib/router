@@ -1,3 +1,4 @@
+import type { MakeRequired } from 'vitarx'
 import RouterCore from './router-core.js'
 import {
   type HashStr,
