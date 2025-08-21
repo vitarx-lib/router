@@ -1,3 +1,4 @@
+import type { DeepReadonly, MakeRequired } from 'vitarx'
 import type RouterCore from '../router-core.js'
 import type { AfterEnterCallback, BeforeEnterCallback } from './hooks.js'
 import type {
