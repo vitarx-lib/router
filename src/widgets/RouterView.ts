@@ -1,7 +1,5 @@
 import {
-  createElement,
   type Element,
-  Fragment,
   inject,
   Observer,
   provide,
@@ -177,8 +175,8 @@ export class RouterView extends Widget<RouteOptions> {
    * ```
    * @protected
    */
-  build(): Element {
-    return this.currentElement || createElement(Fragment)
+  build(): Element | null {
+    return this.currentElement || null
   }
 
   /**
