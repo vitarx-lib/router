@@ -48,7 +48,7 @@ export class RouterView extends Widget<RouteOptions> {
     this._$index = parentIndex + 1
     provide(INDEX_SYMBOL, this._$index)
     this._$currentRoute = this.matchedRoute
-    this._$currentElement.value = Router['routeViewElement'](
+    this._$currentElement.value = Router.routeViewElement(
       this._$currentRoute,
       this.name,
       this._$index
