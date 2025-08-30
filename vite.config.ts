@@ -20,7 +20,7 @@ export default defineConfig({
       entry: 'src/index.ts',
       name: 'VitarxRouter',
       fileName: format => `vitarx-router.${format}.js`,
-      formats: ['es', 'umd']
+      formats: ['es', 'iife']
     },
     rollupOptions: {
       external: ['vitarx', 'vitarx/jsx-runtime'],
