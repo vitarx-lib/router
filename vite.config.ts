@@ -23,11 +23,10 @@ export default defineConfig({
       formats: ['es', 'iife']
     },
     rollupOptions: {
-      external: ['vitarx', 'vitarx/jsx-runtime'],
+      external: ['vitarx'],
       output: {
         globals: {
-          vitarx: 'Vitarx',
-          'vitarx/jsx-runtime': 'Vitarx'
+          vitarx: 'Vitarx'
         }
       }
     }
