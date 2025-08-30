@@ -1,6 +1,6 @@
 {
   "name": "vitarx-router",
-  "version": "3.0.0-alpha.2",
+  "version": "3.0.0-beta.1",
   "description": "Vitarx前端框架的配套路由器",
   "author": "ZhuChongLin <8210856@qq.com>",
   "license": "MIT",
@@ -12,28 +12,21 @@
   "keywords": [
     "vitarx",
     "router",
-    "vitarx-router",
-    "vitarx-router-lib"
+    "vitarx-router"
   ],
   "type": "module",
-  "main": "./dist/vitarx-router.umd.js",
   "module": "./dist/vitarx-router.es.js",
   "types": "./dist/vitarx-router.d.ts",
-  "unpkg": "./dist/vitarx-router.umd.js",
-  "jsdelivr": "./dist/vitarx-router.umd.js",
+  "unpkg": "./dist/vitarx-router.iife.js",
+  "jsdelivr": "./dist/vitarx-router.iife.js",
   "exports": {
     ".": {
-      "require": {
-        "types": "./dist/vitarx-router.d.ts",
-        "node": "./dist/vitarx-router.umd.js"
-      },
       "import": {
         "types": "./dist/vitarx-router.d.ts",
-        "node": "./index.mjs",
         "default": "./dist/vitarx-router.es.js"
       }
     },
-    "./scripts/make-type": {
+    "./make": {
       "types": "./dist/scripts/type-make.d.ts",
       "default": "./dist/scripts/type-make.js"
     }
@@ -45,10 +38,10 @@
     "push": "npm publish --access=public"
   },
   "peerDependencies": {
-    "vitarx": "^3.0.0-alpha.9"
+    "vitarx": "^3.0.0-beta.1"
   },
   "devDependencies": {
-    "@types/node": "^22.17.2",
+    "@types/node": "^22.18.0",
     "@vitarx/vite-bundler": "3.0.0-alpha.1",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
@@ -58,7 +51,6 @@
   "files": [
     "dist",
     "LICENSE",
-    "README.md",
-    "index.mjs"
+    "README.md"
   ]
 }
