@@ -1,7 +1,7 @@
 {
   "name": "vitarx-router",
-  "version": "3.0.0-beta.1",
-  "description": "Vitarx前端框架的配套路由器",
+  "version": "3.0.0",
+  "description": "Vitarx前端框架官方路由器",
   "author": "ZhuChongLin <8210856@qq.com>",
   "license": "MIT",
   "repository": {
@@ -35,17 +35,17 @@
     "build:script": "tsc --p tsconfig.script.json",
     "build": "rimraf dist && tsc && vite build && npm run build:script",
     "prepublishOnly": "npm run build",
-    "push": "npm publish --access=public"
+    "push": "npm publish --access=public --registry https://registry.npmjs.org/"
   },
   "peerDependencies": {
-    "vitarx": "^3.0.0-beta.1"
+    "vitarx": "^3.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.18.0",
-    "@vitarx/vite-bundler": "3.0.0-alpha.1",
+    "@vitarx/vite-bundler": "3.0.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
-    "vite": "^6.3.5",
+    "vite": "^7.1.4",
     "vite-plugin-dts": "^4.5.4"
   },
   "files": [
