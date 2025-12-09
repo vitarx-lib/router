@@ -84,13 +84,6 @@ export class RouterView extends Widget<RouteOptions> {
   }
 
   /**
-   * 是否为最后一个路由视图
-   */
-  public get isLastView() {
-    return this.index === this.location.matched.length - 1 && this.name === 'default'
-  }
-
-  /**
    * 视图名称
    *
    * @default 'default'
@@ -138,20 +131,6 @@ export class RouterView extends Widget<RouteOptions> {
   }
 
   /**
-   * @inheritDoc
-   */
-  override onMounted() {
-    this.completeViewRender()
-  }
-
-  /**
-   * @inheritDoc
-   */
-  override onUpdated() {
-    this.completeViewRender()
-  }
-
-  /**
    * ## 构建视图
    *
    * 可以重写该方法实现自定义的视图构建逻辑。
@@ -170,15 +149,5 @@ export class RouterView extends Widget<RouteOptions> {
    */
   build(): Renderable {
     return this.currentElement || null
-  }
-
-  /**
-   * 视图渲染完成通知路由器
-   *
-   * @private
-   */
-  private completeViewRender() {
-    // 如果是最后一个路由视图更新完成，则通知路由实例视图渲染已完成
-    if (this.isLastView) Router.instance['_completeViewRender']()
   }
 }
