@@ -1,7 +1,7 @@
 import {
   App,
   type AppObjectPlugin,
-  createElement,
+  createVNode,
   deepClone,
   isDeepEqual,
   isObject,
@@ -244,7 +244,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
         this.instance.missing &&
         !this.instance.isPendingNavigation
       ) {
-        return createElement(this.instance.missing)
+        return createVNode(this.instance.missing)
       } else {
         return undefined
       }
@@ -618,7 +618,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     if (!widget) return undefined
     const props = this.createViewProps(route, name)
     props.key = route.path
-    return createElement(widget, props)
+    return createVNode(widget, props)
   }
 
   /**
