@@ -105,22 +105,22 @@ export default class RouterHistory extends RouterCore {
   /**
    * @inheritDoc
    */
-  protected pushHistory(data: RouteLocation): void {
+  protected pushHistory(to: RouteLocation, from: RouteLocation): void {
     // 保存滚动位置
     this.saveCurrentScrollPosition()
     // 跳转到新路由
-    this.webHistory.pushState(this.createState(data), '', data.fullPath)
-    this.completeNavigation()
+    this.webHistory.pushState(this.createState(to), '', to.fullPath)
+    this.completeNavigation(to, from)
   }
 
   /**
    * @inheritDoc
    */
-  protected replaceHistory(data: RouteLocation): void {
+  protected replaceHistory(to: RouteLocation, from: RouteLocation): void {
     // 还原滚动位置 this.webHistory.state 存在则是回退或前进所触发的替换状态
     const scrollPosition = this.webHistory.state?.scrollPosition
-    this.webHistory.replaceState(this.createState(data), '', data.fullPath)
-    this.completeNavigation(scrollPosition)
+    this.webHistory.replaceState(this.createState(to), '', to.fullPath)
+    this.completeNavigation(to, from, scrollPosition)
   }
 
   /**

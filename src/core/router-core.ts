@@ -3,6 +3,7 @@ import {
   type AppObjectPlugin,
   createVNode,
   deepClone,
+  flushSync,
   isDeepEqual,
   isObject,
   isRecordObject,
@@ -58,16 +59,6 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   private _currentTaskId: number | null = null
   // 任务计数器，用于生成唯一的任务ID
   private _taskCounter = 0
-  /**
-   * 等待执行的 replace 操作数据
-   * 如果不为 null，表示当前有一个等待完成的 replace 导航
-   */
-  private _pendingReplace: RouteLocation | null = null
-  /**
-   * 等待执行的 push 操作数据
-   * 如果不为 null，表示当前有一个等待完成的 push 导航
-   */
-  private _pendingPush: RouteLocation | null = null
   /**
    * 滚动行为处理器
    * 用于自定义路由切换时的滚动行为
@@ -197,33 +188,6 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   }
 
   /**
-   * 是否处于等待状态
-   *
-   * @protected
-   */
-  protected get isPendingNavigation(): boolean {
-    return Boolean(this._pendingReplace || this._pendingPush)
-  }
-
-  /**
-   * 等待替换完成的数据
-   *
-   * @protected
-   */
-  protected get pendingReplaceData(): RouteLocation | null {
-    return this._pendingReplace
-  }
-
-  /**
-   * 等待跳转完成的数据
-   *
-   * @protected
-   */
-  protected get pendingPushData(): RouteLocation | null {
-    return this._pendingPush
-  }
-
-  /**
    * 路由视图
    *
    * @internal 内部核心方法，用于获取路由线路对应的视图元素虚拟节点。
@@ -238,12 +202,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     index: number
   ): VNode<WidgetType> | undefined {
     if (!route) {
-      if (
-        index === 0 &&
-        name === 'default' &&
-        this.instance.missing &&
-        !this.instance.isPendingNavigation
-      ) {
+      if (index === 0 && name === 'default' && this.instance.missing) {
         return createVNode(this.instance.missing)
       } else {
         return undefined
@@ -507,13 +466,10 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
 
         // 更新路由历史
         if ('isReplace' in _target && _target.isReplace) {
-          this._pendingReplace = to
-          this.replaceHistory(to)
+          this.replaceHistory(to, from)
         } else {
-          this._pendingPush = to
-          this.pushHistory(to)
+          this.pushHistory(to, from)
         }
-
         return createNavigateResult(
           !to.matched.length && this.missing
             ? {
@@ -622,37 +578,27 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   }
 
   /**
-   * 该方法提供给`RouterView`完成渲染时调用
-   *
-   * @internal
-   */
-  protected _completeViewRender() {}
-
-  /**
    * 完成导航过程
    * 更新路由状态并触发相关的生命周期钩子
    *
+   * @param to - 目标路由
+   * @param from - 当前路由
    * @param {_ScrollToOptions} savedPosition - 保存的滚动位置
    * @protected
    */
-  protected completeNavigation(savedPosition?: _ScrollToOptions) {
-    const newData = this.pendingReplaceData || this.pendingPushData
-    if (!newData) {
-      throw new Error('[Vitarx.Router.completeNavigation][ERROR]：没有处于等待状态的导航请求。')
-    }
+  protected completeNavigation(
+    to: RouteLocation,
+    from: RouteLocation,
+    savedPosition?: _ScrollToOptions
+  ) {
     // 克隆当前路由状态用于后置钩子
-    const from = cloneRouteLocation(this.currentRouteLocation)
-    // 设置视图渲染完成后的回调
-    this._completeViewRender = () => {
-      // 处理滚动行为
-      this.onScrollBehavior(this.currentRouteLocation, from, savedPosition).then()
-      // 触发后置守卫
-      this.onAfterEach(this.currentRouteLocation, from)
-    }
-    this.updateRouteLocation(newData)
-    // 清理等待状态
-    this._pendingReplace = null
-    this._pendingPush = null
+    this.updateRouteLocation(to)
+    // 刷新视图
+    flushSync()
+    // 处理滚动行为
+    this.onScrollBehavior(this.currentRouteLocation, from, savedPosition).then()
+    // 触发后置守卫
+    this.onAfterEach(this.currentRouteLocation, from)
   }
 
   /**
@@ -691,22 +637,24 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   /**
    * 添加历史记录
    *
-   * 子类必须实现该方法，且需要调用`this.completeNavigation(routeLocation)`方法标记完成导航！
+   * 子类必须实现该方法，且需要调用`this.completeNavigation(to,from)`方法完成导航！
    *
-   * @param {RouteLocation} routeLocation - 新的路由位置对象
    * @protected
+   * @param to
+   * @param from
    */
-  protected abstract pushHistory(routeLocation: RouteLocation): void
+  protected abstract pushHistory(to: RouteLocation, from: RouteLocation): void
 
   /**
    * 替换历史记录
    *
-   * 子类必须实现该方法，且需要调用`this.completeNavigation(routeLocation)`方法标记完成导航！
+   * 子类必须实现该方法，且需要调用`this.completeNavigation(to,from)`方法完成导航！
    *
-   * @param {RouteLocation} routeLocation - 新的路由位置对象
    * @protected
+   * @param to
+   * @param from
    */
-  protected abstract replaceHistory(routeLocation: RouteLocation): void
+  protected abstract replaceHistory(to: RouteLocation, from: RouteLocation): void
 
   /**
    * 触发路由前置守卫

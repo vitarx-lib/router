@@ -64,49 +64,50 @@ export default class RouterMemory extends RouterCore {
   /**
    * 添加历史记录
    */
-  protected override pushHistory(data: RouteLocation): void {
-    this._updateHistory(data, false)
+  protected override pushHistory(to: RouteLocation, from: RouteLocation): void {
+    this._updateHistory(to, from, false)
   }
 
   /**
    * 替换历史记录
    */
-  protected replaceHistory(data: RouteLocation): void {
-    this._updateHistory(data, true)
+  protected replaceHistory(to: RouteLocation, from: RouteLocation): void {
+    this._updateHistory(to, from, true)
   }
 
   /**
    * 更新历史记录
    *
-   * @param {RouteLocation} data - 目标路由
+   * @param to
+   * @param from
    * @param {boolean} isReplace - 是否为替换操作
    * @private
    */
-  private _updateHistory(data: RouteLocation, isReplace: boolean): void {
+  private _updateHistory(to: RouteLocation, from: RouteLocation, isReplace: boolean): void {
     let newIndex: number
     if (this._pendingGo !== null) {
-      this._history[this._pendingGo] = data
+      this._history[this._pendingGo] = to
       newIndex = this._pendingGo
     } else if (isReplace) {
       // 替换当前路由
-      this._history[this.currentIndex] = data
+      this._history[this.currentIndex] = to
       newIndex = this.currentIndex
     } else {
       // push新路由
       const nextIndex = this.currentIndex + 1
       if (nextIndex < this._history.length) {
         // 清除后面的历史记录
-        this._history[nextIndex] = data
+        this._history[nextIndex] = to
         this._history.length = nextIndex + 1
         newIndex = nextIndex
       } else {
         // 添加新路由
-        this._history.push(data)
+        this._history.push(to)
         newIndex = this._history.length - 1
       }
     }
     this._currentIndex = newIndex
-    this.completeNavigation()
+    this.completeNavigation(to, from)
     this._pendingGo = null
   }
 }
