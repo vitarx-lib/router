@@ -1,12 +1,12 @@
 import {
   type ClassProperties,
   Computed,
-  createElement,
-  type Element,
-  type ElementProperties,
+  createRegularElementVNode,
   isString,
+  type Renderable,
   type StyleProperties,
-  Widget
+  Widget,
+  type WithProps
 } from 'vitarx'
 import {
   type HashStr,
@@ -18,6 +18,8 @@ import {
   type RouteTarget
 } from '../core/index.js'
 
+type HttpUrl = `http://${string}` | `https://${string}`
+type Hash = `#${string}`
 export interface RouterLinkProps {
   /**
    * 要跳转的目标
@@ -55,7 +57,9 @@ export interface RouterLinkProps {
    * 如果启用了激活状态计算，那么当路由匹配到当前路由时，a标签会添加`aria-current="page"`属性，
    *
    * 算法：
-   * - 如果路由索引以/开头，严格匹配`Router.instance.currentRouteLocation.path === to.index`，模糊匹配`Router.instance.currentRouteLocation.fullPath.startsWith(to.index)`
+   * - 如果路由索引以/开头
+   *    - 严格匹配`Router.instance.currentRouteLocation.path === to.index`，
+   *    - 模糊匹配`Router.instance.currentRouteLocation.fullPath.startsWith(to.index)`
    * - 如果路由索引不以/开头，则会匹配`Router.instance.currentRouteLocation.matched[i].name`，仅支持严格匹配
    *
    * 可选值：
@@ -79,9 +83,6 @@ export interface RouterLinkProps {
    */
   draggable?: boolean
 }
-
-type HttpUrl = `http://${string}`
-type Hash = `#${string}`
 
 /**
  * # 路由跳转小部件
@@ -116,7 +117,7 @@ export class RouterLink extends Widget<RouterLinkProps> {
    * @protected
    */
   protected active: Computed<boolean> | undefined = undefined
-  protected htmlProps: Computed<ElementProperties<HTMLAnchorElement>>
+  protected htmlProps: Computed<WithProps<'a'>>
   private static isHttpOrHttpsUrl(url: string): url is HttpUrl {
     const regex = /^(https?):\/\/[^\s\/$.?#].\S*$/i
     return regex.test(url)
@@ -173,9 +174,9 @@ export class RouterLink extends Widget<RouterLinkProps> {
       })
     }
     this.htmlProps = new Computed(() => {
-      const props: ElementProperties<HTMLAnchorElement> = {
+      const props: WithProps<'a'> = {
         href: this.href,
-        onClick: e => this.navigate(e),
+        onClick: (e: MouseEvent) => this.navigate(e),
         children: this.children ?? this.location.value?.index,
         draggable: this.props.draggable ?? false,
         'v-bind': [
@@ -244,9 +245,9 @@ export class RouterLink extends Widget<RouterLinkProps> {
   /**
    * @inheritDoc
    */
-  build(): Element {
+  build(): Renderable {
     // 使用createElement方法创建a标签元素
     // 并传入this.htmlProps.value作为属性值
-    return createElement('a', this.htmlProps.value)
+    return createRegularElementVNode('a', this.htmlProps.value)
   }
 }
