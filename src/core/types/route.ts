@@ -109,7 +109,7 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
    * 可选值：
    * - `true`：表示仅注入匹配到的动态参数
    * - `false`：表示不注入任何参数
-   * - `{key: value}`：表示注入指定参数，其中`key`为参数名，`any`为参数值
+   * - `{key: value}`：表示注入指定参数
    * - `(location: RouteLocation) => {key: value}`：自定义一个处理函数，返回一个对象用于注入参数
    *
    * > 注意：如果是命名视图，则需要以键值对形式传入：{视图名称:injectProps配置}
