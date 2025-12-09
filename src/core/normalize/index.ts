@@ -32,10 +32,10 @@ export default function normalizeRoute(
   }
   // 格式化路径
   route.path = formatPath(group ? `${group.path}/${route.path}` : route.path)
-  // 规范化widget
-  normalizeRouteWidget(route)
   // 规范化injectProps
   normalizeInjectProps(route)
+  // 规范化widget
+  normalizeRouteWidget(route)
   // 合并父级的配置
   route.suffix ??= group?.suffix ?? suffix
   route.afterEnter ??= group?.afterEnter
