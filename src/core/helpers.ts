@@ -2,7 +2,13 @@ import type { MakeRequired } from 'vitarx'
 import RouterCore from './router-core.js'
 import RouterHistory from './router-history.js'
 import RouterMemory from './router-memory.js'
-import type { ReadonlyRouteLocation, Route, RouterOptions } from './router-types.js'
+import {
+  type NavigateResult,
+  NavigateStatus,
+  type ReadonlyRouteLocation,
+  type Route,
+  type RouterOptions
+} from './router-types.js'
 
 /**
  * 定义路由表
@@ -164,4 +170,16 @@ export function useRouter<T extends RouterCore>(): T {
  */
 export function useRoute(): ReadonlyRouteLocation {
   return RouterCore.instance.currentRouteLocation
+}
+
+/**
+ * 检查导航结果是否包含指定的状态
+ *
+ * @param result 导航结果对象，包含导航状态信息
+ * @param status 要检查的导航状态
+ * @returns {boolean} 如果导航结果的状态与指定的状态匹配则返回true，否则返回false
+ */
+export function hasNavigationStatus(result: NavigateResult, status: NavigateStatus): boolean {
+  // 导航状态检查函数，接收导航结果和状态作为参数
+  return result.status === status
 }
