@@ -22,7 +22,7 @@ export default function normalizeInjectProps(route: Route): void {
   const type = typeof inputValue
   if (type === 'object') {
     for (const name in route.widget) {
-      const value = inputValue[name]
+      const value = (inputValue as Record<string, any>)[name]
       if (value && !validInjectProps(value)) {
         throw new TypeError(
           `[Vitarx.Router][ERROR]：请检查 ${route.path} 路由线路配置，injectProps.${name}值错误，仅支持boolean、function类型`
