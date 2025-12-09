@@ -1,17 +1,15 @@
 import {
-  type Element,
   inject,
-  Observer,
   provide,
+  type Renderable,
   shallowRef,
-  toRaw,
+  updateNodeProps,
   type VNode,
   watch,
   Widget,
   type WidgetType
 } from 'vitarx'
 import { type ReadonlyRouteNormalized, Router, useRouter } from '../core/index.js'
-import { diffUpdateProps } from '../core/update.js'
 
 export interface RouteOptions {
   /**
@@ -23,7 +21,7 @@ export interface RouteOptions {
 }
 
 // 路由视图层级索引
-const INDEX_SYMBOL = Symbol('RouterViewCounter')
+const INDEX_SYMBOL = Symbol.for('__v_router_view_counter')
 
 /**
  * # 路由器视图
@@ -65,18 +63,13 @@ export class RouterView extends Widget<RouteOptions> {
     })
     // 参数变化时更新
     watch(this.location.params, () => {
-      if (!this._$currentRoute) return
+      if (!this._$currentRoute || !this.currentElement) return
       // 判断参数是否有发生变化，如果有变化则更新
       const newParams = JSON.stringify(this.location.params)
       if (newParams !== paramStr) {
         paramStr = newParams
         const newProps = router.createViewProps(this._$currentRoute, this.name)
-        const oldProps = toRaw(this._$currentElement.value!.props)
-        const changes = diffUpdateProps(oldProps, newProps)
-        // 如果有变化，则更新
-        if (changes.length > 0) {
-          Observer.notify(this._$currentElement.value!.props, changes)
-        }
+        updateNodeProps(this.currentElement, newProps)
       }
     })
   }
@@ -165,7 +158,7 @@ export class RouterView extends Widget<RouteOptions> {
    *
    * 例如，使用`KeepAlive`小部件进行页面缓存：
    * ```tsx
-   * protected build() {
+   * build() {
    *   // 使用空片段节点占位
    *   if (!this.currentElement) return null // 不可省略，因为`KeepAlive`不能渲染非组件节点。
    *
@@ -175,7 +168,7 @@ export class RouterView extends Widget<RouteOptions> {
    * ```
    * @protected
    */
-  build(): Element | null {
+  build(): Renderable {
     return this.currentElement || null
   }
 
