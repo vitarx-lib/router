@@ -52,6 +52,7 @@ export class RouterView extends Widget<RouteOptions> {
           ? createVNode(this.router.missing)
           : null
       }
+      props.key ??= route.path
       const widget = route.widget?.[name]
       return widget ? (createVNode(widget, props) as WidgetNode) : null
     })
