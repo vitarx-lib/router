@@ -1,15 +1,15 @@
 import {
+  type Computed,
+  computed,
+  createVNode,
   inject,
+  isRecordObject,
   provide,
   type Renderable,
-  shallowRef,
-  updateNodeProps,
-  type VNode,
-  watch,
   Widget,
-  type WidgetType
+  type WidgetNode
 } from 'vitarx'
-import { type ReadonlyRouteNormalized, Router, useRouter } from '../core/index.js'
+import { type ReadonlyRoute, useRouter } from '../core/index.js'
 
 export interface RouteOptions {
   /**
@@ -34,55 +34,43 @@ const INDEX_SYMBOL = Symbol.for('__v_router_view_counter')
  */
 export class RouterView extends Widget<RouteOptions> {
   // 自身index
-  private readonly _$index: number
-  // 当前匹配的路由配置
-  private _$currentRoute?: ReadonlyRouteNormalized
-  // 当前视图元素
-  private _$currentElement = shallowRef<VNode<WidgetType>>()
-
+  public readonly index: number
+  protected readonly router = useRouter()
+  protected readonly viewNode: Computed<WidgetNode | null>
+  protected readonly viewProps: Computed<Record<string, any>>
   constructor(props: RouteOptions) {
     super(props)
     const parentIndex = inject(INDEX_SYMBOL, -1)
-    this._$index = parentIndex + 1
-    provide(INDEX_SYMBOL, this._$index)
-    this._$currentRoute = this.matchedRoute
-    this._$currentElement.value = Router.routeViewElement(
-      this._$currentRoute,
-      this.name,
-      this._$index
-    )
-    const router = useRouter()
-    let paramStr = JSON.stringify(this.location.params)
-    // 路由变化时更新
-    watch(this.location.matched, (_c, o) => {
-      const newRoute = o[this.index]
-      if (newRoute !== this._$currentRoute) {
-        this._$currentRoute = newRoute
-        this._$currentElement.value = Router.routeViewElement(newRoute, this.name, this._$index)
+    this.index = parentIndex + 1
+    provide(INDEX_SYMBOL, this.index)
+    this.viewNode = computed(() => {
+      const route = this.matchedRoute
+      const name = this.name
+      const props = this.viewProps.value
+      if (!route) {
+        return this.index === 0 && name === 'default' && this.router.missing
+          ? createVNode(this.router.missing)
+          : null
       }
+      const widget = route.widget?.[name]
+      return widget ? (createVNode(widget, props) as WidgetNode) : null
     })
-    // 参数变化时更新
-    watch(this.location.params, () => {
-      if (!this._$currentRoute || !this.currentElement) return
-      // 判断参数是否有发生变化，如果有变化则更新
-      const newParams = JSON.stringify(this.location.params)
-      if (newParams !== paramStr) {
-        paramStr = newParams
-        const newProps = router.createViewProps(this._$currentRoute, this.name)
-        updateNodeProps(this.currentElement, newProps)
+    this.viewProps = computed((): Record<string, any> => {
+      const params = this.router.route.params
+      const name = this.name
+      let props = this.matchedRoute?.injectProps?.[name]
+      if (props === false) return {}
+      if (props === true) return { ...params }
+      if (typeof props === 'function') {
+        try {
+          props = props(this.router.route)
+        } catch (e) {
+          console.error(e)
+        }
       }
+      return isRecordObject(props) ? props : {}
     })
   }
-
-  /**
-   * 当前路由器视图所在层级索引
-   *
-   * `index`的值从0开始，它与`RouteLocation.matched`数组下标一一对应
-   */
-  public get index() {
-    return this._$index
-  }
-
   /**
    * 视图名称
    *
@@ -91,47 +79,16 @@ export class RouterView extends Widget<RouteOptions> {
   public get name() {
     return this.props.name || 'default'
   }
-
   /**
    * 获取当前匹配的路线配置
    *
    * 注意未匹配时会返回`undefined`，匹配成功时返回的是`ReadonlyRouteNormalized`
    */
-  public get matchedRoute(): ReadonlyRouteNormalized | undefined {
-    return this.location.matched[this.index]
+  public get matchedRoute(): ReadonlyRoute | undefined {
+    return this.router.route.matched[this.index]
   }
-
   /**
-   * 当前路由器视图要显示的虚拟节点
-   *
-   * 注意未匹配时会返回`undefined`，匹配成功时返回的是`VNode<WidgetType>`
-   *
-   * @protected
-   */
-  protected get currentElement(): VNode<WidgetType> | undefined {
-    return this._$currentElement.value
-  }
-
-  /**
-   * 当前路由器视图要显示的组件
-   *
-   * @protected
-   */
-  protected get currentWidget(): WidgetType | undefined {
-    return this._$currentElement.value?.type
-  }
-
-  /**
-   * 当前的路由位置对象
-   *
-   * @protected
-   */
-  protected get location() {
-    return Router.instance.currentRouteLocation
-  }
-
-  /**
-   * ## 构建视图
+   * 构建视图
    *
    * 可以重写该方法实现自定义的视图构建逻辑。
    *
@@ -139,15 +96,15 @@ export class RouterView extends Widget<RouteOptions> {
    * ```tsx
    * build() {
    *   // 使用空片段节点占位
-   *   if (!this.currentElement) return null // 不可省略，因为`KeepAlive`不能渲染非组件节点。
+   *   if (!this.viewNode.value) return null // 不可省略，因为`KeepAlive`不能渲染非组件节点。
    *
    *   // 将当前要进行展示的小部件构造函数传递给`KeepAlive`插槽，会在切换页面时缓存当前页面状态。
-   *   return <KeepAlive>{this.currentElement}</KeepAlive>
+   *   return <KeepAlive>{this.viewNode.value}</KeepAlive>
    * }
    * ```
    * @protected
    */
   build(): Renderable {
-    return this.currentElement || null
+    return this.viewNode.value
   }
 }
