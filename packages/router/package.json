@@ -27,7 +27,8 @@
   },
   "scripts": {
     "build": "rimraf dist && tsc",
-    "test": "madge --extensions js --circular dist --warning --exclude '.*\\\\.d\\\\.ts$'"
+    "check:circular": "madge --extensions js --circular dist --warning --exclude '.*\\\\.d\\\\.ts$'",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "vitarx": "^4.0.0-0"

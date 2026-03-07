@@ -2,14 +2,18 @@
   "name": "@vitarx/router-root",
   "author": "ZhuChongLin <8210856@qq.com>",
   "type": "module",
-  "scripts": {},
+  "scripts": {
+    "test:browser": "vitest --config=vitest.browser.config.ts"
+  },
   "devDependencies": {
     "@commitlint/cli": "^20.4.3",
     "@commitlint/config-conventional": "^20.4.3",
     "@commitlint/types": "^20.4.3",
     "@types/node": "^22.19.2",
     "@vitarx/plugin-vite": "^0.0.1-beta.3",
+    "@vitest/browser-playwright": "^4.0.18",
     "husky": "^9.1.7",
+    "jsdom": "^28.1.0",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
     "unplugin-dts": "1.0.0-beta.6",
