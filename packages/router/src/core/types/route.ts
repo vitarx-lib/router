@@ -102,7 +102,7 @@ export interface Route<T extends AllowedRouteComponent = AllowedRouteComponent> 
   /**
    * 路由重定向的目标地址或处理函数
    */
-  redirect?: NavigateTarget | RedirectHandler
+  redirect?: NavigateTarget | RedirectHandler | string
   /**
    * 子路由配置，用于嵌套路由
    */
