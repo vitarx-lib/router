@@ -16,7 +16,7 @@ import {
   urlToRouteTarget,
   validateSuffix
 } from '../../src/core/utils.js'
-import type { RouteLocation, RouteNormalized, RouterOptions } from '../../src/core/router-types.js'
+import type { RouteLocation, RouteNormalized } from '../../src/index.js'
 
 describe('utils', () => {
   describe('isVariablePath', () => {
@@ -62,7 +62,7 @@ describe('utils', () => {
       const route = {
         path: '/parent',
         children: [{ path: '/child' }]
-      } as RouteNormalized
+      } as unknown as RouteNormalized
       expect(isRouteGroup(route)).toBe(true)
     })
 
@@ -70,12 +70,12 @@ describe('utils', () => {
       const route = {
         path: '/home',
         children: []
-      } as RouteNormalized
+      } as unknown as RouteNormalized
       expect(isRouteGroup(route)).toBe(false)
     })
 
     it('应该正确处理没有children属性的路由', () => {
-      const route = { path: '/home' } as RouteNormalized
+      const route = { path: '/home' } as unknown as RouteNormalized
       expect(isRouteGroup(route)).toBe(false)
     })
   })
@@ -113,7 +113,7 @@ describe('utils', () => {
     it('应该正确处理严格模式', () => {
       const strictResult = createDynamicPattern('/User/{id}', {}, true, /[\w.]+/)
       const nonStrictResult = createDynamicPattern('/User/{id}', {}, false, /[\w.]+/)
-      
+
       expect(strictResult.regex.test('/user/123/')).toBe(false)
       expect(nonStrictResult.regex.test('/user/123/')).toBe(true)
     })
@@ -155,7 +155,9 @@ describe('utils', () => {
   describe('mergePathParams', () => {
     it('应该正确合并路径参数', () => {
       expect(mergePathParams('/user/{id}', { id: '123' })).toBe('/user/123')
-      expect(mergePathParams('/user/{id}/profile/{name}', { id: '123', name: 'john' })).toBe('/user/123/profile/john')
+      expect(mergePathParams('/user/{id}/profile/{name}', { id: '123', name: 'john' })).toBe(
+        '/user/123/profile/john'
+      )
     })
 
     it('应该正确处理可选参数', () => {
@@ -256,9 +258,9 @@ describe('utils', () => {
         search: '?id=123',
         hash: '#section'
       } as Location
-      
+
       const result = urlToRouteTarget(mockUrl, 'path', '/')
-      
+
       expect(result.index).toBe('/user/profile')
       expect(result.query).toEqual({ id: '123' })
       expect(result.hash).toBe('#section')
@@ -270,9 +272,9 @@ describe('utils', () => {
         search: '',
         hash: '#/user/profile#section'
       } as Location
-      
+
       const result = urlToRouteTarget(mockUrl, 'hash', '/')
-      
+
       expect(result.index).toBe('/user/profile')
       expect(result.hash).toBe('#section')
     })
@@ -283,9 +285,9 @@ describe('utils', () => {
         search: '',
         hash: ''
       } as Location
-      
+
       const result = urlToRouteTarget(mockUrl, 'path', '/app')
-      
+
       expect(result.index).toBe('/user/profile')
     })
   })
@@ -388,22 +390,22 @@ describe('utils', () => {
         meta: { title: 'User' },
         suffix: ''
       }
-      
+
       const cloned = cloneRouteLocation(route)
-      
+
       expect(cloned).not.toBe(route)
       expect(cloned.params).not.toBe(route.params)
       expect(cloned.query).not.toBe(route.query)
       expect(cloned.meta).not.toBe(route.meta)
       expect(cloned.matched).not.toBe(route.matched)
-      
+
       expect(cloned.index).toBe(route.index)
       expect(cloned.path).toBe(route.path)
       expect(cloned.params).toEqual(route.params)
     })
 
     it('应该正确克隆matched数组', () => {
-      const matchedItem = { path: '/user' } as RouteNormalized
+      const matchedItem = { path: '/user' } as unknown as RouteNormalized
       const route: RouteLocation = {
         __is_route_location: true,
         index: '/user',
@@ -416,9 +418,9 @@ describe('utils', () => {
         meta: {},
         suffix: ''
       }
-      
+
       const cloned = cloneRouteLocation(route)
-      
+
       expect(cloned.matched).toEqual([matchedItem])
       expect(cloned.matched).not.toBe(route.matched)
     })

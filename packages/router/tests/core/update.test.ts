@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { patchUpdateRoute } from '../../src/core/update.js'
-import type { RouteLocation, RouteNormalized } from '../../src/core/router-types.js'
+import type { RouteLocation, RouteNormalized } from '../../src/index.js'
 
 function createMockRouteNormalized(path: string): RouteNormalized {
   return {

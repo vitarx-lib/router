@@ -1,6 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RouterRegistry from '../../src/core/router-registry.js'
-import type { Route, RouterOptions } from '../../src/core/router-types.js'
+import type { Route, RouterOptions } from '../../src/index.js'
 
 function createMockComponent() {
   return vi.fn()
