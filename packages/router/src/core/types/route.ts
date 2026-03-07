@@ -30,7 +30,10 @@ export type InjectNamedProps<k extends string = string> = Record<k, InjectProps>
 /**
  * 重定向处理器
  */
-export type RedirectHandler = (this: RouterCore, to: RouteLocation) => NavigateTarget | undefined
+export type RedirectHandler = (
+  this: RouterCore,
+  to: RouteLocation
+) => NavigateTarget | string | undefined
 
 /**
  * 路由路径
