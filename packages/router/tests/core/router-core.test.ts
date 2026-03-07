@@ -73,10 +73,9 @@ describe('RouterCore', () => {
   })
 
   describe('isBrowser属性', () => {
-    it('在Node环境中应该返回false', async () => {
-      // 由于测试环境可能是不固定，跳过此测试
-      // const router = await createTestRouter()
-      // expect(router.isBrowser).toBe(false)
+    it.skip('在Node环境中应该返回false', async () => {
+      const router = await createTestRouter()
+      expect(router.isBrowser).toBe(false)
     })
   })
 
@@ -311,15 +310,13 @@ describe('RouterCore', () => {
           { path: '/', component: createMockComponent() },
           {
             path: '/old',
-            redirect: '/new' as any,
+            redirect: '/new',
             component: createMockComponent()
           },
           { path: '/new', component: createMockComponent() }
         ]
       })
-
-      const result = await router.push({ index: '/old' })
-
+      await router.push({ index: '/old' })
       expect(router.route.path).toBe('/new')
     })
 
