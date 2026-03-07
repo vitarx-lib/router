@@ -151,9 +151,11 @@ export interface Route<T extends AllowedRouteComponent = AllowedRouteComponent> 
  * @example
  * ```ts
  * // 在项目中的全局类型声明文件中写入如下类型即可在使用路由元数据时提示
- * interface RouteMetaData {
- *   title: string
- *   icon: string
+ * declare module 'vue-router' {
+ *    export interface RouteMetaData {
+ *      title: string
+ *      icon: string
+ *    }
  * }
  * ```
  */
