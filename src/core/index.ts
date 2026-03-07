@@ -1,6 +1,7 @@
-export * from './router-types.js'
+export type * from './router-types.js'
 export { default as Router } from './router-core.js'
 export { default as HistoryRouter } from './router-history.js'
 export { default as MemoryRouter } from './router-memory.js'
 export * from './helpers.js'
 export * from './constant.js'
+export * from './components/index.js'

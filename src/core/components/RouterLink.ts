@@ -14,7 +14,7 @@ import {
   type RouteIndex,
   type RouteLocation,
   useRouter
-} from '../core/index.js'
+} from '../index.js'
 
 type HttpUrl = `http://${string}` | `https://${string}`
 type Hash = `#${string}`
