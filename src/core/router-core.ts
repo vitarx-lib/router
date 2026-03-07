@@ -176,7 +176,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * 替换当前页面
    *
    * @param {RouteTarget} target - 目标
-   * @return {boolean} - 是否跳转成功，非内存模式始终返回true
+   * @return {Promise<NavigateResult>} - 路由结果
    */
   public replace(target: RouteTarget | RouteIndex): Promise<NavigateResult> {
     if (typeof target === 'string') {
@@ -190,7 +190,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * 跳转到新的页面
    *
    * @param {RouteTarget} target - 目标
-   * @return {boolean} - 是否跳转成功，非内存模式始终返回true
+   * @return {Promise<NavigateResult>} - 路由结果
    */
   public push(target: RouteTarget | RouteIndex): Promise<NavigateResult> {
     if (typeof target === 'string') {
