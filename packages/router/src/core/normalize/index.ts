@@ -1,6 +1,6 @@
 import type { Route, RouteNormalized, RouterOptions } from '../types/index.js'
 import { formatPath } from '../utils.js'
-import normalizeRouteComponent from './conponent.js'
+import normalizeRouteComponent from './component.js'
 import normalizeInjectProps from './inject-props.js'
 
 /**

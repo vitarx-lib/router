@@ -84,7 +84,7 @@ export function createDynamicPattern(
       optional++
       return `(?:(${pattern[varName].source}))?`
     } else if (optional) {
-      throw new Error(`[Router]：动态路径 ${path} 中，可选变量 ${varName} 后不能存在任何必填变量`)
+      throw new Error(`[Router]：动态路径 ${path} 中，可选变量后不能存在必填变量`)
     }
     // 如果是必填的或非最后一段可选变量，使用捕获组
     return `(${pattern[varName].source})`

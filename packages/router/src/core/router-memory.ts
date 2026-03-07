@@ -42,7 +42,7 @@ export default class RouterMemory extends RouterCore {
   public override go(delta?: number): void {
     if (!delta) return
     const currentIndex = this.currentIndex
-    const targetIndex = Math.max(0, Math.min(this._history.length - 1, currentIndex + delta)) // 限制在合法范围内
+    const targetIndex = Math.max(0, Math.min(this._history.length - 1, this.currentIndex + delta)) // 限制在合法范围内
     if (targetIndex === currentIndex) return // 如果目标索引和当前索引相同，则无需导航
 
     const target = this._history[targetIndex]

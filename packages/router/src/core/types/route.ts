@@ -130,7 +130,7 @@ export interface Route<T extends AllowedRouteComponent = AllowedRouteComponent> 
    *
    * @default true
    */
-  props?: (T extends NamedRouteComponent<infer k> ? InjectNamedProps<k> : InjectProps) | boolean
+  props?: T extends NamedRouteComponent<infer k> ? InjectNamedProps<k> | boolean : InjectProps
   /**
    * 路由进入前的钩子函数，用于权限控制或数据预加载
    *

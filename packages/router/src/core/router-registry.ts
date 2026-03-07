@@ -49,7 +49,8 @@ export default abstract class RouterRegistry {
       suffix: '*',
       pattern: /[\w.]+/,
       defaultSuffix: '',
-      ...options
+      ...options,
+      routes: [...options.routes]
     }
     config.base = `/${config.base.replace(/^\/+|\/+$/g, '')}`
     // 格式化 suffix

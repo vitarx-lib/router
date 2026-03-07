@@ -1,4 +1,4 @@
-import { logger, type MakeRequired } from 'vitarx'
+import { deepClone, logger, type MakeRequired } from 'vitarx'
 import { NavigateStatus } from './constant.js'
 import RouterCore from './router-core.js'
 import {
@@ -158,7 +158,7 @@ export default class RouterHistory extends RouterCore {
     if (typeof query === 'object') {
       state.query = query
     }
-    return JSON.parse(JSON.stringify(state))
+    return deepClone(state)
   }
 
   /**

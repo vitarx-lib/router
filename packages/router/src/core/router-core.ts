@@ -421,7 +421,6 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
             : undefined
         )
       } catch (error) {
-        console.error(`[Router][ERROR]：导航时捕获到了异常`, error)
         return createNavigateResult({
           status: NavigateStatus.exception,
           message: '导航时捕获到了异常',
