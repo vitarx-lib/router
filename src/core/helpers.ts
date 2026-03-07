@@ -1,10 +1,10 @@
 import { inject, type MakeRequired } from 'vitarx'
+import type { NavigateStatus } from './constant.js'
 import RouterCore from './router-core.js'
 import RouterHistory from './router-history.js'
 import RouterMemory from './router-memory.js'
 import {
   type NavigateResult,
-  NavigateStatus,
   type ReadonlyRouteLocation,
   type Route,
   type RouterOptions
