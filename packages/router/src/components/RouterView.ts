@@ -12,7 +12,7 @@ import {
   provide,
   View
 } from 'vitarx'
-import { useRouter } from '../index.js'
+import { useRouter } from '../core/index.js'
 
 export interface RouteOptions {
   /**
