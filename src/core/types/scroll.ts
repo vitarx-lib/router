@@ -8,7 +8,7 @@ export type _ScrollBehavior = 'auto' | 'instant' | 'smooth'
 /**
  * 滚动配置
  */
-export interface _ScrollToOptions {
+export interface _ScrollOptions {
   left?: number
   top?: number
   behavior?: _ScrollBehavior
@@ -24,7 +24,7 @@ export interface _ScrollIntoViewOptions extends ScrollIntoViewOptions {
 /**
  * 滚动目标
  */
-export type ScrollTarget = _ScrollToOptions | _ScrollIntoViewOptions
+export type ScrollTarget = _ScrollOptions | _ScrollIntoViewOptions
 
 /**
  * 滚动结果
@@ -37,5 +37,5 @@ export type ScrollResult = ScrollTarget | false
 export type ScrollBehaviorHandler = (
   to: ReadonlyRouteLocation,
   from: ReadonlyRouteLocation,
-  savedPosition: _ScrollToOptions | undefined
+  savedPosition: _ScrollOptions | undefined
 ) => ScrollResult | Promise<ScrollResult>

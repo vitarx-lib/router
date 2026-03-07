@@ -1,24 +1,20 @@
 import {
   App,
   type AppObjectPlugin,
-  createVNode,
   deepClone,
   flushSync,
   isDeepEqual,
   isObject,
-  isRecordObject,
   markRaw,
   reactive,
   type Reactive,
   readonly,
-  shallowReactive,
-  type VNode,
-  type WidgetType
+  shallowReactive
 } from 'vitarx'
 import RouterRegistry from './router-registry.ts'
 import {
   type _ScrollBehavior,
-  type _ScrollToOptions,
+  type _ScrollOptions,
   type BeforeEachCallbackResult,
   type HashStr,
   type HistoryMode,
@@ -26,7 +22,6 @@ import {
   type NavigateResult,
   NavigateStatus,
   type ReadonlyRouteLocation,
-  type ReadonlyRouteNormalized,
   type RouteIndex,
   type RouteLocation,
   type RouteNormalized,
@@ -36,7 +31,7 @@ import {
   type ScrollBehaviorHandler,
   type ScrollTarget
 } from './router-types.js'
-import { patchUpdate } from './update.js'
+import { patchUpdateRoute } from './update.js'
 import {
   addPathSuffix,
   cloneRouteLocation,
@@ -54,7 +49,7 @@ import {
  * 继承自 RouterRegistry，负责处理路由导航、历史记录管理、生命周期等核心功能。
  * 采用单例模式，确保全局只有一个路由器实例。
  */
-export default abstract class RouterCore extends RouterRegistry implements AppObjectPlugin<{}> {
+export default abstract class RouterCore extends RouterRegistry implements AppObjectPlugin {
   // 当前执行的导航任务ID，用于处理并发导航请求
   private _currentTaskId: number | null = null
   // 任务计数器，用于生成唯一的任务ID
@@ -68,7 +63,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * 当前路由数据
    * 包含当前路由的完整信息，如路径、参数、查询字符串等
    */
-  private readonly _currentRouteLocation: Reactive<RouteLocation>
+  private readonly _route: Reactive<RouteLocation>
   /**
    * 只读路由位置数据
    *
@@ -84,52 +79,19 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @throws {Error} 如果已存在路由器实例则抛出错误
    */
   protected constructor(options: RouterOptions) {
-    if (RouterCore._instance) {
-      throw new Error(`[Vitarx.Router.constructor]：路由器实例已存在，不能创建多个实例`)
-    }
     super(options)
-    this._currentRouteLocation = reactive<RouteLocation>({
+    this._route = reactive<RouteLocation>({
       index: this._options.base,
       path: this._options.base,
       hash: '',
       fullPath: '',
-      params: {},
-      query: {},
+      params: shallowReactive<Record<string, any>>({}),
+      query: shallowReactive<Record<string, any>>({}),
       matched: shallowReactive<RouteNormalized[]>([]),
       meta: markRaw({}),
       suffix: ''
     })
-    this._readonlyRouteLocation = readonly(this._currentRouteLocation)
-  }
-
-  /**
-   * 路由器单例实例
-   * 用于全局存储唯一的路由器实例
-   */
-  private static _instance: RouterCore | undefined
-
-  /**
-   * 获取路由器单例实例
-   *
-   * @throws {Error} 如果路由器未初始化则抛出错误
-   * @return {RouterCore} 路由器实例
-   */
-  static get instance(): RouterCore {
-    if (!RouterCore._instance) {
-      throw new Error(`[Vitarx.Router.instance]：路由器实例未初始化`)
-    }
-    return RouterCore._instance
-  }
-
-  /**
-   * 判断路由器是否初始化完成
-   *
-   * 如果存在单例则代表初始化完成，没有单例则代表未初始化。
-   *
-   * @return {boolean} - 如果初始化完成，返回true，否则返回false
-   */
-  get initialized(): boolean {
-    return RouterCore._instance !== undefined
+    this._readonlyRouteLocation = readonly(this._route)
   }
 
   /**
@@ -183,33 +145,8 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    *
    * @return {ReadonlyRouteLocation} - 当前路由数据
    */
-  public get currentRouteLocation(): ReadonlyRouteLocation {
+  public get route(): ReadonlyRouteLocation {
     return this._readonlyRouteLocation
-  }
-
-  /**
-   * 路由视图
-   *
-   * @internal 内部核心方法，用于获取路由线路对应的视图元素虚拟节点。
-   * @param {ReadonlyRouteNormalized} route - 路由对象
-   * @param {string} name - 视图名称
-   * @param {number} index - `RouterView`的索引
-   * @return {VNode<WidgetType> | undefined} - 视图元素虚拟节点
-   */
-  public static routeViewElement(
-    route: ReadonlyRouteNormalized | undefined,
-    name: string,
-    index: number
-  ): VNode<WidgetType> | undefined {
-    if (!route) {
-      if (index === 0 && name === 'default' && this.instance.missing) {
-        return createVNode(this.instance.missing)
-      } else {
-        return undefined
-      }
-    } else {
-      return this.instance.createRouteViewElement(route, name)
-    }
   }
 
   /**
@@ -273,7 +210,6 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @return {this} - 返回当前路由器实例
    */
   public initialize(): this {
-    if (RouterCore._instance) return this
     // 初始化路由表
     this.setupRoutes(this._options.routes)
     if (typeof this.options.scrollBehavior === 'function') {
@@ -283,8 +219,6 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     }
     // 初始化路由器
     this.initializeRouter()
-    // 记录单例
-    RouterCore._instance = this
     return this
   }
 
@@ -339,7 +273,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       let parent = this.findParentRoute(route)
       while (parent) {
         // 如果父路由具有`widget`则添加到匹配的路由栈中
-        if (parent.widget) matched.unshift(parent)
+        if (parent.component) matched.unshift(parent)
         parent = this.findParentRoute(parent)
       }
       matched.push(route)
@@ -368,7 +302,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     const isCurrentTask = () => this._currentTaskId === taskId
 
     // 保存当前路由状态的深拷贝
-    const from = cloneRouteLocation(this.currentRouteLocation) as RouteLocation
+    const from = cloneRouteLocation(this.route) as RouteLocation
 
     const performNavigation = async (
       _target: RouteTarget | RouteLocation,
@@ -388,19 +322,16 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       const to = this.createRouteLocation(_target)
 
       // 检查是否导航到相同路由
-      if (
-        to.fullPath === this.currentRouteLocation.fullPath &&
-        isDeepEqual(to.params, this.currentRouteLocation.params)
-      ) {
+      if (to.fullPath === this.route.fullPath && isDeepEqual(to.params, this.route.params)) {
         return createNavigateResult({
           status: NavigateStatus.duplicated,
           message: '导航到相同的路由，被系统阻止！'
         })
       } else if (
-        to.matched.at(-1) === this._currentRouteLocation.matched.at(-1) &&
-        to.path === this._currentRouteLocation.path &&
-        isDeepEqual(to.query, this._currentRouteLocation.query) &&
-        to.hash !== this._currentRouteLocation.hash
+        to.matched.at(-1) === this._route.matched.at(-1) &&
+        to.path === this._route.path &&
+        isDeepEqual(to.query, this._route.query) &&
+        to.hash !== this._route.hash
       ) {
         this.updateHash(to.hash)
         return createNavigateResult({
@@ -479,7 +410,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
             : undefined
         )
       } catch (error) {
-        console.error(`[Vitarx.Router.navigate][ERROR]：导航时捕获到了异常`, error)
+        console.error(`[Router][ERROR]：导航时捕获到了异常`, error)
         return createNavigateResult({
           status: NavigateStatus.exception,
           message: '导航时捕获到了异常',
@@ -500,13 +431,13 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @public
    */
   public updateQuery(query: Record<string, string>) {
-    if (!isDeepEqual(this._currentRouteLocation.query, query)) {
-      this._currentRouteLocation.query = query
-      this._currentRouteLocation.fullPath = this.makeFullPath(
-        this._currentRouteLocation.path,
+    if (!isDeepEqual(this._route.query, query)) {
+      this._route.query = query
+      this._route.fullPath = this.makeFullPath(
+        this._route.path,
         query,
-        this._currentRouteLocation.hash,
-        this._currentRouteLocation.suffix
+        this._route.hash,
+        this._route.suffix
       )
     }
   }
@@ -524,57 +455,16 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       throw new TypeError(`[Vitarx.Router.updateHash][WARN]：hash值只能是字符串类型，给定${hash}`)
     }
     const newHash = formatHash(hash, true)
-    if (newHash !== this._currentRouteLocation.hash) {
-      this._currentRouteLocation.hash = newHash
+    if (newHash !== this._route.hash) {
+      this._route.hash = newHash
       // 更新完整的path
-      this._currentRouteLocation.fullPath = this.makeFullPath(
-        this._currentRouteLocation.path,
-        this._currentRouteLocation.query,
+      this._route.fullPath = this.makeFullPath(
+        this._route.path,
+        this._route.query,
         newHash,
-        this._currentRouteLocation.suffix
+        this._route.suffix
       )
     }
-  }
-  /**
-   * 创建路由视图的props
-   *
-   * @param {ReadonlyRouteNormalized} route - 路由记录
-   * @param {string} name - 视图名称
-   * @returns {Record<string, any>} - 需要传递给路由视图的props
-   */
-  public createViewProps(route: ReadonlyRouteNormalized, name: string): Record<string, any> {
-    const injectProps = route.injectProps?.[name]
-    let props: Record<string, any>
-    if (injectProps === true) {
-      props = JSON.parse(JSON.stringify(this._currentRouteLocation.params))
-    } else if (injectProps === false) {
-      props = {}
-    } else if (typeof injectProps === 'function') {
-      props = injectProps(this.currentRouteLocation)
-    } else if (isRecordObject(injectProps)) {
-      props = injectProps
-    } else {
-      props = {}
-    }
-    return props
-  }
-
-  /**
-   * 创建路由元素
-   *
-   * @param route
-   * @param name
-   * @protected
-   */
-  protected createRouteViewElement(
-    route: ReadonlyRouteNormalized,
-    name: string
-  ): VNode<WidgetType> | undefined {
-    const widget = route.widget?.[name]
-    if (!widget) return undefined
-    const props = this.createViewProps(route, name)
-    props.key = route.path
-    return createVNode(widget, props)
   }
 
   /**
@@ -583,22 +473,21 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    *
    * @param to - 目标路由
    * @param from - 当前路由
-   * @param {_ScrollToOptions} savedPosition - 保存的滚动位置
+   * @param {_ScrollOptions} savedPosition - 保存的滚动位置
    * @protected
    */
   protected completeNavigation(
     to: RouteLocation,
     from: RouteLocation,
-    savedPosition?: _ScrollToOptions
+    savedPosition?: _ScrollOptions
   ) {
-    // 克隆当前路由状态用于后置钩子
-    this.updateRouteLocation(to)
+    patchUpdateRoute(this._route, to)
     // 刷新视图
     flushSync()
     // 处理滚动行为
-    this.onScrollBehavior(this.currentRouteLocation, from, savedPosition).then()
+    this.onScrollBehavior(this.route, from, savedPosition).then()
     // 触发后置守卫
-    this.onAfterEach(this.currentRouteLocation, from)
+    this.onAfterEach(this.route, from)
   }
 
   /**
@@ -688,29 +577,18 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   }
 
   /**
-   * 更新路由数据
-   * 使用补丁更新的方式更新路由状态
-   *
-   * @param {RouteLocation} newLocation - 新的路由数据
-   * @private
-   */
-  private updateRouteLocation(newLocation: RouteLocation): void {
-    patchUpdate(this._currentRouteLocation, newLocation)
-  }
-
-  /**
    * 处理滚动行为
    * 根据配置和保存的位置信息处理页面滚动
    *
    * @param {ReadonlyRouteLocation} to - 目标路由
    * @param {ReadonlyRouteLocation} from - 当前路由
-   * @param {_ScrollToOptions} savedPosition - 保存的滚动位置
+   * @param {_ScrollOptions} savedPosition - 保存的滚动位置
    * @private
    */
   protected async onScrollBehavior(
     to: ReadonlyRouteLocation,
     from: ReadonlyRouteLocation,
-    savedPosition: _ScrollToOptions | undefined
+    savedPosition: _ScrollOptions | undefined
   ): Promise<void> {
     try {
       if (this._scrollBehaviorHandler) {
@@ -724,7 +602,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
         }
       }
     } catch (e) {
-      console.error("[Vitarx.Router.onScrollBehavior]['ERROR']：处理滚动行为时捕获到了异常", e)
+      console.error("[Router]['ERROR']：处理滚动行为时捕获到了异常", e)
     }
   }
 
@@ -734,10 +612,10 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   public override removeRoute(index: RouteIndex) {
     const removed = super.removeRoute(index)
     if (removed) {
-      const index = this._currentRouteLocation.matched.indexOf(removed)
+      const index = this._route.matched.indexOf(removed)
       if (index !== -1) {
         // 删除匹配的路由记录
-        this._currentRouteLocation.matched.splice(index, 1)
+        this._route.matched.splice(index, 1)
       }
     }
     return removed
@@ -748,7 +626,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    *
    * 此方法用于安装路由器，将路由器实例添加到应用程序中。
    *
-   * 安装路由器后，应用程序就可以使用`inject('router')`访问路由器实例。
+   * 安装路由器后，应用程序就可以使用 `inject('router')` 访问路由器实例。
    *
    * @example
    * import { createApp } from 'vitarx'

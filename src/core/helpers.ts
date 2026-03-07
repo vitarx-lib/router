@@ -1,4 +1,4 @@
-import type { MakeRequired } from 'vitarx'
+import { inject, type MakeRequired } from 'vitarx'
 import RouterCore from './router-core.js'
 import RouterHistory from './router-history.js'
 import RouterMemory from './router-memory.js'
@@ -17,7 +17,6 @@ import {
  *
  * @param {Route[]} routes - 路由配置表
  * @return {Route[]} - 路由配置表
- * @see https://vitarx.cn/router/basis/route.html 定义路由
  */
 export function defineRoutes(...routes: Route[]): Route[] {
   return routes
@@ -44,7 +43,6 @@ export function defineRoute(route: Route): Route {
  *
  * @param {RouterOptions} options - 配置
  * @return {RouterMemory} - `RouterMemory`内存路由器实例
- * @see https://vitarx.cn/router/basis/threshold.html#%E5%88%9B%E5%BB%BA%E8%B7%AF%E7%94%B1%E5%99%A8%E5%AE%9E%E4%BE%8B 创建路由器实例
  */
 export function createRouter(options: MakeRequired<RouterOptions<'memory'>, 'mode'>): RouterMemory
 
@@ -80,7 +78,6 @@ export function createRouter(options: MakeRequired<RouterOptions<'memory'>, 'mod
  *
  * @param {RouterOptions} options - 路由配置
  * @return {RouterHistory} - `RouterHistory`路由器实例
- * @see https://vitarx.cn/router/basis/threshold.html#%E5%88%9B%E5%BB%BA%E8%B7%AF%E7%94%B1%E5%99%A8%E5%AE%9E%E4%BE%8B 创建路由器实例
  */
 export function createRouter(options: MakeRequired<RouterOptions<'path'>, 'mode'>): RouterHistory
 
@@ -91,7 +88,6 @@ export function createRouter(options: MakeRequired<RouterOptions<'path'>, 'mode'
  *
  * @param {RouterOptions} options - 路由配置
  * @return {RouterHistory} - `RouterHistory`路由器实例
- * @see https://vitarx.cn/router/basis/threshold.html#%E5%88%9B%E5%BB%BA%E8%B7%AF%E7%94%B1%E5%99%A8%E5%AE%9E%E4%BE%8B 创建路由器实例
  */
 export function createRouter(options: MakeRequired<RouterOptions<'hash'>, 'mode'>): RouterHistory
 
@@ -102,7 +98,6 @@ export function createRouter(options: MakeRequired<RouterOptions<'hash'>, 'mode'
  *
  * @param {RouterOptions} options - 路由配置
  * @return {RouterHistory} - `RouterHistory`路由器实例
- * @see https://vitarx.cn/router/basis/threshold.html#%E5%88%9B%E5%BB%BA%E8%B7%AF%E7%94%B1%E5%99%A8%E5%AE%9E%E4%BE%8B 创建路由器实例
  */
 export function createRouter(options: Omit<RouterOptions, 'mode'>): RouterHistory
 
@@ -113,7 +108,6 @@ export function createRouter(options: Omit<RouterOptions, 'mode'>): RouterHistor
  *
  * @param {RouterOptions} options - 路由配置
  * @return {RouterHistory|RouterMemory} - 返回对应的路由器实例
- * @see https://vitarx.cn/router/basis/threshold.html#%E5%88%9B%E5%BB%BA%E8%B7%AF%E7%94%B1%E5%99%A8%E5%AE%9E%E4%BE%8B 创建路由器实例
  */
 export function createRouter(options: RouterOptions): RouterHistory | RouterMemory
 
@@ -140,10 +134,11 @@ export function createRouter(options: RouterOptions): RouterCore {
  *
  * @return {RouterCore} - 路由器实例
  * @throws {Error} - 如果未创建路由器实例，则会抛出异常
- * @see https://vitarx.cn/router/basis/threshold.html#%E8%AE%BF%E9%97%AE%E8%B7%AF%E7%94%B1%E5%99%A8 访问路由器实例
  */
 export function useRouter<T extends RouterCore>(): T {
-  return RouterCore.instance as T
+  const router = inject<T>('router')
+  if (!router) throw new Error('未找到路由器实例')
+  return router
 }
 
 /**
@@ -166,10 +161,9 @@ export function useRouter<T extends RouterCore>(): T {
  * ```
  *
  * @return {ReadonlyRouteLocation} - 只读的`RouteLocation`对象
- * @see https://vitarx.cn/router/basis/threshold.html#%E8%8E%B7%E5%8F%96%E5%BD%93%E5%89%8D%E8%B7%AF%E7%94%B1 获取当前路由位置对象
  */
 export function useRoute(): ReadonlyRouteLocation {
-  return RouterCore.instance.currentRouteLocation
+  return useRouter().route
 }
 
 /**

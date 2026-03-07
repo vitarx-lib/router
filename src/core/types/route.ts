@@ -7,8 +7,7 @@ import type {
   ReadonlyRouteLocation,
   RouteLocation,
   RoutePath,
-  RouteTarget,
-  RouteWidget
+  RouteTarget
 } from './navigation.js'
 
 /**
@@ -68,7 +67,7 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
    * {
    *   path: '/user/{id}',
    *   name: 'user',
-   *   widget: {
+   *   component: {
    *     default: User,
    *     detail: UserDetail,
    *   }
@@ -80,11 +79,11 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
    * ```ts
    * {
    *   path: '/user/{id}',
-   *   widget: () => import('./User.js')
+   *   component: lazy(() => import('./User.js'))
    * }
    * ```
    */
-  widget?: T
+  component?: T
   /**
    * 路由重定向的目标地址或处理函数
    */
@@ -104,10 +103,10 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
    */
   suffix?: '*' | string | string[] | false
   /**
-   * 需要给路由`Widget`注入的参数
+   * 需要给 `Component` 注入的参数
    *
    * 可选值：
-   * - `true`：表示仅注入匹配到的动态参数
+   * - `true`：表示仅注入匹配到的动态path参数
    * - `false`：表示不注入任何参数
    * - `{key: value}`：表示注入指定参数
    * - `(location: RouteLocation) => {key: value}`：自定义一个处理函数，返回一个对象用于注入参数
@@ -116,7 +115,7 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
    *
    * @default true
    */
-  injectProps?: (T extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps) | boolean
+  props?: (T extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps) | boolean
   /**
    * 路由进入前的钩子函数，用于权限控制或数据预加载
    *
@@ -136,14 +135,14 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
  */
 export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern' | 'suffix'> {
   children: RouteNormalized[]
-  widget: undefined | Record<string, RouteWidget>
-  injectProps: undefined | InjectNamedProps
+  component: undefined | NamedRouteWidget
+  props: undefined | InjectNamedProps
 }
 
 /**
  * 只读规范化路由线路配置
  */
-export type ReadonlyRouteNormalized = DeepReadonly<RouteNormalized>
+export type ReadonlyRoute = DeepReadonly<RouteNormalized>
 
 /**
  * 动态路由记录

@@ -179,7 +179,6 @@ export function mergePathParams(path: RoutePath, params: Record<string, string>)
  * @return {string} - 格式化后的hash带有#
  */
 export function formatHash(hash: any, addHashPrefix: true): `#${string}` | ''
-
 /**
  * 格式化hash
  *

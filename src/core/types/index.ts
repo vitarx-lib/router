@@ -5,7 +5,7 @@ export * from './navigation.js'
 
 import type { MakeRequired } from 'vitarx'
 import type { AfterEnterCallback, BeforeEnterCallback } from './hooks.js'
-import type { HistoryMode, RouteWidget } from './navigation.js'
+import type { HistoryMode, RouteComponent } from './navigation.js'
 import type { Route } from './route.js'
 import type { _ScrollBehavior, ScrollBehaviorHandler } from './scroll.js'
 
@@ -95,6 +95,7 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    * @default 'auto'
    */
   scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
+
   /**
    * 锚点跳转时的滚动行为
    *
@@ -122,10 +123,9 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    * 如果你需要在未匹配到路由时重定向到指定的页面，你不应该使用`missing`选项，
    * 而是应该在路由`beforeEach`钩子中判断`to.matched.length === 0`时返回重定向目标。
    *
-   * > 注意：如果你设置了`missing`选项，新路由没有匹配时也会更新`URL`地址，然后渲染`missing`组件，
-   * 你可以通过`useRoute().matched.length`来判断是否真正匹配到了路由。
+   * > 注意：如果你设置了`missing`选项，新路由没有匹配时也会更新`URL`地址，然后渲染`missing`组件。
    */
-  missing?: RouteWidget
+  missing?: RouteComponent
 }
 
 /**

@@ -26,16 +26,12 @@ export default class RouterHistory extends RouterCore {
   /**
    * @inheritDoc
    */
-  public override updateHash(hash: `#${string}` | '') {
+  public override updateHash(hash: `#${string}` | ''): void {
     super.updateHash(hash)
     // 保存滚动位置
     this.saveCurrentScrollPosition()
     // 更新hash地址
-    this.webHistory.pushState(
-      this.createState(this.currentRouteLocation),
-      '',
-      this.currentRouteLocation.fullPath
-    )
+    this.webHistory.pushState(this.createState(this.route), '', this.route.fullPath)
     if (!hash.trim()) {
       window.scrollTo(0, 0)
     } else {
@@ -54,13 +50,9 @@ export default class RouterHistory extends RouterCore {
   /**
    * @inheritDoc
    */
-  public override updateQuery(query: Record<string, string>) {
+  public override updateQuery(query: Record<string, string>): void {
     super.updateQuery(query)
-    this.webHistory.pushState(
-      this.createState(this.currentRouteLocation),
-      '',
-      this.currentRouteLocation.fullPath
-    )
+    this.webHistory.pushState(this.createState(this.route), '', this.route.fullPath)
   }
 
   /**
@@ -200,11 +192,7 @@ export default class RouterHistory extends RouterCore {
             this.updateHash(`#${anchorId}`)
           }
         } else if (res.status === NavigateStatus.duplicated) {
-          this.webHistory.replaceState(
-            this.createState(this.currentRouteLocation),
-            '',
-            this.currentRouteLocation.fullPath
-          )
+          this.webHistory.replaceState(this.createState(this.route), '', this.route.fullPath)
         }
       }
     })

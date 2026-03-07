@@ -9,11 +9,11 @@ const __stringValueKeys: (keyof RouteLocation)[] = ['path', 'hash', 'index', 'fu
  * @param location
  * @param newLocation
  */
-export function patchUpdate(location: RouteLocation, newLocation: RouteLocation) {
+export function patchUpdateRoute(location: RouteLocation, newLocation: RouteLocation): void {
   diffUpdateArrays(location['matched'], newLocation['matched'])
-  diffUpdateObjects(location['params'], newLocation['params'])
-  diffUpdateObjects(location['query'], newLocation['query'])
-  diffUpdateObjects(location.meta, newLocation.meta)
+  diffUpdateObject(location['params'], newLocation['params'])
+  diffUpdateObject(location['query'], newLocation['query'])
+  diffUpdateObject(location.meta, newLocation.meta)
   for (const key of __stringValueKeys) {
     if (location[key] !== newLocation[key]) {
       location[key] = newLocation[key] as any
@@ -51,7 +51,7 @@ function diffUpdateArrays(a: any[], b: any[]): void {
  * @param a
  * @param b
  */
-function diffUpdateObjects(a: Record<string, any>, b: Record<string, any>): void {
+function diffUpdateObject(a: Record<string, any>, b: Record<string, any>): void {
   const aKeys = new Set(Object.keys(a))
   const bKeys = Object.keys(b)
   // 遍历 b 中的属性，将 b 的值赋给 a

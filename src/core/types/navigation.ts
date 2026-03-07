@@ -1,4 +1,4 @@
-import type { DeepReadonly, WidgetType } from 'vitarx'
+import type { Component, DeepReadonly } from 'vitarx'
 import type { RouteNormalized } from './route'
 
 /**
@@ -39,25 +39,25 @@ export type RouteName = string
 export type RouteIndex = RouterRouteIndexTyped
 
 /**
- * 路由视图小部件
+ * 路由组件
  *
  * 可以是普通组件或懒加载组件
  */
-export type RouteWidget = WidgetType
+export type RouteComponent = Component
 
 /**
  * 命名的路由视图小部件
  *
  * 用于多视图布局
  */
-export type NamedRouteWidget<K extends string = string> = Record<K, RouteWidget>
+export type NamedRouteWidget<K extends string = string> = Record<K, RouteComponent>
 
 /**
  * 允许的路由小部件联合类型
  *
  * 可以是单个视图组件或命名视图组件的记录
  */
-export type AllowedRouteWidget = RouteWidget | NamedRouteWidget
+export type AllowedRouteWidget = RouteComponent | NamedRouteWidget
 
 /**
  * 路由目标

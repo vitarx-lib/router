@@ -58,7 +58,7 @@ export default class RouterMemory extends RouterCore {
    * @inheritDoc
    */
   protected initializeRouter() {
-    this._history.push(this.currentRouteLocation)
+    this._history.push(this.route)
   }
 
   /**

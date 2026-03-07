@@ -5,13 +5,13 @@ import {
   type InitializedRouterOptions,
   type MatchResult,
   type Route,
+  type RouteComponent,
   type RouteIndex,
   type RouteName,
   type RouteNormalized,
   type RoutePath,
   type RouterOptions,
-  type RouteTarget,
-  type RouteWidget
+  type RouteTarget
 } from './router-types.js'
 import {
   createDynamicPattern,
@@ -84,7 +84,7 @@ export default abstract class RouterRegistry {
   /**
    * 未匹配到路由时在根路由器视图中要渲染的组件
    */
-  get missing(): RouteWidget | undefined {
+  get missing(): RouteComponent | undefined {
     return this._options.missing
   }
 
@@ -399,7 +399,7 @@ export default abstract class RouterRegistry {
                 ? first.redirect.call(this, to)
                 : first.redirect
             }
-            if (first.widget) return { index: first.path }
+            if (first.component) return { index: first.path }
             first = first.children?.[0]
           }
           console.error(
