@@ -100,7 +100,7 @@ describe('utils', () => {
     it('应该在可选变量后有必填变量时抛出错误', () => {
       expect(() => {
         createDynamicPattern('/user/{id?}/{name}', {}, false, /[\w.]+/)
-      }).toThrow('[Router]：动态路径 /user/{id?}/{name} 中，可选变量后不能存在必填变量')
+      }).toThrow('[Router] In dynamic path "/user/{id?}/{name}", required variables cannot follow optional variables')
     })
 
     it('应该正确处理自定义正则', () => {
@@ -168,7 +168,7 @@ describe('utils', () => {
     it('应该在缺少必填参数时抛出错误', () => {
       expect(() => {
         mergePathParams('/user/{id}', {})
-      }).toThrow('[Router]: 访问路由/user/{id}时缺少参数 id')
+      }).toThrow('[Router] Missing required parameter "id" when accessing route "/user/{id}"')
     })
 
     it('应该对非变量路径直接返回', () => {

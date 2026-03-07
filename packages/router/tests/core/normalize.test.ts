@@ -83,7 +83,7 @@ describe('normalize', () => {
 
       expect(() => {
         normalizeRoute(route, undefined, '*')
-      }).toThrow('[Router]：/home 路由线路配置 children 类型错误，它必须是数组类型。')
+      }).toThrow('[Router] Route "/home" has invalid "children" configuration, it must be an array type.')
     })
 
     it('应该在path为空时抛出错误', () => {
@@ -94,7 +94,7 @@ describe('normalize', () => {
 
       expect(() => {
         normalizeRoute(route as Route, undefined, '*')
-      }).toThrow('[Router]：路由线路配置 path 不能为空')
+      }).toThrow('[Router] Route configuration "path" cannot be empty')
     })
 
     it('应该在path只有空格时抛出错误', () => {
@@ -105,7 +105,7 @@ describe('normalize', () => {
 
       expect(() => {
         normalizeRoute(route as Route, undefined, '*')
-      }).toThrow('[Router]：路由线路配置 path 不能为空')
+      }).toThrow('[Router] Route configuration "path" cannot be empty')
     })
 
     it('应该正确处理带元数据的路由', () => {
@@ -180,7 +180,7 @@ describe('normalize', () => {
       expect(() => {
         normalizeRouteComponent(route)
       }).toThrow(
-        '[Router]：请检查 /layout 路由配置，component 传入对象时则认为是命名视图，命名视图必须具有default视图'
+        '[Router] Invalid route configuration for "/layout": when "component" is an object (named views), it must have a "default" view'
       )
     })
 
@@ -192,7 +192,7 @@ describe('normalize', () => {
 
       expect(() => {
         normalizeRouteComponent(route)
-      }).toThrow('[Router]：请检查 /home 路由配置，widget和children不能同时为空。')
+      }).toThrow('[Router] Route "/home" must have either "component" or "children" configured')
     })
 
     it('应该在component类型无效时抛出错误', () => {
@@ -204,7 +204,7 @@ describe('normalize', () => {
 
       expect(() => {
         normalizeRouteComponent(route)
-      }).toThrow('[Router]：请检查 /home 路由配置，component 配置无效')
+      }).toThrow('[Router] Invalid "component" configuration for route "/home"')
     })
 
     it('应该正确处理有children的路由组', () => {
@@ -311,7 +311,7 @@ describe('normalize', () => {
       expect(() => {
         normalizeInjectProps(route)
       }).toThrow(
-        '[Router]：请检查 /layout 路由线路配置，injectProps属性配置错误，当使用命名视图时，必须传入 {[k:string]:InjectProps}'
+        '[Router] Invalid route configuration for "/layout": "props" must be an object with view names as keys when using named views (e.g., { default: true, sidebar: {} })'
       )
     })
 
@@ -325,7 +325,7 @@ describe('normalize', () => {
       expect(() => {
         normalizeInjectProps(route)
       }).toThrow(
-        '[Router]：请检查 /user 路由线路配置，injectProps属性配置错误，仅支持boolean、{[k:string]:any}、function类型'
+        '[Router] Invalid route configuration for "/user": "props" has invalid type, only boolean, object, or function types are supported'
       )
     })
 
@@ -343,7 +343,7 @@ describe('normalize', () => {
       expect(() => {
         normalizeInjectProps(route)
       }).toThrow(
-        '[Router]：请检查 /layout 路由线路配置，injectProps.default值错误，仅支持boolean、{[k:string]:any}、function类型'
+        '[Router] Invalid route configuration for "/layout": "props.default" has invalid type, only boolean, object, or function types are supported'
       )
     })
 

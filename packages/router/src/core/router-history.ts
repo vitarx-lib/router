@@ -42,7 +42,7 @@ export default class RouterHistory extends RouterCore {
           element.scrollIntoView({ behavior: this.options.anchorsScrollBehavior })
         }
       } catch (e) {
-        console.error(`滚动到目标锚点${hash}失败`, e)
+        logger.error(`[Router] Failed to scroll to anchor target ${hash}`, e)
       }
     }
   }
@@ -89,7 +89,7 @@ export default class RouterHistory extends RouterCore {
     // 替换路由
     this.replace(this.currentRouteTarget).then(res => {
       if (res.status !== NavigateStatus.success) {
-        logger.warn(`[Router] 路由初始化匹配失败：${res.message}`)
+        logger.warn(`[Router] Initial route matching failed: ${res.message}`)
       }
     })
   }

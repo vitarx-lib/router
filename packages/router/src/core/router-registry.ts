@@ -64,7 +64,7 @@ export default abstract class RouterRegistry {
       config.defaultSuffix = config.defaultSuffix.replace(/\./g, '')
     }
     if (config.missing && typeof config.missing !== 'function') {
-      throw new TypeError(`[Router]：missing配置无效`)
+      throw new TypeError('[Router] Invalid "missing" configuration')
     }
     this._options = config
   }
@@ -165,7 +165,7 @@ export default abstract class RouterRegistry {
   public addRoute(route: Route, parent?: string): void {
     if (parent) {
       const parentRoute = this.findRoute(parent)
-      if (!parentRoute) throw new Error(`[Vitarx.Router.addRoute][ERROR]：父路由${parent}不存在`)
+      if (!parentRoute) throw new Error(`[Router] Parent route "${parent}" not found in addRoute()`)
       if (!parentRoute.children.includes(parentRoute)) {
         // 父路由不存在子路由，则添加子路由
         parentRoute.children.push(this.registerRoute(route, parentRoute))
@@ -186,7 +186,9 @@ export default abstract class RouterRegistry {
     const isRouterTarget = typeof target === 'object'
     const index: RouteIndex = isRouterTarget ? target.index : target
     if (typeof index !== 'string') {
-      throw new TypeError(`[Router]: findRoute() 路由索引${target}类型错误，必须给定字符串类型`)
+      throw new TypeError(
+        `[Router] findRoute() index "${target}" has invalid type, must be a string`
+      )
     }
     if (index.startsWith('/')) {
       const matched = this.matchRoute(index as RoutePath)
@@ -312,7 +314,7 @@ export default abstract class RouterRegistry {
         }
       }
     } catch (error) {
-      console.error('[Router][ERROR] in matchRoute:', error)
+      logger.error('[Router] Error occurred while matching route', error)
       return null
     }
 
@@ -403,7 +405,7 @@ export default abstract class RouterRegistry {
             first = first.children?.[0]
           }
           logger.error(
-            `[Router]：${normalizedRoute.path} 分组路由在没有配置重定向的情况下，它的第一个子路由必须具有component或redirect，否则无法匹配视图`,
+            `[Router] Route group "${normalizedRoute.path}" must have either a component or redirect configured for its first child route, otherwise the view cannot be matched`,
             normalizedRoute
           )
         }
@@ -429,12 +431,12 @@ export default abstract class RouterRegistry {
       if (route.name.startsWith('/')) {
         route.name = route.name.replace(/^\//, '')
         logger.warn(
-          `[Router]：命名路由(name)不要以/开头: ${route.name}，因为内部需要使用/区分path、name`
+          `[Router] Named route "${route.name}" should not start with "/". Internal routing uses "/" to distinguish between path and name`
         )
       }
 
       if (this._namedRoutes.has(route.name)) {
-        throw new Error(`[Router]：检测到重复的路由名称(name): ${route.name}`)
+        throw new Error(`[Router] Duplicate route name detected: "${route.name}"`)
       }
 
       this._namedRoutes.set(route.name, route)
@@ -443,7 +445,7 @@ export default abstract class RouterRegistry {
     const path = this.strictPath(route.path)
 
     if (this._pathRoutes.has(path)) {
-      throw new Error(`[Router]：检测到重复的路由路径(path): ${route.path}`)
+      throw new Error(`[Router] Duplicate route path detected: "${route.path}"`)
     }
 
     this._pathRoutes.set(path, route)

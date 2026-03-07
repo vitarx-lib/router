@@ -24,11 +24,11 @@ export default function normalizeRoute(
   // 验证 children 是否为数组
   if (!Array.isArray(route.children)) {
     throw new TypeError(
-      `[Router]：${route.path} 路由线路配置 children 类型错误，它必须是数组类型。`
+      `[Router] Route "${route.path}" has invalid "children" configuration, it must be an array type.`
     )
   }
   if (!route.path.trim()) {
-    throw new TypeError(`[Router]：路由线路配置 path 不能为空`)
+    throw new TypeError(`[Router] Route configuration "path" cannot be empty`)
   }
   // 格式化路径
   route.path = formatPath(group ? `${group.path}/${route.path}` : route.path)

@@ -1,4 +1,4 @@
-import { inject, type MakeRequired } from 'vitarx'
+import { inject, logger, type MakeRequired } from 'vitarx'
 import type { NavigateStatus } from './constant.js'
 import RouterCore from './router-core.js'
 import RouterHistory from './router-history.js'
@@ -115,7 +115,7 @@ export function createRouter(options: RouterOptions): RouterCore {
   let router: RouterCore
   // 如果非浏览器端，强制使用内存模式路由
   if (typeof window === 'undefined' && options.mode !== 'memory') {
-    console.warn('当前环境非浏览器端，强制使用内存模式路由')
+    logger.warn('[Router] Non-browser environment detected, forcing memory mode routing')
     options.mode = 'memory'
     return new RouterMemory(options as RouterOptions<'memory'>).initialize()
   }
@@ -137,7 +137,7 @@ export function createRouter(options: RouterOptions): RouterCore {
  */
 export function useRouter<T extends RouterCore>(): T {
   const router = inject<T>('router')
-  if (!router) throw new Error('未找到路由器实例')
+  if (!router) throw new Error('[Router] Router instance not found')
   return router
 }
 

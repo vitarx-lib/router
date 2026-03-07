@@ -6,7 +6,7 @@ const validComponentType = (component: any, path: string) => {
   if (type === 'object') {
     if (!component.default) {
       throw new TypeError(
-        `[Router]：请检查 ${path} 路由配置，component 传入对象时则认为是命名视图，命名视图必须具有default视图`
+        `[Router] Invalid route configuration for "${path}": when "component" is an object (named views), it must have a "default" view`
       )
     }
     for (const k in component) {
@@ -14,7 +14,7 @@ const validComponentType = (component: any, path: string) => {
     }
     return
   }
-  throw new TypeError(`[Router]：请检查 ${path} 路由配置，component 配置无效`)
+  throw new TypeError(`[Router] Invalid "component" configuration for route "${path}"`)
 }
 
 /**
@@ -29,7 +29,9 @@ export default function normalizeRouteComponent(route: Route): void {
   if (route.component) {
     validComponentType(route.component, route.path)
   } else if (!isGroup) {
-    throw new TypeError(`[Router]：请检查 ${route.path} 路由配置，widget和children不能同时为空。`)
+    throw new TypeError(
+      `[Router] Route "${route.path}" must have either "component" or "children" configured`
+    )
   }
   // 格式化为命名视图
   if (typeof route.component === 'function') {

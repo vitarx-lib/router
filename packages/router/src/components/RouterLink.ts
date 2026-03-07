@@ -3,6 +3,7 @@ import {
   createView,
   ElementView,
   isString,
+  logger,
   type ValidChildren,
   type WithProps
 } from 'vitarx'
@@ -114,8 +115,8 @@ export function RouterLink(props: RouterLinkProps): ElementView<'a'> {
     const location = router.createRouteLocation(target.value)
 
     if (!location.matched.length) {
-      console.warn(
-        `[RouterLink][WARN]：索引：${target.value.index}，未匹配到任何有效的路由线路，请检查to属性是否配置正确！`
+      logger.warn(
+        `[RouterLink] Route target "${target.value.index}" did not match any valid route, please check the "to" prop configuration`
       )
     }
 
@@ -161,8 +162,8 @@ export function RouterLink(props: RouterLinkProps): ElementView<'a'> {
       if (location.value && !isDisabled()) {
         router.navigate(location.value).then(res => {
           if (res.status !== NavigateStatus.success) {
-            console.warn(
-              `[RouterLink][WARN]：导航到索引：${(target.value as NavigateTarget)?.index} 失败，${res.message}`
+            logger.warn(
+              `[RouterLink] Navigation to target "${(target.value as NavigateTarget)?.index}" failed: ${res.message}`
             )
           }
 

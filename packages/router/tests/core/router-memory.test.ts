@@ -324,7 +324,7 @@ describe('RouterMemory', () => {
     it('应该在hash类型无效时抛出错误', () => {
       expect(() => {
         router.updateHash(123 as any)
-      }).toThrow('[Vitarx.Router.updateHash][WARN]：hash值只能是字符串类型')
+      }).toThrow('[Router] updateHash() expects a string value, but received number')
     })
   })
 })

@@ -9,6 +9,7 @@ import {
   isFunction,
   isPlainObject,
   isView,
+  logger,
   provide,
   View
 } from 'vitarx'
@@ -62,9 +63,9 @@ export function RouterView(props: RouteOptions): DynamicView<View | null> {
     if (typeof injectProps === 'function') {
       // 如果属性是函数
       try {
-        injectProps = injectProps(route) // 执行函数获取属性
+        injectProps = injectProps(route)
       } catch (e) {
-        console.error('[RouterView] props error:', e) // 捕获并打印错误
+        logger.error('[RouterView] Error occurred while executing props function', e)
       }
     }
     return isPlainObject(injectProps) ? injectProps : {} // 如果是普通对象则返回，否则返回空对象
@@ -86,10 +87,10 @@ export function RouterView(props: RouteOptions): DynamicView<View | null> {
     if (isFunction(render)) {
       // 如果有自定义渲染函数
       try {
-        const result = render(component.value, routeProps.value) // 执行渲染函数
-        if (isView(result)) return result // 如果结果是视图组件，返回它
+        const result = render(component.value, routeProps.value)
+        if (isView(result)) return result
       } catch (e) {
-        console.error('[RouterView] render error:', e) // 捕获并打印错误
+        logger.error('[RouterView] Error occurred while executing render function', e)
       }
     }
     // 默认渲染方式

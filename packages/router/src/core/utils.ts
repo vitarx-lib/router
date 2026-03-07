@@ -75,7 +75,7 @@ export function createDynamicPattern(
     if (!regex) {
       pattern[varName] = defaultPattern
     } else if (!(regex instanceof RegExp)) {
-      logger.warn(`[Router]：${path} 动态路径${varName}变量的自定义正则表达式必须是 RegExp 类型`)
+      logger.warn(`[Router] Custom regex for dynamic path variable "${varName}" in path "${path}" must be of type RegExp`)
       pattern[varName] = defaultPattern
     }
 
@@ -84,7 +84,7 @@ export function createDynamicPattern(
       optional++
       return `(?:(${pattern[varName].source}))?`
     } else if (optional) {
-      throw new Error(`[Router]：动态路径 ${path} 中，可选变量后不能存在必填变量`)
+      throw new Error(`[Router] In dynamic path "${path}", required variables cannot follow optional variables`)
     }
     // 如果是必填的或非最后一段可选变量，使用捕获组
     return `(${pattern[varName].source})`
@@ -147,7 +147,7 @@ export function mergePathParams(
     if (params[paramName] === undefined) {
       // 如果是可选参数并且 params 中没有对应值，跳过替换
       if (isOptional) return ''
-      throw new TypeError(`[Router]: 访问路由${oldPath}时缺少参数 ${paramName}`)
+      throw new TypeError(`[Router] Missing required parameter "${paramName}" when accessing route "${oldPath}"`)
     }
     // 返回对应的参数值
     return String(params[paramName]).replace(/\s+/g, '_')

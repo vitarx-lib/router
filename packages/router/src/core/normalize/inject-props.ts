@@ -17,7 +17,7 @@ const validInjectProps = (props: any): boolean => {
  * @param message 错误消息
  */
 const throwInjectPropsError = (path: string, message: string): never => {
-  throw new TypeError(`[Router]：请检查 ${path} 路由线路配置，${message}`)
+  throw new TypeError(`[Router] Invalid route configuration for "${path}": ${message}`)
 }
 
 /**
@@ -39,7 +39,7 @@ export default function normalizeInjectProps(route: Route): void {
     if (!isObjectInput) {
       throwInjectPropsError(
         route.path,
-        'injectProps属性配置错误，当使用命名视图时，必须传入 {[k:string]:InjectProps}'
+        '"props" must be an object with view names as keys when using named views (e.g., { default: true, sidebar: {} })'
       )
     }
     // 为每个命名视图设置 injectProps
@@ -48,7 +48,7 @@ export default function normalizeInjectProps(route: Route): void {
       if (value && !validInjectProps(value)) {
         throwInjectPropsError(
           route.path,
-          `injectProps.${name}值错误，仅支持boolean、{[k:string]:any}、function类型`
+          `"props.${name}" has invalid type, only boolean, object, or function types are supported`
         )
       }
       injectProps[name] = value ?? true
@@ -58,7 +58,7 @@ export default function normalizeInjectProps(route: Route): void {
     if (!validInjectProps(inputValue)) {
       throwInjectPropsError(
         route.path,
-        'injectProps属性配置错误，仅支持boolean、{[k:string]:any}、function类型'
+        '"props" has invalid type, only boolean, object, or function types are supported'
       )
     }
     injectProps['default'] = inputValue

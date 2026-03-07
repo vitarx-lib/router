@@ -5,6 +5,7 @@ import {
   flushSync,
   isDeepEqual,
   isPlainObject,
+  logger,
   markRaw,
   type Reactive,
   readonly,
@@ -248,8 +249,8 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       }
       window.scrollTo({ behavior: this.scrollBehavior, ...scrollTarget })
     } catch (e) {
-      console.error(
-        `[Vitarx.Router.scrollTo][WARN]：滚动到指定位置时发生错误，请检查滚动目标参数是否正确`,
+      logger.error(
+        '[Router] Failed to scroll to specified position, please check scroll target parameters',
         e
       )
     }
@@ -324,7 +325,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
         from,
         to,
         status: NavigateStatus.success,
-        message: '导航成功',
+        message: 'Navigation succeeded',
         redirectFrom: isRedirect ? target : undefined,
         ...overrides
       })
@@ -336,7 +337,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       if (to.fullPath === this.route.fullPath && isDeepEqual(to.params, this.route.params)) {
         return createNavigateResult({
           status: NavigateStatus.duplicated,
-          message: '导航到相同的路由，被系统阻止！'
+          message: 'Navigation blocked: target is the same as current route'
         })
       } else if (
         to.matched.at(-1) === this._route.matched.at(-1) &&
@@ -347,7 +348,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
         this.updateHash(to.hash)
         return createNavigateResult({
           status: NavigateStatus.success,
-          message: '仅hash变化，导航成功！'
+          message: 'Navigation succeeded: only hash changed'
         })
       }
 
@@ -378,7 +379,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
         if (result === false) {
           return createNavigateResult({
             status: NavigateStatus.aborted,
-            message: `导航到${to.index}目标时被前置守卫钩子阻止！`
+            message: `Navigation to "${to.index}" was blocked by beforeEach guard`
           })
         }
 
@@ -386,7 +387,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
         if (!isCurrentTask()) {
           return createNavigateResult({
             status: NavigateStatus.cancelled,
-            message: '已被新的导航请求替代，取消此次导航！'
+            message: 'Navigation cancelled: replaced by a new navigation request'
           })
         }
 
@@ -402,7 +403,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
         if (!to.matched.length && !this.missing) {
           return createNavigateResult({
             status: NavigateStatus.not_matched,
-            message: `未匹配到任何路由规则，被系统阻止！请检测目标索引(${to.index})是否已注册路由。`
+            message: `Route not found: "${to.index}" is not registered`
           })
         }
 
@@ -416,14 +417,14 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
           !to.matched.length && this.missing
             ? {
                 status: NavigateStatus.not_matched,
-                message: `${to.fullPath}未匹配到任何路由规则，被系统允许访问，因为系统定义了missing视图。`
+                message: `Route not found: "${to.fullPath}" will render missing component`
               }
             : undefined
         )
       } catch (error) {
         return createNavigateResult({
           status: NavigateStatus.exception,
-          message: '导航时捕获到了异常',
+          message: 'Exception occurred during navigation',
           error
         })
       }
@@ -462,7 +463,9 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    */
   public updateHash(hash: `#${string}` | '') {
     if (typeof hash !== 'string') {
-      throw new TypeError(`[Vitarx.Router.updateHash][WARN]：hash值只能是字符串类型，给定${hash}`)
+      throw new TypeError(
+        `[Router] updateHash() expects a string value, but received ${typeof hash}`
+      )
     }
     const newHash = formatHash(hash, true)
     if (newHash !== this._route.hash) {
@@ -612,7 +615,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
         }
       }
     } catch (e) {
-      console.error("[Router]['ERROR']：处理滚动行为时捕获到了异常", e)
+      logger.error('[Router] Exception caught while handling scroll behavior', e)
     }
   }
 

@@ -75,7 +75,7 @@ describe('RouterRegistry', () => {
           routes: [],
           missing: 'invalid' as any
         })
-      }).toThrow('[Router]：missing配置无效')
+      }).toThrow('[Router] Invalid "missing" configuration')
     })
   })
 
@@ -108,7 +108,7 @@ describe('RouterRegistry', () => {
     it('应该在父路由不存在时抛出错误', () => {
       expect(() => {
         registry.addRoute({ path: '/child', component: createMockComponent() }, '/nonexistent')
-      }).toThrow('[Vitarx.Router.addRoute][ERROR]：父路由/nonexistent不存在')
+      }).toThrow('[Router] Parent route "/nonexistent" not found in addRoute()')
     })
   })
 
@@ -182,7 +182,7 @@ describe('RouterRegistry', () => {
     it('应该在索引类型错误时抛出错误', () => {
       expect(() => {
         registry.findRoute(123 as any)
-      }).toThrow('[Router]: findRoute() 路由索引123类型错误，必须给定字符串类型')
+      }).toThrow('[Router] findRoute() index "123" has invalid type, must be a string')
     })
   })
 
@@ -325,7 +325,7 @@ describe('RouterRegistry', () => {
             { path: '/home', component: createMockComponent() }
           ]
         })
-      }).toThrow('[Router]：检测到重复的路由路径(path): /home')
+      }).toThrow('[Router] Duplicate route path detected: "/home"')
     })
 
     it('应该在检测到重复名称时抛出错误', () => {
@@ -336,7 +336,7 @@ describe('RouterRegistry', () => {
             { name: 'home', path: '/home', component: createMockComponent() }
           ]
         })
-      }).toThrow('[Router]：检测到重复的路由名称(name): home')
+      }).toThrow('[Router] Duplicate route name detected: "home"')
     })
   })
 
