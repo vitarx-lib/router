@@ -94,6 +94,10 @@ export interface RouteTarget {
  */
 export interface RouteLocation {
   /**
+   * 标识
+   */
+  readonly __is_route_location: true
+  /**
    * 路由索引，调用`push`|`replace`时传入的index
    */
   index: RouteIndex

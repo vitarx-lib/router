@@ -15,6 +15,7 @@ export function patchUpdateRoute(location: RouteLocation, newLocation: RouteLoca
   diffUpdateObject(location['query'], newLocation['query'])
   diffUpdateObject(location.meta, newLocation.meta)
   for (const key of __stringValueKeys) {
+    if (key === '__is_route_location') continue
     if (location[key] !== newLocation[key]) {
       location[key] = newLocation[key] as any
     }

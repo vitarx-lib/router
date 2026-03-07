@@ -38,7 +38,6 @@ import {
   formatHash,
   formatPath,
   getPathSuffix,
-  isRouteLocationTypeObject,
   mergePathParams,
   objectToQueryString
 } from './utils.js'
@@ -81,6 +80,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   protected constructor(options: RouterOptions) {
     super(options)
     this._route = reactive<RouteLocation>({
+      __is_route_location: true,
       index: this._options.base,
       path: this._options.base,
       hash: '',
@@ -262,8 +262,8 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @param {RouteTarget} target - 导航目标
    * @return {RouteLocation} 路由位置对象
    */
-  public createRouteLocation(target: RouteTarget): RouteLocation {
-    if (isRouteLocationTypeObject(target)) return target
+  public createRouteLocation(target: RouteTarget | RouteLocation): RouteLocation {
+    if ('__is_route_location' in target) return target
     // 获取路由对象
     const route = this.findRoute(target)
     const { index, query = {}, params = {}, hash = '' } = target
@@ -282,7 +282,18 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     const hashStr = formatHash(hash, true)
     const suffix = getPathSuffix(index)
     const fullPath = this.makeFullPath(path, query, hashStr, suffix)
-    return { index, path, hash: hashStr, fullPath, params, query, matched, meta, suffix }
+    return {
+      index,
+      path,
+      hash: hashStr,
+      fullPath,
+      params,
+      query,
+      matched,
+      meta,
+      suffix,
+      __is_route_location: true
+    }
   }
 
   /**
