@@ -180,8 +180,9 @@ export type RouteIndex = keyof TypesConfig['RouteNamedMap'] extends never
 /**
  * 导航选项
  */
-export type NavigateOptions<T extends RouteIndex> = keyof TypesConfig['RouteNamedMap'] extends never
-  ? BaseNavigateOptions<T>
-  : T extends keyof TypesConfig['RouteNamedMap']
-    ? BaseNavigateOptions<T> & TypesConfig['RouteNamedMap'][T]
-    : BaseNavigateOptions<T>
+export type NavigateOptions<T extends RouteIndex = RouteIndex> =
+  keyof TypesConfig['RouteNamedMap'] extends never
+    ? BaseNavigateOptions<T>
+    : T extends keyof TypesConfig['RouteNamedMap']
+      ? BaseNavigateOptions<T> & TypesConfig['RouteNamedMap'][T]
+      : BaseNavigateOptions<T>
