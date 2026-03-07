@@ -1,9 +1,10 @@
+import { logger } from 'vitarx'
 import normalizeRoute from './normalize/index.js'
 import {
   type DynamicRouteRecord,
   type HistoryMode,
-  type InitializedRouterOptions,
   type MatchResult,
+  type ResolvedRouterOptions,
   type Route,
   type RouteComponent,
   type RouteIndex,
@@ -28,7 +29,7 @@ import {
  */
 export default abstract class RouterRegistry {
   // 配置
-  protected readonly _options: Readonly<InitializedRouterOptions>
+  protected readonly _options: Readonly<ResolvedRouterOptions>
   // 命名路由映射
   protected readonly _namedRoutes = new Map<string, RouteNormalized>()
   // 动态路由正则，按长度分组
@@ -39,7 +40,7 @@ export default abstract class RouterRegistry {
   protected readonly _parentRoute = new WeakMap<RouteNormalized, RouteNormalized>()
 
   protected constructor(options: RouterOptions) {
-    const config: InitializedRouterOptions = {
+    const config: ResolvedRouterOptions = {
       base: '/',
       strict: false,
       mode: 'path',
@@ -62,7 +63,7 @@ export default abstract class RouterRegistry {
       config.defaultSuffix = config.defaultSuffix.replace(/\./g, '')
     }
     if (config.missing && typeof config.missing !== 'function') {
-      throw new TypeError(`[VitarxRouter][ERROR]：missing配置无效`)
+      throw new TypeError(`[Router]：missing配置无效`)
     }
     this._options = config
   }
@@ -70,7 +71,7 @@ export default abstract class RouterRegistry {
   /**
    * 获取配置
    */
-  get options(): Readonly<InitializedRouterOptions> {
+  get options(): Readonly<ResolvedRouterOptions> {
     return this._options
   }
 
@@ -119,7 +120,7 @@ export default abstract class RouterRegistry {
   /**
    * 基本路径
    */
-  get basePath(): `/${string}` {
+  get basePath(): RoutePath {
     return this._options.base
   }
 
@@ -184,9 +185,7 @@ export default abstract class RouterRegistry {
     const isRouterTarget = typeof target === 'object'
     const index: RouteIndex = isRouterTarget ? target.index : target
     if (typeof index !== 'string') {
-      throw new TypeError(
-        `[Vitarx.Router.getRoute][ERROR]：路由索引${target}类型错误，必须给定字符串类型`
-      )
+      throw new TypeError(`[Router]: findRoute() 路由索引${target}类型错误，必须给定字符串类型`)
     }
     if (index.startsWith('/')) {
       const matched = this.matchRoute(index as RoutePath)
@@ -402,8 +401,8 @@ export default abstract class RouterRegistry {
             if (first.component) return { index: first.path }
             first = first.children?.[0]
           }
-          console.error(
-            `[Router][ERROR]：${normalizedRoute.path} 分组路由在没有配置重定向的情况下，它的第一个子路由必须具有component或redirect，否则无法匹配视图`,
+          logger.error(
+            `[Router]：${normalizedRoute.path} 分组路由在没有配置重定向的情况下，它的第一个子路由必须具有component或redirect，否则无法匹配视图`,
             normalizedRoute
           )
         }
@@ -428,13 +427,13 @@ export default abstract class RouterRegistry {
     if (route.name) {
       if (route.name.startsWith('/')) {
         route.name = route.name.replace(/^\//, '')
-        console.warn(
-          `[Vitarx.Router][WARN]：命名路由(name)不要以/开头: ${route.name}，因为内部需要使用/区分path、name`
+        logger.warn(
+          `[Router]：命名路由(name)不要以/开头: ${route.name}，因为内部需要使用/区分path、name`
         )
       }
 
       if (this._namedRoutes.has(route.name)) {
-        throw new Error(`[Vitarx.Router][ERROR]：检测到重复的路由名称(name): ${route.name}`)
+        throw new Error(`[Router]：检测到重复的路由名称(name): ${route.name}`)
       }
 
       this._namedRoutes.set(route.name, route)
@@ -443,7 +442,7 @@ export default abstract class RouterRegistry {
     const path = this.strictPath(route.path)
 
     if (this._pathRoutes.has(path)) {
-      throw new Error(`[Vitarx.Router][ERROR]：检测到重复的路由路径(path): ${route.path}`)
+      throw new Error(`[Router]：检测到重复的路由路径(path): ${route.path}`)
     }
 
     this._pathRoutes.set(path, route)
@@ -454,7 +453,7 @@ export default abstract class RouterRegistry {
   }
 
   /**
-   * 添加动态路由
+   * 记录动态路由
    */
   private recordDynamicRoute(route: RouteNormalized) {
     const { regex, length, optional } = createDynamicPattern(

@@ -1,6 +1,6 @@
+import { NavigateStatus } from './constant.js'
 import RouterCore from './router-core.js'
 import {
-  NavigateStatus,
   type ReadonlyRouteLocation,
   type RouteLocation,
   type RouterOptions

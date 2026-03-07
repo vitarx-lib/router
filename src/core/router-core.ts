@@ -6,30 +6,29 @@ import {
   isDeepEqual,
   isObject,
   markRaw,
-  reactive,
   type Reactive,
   readonly,
   shallowReactive
 } from 'vitarx'
+import { NavigateStatus } from './constant.js'
 import RouterRegistry from './router-registry.ts'
-import {
-  type _ScrollBehavior,
-  type _ScrollOptions,
-  type BeforeEachCallbackResult,
-  type HashStr,
-  type HistoryMode,
-  type InitializedRouterOptions,
-  type NavigateResult,
-  NavigateStatus,
-  type ReadonlyRouteLocation,
-  type RouteIndex,
-  type RouteLocation,
-  type RouteNormalized,
-  type RoutePath,
-  type RouterOptions,
-  type RouteTarget,
-  type ScrollBehaviorHandler,
-  type ScrollTarget
+import type {
+  _ScrollBehavior,
+  _ScrollOptions,
+  BeforeEachCallbackResult,
+  HashStr,
+  HistoryMode,
+  NavigateResult,
+  ReadonlyRouteLocation,
+  ResolvedRouterOptions,
+  RouteIndex,
+  RouteLocation,
+  RouteNormalized,
+  RoutePath,
+  RouterOptions,
+  RouteTarget,
+  ScrollBehaviorHandler,
+  ScrollTarget
 } from './router-types.js'
 import { patchUpdateRoute } from './update.js'
 import {
@@ -79,7 +78,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    */
   protected constructor(options: RouterOptions) {
     super(options)
-    this._route = reactive<RouteLocation>({
+    this._route = shallowReactive<RouteLocation>({
       __is_route_location: true,
       index: this._options.base,
       path: this._options.base,
@@ -125,9 +124,9 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   /**
    * 获取配置
    *
-   * @return {Readonly<InitializedRouterOptions>} - 初始化配置
+   * @return {Readonly<ResolvedRouterOptions>} - 初始化配置
    */
-  get options(): Readonly<InitializedRouterOptions> {
+  get options(): Readonly<ResolvedRouterOptions> {
     return this._options
   }
 

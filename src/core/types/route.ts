@@ -1,9 +1,9 @@
-import type { DeepReadonly, MakeRequired } from 'vitarx'
+import type { MakeRequired } from 'vitarx'
 import type RouterCore from '../router-core.js'
 import type { AfterEnterCallback, BeforeEnterCallback } from './hooks.js'
 import type {
-  AllowedRouteWidget,
-  NamedRouteWidget,
+  AllowedRouteComponent,
+  NamedRouteComponent,
   ReadonlyRouteLocation,
   RouteLocation,
   RoutePath,
@@ -41,15 +41,15 @@ export type RedirectHandler = (this: RouterCore, to: RouteLocation) => RouteTarg
  *
  * @template T - 指定路由组件的类型，必须是 AllowedRouteWidget 的子类型
  */
-export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
+export interface Route<T extends AllowedRouteComponent = AllowedRouteComponent> {
   /**
    * 路由的路径，用于URL匹配
    *
-   * 支持动态路径匹配，如：/user/{id}，可选变量：/user/{id?}
+   * 支持动态路径匹配，如：`/user/{id}`，可选变量：`/user/{id?}`
    */
   path: RoutePath
   /**
-   * 动态路由匹配模式
+   * 动态路由参数匹配模式
    *
    * 默认会继承`RouterOptions.pattern`
    */
@@ -115,7 +115,7 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
    *
    * @default true
    */
-  props?: (T extends NamedRouteWidget<infer k> ? InjectNamedProps<k> : InjectProps) | boolean
+  props?: (T extends NamedRouteComponent<infer k> ? InjectNamedProps<k> : InjectProps) | boolean
   /**
    * 路由进入前的钩子函数，用于权限控制或数据预加载
    *
@@ -135,14 +135,9 @@ export interface Route<T extends AllowedRouteWidget = AllowedRouteWidget> {
  */
 export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern' | 'suffix'> {
   children: RouteNormalized[]
-  component: undefined | NamedRouteWidget
+  component: undefined | NamedRouteComponent
   props: undefined | InjectNamedProps
 }
-
-/**
- * 只读规范化路由线路配置
- */
-export type ReadonlyRoute = DeepReadonly<RouteNormalized>
 
 /**
  * 动态路由记录
@@ -155,9 +150,7 @@ export interface DynamicRouteRecord {
 /**
  * 路由匹配结果
  */
-export type MatchResult =
-  | {
-      route: RouteNormalized
-      params: Record<string, string> | undefined
-    }
-  | undefined
+export interface MatchResult {
+  route: RouteNormalized
+  params: Record<string, string> | undefined
+}

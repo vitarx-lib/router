@@ -1,4 +1,4 @@
-import { deepClone, type MakeRequired } from 'vitarx'
+import { deepClone, logger, type MakeRequired } from 'vitarx'
 import type {
   HashStr,
   ReadonlyRouteLocation,
@@ -24,19 +24,6 @@ export function isVariablePath(path: string): boolean {
 }
 
 /**
- * 判断 path 是否包含可选变量
- *
- * @example
- *  isOptionalVariablePath('/{id?}') // true
- *  isOptionalVariablePath('/{id}') // false
- *  isOptionalVariablePath('/*') // false
- * @param path
- */
-export function isOptionalVariablePath(path: string): boolean {
-  return /\{[^}?]+\?}/.test(path)
-}
-
-/**
  * 获取路径中的可选变量数量
  *
  * @param path - 路径
@@ -46,7 +33,7 @@ export function optionalVariableCount(path: string): number {
   // 去除路径中的所有空格
   const pathWithoutSpaces = path.replace(/\s+/g, '')
 
-  // 匹配形如 {varname?} 的可选变量
+  // 匹配形如 {name?} 的可选变量
   const regex = /\{[\w-]+\?}/g
 
   // 提取所有符合可选变量规则的部分
@@ -88,9 +75,7 @@ export function createDynamicPattern(
     if (!regex) {
       pattern[varName] = defaultPattern
     } else if (!(regex instanceof RegExp)) {
-      console.warn(
-        `[Vitarx.Router][WARN]：${path} 动态路径${varName}变量的自定义正则表达式必须是 RegExp 类型`
-      )
+      logger.warn(`[Router]：${path} 动态路径${varName}变量的自定义正则表达式必须是 RegExp 类型`)
       pattern[varName] = defaultPattern
     }
 
@@ -99,9 +84,7 @@ export function createDynamicPattern(
       optional++
       return `(?:(${pattern[varName].source}))?`
     } else if (optional) {
-      throw new Error(
-        `[Vitarx.Router][ERROR]：动态路径 ${path} 中，可选变量 ${varName} 后不能存在任何必填变量`
-      )
+      throw new Error(`[Router]：动态路径 ${path} 中，可选变量 ${varName} 后不能存在任何必填变量`)
     }
     // 如果是必填的或非最后一段可选变量，使用捕获组
     return `(${pattern[varName].source})`
@@ -161,9 +144,7 @@ export function mergePathParams(path: RoutePath, params: Record<string, string>)
     if (params[paramName] === undefined) {
       // 如果是可选参数并且 params 中没有对应值，跳过替换
       if (isOptional) return ''
-      throw new TypeError(
-        `[Vitarx.Router.mergePathParams] 访问路由${oldPath}时缺少参数：${paramName}`
-      )
+      throw new TypeError(`[Router] 访问路由${oldPath}时缺少参数：${paramName}`)
     }
     // 返回对应的参数值
     return String(params[paramName]).replace(/\s+/g, '_')
@@ -296,30 +277,6 @@ export function getPathSuffix(path: string): `.${string}` | '' {
 }
 
 /**
- * 辅助判断是否为路由位置对象
- *
- * @param obj
- */
-export function isRouteLocationTypeObject(obj: any): obj is RouteLocation {
-  if (typeof obj !== 'object') return false
-  if (obj === null) return false
-  const keys: (keyof RouteLocation)[] = [
-    'index',
-    'fullPath',
-    'path',
-    'hash',
-    'params',
-    'query',
-    'matched',
-    'meta'
-  ]
-  for (const key of keys) {
-    if (!Object.prototype.hasOwnProperty.call(obj, key)) return false
-  }
-  return true
-}
-
-/**
  * 验证后缀
  *
  * @param suffix
@@ -332,7 +289,7 @@ export function validateSuffix(
   allowSuffix: RouterOptions['suffix'],
   inputPath: string,
   routePath: string
-) {
+): boolean {
   if (inputPath === '/') return true
   if (allowSuffix === '*') return true
   if (allowSuffix === false) return inputPath === routePath

@@ -1,8 +1,8 @@
-import type { MakeRequired } from 'vitarx'
+import { logger, type MakeRequired } from 'vitarx'
+import { NavigateStatus } from './constant.js'
 import RouterCore from './router-core.js'
 import {
   type HashStr,
-  NavigateStatus,
   type ReadonlyRouteLocation,
   type RouteLocation,
   type RouterOptions,
@@ -89,7 +89,7 @@ export default class RouterHistory extends RouterCore {
     // 替换路由
     this.replace(this.currentRouteTarget).then(res => {
       if (res.status !== NavigateStatus.success) {
-        console.warn(`[VitarxRouter.initializeRouter]：路由初始化匹配失败，${res.message}`)
+        logger.warn(`[Router] 路由初始化匹配失败：${res.message}`)
       }
     })
   }

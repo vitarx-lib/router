@@ -1,5 +1,6 @@
 import type { Component, DeepReadonly } from 'vitarx'
-import type { RouteNormalized } from './route'
+import type { NavigateStatus } from '../constant.js'
+import type { RouteNormalized } from './route.js'
 
 /**
  * hash字符串类型
@@ -50,14 +51,14 @@ export type RouteComponent = Component
  *
  * 用于多视图布局
  */
-export type NamedRouteWidget<K extends string = string> = Record<K, RouteComponent>
+export type NamedRouteComponent<K extends string = string> = Record<K, RouteComponent>
 
 /**
  * 允许的路由小部件联合类型
  *
  * 可以是单个视图组件或命名视图组件的记录
  */
-export type AllowedRouteWidget = RouteComponent | NamedRouteWidget
+export type AllowedRouteComponent = RouteComponent | NamedRouteComponent
 
 /**
  * 路由目标
@@ -145,46 +146,6 @@ export interface RouteLocation {
  * 只读路由位置对象
  */
 export type ReadonlyRouteLocation = DeepReadonly<RouteLocation>
-
-/**
- * 导航结果
- *
- * 枚举值：
- * 0. success: 导航成功
- * 1. aborted: 导航被阻止
- * 2. cancelled: 导航被取消
- * 3. duplicated: 重复导航
- * 4. not_matched: 路由未匹配
- * 5. exception: 捕获到异常
- */
-export enum NavigateStatus {
-  /**
-   * 导航成功
-   */
-  success,
-  /**
-   * 导航被阻止
-   */
-  aborted,
-  /**
-   * 导航被取消
-   *
-   * 正在等待中间件处理结果时又触发了新的导航请求
-   */
-  cancelled,
-  /**
-   * 重复导航
-   */
-  duplicated,
-  /**
-   * 路由未匹配
-   */
-  not_matched,
-  /**
-   * 捕获到异常
-   */
-  exception
-}
 
 /**
  * 导航结果
