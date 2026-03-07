@@ -391,6 +391,8 @@ describe('RouterCore', () => {
 
       router.removeRoute('/home')
 
+      await router.push({ index: '/about' })
+
       const result = await router.push({ index: '/home' })
       expect(result.status).toBe(NavigateStatus.not_matched)
     })
