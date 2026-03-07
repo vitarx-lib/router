@@ -4,7 +4,7 @@ import {
   deepClone,
   flushSync,
   isDeepEqual,
-  isObject,
+  isPlainObject,
   markRaw,
   type Reactive,
   readonly,
@@ -18,7 +18,9 @@ import type {
   BeforeEachCallbackResult,
   HashStr,
   HistoryMode,
+  NavigateOptions,
   NavigateResult,
+  NavigateTarget,
   ReadonlyRouteLocation,
   ResolvedRouterOptions,
   RouteIndex,
@@ -26,7 +28,6 @@ import type {
   RouteNormalized,
   RoutePath,
   RouterOptions,
-  RouteTarget,
   ScrollBehaviorHandler,
   ScrollTarget
 } from './router-types.js'
@@ -174,29 +175,28 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   /**
    * 替换当前页面
    *
-   * @param {RouteTarget} target - 目标
-   * @return {Promise<NavigateResult>} - 路由结果
+   * @param {NavigateOptions} options - 导航选项
+   * @param [options.params] - 路由参数对象
+   * @param [options.query] - 查询参数对象
+   * @param [options.hash] - 哈希值，如：`#hash`
+   * @return {Promise<NavigateResult>} - 导航结果
    */
-  public replace(target: RouteTarget | RouteIndex): Promise<NavigateResult> {
-    if (typeof target === 'string') {
-      return this.navigate({ index: target, isReplace: true })
-    }
-    target.isReplace = true
-    return this.navigate(target)
+  public replace<T extends RouteIndex>(options: NavigateOptions<T>): Promise<NavigateResult> {
+    return this.navigate({ ...options, isReplace: true })
   }
 
   /**
    * 跳转到新的页面
    *
-   * @param {RouteTarget} target - 目标
-   * @return {Promise<NavigateResult>} - 路由结果
+   * @param {NavigateOptions} options - 导航选项
+   * @param options.index - 路由索引
+   * @param [options.params] - 路由参数对象
+   * @param [options.query] - 查询参数对象
+   * @param [options.hash] - 哈希值，如：`#hash`
+   * @return {Promise<NavigateResult>} - 导航结果
    */
-  public push(target: RouteTarget | RouteIndex): Promise<NavigateResult> {
-    if (typeof target === 'string') {
-      return this.navigate({ index: target, isReplace: false })
-    }
-    target.isReplace = false
-    return this.navigate(target)
+  public push<T extends RouteIndex>(options: NavigateOptions<T>): Promise<NavigateResult> {
+    return this.navigate({ ...options, isReplace: false })
   }
 
   /**
@@ -258,10 +258,10 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * 创建路由位置对象
    * 根据导航目标创建标准化的路由位置信息
    *
-   * @param {RouteTarget} target - 导航目标
+   * @param {NavigateTarget} target - 导航目标
    * @return {RouteLocation} 路由位置对象
    */
-  public createRouteLocation(target: RouteTarget | RouteLocation): RouteLocation {
+  public createRouteLocation(target: NavigateTarget | RouteLocation): RouteLocation {
     if ('__is_route_location' in target) return target
     // 获取路由对象
     const route = this.findRoute(target)
@@ -271,7 +271,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     if (route) {
       let parent = this.findParentRoute(route)
       while (parent) {
-        // 如果父路由具有`widget`则添加到匹配的路由栈中
+        // 如果父路由具有`component`则添加到匹配的路由栈中
         if (parent.component) matched.unshift(parent)
         parent = this.findParentRoute(parent)
       }
@@ -300,10 +300,10 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    *
    * 处理所有的路由跳转请求，包括 push 和 replace
    *
-   * @param {RouteTarget} target - 导航目标
+   * @param {NavigateTarget} target - 导航目标
    * @return {Promise<NavigateResult>} 导航结果
    */
-  public navigate(target: RouteTarget | RouteLocation): Promise<NavigateResult> {
+  public navigate(target: NavigateTarget | RouteLocation): Promise<NavigateResult> {
     // 生成新的任务ID并更新当前任务
     const taskId = ++this._taskCounter
     this._currentTaskId = taskId
@@ -315,7 +315,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     const from = cloneRouteLocation(this.route) as RouteLocation
 
     const performNavigation = async (
-      _target: RouteTarget | RouteLocation,
+      _target: NavigateTarget | RouteLocation,
       isRedirect: boolean
     ): Promise<NavigateResult> => {
       // 创建导航结果对象的工具函数
@@ -355,14 +355,14 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
 
       // 处理路由重定向
       if (matched?.redirect) {
-        let redirectTarget: RouteTarget | undefined
+        let redirectTarget: NavigateTarget | undefined
         if (typeof matched.redirect === 'object' && matched.redirect.index) {
           redirectTarget = matched.redirect
         } else if (typeof matched.redirect === 'string') {
           redirectTarget = { index: matched.redirect }
         } else if (typeof matched.redirect === 'function') {
           const redirectHandleResult = matched.redirect.call(this, to)
-          if (isObject(redirectHandleResult)) {
+          if (isPlainObject(redirectHandleResult)) {
             redirectTarget = redirectHandleResult
           }
         }
@@ -560,7 +560,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    *
    * @param {RouteLocation} to - 路由目标对象
    * @param {RouteLocation} from - 前路由对象
-   * @return {false | RouteTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
+   * @return {false | NavigateTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
   protected onBeforeEach(to: RouteLocation, from: RouteLocation): BeforeEachCallbackResult {
     const matched = to.matched.at(-1)

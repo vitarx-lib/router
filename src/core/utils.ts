@@ -1,13 +1,13 @@
 import { deepClone, logger, type MakeRequired } from 'vitarx'
 import type {
   HashStr,
+  NavigateTarget,
   ReadonlyRouteLocation,
   Route,
   RouteLocation,
   RouteNormalized,
   RoutePath,
-  RouterOptions,
-  RouteTarget
+  RouterOptions
 } from './router-types.js'
 
 /**
@@ -133,7 +133,10 @@ export function formatPath(path: string): RoutePath {
  * @param {string} path - 路径字符串
  * @param {Record<string, string>} params - 路径参数对象
  */
-export function mergePathParams(path: RoutePath, params: Record<string, string>): RoutePath {
+export function mergePathParams(
+  path: RoutePath,
+  params: Record<string, string | number>
+): RoutePath {
   if (!isVariablePath(path)) return path
   const oldPath = path
   // 处理必填参数和可选参数
@@ -144,7 +147,7 @@ export function mergePathParams(path: RoutePath, params: Record<string, string>)
     if (params[paramName] === undefined) {
       // 如果是可选参数并且 params 中没有对应值，跳过替换
       if (isOptional) return ''
-      throw new TypeError(`[Router] 访问路由${oldPath}时缺少参数：${paramName}`)
+      throw new TypeError(`[Router]: 访问路由${oldPath}时缺少参数 ${paramName}`)
     }
     // 返回对应的参数值
     return String(params[paramName]).replace(/\s+/g, '_')
@@ -230,7 +233,7 @@ export function urlToRouteTarget(
   url: URL | Location,
   mode: 'path' | 'hash',
   base: `/${string}`
-): MakeRequired<RouteTarget, 'query' | 'hash'> {
+): MakeRequired<NavigateTarget, 'query' | 'hash'> {
   let path = decodeURIComponent(url.pathname) as RoutePath
   let hash = decodeURIComponent(url.hash) as HashStr
   let query: Record<string, string> = queryStringToObject(url.search)

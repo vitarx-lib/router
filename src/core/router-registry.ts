@@ -4,6 +4,7 @@ import {
   type DynamicRouteRecord,
   type HistoryMode,
   type MatchResult,
+  type NavigateTarget,
   type ResolvedRouterOptions,
   type Route,
   type RouteComponent,
@@ -11,8 +12,7 @@ import {
   type RouteName,
   type RouteNormalized,
   type RoutePath,
-  type RouterOptions,
-  type RouteTarget
+  type RouterOptions
 } from './router-types.js'
 import {
   createDynamicPattern,
@@ -181,7 +181,7 @@ export default abstract class RouterRegistry {
    * @param {string|Object} target 路由索引或目标对象
    * @returns {RouteNormalized|undefined} 匹配的路由对象，如果未找到则返回undefined
    */
-  public findRoute(target: RouteIndex | RouteTarget): RouteNormalized | undefined {
+  public findRoute(target: RouteIndex | NavigateTarget): RouteNormalized | undefined {
     const isRouterTarget = typeof target === 'object'
     const index: RouteIndex = isRouterTarget ? target.index : target
     if (typeof index !== 'string') {

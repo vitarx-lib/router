@@ -11,9 +11,9 @@ import {
   type HashStr,
   type NavigateResult,
   NavigateStatus,
+  type NavigateTarget,
   type RouteIndex,
   type RouteLocation,
-  type RouteTarget,
   useRouter
 } from '../core/index.js'
 
@@ -25,7 +25,7 @@ export interface RouterLinkProps {
    *
    * 可以是路由目标对象，也可以是路由索引
    */
-  to: RouteTarget | RouteIndex | HttpUrl | Hash | `${RouteIndex}${HashStr}`
+  to: NavigateTarget | RouteIndex | HttpUrl | Hash | `${RouteIndex}${HashStr}`
   /**
    * 子节点插槽
    */
@@ -107,10 +107,12 @@ const regex = /^(https?):\/\/[^\s\/$.?#].\S*$/i
 export function RouterLink(props: RouterLinkProps): ElementView<'a'> {
   const router = useRouter()
 
-  const target = new Computed<RouteTarget | HttpUrl | Hash | undefined>(() => {
+  const target = new Computed<NavigateTarget | HttpUrl | Hash | undefined>(() => {
     if (!props.to) return undefined
 
-    const to: RouteTarget = isString(props.to) ? { index: decodeURIComponent(props.to) } : props.to
+    const to: NavigateTarget = isString(props.to)
+      ? { index: decodeURIComponent(props.to) }
+      : props.to
 
     if (regex.test(to.index) || to.index.startsWith('#')) {
       return to.index as HttpUrl | Hash
@@ -179,7 +181,7 @@ export function RouterLink(props: RouterLinkProps): ElementView<'a'> {
         router.navigate(location.value).then(res => {
           if (res.status !== NavigateStatus.success) {
             console.warn(
-              `[RouterLink][WARN]：导航到索引：${(target.value as RouteTarget)?.index} 失败，${res.message}`
+              `[RouterLink][WARN]：导航到索引：${(target.value as NavigateTarget)?.index} 失败，${res.message}`
             )
           }
 

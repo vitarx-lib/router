@@ -4,10 +4,9 @@ import type { AfterEnterCallback, BeforeEnterCallback } from './hooks.js'
 import type {
   AllowedRouteComponent,
   NamedRouteComponent,
+  NavigateTarget,
   ReadonlyRouteLocation,
-  RouteLocation,
-  RoutePath,
-  RouteTarget
+  RouteLocation
 } from './navigation.js'
 
 /**
@@ -31,7 +30,21 @@ export type InjectNamedProps<k extends string = string> = Record<k, InjectProps>
 /**
  * 重定向处理器
  */
-export type RedirectHandler = (this: RouterCore, to: RouteLocation) => RouteTarget | undefined
+export type RedirectHandler = (this: RouterCore, to: RouteLocation) => NavigateTarget | undefined
+
+/**
+ * 路由路径
+ *
+ * 必须以/开头的字符串
+ */
+export type RoutePath = `/${string}`
+
+/**
+ * 命名路由
+ *
+ * 用于标识路由的唯一名称
+ */
+export type RouteName = string
 
 /**
  * 路由路线配置
@@ -49,15 +62,17 @@ export interface Route<T extends AllowedRouteComponent = AllowedRouteComponent> 
    */
   path: RoutePath
   /**
+   * 路由的名称，用于识别和引用路由
+   *
+   * 切勿以 `/` 开头
+   */
+  name?: RouteName
+  /**
    * 动态路由参数匹配模式
    *
    * 默认会继承`RouterOptions.pattern`
    */
   pattern?: Record<string, RegExp>
-  /**
-   * 路由的名称，用于识别和引用路由
-   */
-  name?: string
   /**
    * 路由对应的视图组件
    *
@@ -87,7 +102,7 @@ export interface Route<T extends AllowedRouteComponent = AllowedRouteComponent> 
   /**
    * 路由重定向的目标地址或处理函数
    */
-  redirect?: RouteTarget | RedirectHandler
+  redirect?: NavigateTarget | RedirectHandler
   /**
    * 子路由配置，用于嵌套路由
    */

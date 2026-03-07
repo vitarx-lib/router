@@ -19,27 +19,6 @@ export type HashStr = `#${string}` | ''
 export type HistoryMode = 'hash' | 'path' | 'memory'
 
 /**
- * 路由路径
- *
- * 必须以/开头的字符串
- */
-export type RoutePath = `/${string}`
-
-/**
- * 命名路由
- *
- * 用于标识路由的唯一名称
- */
-export type RouteName = string
-
-/**
- * 路由索引
- *
- * 可以是路径或命名路由
- */
-export type RouteIndex = RouterRouteIndexTyped
-
-/**
  * 路由组件
  *
  * 可以是普通组件或懒加载组件
@@ -61,15 +40,13 @@ export type NamedRouteComponent<K extends string = string> = Record<K, RouteComp
 export type AllowedRouteComponent = RouteComponent | NamedRouteComponent
 
 /**
- * 路由目标
- *
- * 用于描述导航的目标位置
+ * 路由索引类型
  */
-export interface RouteTarget {
+interface BaseNavigateOptions<T extends RouteIndex> {
   /**
    * 路由索引，/开头为路径，否则为名称
    */
-  index: RouteIndex
+  index: T
   /**
    * URL hash
    */
@@ -81,7 +58,15 @@ export interface RouteTarget {
   /**
    * 路由参数
    */
-  params?: Record<string, any>
+  params?: Record<string, string | number>
+}
+
+/**
+ * 路由目标
+ *
+ * 用于描述导航的目标位置
+ */
+export interface NavigateTarget extends BaseNavigateOptions<RouteIndex> {
   /**
    * 是否替换当前路由
    */
@@ -172,9 +157,31 @@ export interface NavigateResult {
   /**
    * 如果在守卫过程中被重定向，则为最初的路由目标
    */
-  redirectFrom: RouteTarget | undefined
+  redirectFrom: NavigateTarget | undefined
   /**
    * 捕获到的异常
    */
   error?: unknown
 }
+
+export interface TypesConfig {
+  RouteNamedMap: {}
+}
+
+/**
+ * 路由索引
+ *
+ * 可以是路径或路由命名
+ */
+export type RouteIndex = keyof TypesConfig['RouteNamedMap'] extends never
+  ? string
+  : keyof TypesConfig['RouteNamedMap']
+
+/**
+ * 导航选项
+ */
+export type NavigateOptions<T extends RouteIndex> = keyof TypesConfig['RouteNamedMap'] extends never
+  ? BaseNavigateOptions<T>
+  : T extends keyof TypesConfig['RouteNamedMap']
+    ? BaseNavigateOptions<T> & TypesConfig['RouteNamedMap'][T]
+    : BaseNavigateOptions<T>

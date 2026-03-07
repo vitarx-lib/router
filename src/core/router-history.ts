@@ -3,10 +3,10 @@ import { NavigateStatus } from './constant.js'
 import RouterCore from './router-core.js'
 import {
   type HashStr,
+  type NavigateTarget,
   type ReadonlyRouteLocation,
   type RouteLocation,
-  type RouterOptions,
-  type RouteTarget
+  type RouterOptions
 } from './router-types.js'
 import { urlToRouteTarget } from './utils.js'
 
@@ -58,9 +58,9 @@ export default class RouterHistory extends RouterCore {
   /**
    * 当前路由目标
    *
-   * @returns {RouteTarget} - 包含 index、hash 和 query 的对象
+   * @returns {NavigateTarget} - 包含 index、hash 和 query 的对象
    */
-  protected get currentRouteTarget(): MakeRequired<RouteTarget, 'query' | 'hash'> {
+  protected get currentRouteTarget(): MakeRequired<NavigateTarget, 'query' | 'hash'> {
     return urlToRouteTarget(window.location, this.mode as 'hash' | 'path', this.basePath)
   }
 
@@ -165,7 +165,7 @@ export default class RouterHistory extends RouterCore {
    * 处理浏览器历史记录的返回/前进事件
    */
   private onPopState(event: PopStateEvent) {
-    let newTarget: RouteTarget
+    let newTarget: NavigateTarget
     if (event.state?.index) {
       newTarget = {
         index: event.state.index,
