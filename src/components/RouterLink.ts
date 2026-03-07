@@ -1,14 +1,13 @@
 import {
-  type ClassProperties,
   Computed,
   createView,
   ElementView,
   isString,
-  type StyleProperties,
-  type ValidChildren
+  type ValidChildren,
+  type WithProps
 } from 'vitarx'
 import {
-  type HashStr,
+  type NavigateOptions,
   type NavigateResult,
   NavigateStatus,
   type NavigateTarget,
@@ -19,31 +18,18 @@ import {
 
 type HttpUrl = `http://${string}` | `https://${string}`
 type Hash = `#${string}`
-export interface RouterLinkProps {
+
+export interface RouterLinkProps extends WithProps<'a'> {
   /**
    * 要跳转的目标
    *
    * 可以是路由目标对象，也可以是路由索引
    */
-  to: NavigateTarget | RouteIndex | HttpUrl | Hash | `${RouteIndex}${HashStr}`
+  to: NavigateOptions | RouteIndex | HttpUrl | Hash | `${RouteIndex}${Hash}`
   /**
    * 子节点插槽
    */
   children?: ValidChildren
-  /**
-   * a 标签的style属性
-   */
-  style?: StyleProperties
-  /**
-   * a 标签的class属性
-   */
-  class?: ClassProperties
-  /**
-   * a 标签的target属性
-   *
-   * 仅http或https外部连接支持此属性
-   */
-  target?: '_blank' | '_self' | '_parent' | '_top'
   /**
    * 是否禁用
    *
@@ -75,12 +61,6 @@ export interface RouterLinkProps {
    * @param {NavigateResult} result - 导航结果
    */
   callback?: (result: NavigateResult) => void
-  /**
-   * 是否可拖拽
-   *
-   * @default false
-   */
-  draggable?: boolean
 }
 
 const exclude = [
@@ -95,6 +75,7 @@ const exclude = [
   'aria-current'
 ]
 const regex = /^(https?):\/\/[^\s\/$.?#].\S*$/i
+
 /**
  * 路由跳转组件
  *
