@@ -1,0 +1,42 @@
+{
+  "name": "vitarx-router",
+  "version": "3.0.0",
+  "description": "Vitarx前端框架官方路由器",
+  "author": "ZhuChongLin <8210856@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vitarx-lib/router"
+  },
+  "homepage": "https://vitarx.cn/router",
+  "keywords": [
+    "vitarx",
+    "router",
+    "vitarx-router"
+  ],
+  "type": "module",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "test": "madge --extensions js --circular dist --warning --exclude '.*\\\\.d\\\\.ts$'"
+  },
+  "peerDependencies": {
+    "vitarx": "^4.0.0-0"
+  },
+  "devDependencies": {
+    "vitarx": "^4.0.0-beta.4"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

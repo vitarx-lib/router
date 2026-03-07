@@ -1,42 +1,8 @@
 {
-  "name": "vitarx-router",
-  "version": "3.0.0",
-  "description": "Vitarx前端框架官方路由器",
+  "name": "@vitarx/router-root",
   "author": "ZhuChongLin <8210856@qq.com>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/vitarx-lib/router"
-  },
-  "homepage": "https://vitarx.cn/router",
-  "keywords": [
-    "vitarx",
-    "router",
-    "vitarx-router"
-  ],
   "type": "module",
-  "module": "./dist/vitarx-router.es.js",
-  "types": "./dist/vitarx-router.d.ts",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/vitarx-router.d.ts",
-        "default": "./dist/vitarx-router.es.js"
-      }
-    },
-    "./make": {
-      "types": "./dist/scripts/type-make.d.ts",
-      "default": "./dist/scripts/type-make.js"
-    }
-  },
-  "scripts": {
-    "build:script": "tsc --p tsconfig.script.json",
-    "build": "rimraf dist && tsc && vite build && npm run build:script",
-    "test": "madge --extensions js --circular dist --warning --exclude '.*\\\\.d\\\\.ts$'"
-  },
-  "peerDependencies": {
-    "vitarx": "^4.0.0-0"
-  },
+  "scripts": {},
   "devDependencies": {
     "@commitlint/cli": "^20.4.3",
     "@commitlint/config-conventional": "^20.4.3",
@@ -47,14 +13,10 @@
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
     "unplugin-dts": "1.0.0-beta.6",
-    "vitarx": "^4.0.0-beta.4",
-    "vite": "^7.2.7"
+    "vite": "^7.2.7",
+    "vitest": "^4.0.18"
   },
-  "files": [
-    "dist",
-    "LICENSE",
-    "README.md"
-  ],
+  "packageManager": "pnpm@10.30.3",
   "pnpm": {
     "overrides": {
       "rollup": "4.53.3",
