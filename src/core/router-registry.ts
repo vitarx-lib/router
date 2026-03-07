@@ -238,9 +238,9 @@ export default abstract class RouterRegistry {
    * 匹配成功后，验证路径的后缀是否符合要求，如果符合则返回匹配结果，包括路由和参数（如果有）
    *
    * @param path 要匹配的路径
-   * @returns {object|undefined} 如果找到匹配的路由，则返回匹配结果对象；否则返回undefined
+   * @returns {MatchResult|null} 如果匹配到路由，则返回匹配结果对象；否则返回null
    */
-  public matchRoute(path: RoutePath): MatchResult | undefined {
+  public matchRoute(path: RoutePath): MatchResult | null {
     // 格式化路径，确保路径格式一致
     let formattedPath = formatPath(path)
     // 如果不是严格匹配模式，将路径转换为小写
@@ -312,18 +312,18 @@ export default abstract class RouterRegistry {
         }
       }
     } catch (error) {
-      console.error('Error in matchRoute:', error)
-      return undefined
+      console.error('[Router][ERROR] in matchRoute:', error)
+      return null
     }
 
     // 如果没有找到匹配的路由，返回undefined
-    return undefined
+    return null
   }
 
   /**
    * 初始化路由表
    */
-  protected setupRoutes(routes: Route[]) {
+  protected setupRoutes(routes: Route[]): void {
     for (const route of routes) {
       this.registerRoute(route)
     }
@@ -332,7 +332,7 @@ export default abstract class RouterRegistry {
   /**
    * 从源路由表中删除路由
    */
-  private removedFromRoutes(route: RouteNormalized) {
+  private removedFromRoutes(route: RouteNormalized): void {
     const parent = this.findParentRoute(route)
     // 从父路由中删除子路由
     if (parent?.children) {
@@ -391,7 +391,7 @@ export default abstract class RouterRegistry {
       }
       if (!normalizedRoute.redirect) {
         normalizedRoute.redirect = function (to) {
-          // 如果没有widget，尝试找到第一个有widget的路由作为重定向目标
+          // 如果没有component，尝试找到第一个有component的路由作为重定向目标
           let first = normalizedRoute.children[0]
           while (first) {
             if (first.redirect) {
@@ -403,7 +403,7 @@ export default abstract class RouterRegistry {
             first = first.children?.[0]
           }
           console.error(
-            `[Vitarx.Router][ERROR]：${normalizedRoute.path} 分组路由在没有配置重定向的情况下，它的第一个子路由必须具有widget或redirect，否则无法匹配视图`,
+            `[Router][ERROR]：${normalizedRoute.path} 分组路由在没有配置重定向的情况下，它的第一个子路由必须具有component或redirect，否则无法匹配视图`,
             normalizedRoute
           )
         }
