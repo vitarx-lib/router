@@ -1,6 +1,6 @@
 import type { Component, DeepReadonly } from 'vitarx'
 import type { NavigateStatus } from '../constant.js'
-import type { RouteNormalized } from './route.js'
+import type { RouteMetaData, RouteNormalized } from './route.js'
 
 /**
  * hash字符串类型

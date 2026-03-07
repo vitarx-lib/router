@@ -11,7 +11,7 @@ import {
   shallowReactive
 } from 'vitarx'
 import { NavigateStatus } from './constant.js'
-import RouterRegistry from './router-registry.ts'
+import RouterRegistry from './router-registry.js'
 import type {
   _ScrollBehavior,
   _ScrollOptions,
@@ -25,6 +25,7 @@ import type {
   ResolvedRouterOptions,
   RouteIndex,
   RouteLocation,
+  RouteMetaData,
   RouteNormalized,
   RoutePath,
   RouterOptions,
