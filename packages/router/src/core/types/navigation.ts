@@ -164,25 +164,40 @@ export interface NavigateResult {
   error?: unknown
 }
 
-export interface TypesConfig {
-  RouteNamedMap: {}
-}
+/**
+ * 路由索引映射
+ *
+ * 可以通过扩展此接口实现类型化路由，
+ * router.push/replace 等方法会根据此接口进行类型推断参数类型。
+ *
+ * @example
+ * ```ts
+ * declare module 'vitarx-router' {
+ *   interface RouteIndexMap {
+ *      user: {
+ *       params: { id: string }
+ *     }
+ *   }
+ * }
+ * export {}
+ * ```
+ */
+export interface RouteIndexMap {}
 
 /**
  * 路由索引
  *
  * 可以是路径或路由命名
  */
-export type RouteIndex = keyof TypesConfig['RouteNamedMap'] extends never
-  ? string
-  : keyof TypesConfig['RouteNamedMap']
+export type RouteIndex = keyof RouteIndexMap extends never ? string : keyof RouteIndexMap
 
 /**
  * 导航选项
  */
-export type NavigateOptions<T extends RouteIndex = RouteIndex> =
-  keyof TypesConfig['RouteNamedMap'] extends never
-    ? BaseNavigateOptions<T>
-    : T extends keyof TypesConfig['RouteNamedMap']
-      ? BaseNavigateOptions<T> & TypesConfig['RouteNamedMap'][T]
+export type NavigateOptions<T extends RouteIndex = RouteIndex> = keyof RouteIndexMap extends never
+  ? BaseNavigateOptions<T>
+  : T extends keyof RouteIndexMap
+    ? 'params' extends keyof RouteIndexMap[T]
+      ? Omit<BaseNavigateOptions<T>, 'params'> & RouteIndexMap[T]
       : BaseNavigateOptions<T>
+    : BaseNavigateOptions<T>
