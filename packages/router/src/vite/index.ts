@@ -29,15 +29,16 @@
 import generate from '@babel/generator'
 import { parse } from '@babel/parser'
 import traverse from '@babel/traverse'
-import micromatch from 'micromatch'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
-import { DEFAULT_DTS_FILE, DEFAULT_EXTENSIONS, DEFAULT_PAGES_DIR } from './core/constants.js'
+
+import { getAbsolutePagesDirs, isPageFileInDirs, normalizeConfig } from './core/configUtils.js'
 import { generateRoutes } from './core/generateRoutes.js'
 import { generateFullDtsFile, generateTypes } from './core/generateTypes.js'
 import { buildRouteTree, scanMultiplePages } from './core/scanPages.js'
-import type { PagesDirConfig, ParsedPage, VitePluginRouterOptions } from './core/types.js'
+import type { ParsedPage, VitePluginRouterOptions } from './core/types.js'
+import { validateOptions } from './core/validateOptions.js'
 
 /** definePage 的有效导入来源 */
 const DEFINE_PAGE_SOURCES: string[] = ['vitarx-router/auto-routes']
@@ -57,85 +58,6 @@ const RESOLVED_TYPES_ID = '\0' + VIRTUAL_TYPES_ID
 // 导出类型和工具函数
 export type { VitePluginRouterOptions, PageOptions } from './core/types.js'
 export { definePage } from './auto-routes/definePage.js'
-
-/**
- * 检查文件是否为页面文件（单目录版本）
- *
- * 支持 glob 模式匹配包含和排除规则。
- *
- * @param file - 文件路径
- * @param pagesDir - 页面目录路径
- * @param extensions - 支持的文件扩展名列表
- * @param include - 包含 glob 模式列表
- * @param exclude - 排除 glob 模式列表
- * @returns 如果是有效的页面文件返回 true
- */
-function isPageFile(
-  file: string,
-  pagesDir: string,
-  extensions: string[],
-  include: string[],
-  exclude: string[]
-): boolean {
-  // 检查文件是否在页面目录内
-  if (!file.startsWith(pagesDir)) {
-    return false
-  }
-
-  // 检查文件扩展名
-  const ext = path.extname(file)
-  if (!extensions.includes(ext)) {
-    return false
-  }
-
-  // 获取相对路径
-  const relativePath = path.relative(pagesDir, file)
-  const normalizedPath = relativePath.replace(/\\/g, '/')
-
-  // 检查是否匹配包含模式
-  if (
-    include.length > 0 &&
-    !micromatch.isMatch(normalizedPath, include, { basename: true, dot: true })
-  ) {
-    return false
-  }
-
-  // 检查是否匹配排除模式
-  return !(
-    exclude.length > 0 &&
-    micromatch.isMatch(normalizedPath, exclude, {
-      basename: true,
-      dot: true
-    })
-  )
-}
-
-/**
- * 检查文件是否为页面文件（多目录版本）
- *
- * 遍历所有页面目录配置，检查文件是否属于任一目录。
- *
- * @param file - 文件路径
- * @param pagesDirs - 页面目录配置列表
- * @param extensions - 支持的文件扩展名列表
- * @returns 如果是有效的页面文件返回 true
- */
-function isPageFileInDirs(
-  file: string,
-  pagesDirs: PagesDirConfig[],
-  extensions: string[]
-): boolean {
-  for (const dirConfig of pagesDirs) {
-    const dirPath = dirConfig.dir
-    const include = dirConfig.include || []
-    const exclude = dirConfig.exclude || []
-
-    if (isPageFile(file, dirPath, extensions, include, exclude)) {
-      return true
-    }
-  }
-  return false
-}
 
 /**
  * 创建 Vitarx Router Vite 插件
@@ -178,14 +100,12 @@ function isPageFileInDirs(
  * ```
  */
 export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plugin {
-  // 解构配置，应用默认值
-  const {
-    pagesDir = DEFAULT_PAGES_DIR,
-    extensions = DEFAULT_EXTENSIONS,
-    include = [],
-    exclude = [],
-    dts = DEFAULT_DTS_FILE
-  } = options
+  // 验证配置选项
+  validateOptions(options)
+
+  // 规范化配置
+  const normalizedConfig = normalizeConfig(options)
+  const { pagesDirs, extensions, dts } = normalizedConfig
 
   // 插件内部状态
   let config: ResolvedConfig | null = null
@@ -195,65 +115,10 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
   let cachedTypes: string | null = null
 
   /**
-   * 将 pagesDir 配置规范化为 PagesDirConfig 数组
-   *
-   * 支持三种输入格式：
-   * 1. 字符串：单个目录路径
-   * 2. 字符串数组：多个目录路径
-   * 3. 对象数组：每个目录独立配置
-   *
-   * @returns 规范化后的目录配置数组
-   */
-  function normalizePagesDirs(): PagesDirConfig[] {
-    // 字符串：单个目录
-    if (typeof pagesDir === 'string') {
-      return [{ dir: pagesDir, include, exclude }]
-    }
-
-    // 数组类型
-    if (Array.isArray(pagesDir)) {
-      // 检查是否为字符串数组
-      if (pagesDir.length === 0 || typeof pagesDir[0] === 'string') {
-        // 字符串数组：多个目录，使用全局 include/exclude
-        return (pagesDir as string[]).map(dir => ({ dir, include, exclude }))
-      }
-
-      // 对象数组：每个目录独立配置
-      return (pagesDir as PagesDirConfig[]).map(item => ({
-        dir: item.dir,
-        include: item.include || include,
-        exclude: item.exclude || exclude
-      }))
-    }
-
-    return [{ dir: DEFAULT_PAGES_DIR, include, exclude }]
-  }
-
-  /**
-   * 获取所有页面目录的绝对路径配置
-   *
-   * @returns 规范化后的目录配置数组（绝对路径）
-   */
-  function getAbsolutePagesDirs(): PagesDirConfig[] {
-    const dirs = normalizePagesDirs()
-    if (!config) return dirs
-
-    return dirs.map(dirConfig => ({
-      dir: path.isAbsolute(dirConfig.dir)
-        ? dirConfig.dir
-        : path.resolve(config!.root, dirConfig.dir),
-      include: dirConfig.include,
-      exclude: dirConfig.exclude
-    }))
-  }
-
-  /**
    * 扫描页面目录并构建路由树
-   *
-   * 该函数会清空缓存，重新扫描页面目录，解析文件并构建路由树结构。
    */
   function scanAndBuildRoutes(): void {
-    const absolutePagesDirs = getAbsolutePagesDirs()
+    const absolutePagesDirs = getAbsolutePagesDirs(pagesDirs, config)
 
     // 扫描多个页面目录
     pages = scanMultiplePages({
@@ -264,17 +129,13 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
     // 构建路由树
     routeTree = buildRouteTree(pages)
 
-    // 清空缓存，下次获取时重新生成
+    // 清空缓存
     cachedRoutes = null
     cachedTypes = null
   }
 
   /**
    * 获取路由配置代码
-   *
-   * 使用缓存机制，只在路由树变化时重新生成。
-   *
-   * @returns 路由配置代码字符串
    */
   function getRoutesCode(): string {
     if (!cachedRoutes) {
@@ -285,10 +146,6 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
 
   /**
    * 获取类型定义代码
-   *
-   * 使用缓存机制，只在路由树变化时重新生成。
-   *
-   * @returns 类型定义代码字符串
    */
   function getTypesCode(): string {
     if (!cachedTypes) {
@@ -299,9 +156,6 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
 
   /**
    * 写入 .d.ts 类型声明文件
-   *
-   * 如果配置了 dts 选项，会将类型定义写入指定文件。
-   * 自动创建不存在的目录。
    */
   function writeDtsFile(): void {
     if (dts === false || !config) return
@@ -309,33 +163,24 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
     const dtsPath = path.isAbsolute(dts) ? dts : path.resolve(config.root, dts)
     const dtsDir = path.dirname(dtsPath)
 
-    // 确保目录存在
     if (!fs.existsSync(dtsDir)) {
       fs.mkdirSync(dtsDir, { recursive: true })
     }
 
-    // 写入类型定义文件
     const content = generateFullDtsFile(routeTree)
     fs.writeFileSync(dtsPath, content, 'utf-8')
 
-    // 打印日志
     console.log(`[vitarx-router] 类型定义文件已生成: ${dtsPath}`)
   }
 
   /**
    * 处理页面文件变更
-   *
-   * 当页面文件被添加、删除或修改时，重新扫描路由并更新缓存。
-   *
-   * @param file - 变更的文件路径
-   * @param server - Vite 开发服务器实例
    */
   function handlePageFileChange(file: string, server: ViteDevServer): void {
-    const absolutePagesDirs = getAbsolutePagesDirs()
+    const absolutePagesDirs = getAbsolutePagesDirs(pagesDirs, config)
     if (isPageFileInDirs(file, absolutePagesDirs, extensions)) {
       scanAndBuildRoutes()
       writeDtsFile()
-      // 使虚拟模块缓存失效
       const mod = server.moduleGraph.getModuleById(RESOLVED_ROUTES_ID)
       if (mod) {
         server.moduleGraph.invalidateModule(mod)
@@ -343,29 +188,111 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
     }
   }
 
-  return {
-    /** 插件名称 */
-    name: 'vite-plugin-vitarx-router',
+  /**
+   * 移除 definePage 宏调用
+   */
+  function removeDefinePage(code: string, id: string): { code: string; map: null } | null {
+    const hasDefinePageContent =
+      code.includes('definePage') || DEFINE_PAGE_SOURCES.some(src => code.includes(src))
 
-    /** 插件执行顺序：pre 确保在其他插件之前执行 */
+    if (!hasDefinePageContent) {
+      return null
+    }
+
+    try {
+      const ast = parse(code, {
+        sourceType: 'module',
+        plugins: [
+          'jsx',
+          'typescript',
+          'topLevelAwait',
+          'classProperties',
+          'objectRestSpread',
+          'dynamicImport'
+        ]
+      })
+
+      let hasDefinePage = false
+      let definePageLocalName: string | null = null
+
+      traverse(ast, {
+        ImportDeclaration(nodePath) {
+          const { node } = nodePath
+
+          if (!DEFINE_PAGE_SOURCES.includes(node.source.value)) {
+            return
+          }
+
+          const specifiers = node.specifiers.filter(spec => {
+            if (spec.type === 'ImportSpecifier') {
+              const importedName =
+                spec.imported.type === 'Identifier' ? spec.imported.name : spec.imported.value
+
+              if (importedName === 'definePage') {
+                definePageLocalName = spec.local.name
+                hasDefinePage = true
+                return false
+              }
+            }
+            return true
+          })
+
+          if (specifiers.length > 0) {
+            node.specifiers = specifiers
+          } else {
+            nodePath.remove()
+          }
+        },
+
+        CallExpression(nodePath) {
+          const { node } = nodePath
+
+          if (node.callee.type === 'Identifier' && node.callee.name === 'definePage') {
+            hasDefinePage = true
+            nodePath.remove()
+          }
+
+          if (
+            definePageLocalName &&
+            definePageLocalName !== 'definePage' &&
+            node.callee.type === 'Identifier' &&
+            node.callee.name === definePageLocalName
+          ) {
+            hasDefinePage = true
+            nodePath.remove()
+          }
+        }
+      })
+
+      if (!hasDefinePage) {
+        return null
+      }
+
+      const output = generate(ast, {
+        retainLines: false,
+        compact: false
+      })
+
+      return {
+        code: output.code,
+        map: null
+      }
+    } catch (error) {
+      console.warn(`[vitarx-router] 转换代码失败: ${id}`, error)
+      return null
+    }
+  }
+
+  return {
+    name: 'vite-plugin-vitarx-router',
     enforce: 'pre',
 
-    /**
-     * Vite 配置解析完成后的钩子
-     *
-     * 在此阶段初始化插件状态，扫描页面并生成类型文件。
-     */
     configResolved(resolvedConfig) {
       config = resolvedConfig
       scanAndBuildRoutes()
       writeDtsFile()
     },
 
-    /**
-     * 模块 ID 解析钩子
-     *
-     * 拦截虚拟模块的导入，返回内部解析后的 ID。
-     */
     resolveId(id) {
       if (id === VIRTUAL_ROUTES_ID) {
         return RESOLVED_ROUTES_ID
@@ -376,11 +303,6 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
       return null
     },
 
-    /**
-     * 模块加载钩子
-     *
-     * 为虚拟模块提供生成的内容。
-     */
     load(id) {
       if (id === RESOLVED_ROUTES_ID) {
         return getRoutesCode()
@@ -391,159 +313,29 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
       return null
     },
 
-    /**
-     * 代码转换钩子
-     *
-     * 移除页面文件中的 definePage 宏调用。
-     * definePage 仅用于构建时解析，运行时不需要。
-     * 支持处理导入别名的情况。
-     */
     transform(code, id) {
-      const absolutePagesDirs = getAbsolutePagesDirs()
+      const absolutePagesDirs = getAbsolutePagesDirs(pagesDirs, config)
 
-      // 只处理页面目录下的文件
       if (!isPageFileInDirs(id, absolutePagesDirs, extensions)) {
         return null
       }
 
-      // 快速检查是否包含 definePage 或相关导入
-      const hasDefinePageContent =
-        code.includes('definePage') || DEFINE_PAGE_SOURCES.some(src => code.includes(src))
-
-      if (!hasDefinePageContent) {
-        return null
-      }
-
-      try {
-        const ast = parse(code, {
-          sourceType: 'module',
-          plugins: [
-            'jsx',
-            'typescript',
-            'topLevelAwait',
-            'classProperties',
-            'objectRestSpread',
-            'dynamicImport'
-          ]
-        })
-
-        let hasDefinePage = false
-        // 用于存储导入的 definePage 的本地名称（可能是别名）
-        let definePageLocalName: string | null = null
-
-        traverse(ast, {
-          // 首先处理导入语句，确定 definePage 的本地名称
-          ImportDeclaration(nodePath) {
-            const { node } = nodePath
-
-            // 检查是否是从有效来源导入
-            if (!DEFINE_PAGE_SOURCES.includes(node.source.value)) {
-              return
-            }
-
-            // 查找 definePage 的导入并记录本地名称
-            const specifiers = node.specifiers.filter(spec => {
-              if (spec.type === 'ImportSpecifier') {
-                const importedName =
-                  spec.imported.type === 'Identifier' ? spec.imported.name : spec.imported.value
-
-                if (importedName === 'definePage') {
-                  // 记录本地名称（可能是别名）
-                  definePageLocalName = spec.local.name
-                  hasDefinePage = true
-                  return false // 移除这个导入
-                }
-              }
-              return true
-            })
-
-            // 如果还有其他导入，更新 specifiers；否则移除整个导入语句
-            if (specifiers.length > 0) {
-              node.specifiers = specifiers
-            } else {
-              nodePath.remove()
-            }
-          },
-
-          // 处理函数调用
-          CallExpression(nodePath) {
-            const { node } = nodePath
-
-            // 检查是否是 definePage 调用（原始名称）
-            if (node.callee.type === 'Identifier' && node.callee.name === 'definePage') {
-              hasDefinePage = true
-              nodePath.remove()
-            }
-
-            // 检查是否使用了别名调用
-            if (
-              definePageLocalName &&
-              definePageLocalName !== 'definePage' &&
-              node.callee.type === 'Identifier' &&
-              node.callee.name === definePageLocalName
-            ) {
-              hasDefinePage = true
-              nodePath.remove()
-            }
-          }
-        })
-
-        if (!hasDefinePage) {
-          return null
-        }
-
-        // 生成转换后的代码
-        const output = generate(ast, {
-          retainLines: false,
-          compact: false
-        })
-
-        return {
-          code: output.code,
-          map: null
-        }
-      } catch (error) {
-        // AST 解析失败时返回原始代码
-        console.warn(`[vitarx-router] 转换代码失败: ${id}`, error)
-        return null
-      }
+      return removeDefinePage(code, id)
     },
 
-    /**
-     * 开发服务器配置钩子
-     *
-     * 设置文件监听器，实现热更新功能。
-     */
     configureServer(server) {
-      const absolutePagesDirs = getAbsolutePagesDirs()
+      const absolutePagesDirs = getAbsolutePagesDirs(pagesDirs, config)
 
-      // 将所有页面目录添加到监听器
       for (const dirConfig of absolutePagesDirs) {
         server.watcher.add(dirConfig.dir)
       }
 
-      // 监听文件添加事件
-      server.watcher.on('add', file => {
-        handlePageFileChange(file, server)
-      })
-
-      // 监听文件删除事件
-      server.watcher.on('unlink', file => {
-        handlePageFileChange(file, server)
-      })
-
-      // 监听文件修改事件
-      server.watcher.on('change', file => {
-        handlePageFileChange(file, server)
-      })
+      server.watcher.on('add', file => handlePageFileChange(file, server))
+      server.watcher.on('unlink', file => handlePageFileChange(file, server))
+      server.watcher.on('change', file => handlePageFileChange(file, server))
     },
 
-    /**
-     * 构建开始钩子
-     *
-     * 确保在构建前生成最新的路由配置和类型文件。
-     */
-    buildStart(): void {
+    buildStart() {
       scanAndBuildRoutes()
       writeDtsFile()
     }

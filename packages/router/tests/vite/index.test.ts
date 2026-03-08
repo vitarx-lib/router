@@ -92,6 +92,74 @@ describe('Vite 插件', () => {
     })
   })
 
+  describe('配置验证', () => {
+    it('pagesDir 为空字符串时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ pagesDir: '' })).toThrow('[vitarx-router] pagesDir 不能为空字符串')
+    })
+
+    it('pagesDir 为空数组时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ pagesDir: [] })).toThrow('[vitarx-router] pagesDir 数组不能为空')
+    })
+
+    it('pagesDir 数组中包含空字符串时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ pagesDir: ['src/pages', ''] })).toThrow('[vitarx-router] pagesDir[1] 不能为空字符串')
+    })
+
+    it('pagesDir 对象数组中 dir 为空时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ pagesDir: [{ dir: '' }] })).toThrow('[vitarx-router] pagesDir[0].dir 必须是非空字符串')
+    })
+
+    it('pagesDir 类型错误时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ pagesDir: 123 as unknown as string })).toThrow('[vitarx-router] pagesDir 必须是字符串、字符串数组或对象数组')
+    })
+
+    it('extensions 为空数组时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ extensions: [] })).toThrow('[vitarx-router] extensions 数组不能为空')
+    })
+
+    it('extensions 不以点开头时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ extensions: ['tsx'] })).toThrow('[vitarx-router] extensions[0] "tsx" 必须以 "." 开头')
+    })
+
+    it('include 不是数组时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ include: 'admin' as unknown as string[] })).toThrow('[vitarx-router] include 必须是数组')
+    })
+
+    it('exclude 不是数组时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ exclude: 'components' as unknown as string[] })).toThrow('[vitarx-router] exclude 必须是数组')
+    })
+
+    it('dts 为空字符串时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ dts: '' })).toThrow('[vitarx-router] dts 不能为空字符串')
+    })
+
+    it('dts 类型错误时应抛出错误', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+
+      expect(() => VitarxRouter({ dts: 123 as unknown as string })).toThrow('[vitarx-router] dts 必须是字符串或 false')
+    })
+  })
+
   describe('虚拟模块解析', () => {
     it('应该解析路由虚拟模块 ID', async () => {
       const { default: VitarxRouter } = await import('../../src/vite/index.js')
