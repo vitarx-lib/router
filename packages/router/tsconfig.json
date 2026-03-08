@@ -6,23 +6,19 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "baseUrl": "./",
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
     "declaration": true,
-    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    /* JSX */
     "jsx": "preserve",
-    /* Build */
     "outDir": "dist",
-    "types": ["vitarx", "@vitarx/plugin-vite"]
+    "types": ["vitarx", "@vitarx/plugin-vite", "vite/client"]
   },
   "include": ["src/**/*.ts"]
 }
