@@ -29,14 +29,15 @@
 import generate from '@babel/generator'
 import { parse } from '@babel/parser'
 import traverse from '@babel/traverse'
+import micromatch from 'micromatch'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import { DEFAULT_DTS_FILE, DEFAULT_EXTENSIONS, DEFAULT_PAGES_DIR } from './core/constants.js'
 import { generateRoutes } from './core/generateRoutes.js'
 import { generateFullDtsFile, generateTypes } from './core/generateTypes.js'
-import { buildRouteTree, scanPages } from './core/scanPages.js'
-import type { ParsedPage, VitePluginRouterOptions } from './core/types.js'
+import { buildRouteTree, scanMultiplePages } from './core/scanPages.js'
+import type { PagesDirConfig, ParsedPage, VitePluginRouterOptions } from './core/types.js'
 
 /** definePage 的有效导入来源 */
 const DEFINE_PAGE_SOURCES: string[] = ['vitarx-router/auto-routes']
@@ -55,20 +56,25 @@ const RESOLVED_TYPES_ID = '\0' + VIRTUAL_TYPES_ID
 
 // 导出类型和工具函数
 export type { VitePluginRouterOptions, PageOptions } from './core/types.js'
+export { definePage } from './auto-routes/definePage.js'
 
 /**
- * 检查文件是否为页面文件
+ * 检查文件是否为页面文件（单目录版本）
+ *
+ * 支持 glob 模式匹配包含和排除规则。
  *
  * @param file - 文件路径
  * @param pagesDir - 页面目录路径
  * @param extensions - 支持的文件扩展名列表
- * @param exclude - 排除模式列表
+ * @param include - 包含 glob 模式列表
+ * @param exclude - 排除 glob 模式列表
  * @returns 如果是有效的页面文件返回 true
  */
 function isPageFile(
   file: string,
   pagesDir: string,
   extensions: string[],
+  include: string[],
   exclude: string[]
 ): boolean {
   // 检查文件是否在页面目录内
@@ -76,16 +82,59 @@ function isPageFile(
     return false
   }
 
-  // 检查是否匹配排除模式
-  for (const pattern of exclude) {
-    if (file.includes(pattern)) {
-      return false
-    }
-  }
-
   // 检查文件扩展名
   const ext = path.extname(file)
-  return extensions.includes(ext)
+  if (!extensions.includes(ext)) {
+    return false
+  }
+
+  // 获取相对路径
+  const relativePath = path.relative(pagesDir, file)
+  const normalizedPath = relativePath.replace(/\\/g, '/')
+
+  // 检查是否匹配包含模式
+  if (
+    include.length > 0 &&
+    !micromatch.isMatch(normalizedPath, include, { basename: true, dot: true })
+  ) {
+    return false
+  }
+
+  // 检查是否匹配排除模式
+  return !(
+    exclude.length > 0 &&
+    micromatch.isMatch(normalizedPath, exclude, {
+      basename: true,
+      dot: true
+    })
+  )
+}
+
+/**
+ * 检查文件是否为页面文件（多目录版本）
+ *
+ * 遍历所有页面目录配置，检查文件是否属于任一目录。
+ *
+ * @param file - 文件路径
+ * @param pagesDirs - 页面目录配置列表
+ * @param extensions - 支持的文件扩展名列表
+ * @returns 如果是有效的页面文件返回 true
+ */
+function isPageFileInDirs(
+  file: string,
+  pagesDirs: PagesDirConfig[],
+  extensions: string[]
+): boolean {
+  for (const dirConfig of pagesDirs) {
+    const dirPath = dirConfig.dir
+    const include = dirConfig.include || []
+    const exclude = dirConfig.exclude || []
+
+    if (isPageFile(file, dirPath, extensions, include, exclude)) {
+      return true
+    }
+  }
+  return false
 }
 
 /**
@@ -95,7 +144,7 @@ function isPageFile(
  * 支持开发环境热更新，当页面文件发生变化时自动重新生成路由。
  *
  * @param options - 插件配置选项
- * @param [options.pagesDir] - 页面目录路径，默认为 'src/pages'
+ * @param [options.pagesDir] - 页面目录路径，支持字符串、字符串数组或对象数组
  * @param [options.extensions] - 支持的文件扩展名，默认为 ['.tsx', '.ts', '.jsx', '.js']
  * @param [options.exclude] - 要排除的文件/目录模式列表
  * @param [options.dts] - 类型声明文件路径，设为 false 可禁用生成
@@ -113,6 +162,19 @@ function isPageFile(
  *   exclude: ['components', '__tests__'],
  *   dts: 'src/types/router.d.ts'
  * })
+ *
+ * // 多个目录
+ * VitarxRouter({
+ *   pagesDir: ['src/pages', 'src/admin']
+ * })
+ *
+ * // 多个目录，每个目录独立配置
+ * VitarxRouter({
+ *   pagesDir: [
+ *     { dir: 'src/pages', exclude: ['components'] },
+ *     { dir: 'src/admin', include: ['**\/*.tsx'] }
+ *   ]
+ * })
  * ```
  */
 export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plugin {
@@ -120,6 +182,7 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
   const {
     pagesDir = DEFAULT_PAGES_DIR,
     extensions = DEFAULT_EXTENSIONS,
+    include = [],
     exclude = [],
     dts = DEFAULT_DTS_FILE
   } = options
@@ -132,13 +195,56 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
   let cachedTypes: string | null = null
 
   /**
-   * 获取页面目录的绝对路径
+   * 将 pagesDir 配置规范化为 PagesDirConfig 数组
    *
-   * @returns 页面目录的绝对路径
+   * 支持三种输入格式：
+   * 1. 字符串：单个目录路径
+   * 2. 字符串数组：多个目录路径
+   * 3. 对象数组：每个目录独立配置
+   *
+   * @returns 规范化后的目录配置数组
    */
-  function getAbsolutePagesDir(): string {
-    if (!config) return pagesDir
-    return path.isAbsolute(pagesDir) ? pagesDir : path.resolve(config.root, pagesDir)
+  function normalizePagesDirs(): PagesDirConfig[] {
+    // 字符串：单个目录
+    if (typeof pagesDir === 'string') {
+      return [{ dir: pagesDir, include, exclude }]
+    }
+
+    // 数组类型
+    if (Array.isArray(pagesDir)) {
+      // 检查是否为字符串数组
+      if (pagesDir.length === 0 || typeof pagesDir[0] === 'string') {
+        // 字符串数组：多个目录，使用全局 include/exclude
+        return (pagesDir as string[]).map(dir => ({ dir, include, exclude }))
+      }
+
+      // 对象数组：每个目录独立配置
+      return (pagesDir as PagesDirConfig[]).map(item => ({
+        dir: item.dir,
+        include: item.include || include,
+        exclude: item.exclude || exclude
+      }))
+    }
+
+    return [{ dir: DEFAULT_PAGES_DIR, include, exclude }]
+  }
+
+  /**
+   * 获取所有页面目录的绝对路径配置
+   *
+   * @returns 规范化后的目录配置数组（绝对路径）
+   */
+  function getAbsolutePagesDirs(): PagesDirConfig[] {
+    const dirs = normalizePagesDirs()
+    if (!config) return dirs
+
+    return dirs.map(dirConfig => ({
+      dir: path.isAbsolute(dirConfig.dir)
+        ? dirConfig.dir
+        : path.resolve(config!.root, dirConfig.dir),
+      include: dirConfig.include,
+      exclude: dirConfig.exclude
+    }))
   }
 
   /**
@@ -147,13 +253,12 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
    * 该函数会清空缓存，重新扫描页面目录，解析文件并构建路由树结构。
    */
   function scanAndBuildRoutes(): void {
-    const absolutePagesDir = getAbsolutePagesDir()
+    const absolutePagesDirs = getAbsolutePagesDirs()
 
-    // 扫描页面目录
-    pages = scanPages({
-      pagesDir: absolutePagesDir,
-      extensions,
-      exclude
+    // 扫描多个页面目录
+    pages = scanMultiplePages({
+      pagesDirs: absolutePagesDirs,
+      extensions
     })
 
     // 构建路由树
@@ -226,8 +331,8 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
    * @param server - Vite 开发服务器实例
    */
   function handlePageFileChange(file: string, server: ViteDevServer): void {
-    const absolutePagesDir = getAbsolutePagesDir()
-    if (isPageFile(file, absolutePagesDir, extensions, exclude)) {
+    const absolutePagesDirs = getAbsolutePagesDirs()
+    if (isPageFileInDirs(file, absolutePagesDirs, extensions)) {
       scanAndBuildRoutes()
       writeDtsFile()
       // 使虚拟模块缓存失效
@@ -294,10 +399,10 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
      * 支持处理导入别名的情况。
      */
     transform(code, id) {
-      const absolutePagesDir = getAbsolutePagesDir()
+      const absolutePagesDirs = getAbsolutePagesDirs()
 
       // 只处理页面目录下的文件
-      if (!isPageFile(id, absolutePagesDir, extensions, exclude)) {
+      if (!isPageFileInDirs(id, absolutePagesDirs, extensions)) {
         return null
       }
 
@@ -410,10 +515,12 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
      * 设置文件监听器，实现热更新功能。
      */
     configureServer(server) {
-      const absolutePagesDir = getAbsolutePagesDir()
+      const absolutePagesDirs = getAbsolutePagesDirs()
 
-      // 将页面目录添加到监听器
-      server.watcher.add(absolutePagesDir)
+      // 将所有页面目录添加到监听器
+      for (const dirConfig of absolutePagesDirs) {
+        server.watcher.add(dirConfig.dir)
+      }
 
       // 监听文件添加事件
       server.watcher.on('add', file => {

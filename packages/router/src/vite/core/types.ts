@@ -80,6 +80,32 @@ export interface ResolvedRoute {
 }
 
 /**
+ * 页面目录配置项
+ *
+ * 用于配置多个页面目录时，可以为每个目录指定独立的包含/排除规则。
+ *
+ * @example
+ * ```typescript
+ * const pagesDirs: PagesDirConfig[] = [
+ *   { dir: 'src/pages', exclude: ['components'] },
+ *   { dir: 'src/admin', include: ['**\/*.tsx'] }
+ * ]
+ * ```
+ */
+export interface PagesDirConfig {
+  /** 页面目录路径 */
+  dir: string
+  /**
+   * 要包含的文件/目录 glob 模式列表
+   *
+   * 默认匹配所有文件。只有匹配 include 模式的文件才会被扫描。
+   */
+  include?: string[]
+  /** 要排除的文件/目录 glob 模式列表 */
+  exclude?: string[]
+}
+
+/**
  * 页面扫描选项
  *
  * 配置 scanPages 函数的扫描行为。
@@ -89,8 +115,26 @@ export interface ScanOptions {
   pagesDir: string
   /** 要处理的文件扩展名列表 */
   extensions: string[]
-  /** 要排除的文件/目录模式列表 */
+  /**
+   * 要包含的文件/目录 glob 模式列表
+   *
+   * 默认匹配所有文件。只有匹配 include 模式的文件才会被扫描。
+   */
+  include: string[]
+  /** 要排除的文件/目录 glob 模式列表 */
   exclude: string[]
+}
+
+/**
+ * 多目录扫描选项
+ *
+ * 用于扫描多个页面目录，每个目录可以有独立的包含/排除规则。
+ */
+export interface MultiScanOptions {
+  /** 页面目录配置列表 */
+  pagesDirs: PagesDirConfig[]
+  /** 要处理的文件扩展名列表 */
+  extensions: string[]
 }
 
 /**
@@ -105,6 +149,7 @@ export interface ScanOptions {
  *
  * export default defineConfig({
  *   plugins: [
+ *     // 单个目录
  *     VitarxRouter({
  *       pagesDir: 'src/views',
  *       extensions: ['.tsx', '.ts', '.vue'],
@@ -113,13 +158,98 @@ export interface ScanOptions {
  *   ]
  * })
  * ```
+ *
+ * @example
+ * ```typescript
+ * // 多个目录（数组形式）
+ * VitarxRouter({
+ *   pagesDir: ['src/pages', 'src/admin']
+ * })
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // 多个目录（对象形式，每个目录独立配置）
+ * VitarxRouter({
+ *   pagesDir: [
+ *     { dir: 'src/pages', exclude: ['components'] },
+ *     { dir: 'src/admin', include: ['**\/*.tsx'] }
+ *   ]
+ * })
+ * ```
  */
 export interface VitePluginRouterOptions {
-  /** 页面目录路径，默认为 'src/pages' */
-  pagesDir?: string
+  /**
+   * 页面目录配置
+   *
+   * 支持三种配置方式：
+   * 1. 字符串：单个页面目录路径
+   * 2. 字符串数组：多个页面目录路径，使用全局 include/exclude 规则
+   * 3. 对象数组：多个页面目录，每个目录可以有独立的 include/exclude 规则
+   *
+   * @default 'src/pages'
+   *
+   * @example
+   * ```typescript
+   * // 单个目录
+   * pagesDir: 'src/pages'
+   *
+   * // 多个目录（共享全局规则）
+   * pagesDir: ['src/pages', 'src/admin']
+   *
+   * // 多个目录（独立规则）
+   * pagesDir: [
+   *   { dir: 'src/pages', exclude: ['components'] },
+   *   { dir: 'src/admin', include: ['**\/*.tsx'] }
+   * ]
+   * ```
+   */
+  pagesDir?: string | string[] | PagesDirConfig[]
   /** 支持的文件扩展名，默认为 ['.tsx', '.ts', '.jsx', '.js'] */
   extensions?: string[]
-  /** 要排除的文件/目录模式 */
+  /**
+   * 要包含的文件/目录 glob 模式列表，默认匹配所有文件
+   *
+   * 注意：当 pagesDir 为对象数组时，此选项不生效，请在每个目录配置中单独设置。
+   *
+   * 支持的 glob 模式：
+   * - `*` - 匹配任意字符（不包括路径分隔符）
+   * - `**` - 匹配任意字符（包括路径分隔符）
+   * - `?` - 匹配单个字符
+   * - `[abc]` - 匹配指定字符集中的任意一个字符
+   * - `{a,b}` - 匹配指定的任意一个模式
+   *
+   * @example
+   * ```typescript
+   * include: [
+   *   '**\/*.tsx',            // 只包含 .tsx 文件
+   *   'pages\/**\/*'          // 只包含 pages 目录下的文件
+   * ]
+   * ```
+   */
+  include?: string[]
+  /**
+   * 要排除的文件/目录 glob 模式列表
+   *
+   * 注意：当 pagesDir 为对象数组时，此选项不生效，请在每个目录配置中单独设置。
+   *
+   * 支持的 glob 模式：
+   * - `*` - 匹配任意字符（不包括路径分隔符）
+   * - `**` - 匹配任意字符（包括路径分隔符）
+   * - `?` - 匹配单个字符
+   * - `[abc]` - 匹配指定字符集中的任意一个字符
+   * - `{a,b}` - 匹配指定的任意一个模式
+   *
+   * @example
+   * ```typescript
+   * exclude: [
+   *   'components',           // 排除 components 目录
+   *   '__tests__',            // 排除 __tests__ 目录
+   *   '**\/*.test.tsx',       // 排除所有测试文件
+   *   '**\/__mocks__\/**'     // 排除所有 __mocks__ 目录
+   * ]
+   * ```
+   */
   exclude?: string[]
   /** 类型声明文件路径，设为 false 可禁用生成 */
   dts?: string | false
