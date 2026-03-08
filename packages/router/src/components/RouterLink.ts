@@ -8,7 +8,6 @@ import {
   type WithProps
 } from 'vitarx'
 import {
-  type NavigateOptions,
   type NavigateResult,
   NavigateStatus,
   type NavigateTarget,
@@ -26,7 +25,7 @@ export interface RouterLinkProps extends WithProps<'a'> {
    *
    * 可以是路由目标对象，也可以是路由索引
    */
-  to: NavigateOptions | RouteIndex | HttpUrl | Hash | `${RouteIndex}${Hash}`
+  to: NavigateTarget | RouteIndex | HttpUrl | Hash | `${RouteIndex}${Hash}`
   /**
    * 子节点插槽
    */

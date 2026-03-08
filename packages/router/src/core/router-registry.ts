@@ -4,7 +4,7 @@ import {
   type DynamicRouteRecord,
   type HistoryMode,
   type MatchResult,
-  type NavigateOptions,
+  type NavigateConfig,
   type ResolvedRouterOptions,
   type Route,
   type RouteComponent,
@@ -182,7 +182,7 @@ export default abstract class RouterRegistry {
    * @param {string|Object} target 路由索引或目标对象
    * @returns {RouteNormalized|undefined} 匹配的路由对象，如果未找到则返回undefined
    */
-  public findRoute(target: RouteIndex | NavigateOptions): RouteNormalized | undefined {
+  public findRoute(target: RouteIndex | NavigateConfig): RouteNormalized | undefined {
     const isRouterTarget = typeof target === 'object'
     const index: RouteIndex = isRouterTarget ? target.index : target
     if (typeof index !== 'string') {

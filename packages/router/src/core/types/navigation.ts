@@ -40,40 +40,6 @@ export type NamedRouteComponent<K extends string = string> = Record<K, RouteComp
 export type AllowedRouteComponent = RouteComponent | NamedRouteComponent
 
 /**
- * 路由索引类型
- */
-interface BaseNavigateOptions<T extends RouteIndex> {
-  /**
-   * 路由索引，/开头为路径，否则为名称
-   */
-  index: T
-  /**
-   * URL hash
-   */
-  hash?: HashStr
-  /**
-   * URL 查询参数
-   */
-  query?: Record<string, string>
-  /**
-   * 路由参数
-   */
-  params?: Record<string, string | number>
-}
-
-/**
- * 路由目标
- *
- * 用于描述导航的目标位置
- */
-export interface NavigateTarget extends BaseNavigateOptions<RouteIndex> {
-  /**
-   * 是否替换当前路由
-   */
-  isReplace?: boolean
-}
-
-/**
  * 路由匹配的详情数据
  *
  * 所有和url相关的数据都已`decodeURIComponent`解码
@@ -190,11 +156,44 @@ export interface RouteIndexMap {}
  * 可以是路径或路由命名
  */
 export type RouteIndex = keyof RouteIndexMap extends never ? string : keyof RouteIndexMap
+/**
+ * 路由索引类型
+ */
+interface BaseNavigateOptions<T extends RouteIndex> {
+  /**
+   * 路由索引，/开头为路径，否则为名称
+   */
+  index: T
+  /**
+   * URL hash
+   */
+  hash?: HashStr
+  /**
+   * URL 查询参数
+   */
+  query?: Record<string, string>
+  /**
+   * 路由参数
+   */
+  params?: Record<string, string | number>
+}
 
 /**
- * 导航选项
+ * 路由目标
+ *
+ * 用于描述导航的目标位置
  */
-export type NavigateOptions<T extends RouteIndex = RouteIndex> = keyof RouteIndexMap extends never
+export interface NavigateTarget<T extends RouteIndex = RouteIndex> extends NavigateConfig<T> {
+  /**
+   * 是否替换当前路由
+   */
+  isReplace?: boolean
+}
+
+/**
+ * 导航配置
+ */
+export type NavigateConfig<T extends RouteIndex = RouteIndex> = keyof RouteIndexMap extends never
   ? BaseNavigateOptions<T>
   : T extends keyof RouteIndexMap
     ? 'params' extends keyof RouteIndexMap[T]

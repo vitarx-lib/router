@@ -19,7 +19,7 @@ import type {
   BeforeEachCallbackResult,
   HashStr,
   HistoryMode,
-  NavigateOptions,
+  NavigateConfig,
   NavigateResult,
   NavigateTarget,
   ReadonlyRouteLocation,
@@ -177,27 +177,27 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   /**
    * 替换当前页面
    *
-   * @param {NavigateOptions} options - 导航选项
+   * @param {NavigateConfig} options - 导航选项
    * @param [options.params] - 路由参数对象
    * @param [options.query] - 查询参数对象
    * @param [options.hash] - 哈希值，如：`#hash`
    * @return {Promise<NavigateResult>} - 导航结果
    */
-  public replace<T extends RouteIndex>(options: NavigateOptions<T>): Promise<NavigateResult> {
+  public replace<T extends RouteIndex>(options: NavigateConfig<T>): Promise<NavigateResult> {
     return this.navigate({ ...options, isReplace: true })
   }
 
   /**
    * 跳转到新的页面
    *
-   * @param {NavigateOptions} options - 导航选项
+   * @param {NavigateConfig} options - 导航选项
    * @param options.index - 路由索引
    * @param [options.params] - 路由参数对象
    * @param [options.query] - 查询参数对象
    * @param [options.hash] - 哈希值，如：`#hash`
    * @return {Promise<NavigateResult>} - 导航结果
    */
-  public push<T extends RouteIndex>(options: NavigateOptions<T>): Promise<NavigateResult> {
+  public push<T extends RouteIndex>(options: NavigateConfig<T>): Promise<NavigateResult> {
     return this.navigate({ ...options, isReplace: false })
   }
 
