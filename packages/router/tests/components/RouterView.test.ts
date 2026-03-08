@@ -50,6 +50,7 @@ function waitForRender(timeout = 50): Promise<void> {
 describe('RouterView', () => {
   let app: VitarxApp | null = null
   let container: HTMLElement
+  let router: ReturnType<typeof createRouter> | null = null
 
   beforeEach(() => {
     container = document.createElement('div')
@@ -62,12 +63,16 @@ describe('RouterView', () => {
       app.unmount()
       app = null
     }
+    if (router) {
+      router.destroy()
+      router = null
+    }
     document.body.removeChild(container)
   })
 
   describe('基础渲染', () => {
     it('应该渲染匹配的组件', async () => {
-      const router = createRouter({ mode: 'hash', routes: basicRoutes })
+      router = createRouter({ mode: 'hash', routes: basicRoutes })
 
       app = createApp(() => h(RouterView, {}))
       app.provide('router', router)
@@ -80,7 +85,7 @@ describe('RouterView', () => {
     })
 
     it('路由变化时应该更新渲染的组件', async () => {
-      const router = createRouter({ mode: 'hash', routes: basicRoutes })
+      router = createRouter({ mode: 'hash', routes: basicRoutes })
 
       app = createApp(() => h(RouterView, {}))
       app.provide('router', router)
@@ -100,7 +105,7 @@ describe('RouterView', () => {
 
   describe('命名视图', () => {
     it('应该渲染默认视图', async () => {
-      const router = createRouter({ mode: 'hash', routes: basicRoutes })
+      router = createRouter({ mode: 'hash', routes: basicRoutes })
 
       app = createApp(() => h(RouterView, { name: 'default' }))
       app.provide('router', router)
@@ -112,7 +117,7 @@ describe('RouterView', () => {
     })
 
     it('应该渲染命名视图', async () => {
-      const router = createRouter({ mode: 'hash', routes: basicRoutes })
+      router = createRouter({ mode: 'hash', routes: basicRoutes })
 
       await router.push({ index: '/admin' })
 
@@ -129,7 +134,7 @@ describe('RouterView', () => {
     })
 
     it('不存在的命名视图应该渲染空', async () => {
-      const router = createRouter({ mode: 'hash', routes: basicRoutes })
+      router = createRouter({ mode: 'hash', routes: basicRoutes })
 
       app = createApp(() => h(RouterView, { name: 'nonexistent' }))
       app.provide('router', router)
@@ -162,11 +167,11 @@ describe('RouterView', () => {
         }
       ]
 
-      const testRouter = createRouter({ mode: 'hash', routes: testRoutes })
-      await testRouter.push({ index: '/user/456' })
+      router = createRouter({ mode: 'hash', routes: testRoutes })
+      await router.push({ index: '/user/456' })
 
       app = createApp(() => h(RouterView, {}))
-      app.provide('router', testRouter)
+      app.provide('router', router)
       app.mount(container)
 
       await waitForRender(100)
@@ -195,11 +200,11 @@ describe('RouterView', () => {
         }
       ]
 
-      const testRouter = createRouter({ mode: 'hash', routes: testRoutes })
-      await testRouter.push({ index: '/admin' })
+      router = createRouter({ mode: 'hash', routes: testRoutes })
+      await router.push({ index: '/admin' })
 
       app = createApp(() => h(RouterView, {}))
-      app.provide('router', testRouter)
+      app.provide('router', router)
       app.mount(container)
 
       await waitForRender(100)
@@ -234,11 +239,11 @@ describe('RouterView', () => {
         }
       ]
 
-      const testRouter = createRouter({ mode: 'hash', routes: testRoutes })
-      await testRouter.push({ index: '/custom' })
+      router = createRouter({ mode: 'hash', routes: testRoutes })
+      await router.push({ index: '/custom' })
 
       app = createApp(() => h(RouterView, {}))
-      app.provide('router', testRouter)
+      app.provide('router', router)
       app.mount(container)
 
       await waitForRender(100)
@@ -268,11 +273,11 @@ describe('RouterView', () => {
         }
       ]
 
-      const testRouter = createRouter({ mode: 'hash', routes: testRoutes })
-      await testRouter.push({ index: '/test' })
+      router = createRouter({ mode: 'hash', routes: testRoutes })
+      await router.push({ index: '/test' })
 
       app = createApp(() => h(RouterView, {}))
-      app.provide('router', testRouter)
+      app.provide('router', router)
       app.mount(container)
 
       await waitForRender(100)
@@ -288,7 +293,8 @@ describe('RouterView', () => {
       })
 
       app = createApp(() => h(RouterView, { render: customRender }))
-      app.provide('router', createRouter({ mode: 'hash', routes: basicRoutes }))
+      router = createRouter({ mode: 'hash', routes: basicRoutes })
+      app.provide('router', router)
       app.mount(container)
 
       await waitForRender(100)
@@ -305,7 +311,8 @@ describe('RouterView', () => {
       }
 
       app = createApp(() => h(RouterView, { render: customRender }))
-      app.provide('router', createRouter({ mode: 'hash', routes: basicRoutes }))
+      router = createRouter({ mode: 'hash', routes: basicRoutes })
+      app.provide('router', router)
       app.mount(container)
 
       await waitForRender(100)
@@ -323,16 +330,16 @@ describe('RouterView', () => {
         { path: '/', component: { default: createMockComponent('Home') }, props: { default: {} } }
       ]
 
-      const testRouter = createRouter({
+      router = createRouter({
         mode: 'hash',
         routes: testRoutes,
         missing: missingComponent
       })
 
-      await testRouter.push({ index: '/nonexistent' })
+      await router.push({ index: '/nonexistent' })
 
       app = createApp(() => h(RouterView, {}))
-      app.provide('router', testRouter)
+      app.provide('router', router)
       app.mount(container)
 
       await waitForRender(100)
@@ -345,12 +352,12 @@ describe('RouterView', () => {
         { path: '/', component: { default: createMockComponent('Home') }, props: { default: {} } }
       ]
 
-      const testRouter = createRouter({ mode: 'hash', routes: testRoutes })
+      router = createRouter({ mode: 'hash', routes: testRoutes })
 
-      await testRouter.push({ index: '/nonexistent' })
+      await router.push({ index: '/nonexistent' })
 
       app = createApp(() => h(RouterView, {}))
-      app.provide('router', testRouter)
+      app.provide('router', router)
       app.mount(container)
 
       await waitForRender(100)
@@ -386,11 +393,11 @@ describe('RouterView', () => {
         }
       ]
 
-      const testRouter = createRouter({ mode: 'hash', routes: nestedRoutes })
-      await testRouter.push({ index: '/parent/child' })
+      router = createRouter({ mode: 'hash', routes: nestedRoutes })
+      await router.push({ index: '/parent/child' })
 
       app = createApp(() => h(RouterView, {}))
-      app.provide('router', testRouter)
+      app.provide('router', router)
       app.mount(container)
 
       await waitForRender(100)
@@ -406,10 +413,10 @@ describe('RouterView', () => {
         { path: '/', component: { default: createMockComponent('Home') }, props: { default: {} } }
       ]
 
-      const testRouter = createRouter({ mode: 'hash', routes: testRoutes })
+      router = createRouter({ mode: 'hash', routes: testRoutes })
 
       app = createApp(() => h(RouterView, {}))
-      app.provide('router', testRouter)
+      app.provide('router', router)
       app.mount(container)
 
       await waitForRender(100)

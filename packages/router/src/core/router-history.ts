@@ -16,6 +16,12 @@ import { urlToRouteTarget } from './utils.js'
  * 支持浏览器前进、后退、跳转等操作
  */
 export default class RouterHistory extends RouterCore {
+  /**
+   * 绑定后的 popstate 事件处理器
+   * 用于在销毁时移除事件监听器
+   */
+  private _boundOnPopState: ((event: PopStateEvent) => void) | null = null
+
   constructor(options: RouterOptions<'path' | 'hash'>) {
     // 守卫mode类型
     if (!['path', 'hash'].includes(options.mode as string)) options.mode = 'hash'
@@ -84,14 +90,28 @@ export default class RouterHistory extends RouterCore {
    * @inheritDoc
    */
   protected override initializeRouter() {
+    // 保存绑定后的事件处理器引用，用于销毁时移除
+    this._boundOnPopState = this.onPopState.bind(this)
     // 初始化时监听 popstate 事件，处理历史记录返回时的路由恢复
-    window.addEventListener('popstate', this.onPopState.bind(this))
+    window.addEventListener('popstate', this._boundOnPopState)
     // 替换路由
     this.replace(this.currentRouteTarget).then(res => {
       if (res.status !== NavigateStatus.success) {
         logger.warn(`[Router] Initial route matching failed: ${res.message}`)
       }
     })
+  }
+
+  /**
+   * 销毁路由器
+   *
+   * 移除所有事件监听器，清理资源
+   */
+  public override destroy(): void {
+    if (this._boundOnPopState) {
+      window.removeEventListener('popstate', this._boundOnPopState)
+      this._boundOnPopState = null
+    }
   }
 
   /**

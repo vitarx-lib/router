@@ -43,6 +43,9 @@ function cleanupTest(ctx: TestContext) {
   if (ctx.app) {
     ctx.app.unmount()
   }
+  if (ctx.router) {
+    ctx.router.destroy()
+  }
   if (ctx.container.parentNode) {
     document.body.removeChild(ctx.container)
   }

@@ -656,4 +656,11 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
   install(app: App): void {
     app.provide('router', this)
   }
+
+  /**
+   * 销毁路由器
+   *
+   * 子类可重写此方法以清理资源（如移除事件监听器）
+   */
+  public destroy(): void {}
 }
