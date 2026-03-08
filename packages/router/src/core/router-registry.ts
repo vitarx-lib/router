@@ -4,7 +4,7 @@ import {
   type DynamicRouteRecord,
   type HistoryMode,
   type MatchResult,
-  type NavigateTarget,
+  type NavigateOptions,
   type ResolvedRouterOptions,
   type Route,
   type RouteComponent,
@@ -182,7 +182,7 @@ export default abstract class RouterRegistry {
    * @param {string|Object} target 路由索引或目标对象
    * @returns {RouteNormalized|undefined} 匹配的路由对象，如果未找到则返回undefined
    */
-  public findRoute(target: RouteIndex | NavigateTarget): RouteNormalized | undefined {
+  public findRoute(target: RouteIndex | NavigateOptions): RouteNormalized | undefined {
     const isRouterTarget = typeof target === 'object'
     const index: RouteIndex = isRouterTarget ? target.index : target
     if (typeof index !== 'string') {
@@ -271,14 +271,10 @@ export default abstract class RouterRegistry {
         // 构建规范化路径，用于动态路由匹配
         const normalizedPath = `${shortPath}/`
 
-        // 缓存正则表达式
-        const regexCache = new Map<string, RegExp>()
-
         // 遍历候选动态路由，尝试匹配
         for (const { regex, route } of candidates) {
           // 使用缓存的正则表达式
-          const cachedRegex = regexCache.get(regex.source) || regex
-          const match = cachedRegex.exec(normalizedPath)
+          const match = regex.exec(normalizedPath)
           if (!match) continue
 
           // 构建参数对象，存储匹配到的参数
