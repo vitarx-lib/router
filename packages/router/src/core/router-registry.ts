@@ -291,8 +291,8 @@ export default abstract class RouterRegistry {
         }
       }
 
-      // 如果没有找到匹配的动态路由，且没有使用后缀和/index结尾，尝试匹配index路由
-      if (!suffix && !shortPath.endsWith('/index')) {
+      // 如果没有找到匹配的动态和纯静态路由，且非 /index 结尾，尝试匹配index路由
+      if (!shortPath.endsWith('/index')) {
         const indexRoute = this._pathRoutes.get(`${shortPath === '/' ? '' : shortPath}/index`)
         if (
           indexRoute &&
@@ -300,7 +300,9 @@ export default abstract class RouterRegistry {
         ) {
           return { route: indexRoute, params: undefined }
         }
-      } else if (shortPath === '/index') {
+      }
+      // 兼容 /index 访问 / 根
+      else if (shortPath === '/index') {
         const indexRoute = this._pathRoutes.get('/')
         if (
           indexRoute &&
