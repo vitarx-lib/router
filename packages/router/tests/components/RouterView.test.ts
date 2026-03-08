@@ -117,6 +117,7 @@ describe('RouterView', () => {
     })
 
     it('应该渲染命名视图', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       router = createRouter({ mode: 'hash', routes: basicRoutes })
 
       await router.push({ index: '/admin' })
@@ -131,6 +132,7 @@ describe('RouterView', () => {
 
       expect(container.querySelector('[data-testid="Admin"]')).toBeDefined()
       expect(container.querySelector('[data-testid="AdminSidebar"]')).toBeDefined()
+      warnSpy.mockRestore()
     })
 
     it('不存在的命名视图应该渲染空', async () => {
@@ -148,6 +150,7 @@ describe('RouterView', () => {
 
   describe('props 注入', () => {
     it('props 为 true 时应该注入路由参数', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       let receivedProps: any = null
       const TestComponent = (props: any) => {
         receivedProps = props
@@ -178,9 +181,11 @@ describe('RouterView', () => {
 
       expect(receivedProps).toBeDefined()
       expect(receivedProps.id).toBe('456')
+      warnSpy.mockRestore()
     })
 
     it('props 为对象时应该注入对象属性', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       let receivedProps: any = null
       const TestComponent = (props: any) => {
         receivedProps = props
@@ -212,9 +217,11 @@ describe('RouterView', () => {
       expect(receivedProps).toBeDefined()
       expect(receivedProps.title).toBe('Admin Panel')
       expect(receivedProps.role).toBe('admin')
+      warnSpy.mockRestore()
     })
 
     it('props 为函数时应该调用函数获取属性', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       let receivedProps: any = null
       const TestComponent = (props: any) => {
         receivedProps = props
@@ -251,9 +258,11 @@ describe('RouterView', () => {
       expect(receivedProps).toBeDefined()
       expect(receivedProps.routePath).toBe('/custom')
       expect(receivedProps.timestamp).toBeDefined()
+      warnSpy.mockRestore()
     })
 
     it('props 为 false 时应该不注入属性', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       let receivedProps: any = null
       const TestComponent = (props: any) => {
         receivedProps = props
@@ -283,6 +292,7 @@ describe('RouterView', () => {
       await waitForRender(100)
 
       expect(Object.keys(receivedProps).length).toBe(0)
+      warnSpy.mockRestore()
     })
   })
 
@@ -325,6 +335,7 @@ describe('RouterView', () => {
 
   describe('missing 组件', () => {
     it('未匹配路由时应该渲染 missing 组件', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const missingComponent = createMockComponent('Missing')
       const testRoutes: Route[] = [
         { path: '/', component: { default: createMockComponent('Home') }, props: { default: {} } }
@@ -345,9 +356,11 @@ describe('RouterView', () => {
       await waitForRender(100)
 
       expect(container.querySelector('[data-testid="Missing"]')).toBeDefined()
+      warnSpy.mockRestore()
     })
 
     it('没有 missing 组件时应该渲染空', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const testRoutes: Route[] = [
         { path: '/', component: { default: createMockComponent('Home') }, props: { default: {} } }
       ]
@@ -363,11 +376,13 @@ describe('RouterView', () => {
       await waitForRender(100)
 
       expect(container.children.length).toBe(0)
+      warnSpy.mockRestore()
     })
   })
 
   describe('嵌套路由', () => {
     it('应该正确处理嵌套路由视图', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const ParentComponent = () =>
         h('div', { 'data-testid': 'parent' }, [h('h1', {}, 'Parent'), h(RouterView, {})])
 
@@ -404,6 +419,7 @@ describe('RouterView', () => {
 
       expect(container.querySelector('[data-testid="parent"]')).toBeDefined()
       expect(container.querySelector('[data-testid="child"]')).toBeDefined()
+      warnSpy.mockRestore()
     })
   })
 

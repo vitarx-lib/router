@@ -274,10 +274,12 @@ describe('RouterLink', () => {
 
   describe('URL 编码处理', () => {
     it('应该正确解码 URL 编码的路径', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       mountComponent(ctx, h(RouterLink, { to: '/about%20page' }))
       await waitForRender()
 
       expect(getLink(ctx)).toBeDefined()
+      warnSpy.mockRestore()
     })
   })
 

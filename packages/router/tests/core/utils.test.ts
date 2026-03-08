@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   addPathSuffix,
   cloneRouteLocation,
@@ -119,9 +119,11 @@ describe('utils', () => {
     })
 
     it('应该对无效正则使用默认模式并发出警告', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const pattern = { id: 'invalid' as any }
       const result = createDynamicPattern('/user/{id}', pattern, false, /[\w.]+/)
       expect(result.regex.test('/user/123/')).toBe(true)
+      warnSpy.mockRestore()
     })
   })
 
