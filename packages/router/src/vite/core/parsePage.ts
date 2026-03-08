@@ -5,6 +5,7 @@
  * - 路由路径转换
  * - 动态参数识别
  * - definePage 宏解析（使用 Babel AST 解析）
+ * - default 导出函数组件检测
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -19,10 +20,247 @@ const DYNAMIC_PARAM_REGEX = /^\[(.+)]$/
 /** definePage 的导入来源 */
 const DEFINE_PAGE_SOURCES = ['vitarx-router/auto-routes']
 
+/** 需要进行默认导出检测的文件扩展名 */
+const CHECK_EXPORT_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js']
+
+/**
+ * 默认导出检测结果
+ */
+interface DefaultExportCheckResult {
+  /** 是否有默认导出 */
+  hasDefaultExport: boolean
+  /** 默认导出是否为函数或类 */
+  isFunctionOrClass: boolean
+  /** 导出名称（如果有） */
+  exportName: string | null
+  /** 警告信息 */
+  warning: string | null
+}
+
+/**
+ * 检测文件是否具有有效的默认导出函数组件
+ *
+ * 支持检测以下导出语法：
+ * - `export default function Component() {}` - 命名函数声明
+ * - `export default function() {}` - 匿名函数声明
+ * - `export default () => {}` - 箭头函数
+ * - `export default class Component {}` - 类声明（类组件）
+ * - `const Component = () => {}; export default Component` - 先声明再导出
+ * - `export { Component as default }` - 命名导出为 default
+ *
+ * @param filePath - 文件路径
+ * @returns 检测结果
+ */
+function checkDefaultExport(filePath: string): DefaultExportCheckResult {
+  if (!fs.existsSync(filePath)) {
+    return {
+      hasDefaultExport: false,
+      isFunctionOrClass: false,
+      exportName: null,
+      warning: `文件不存在: ${filePath}`
+    }
+  }
+
+  const content = fs.readFileSync(filePath, 'utf-8')
+
+  // 快速检查是否包含 export default 关键字
+  if (!content.includes('export')) {
+    return {
+      hasDefaultExport: false,
+      isFunctionOrClass: false,
+      exportName: null,
+      warning: `未检测到默认导出 (default export)，该文件将被跳过。请确保导出一个函数组件。`
+    }
+  }
+
+  try {
+    const ast = parse(content, {
+      sourceType: 'module',
+      plugins: [
+        'jsx',
+        'typescript',
+        'topLevelAwait',
+        'classProperties',
+        'objectRestSpread',
+        'dynamicImport'
+      ]
+    })
+
+    // 存储命名导出的变量信息
+    const namedExports = new Map<string, 'function' | 'class' | 'variable' | 'unknown'>()
+    // 存储变量声明信息
+    const variableDeclarations = new Map<string, 'function' | 'arrow' | 'class' | 'unknown'>()
+    // 默认导出检测结果
+    let hasDefaultExport = false
+    let isFunctionOrClass = false
+    let exportName: string | null = null
+
+    traverse(ast, {
+      // 收集变量声明
+      VariableDeclarator(nodePath) {
+        const { node } = nodePath
+        if (node.id.type === 'Identifier') {
+          const name = node.id.name
+          if (node.init) {
+            if (node.init.type === 'ArrowFunctionExpression') {
+              variableDeclarations.set(name, 'arrow')
+            } else if (node.init.type === 'FunctionExpression') {
+              variableDeclarations.set(name, 'function')
+            } else if (node.init.type === 'ClassExpression') {
+              variableDeclarations.set(name, 'class')
+            } else {
+              variableDeclarations.set(name, 'unknown')
+            }
+          }
+        }
+      },
+
+      // 收集函数声明
+      FunctionDeclaration(nodePath) {
+        const { node } = nodePath
+        if (node.id) {
+          variableDeclarations.set(node.id.name, 'function')
+        }
+      },
+
+      // 收集类声明
+      ClassDeclaration(nodePath) {
+        const { node } = nodePath
+        if (node.id) {
+          variableDeclarations.set(node.id.name, 'class')
+        }
+      },
+
+      // 处理 export default 声明
+      ExportDefaultDeclaration(nodePath) {
+        const { node } = nodePath
+        hasDefaultExport = true
+
+        const declaration = node.declaration
+
+        switch (declaration.type) {
+          case 'FunctionDeclaration':
+          case 'FunctionExpression':
+            isFunctionOrClass = true
+            exportName = declaration.id?.name || null
+            break
+
+          case 'ArrowFunctionExpression':
+            isFunctionOrClass = true
+            break
+
+          case 'ClassDeclaration':
+          case 'ClassExpression':
+            isFunctionOrClass = true
+            exportName = declaration.id?.name || null
+            break
+
+          case 'Identifier':
+            // export default Component
+            // 检查标识符是否指向函数或类
+            exportName = declaration.name
+            const varType = variableDeclarations.get(declaration.name)
+            if (varType === 'function' || varType === 'arrow' || varType === 'class') {
+              isFunctionOrClass = true
+            }
+            break
+
+          default:
+            // 其他情况（如对象、字面量等）
+            break
+        }
+      },
+
+      // 处理命名导出
+      ExportNamedDeclaration(nodePath) {
+        const { node } = nodePath
+
+        if (node.declaration) {
+          // export function Component() {}
+          // export class Component {}
+          // export const Component = () => {}
+          if (node.declaration.type === 'FunctionDeclaration') {
+            if (node.declaration.id) {
+              namedExports.set(node.declaration.id.name, 'function')
+            }
+          } else if (node.declaration.type === 'ClassDeclaration') {
+            if (node.declaration.id) {
+              namedExports.set(node.declaration.id.name, 'class')
+            }
+          } else if (node.declaration.type === 'VariableDeclaration') {
+            for (const decl of node.declaration.declarations) {
+              if (decl.id.type === 'Identifier') {
+                const name = decl.id.name
+                if (decl.init) {
+                  if (decl.init.type === 'ArrowFunctionExpression') {
+                    namedExports.set(name, 'function')
+                  } else if (decl.init.type === 'FunctionExpression') {
+                    namedExports.set(name, 'function')
+                  } else if (decl.init.type === 'ClassExpression') {
+                    namedExports.set(name, 'class')
+                  } else {
+                    namedExports.set(name, 'unknown')
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // export { Component as default }
+        if (node.specifiers) {
+          for (const specifier of node.specifiers) {
+            if (specifier.type === 'ExportSpecifier') {
+              const exportedName =
+                specifier.exported.type === 'Identifier'
+                  ? specifier.exported.name
+                  : specifier.exported.value
+
+              if (exportedName === 'default') {
+                hasDefaultExport = true
+                exportName = specifier.local.name
+
+                // 检查导出的变量是否为函数或类
+                const varType = variableDeclarations.get(specifier.local.name)
+                if (varType === 'function' || varType === 'arrow' || varType === 'class') {
+                  isFunctionOrClass = true
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    // 构建警告信息
+    let warning: string | null = null
+    if (!hasDefaultExport) {
+      warning = `未检测到默认导出 (default export)，该文件将被跳过。请确保导出一个函数组件。`
+    } else if (!isFunctionOrClass) {
+      warning = `默认导出不是函数或类，该文件将被跳过。请确保导出一个有效的 React 组件。`
+    }
+
+    return {
+      hasDefaultExport,
+      isFunctionOrClass,
+      exportName,
+      warning
+    }
+  } catch (error) {
+    return {
+      hasDefaultExport: false,
+      isFunctionOrClass: false,
+      exportName: null,
+      warning: `解析文件失败: ${error instanceof Error ? error.message : String(error)}`
+    }
+  }
+}
+
 /**
  * 解析页面文件
  *
  * 根据文件路径解析出路由配置信息，包括路径、名称、参数等。
+ * 会检测文件是否具有有效的默认导出函数组件，如果没有则跳过该文件。
  *
  * 文件命名约定：
  * - `index.tsx` → 索引路由，路径为目录路径
@@ -32,7 +270,7 @@ const DEFINE_PAGE_SOURCES = ['vitarx-router/auto-routes']
  * @param filePath - 文件绝对路径
  * @param pagesDir - 页面目录绝对路径
  * @param parentPath - 父级路径（用于嵌套路由）
- * @returns 解析后的页面信息，解析失败返回 null
+ * @returns 解析后的页面信息，解析失败或无有效导出返回 null
  *
  * @example
  * ```typescript
@@ -53,6 +291,17 @@ export function parsePageFile(
   const fileName = path.basename(filePath)
   const ext = path.extname(fileName)
   const baseName = fileName.slice(0, -ext.length)
+
+  // 只对 js/ts/jsx/tsx 文件进行默认导出检测
+  // 其他文件类型（如 .md）可能需要第三方插件转换，跳过检测
+  if (CHECK_EXPORT_EXTENSIONS.includes(ext)) {
+    const exportCheck = checkDefaultExport(filePath)
+
+    if (exportCheck.warning) {
+      console.warn(`[vitarx-router] 警告: ${filePath}\n  ${exportCheck.warning}`)
+      return null
+    }
+  }
 
   const relativePath = path.relative(pagesDir, filePath)
   const dirPath = path.dirname(relativePath)

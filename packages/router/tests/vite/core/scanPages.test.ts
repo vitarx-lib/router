@@ -47,7 +47,9 @@ function createPageFile(relativePath: string, content: string = ''): void {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true })
   }
-  fs.writeFileSync(fullPath, content, 'utf-8')
+  // 默认创建带有默认导出的函数组件
+  const defaultContent = content || `export default function Page() { return null }`
+  fs.writeFileSync(fullPath, defaultContent, 'utf-8')
 }
 
 describe('scanPages', () => {
@@ -356,7 +358,9 @@ describe('scanMultiplePages', () => {
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true })
     }
-    fs.writeFileSync(fullPath, content, 'utf-8')
+    // 默认创建带有默认导出的函数组件
+    const defaultContent = content || `export default function Page() { return null }`
+    fs.writeFileSync(fullPath, defaultContent, 'utf-8')
   }
 
   describe('多目录扫描', () => {

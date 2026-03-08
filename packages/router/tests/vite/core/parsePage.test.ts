@@ -35,9 +35,19 @@ function createPageFile(relativePath: string, content: string = ''): void {
 }
 
 describe('parsePageFile', () => {
+  beforeEach(() => {
+    setupTestDir()
+  })
+
+  afterEach(() => {
+    teardownTestDir()
+  })
+
   describe('索引文件解析', () => {
     it('应该正确解析根索引文件', () => {
-      const result = parsePageFile('/src/pages/index.tsx', '/src/pages', '')
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/')
       expect(result!.name).toBe('')
@@ -47,7 +57,9 @@ describe('parsePageFile', () => {
     })
 
     it('应该正确解析嵌套索引文件', () => {
-      const result = parsePageFile('/src/pages/user/index.tsx', '/src/pages', 'user')
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('user/index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'user/index.tsx'), testDir, 'user')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/user')
       expect(result!.name).toBe('user')
@@ -55,7 +67,9 @@ describe('parsePageFile', () => {
     })
 
     it('应该正确解析多层嵌套索引文件', () => {
-      const result = parsePageFile('/src/pages/admin/user/index.tsx', '/src/pages', 'admin/user')
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('admin/user/index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'admin/user/index.tsx'), testDir, 'admin/user')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/admin/user')
       expect(result!.name).toBe('admin-user')
@@ -65,7 +79,9 @@ describe('parsePageFile', () => {
 
   describe('动态路由解析', () => {
     it('应该正确解析动态参数路由', () => {
-      const result = parsePageFile('/src/pages/user/[id].tsx', '/src/pages', 'user')
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('user/[id].tsx', content)
+      const result = parsePageFile(path.join(testDir, 'user/[id].tsx'), testDir, 'user')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/user/{id}')
       expect(result!.name).toBe('user-id')
@@ -75,7 +91,9 @@ describe('parsePageFile', () => {
     })
 
     it('应该正确解析根级动态路由', () => {
-      const result = parsePageFile('/src/pages/[slug].tsx', '/src/pages', '')
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('[slug].tsx', content)
+      const result = parsePageFile(path.join(testDir, '[slug].tsx'), testDir, '')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/{slug}')
       expect(result!.name).toBe('slug')
@@ -86,7 +104,9 @@ describe('parsePageFile', () => {
 
   describe('静态路由解析', () => {
     it('应该正确解析静态路由文件', () => {
-      const result = parsePageFile('/src/pages/user/settings.tsx', '/src/pages', 'user')
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('user/settings.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'user/settings.tsx'), testDir, 'user')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/user/settings')
       expect(result!.name).toBe('user-settings')
@@ -95,7 +115,9 @@ describe('parsePageFile', () => {
     })
 
     it('应该正确解析根级静态路由', () => {
-      const result = parsePageFile('/src/pages/about.tsx', '/src/pages', '')
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('about.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'about.tsx'), testDir, '')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/about')
       expect(result!.name).toBe('about')
@@ -105,19 +127,25 @@ describe('parsePageFile', () => {
 
   describe('不同扩展名', () => {
     it('应该正确解析 .ts 文件', () => {
-      const result = parsePageFile('/src/pages/index.ts', '/src/pages', '')
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('index.ts', content)
+      const result = parsePageFile(path.join(testDir, 'index.ts'), testDir, '')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/')
     })
 
     it('应该正确解析 .jsx 文件', () => {
-      const result = parsePageFile('/src/pages/index.jsx', '/src/pages', '')
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('index.jsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.jsx'), testDir, '')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/')
     })
 
     it('应该正确解析 .js 文件', () => {
-      const result = parsePageFile('/src/pages/index.js', '/src/pages', '')
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('index.js', content)
+      const result = parsePageFile(path.join(testDir, 'index.js'), testDir, '')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/')
     })
@@ -285,5 +313,374 @@ describe('extractParamsFromPath', () => {
   it('根路径应返回空数组', () => {
     const params = extractParamsFromPath('/')
     expect(params).toEqual([])
+  })
+})
+
+describe('默认导出检测', () => {
+  beforeEach(() => {
+    setupTestDir()
+  })
+
+  afterEach(() => {
+    teardownTestDir()
+  })
+
+  describe('有效的函数组件导出', () => {
+    it('应该识别 export default function 声明', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        export default function Page() {
+          return <div>Page</div>
+        }
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/')
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该识别 export default 匿名函数', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        export default function() {
+          return <div>Page</div>
+        }
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该识别 export default 箭头函数', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        export default () => {
+          return <div>Page</div>
+        }
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该识别 export default 类组件', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        export default class Page extends React.Component {
+          render() {
+            return <div>Page</div>
+          }
+        }
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该识别先声明再导出的函数', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        const Page = () => {
+          return <div>Page</div>
+        }
+        export default Page
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该识别 export { Component as default }', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        const Page = () => {
+          return <div>Page</div>
+        }
+        export { Page as default }
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该识别 export function 配合 as default', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        function Page() {
+          return <div>Page</div>
+        }
+        export { Page as default }
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+  })
+
+  describe('无效的导出', () => {
+    it('没有默认导出时应跳过并警告', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        export const Page = () => {
+          return <div>Page</div>
+        }
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).toBeNull()
+      expect(warnSpy).toHaveBeenCalled()
+      expect(warnSpy.mock.calls[0][0]).toContain('未检测到默认导出')
+
+      warnSpy.mockRestore()
+    })
+
+    it('默认导出为对象时应跳过并警告', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        export default {
+          name: 'Page'
+        }
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).toBeNull()
+      expect(warnSpy).toHaveBeenCalled()
+      expect(warnSpy.mock.calls[0][0]).toContain('默认导出不是函数或类')
+
+      warnSpy.mockRestore()
+    })
+
+    it('默认导出为字符串时应跳过并警告', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `export default 'not a component'`
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).toBeNull()
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('默认导出为数字时应跳过并警告', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `export default 42`
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).toBeNull()
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('没有任何导出时应跳过并警告', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        const Page = () => {
+          return <div>Page</div>
+        }
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).toBeNull()
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('文件不存在时应跳过并警告', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const result = parsePageFile('/non/existent/file.tsx', '/non/existent', '')
+
+      expect(result).toBeNull()
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+  })
+
+  describe('TypeScript 类型支持', () => {
+    it('应该识别带 TypeScript 类型的函数组件', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        import type { FC } from 'react'
+        
+        const Page: FC = () => {
+          return <div>Page</div>
+        }
+        export default Page
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该识别带 Props 类型的函数组件', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        interface Props {
+          title: string
+        }
+        
+        export default function Page({ title }: Props) {
+          return <div>{title}</div>
+        }
+      `
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+  })
+
+  describe('非 JS/TS 文件跳过检测', () => {
+    it('应该跳过 .md 文件的默认导出检测', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // .md 文件内容不是有效的 JS，但应该跳过检测
+      const content = `# Page Title\n\nThis is markdown content.`
+      createPageFile('index.md', content)
+      const result = parsePageFile(path.join(testDir, 'index.md'), testDir, '')
+
+      // .md 文件应该正常解析，不进行导出检测
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/')
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该跳过 .vue 文件的默认导出检测', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `<template><div>Page</div></template>`
+      createPageFile('index.vue', content)
+      const result = parsePageFile(path.join(testDir, 'index.vue'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该跳过 .svelte 文件的默认导出检测', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `<script>export let name;</script><div>{name}</div>`
+      createPageFile('index.svelte', content)
+      const result = parsePageFile(path.join(testDir, 'index.svelte'), testDir, '')
+
+      expect(result).not.toBeNull()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该对 .tsx 文件进行默认导出检测', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // .tsx 文件没有默认导出，应该警告并跳过
+      const content = `const Page = () => <div>Page</div>`
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+
+      expect(result).toBeNull()
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该对 .ts 文件进行默认导出检测', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `const Page = () => null`
+      createPageFile('index.ts', content)
+      const result = parsePageFile(path.join(testDir, 'index.ts'), testDir, '')
+
+      expect(result).toBeNull()
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该对 .jsx 文件进行默认导出检测', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `const Page = () => <div>Page</div>`
+      createPageFile('index.jsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.jsx'), testDir, '')
+
+      expect(result).toBeNull()
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('应该对 .js 文件进行默认导出检测', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `const Page = () => null`
+      createPageFile('index.js', content)
+      const result = parsePageFile(path.join(testDir, 'index.js'), testDir, '')
+
+      expect(result).toBeNull()
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
   })
 })
