@@ -232,4 +232,97 @@ describe('generateRoutesJSON', () => {
     expect(routes[0].children!.length).toBe(1)
     expect(routes[0].children![0].name).toBe('user-id')
   })
+
+  it('应该正确处理 pattern 信息', () => {
+    const pages: ParsedPage[] = [
+      createMockParsedPage({
+        path: '/user/{id}',
+        name: 'user-id',
+        isIndex: false,
+        isDynamic: true,
+        params: ['id'],
+        pattern: {
+          id: /^\d+$/
+        }
+      })
+    ]
+
+    const routes = generateRoutesJSON(pages)
+
+    expect(routes[0].pattern).toBeDefined()
+    expect(routes[0].pattern!.id).toBeInstanceOf(RegExp)
+    expect(routes[0].pattern!.id.source).toBe('^\\d+$')
+  })
+})
+
+describe('pattern 代码生成', () => {
+  it('应该正确生成正则表达式代码', () => {
+    const pages: ParsedPage[] = [
+      createMockParsedPage({
+        path: '/user/{id}',
+        name: 'user-id',
+        isIndex: false,
+        isDynamic: true,
+        params: ['id'],
+        pattern: {
+          id: /^\d+$/
+        }
+      })
+    ]
+
+    const code = generateRoutes(pages)
+
+    expect(code).toContain('pattern:')
+    expect(code).toContain('/^\\d+$/')
+  })
+
+  it('应该正确生成多个 pattern', () => {
+    const pages: ParsedPage[] = [
+      createMockParsedPage({
+        path: '/post/{category}/{slug}',
+        name: 'post-category-slug',
+        isIndex: false,
+        isDynamic: true,
+        params: ['category', 'slug'],
+        pattern: {
+          category: /^[a-z]+$/,
+          slug: /^[a-z0-9-]+$/
+        }
+      })
+    ]
+
+    const code = generateRoutes(pages)
+
+    expect(code).toContain('category: /^[a-z]+$/')
+    expect(code).toContain('slug: /^[a-z0-9-]+$/')
+  })
+
+  it('应该正确生成带 flags 的正则表达式', () => {
+    const pages: ParsedPage[] = [
+      createMockParsedPage({
+        path: '/user/{id}',
+        name: 'user-id',
+        isIndex: false,
+        isDynamic: true,
+        params: ['id'],
+        pattern: {
+          id: /^\d+$/i
+        }
+      })
+    ]
+
+    const code = generateRoutes(pages)
+
+    expect(code).toContain('/^\\d+$/i')
+  })
+
+  it('没有 pattern 时不应该生成 pattern 属性', () => {
+    const pages: ParsedPage[] = [
+      createMockParsedPage({ path: '/', name: 'home' })
+    ]
+
+    const code = generateRoutes(pages)
+
+    expect(code).not.toContain('pattern:')
+  })
 })

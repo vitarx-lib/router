@@ -344,6 +344,7 @@ export function parsePageFile(
     isDynamic,
     children: [],
     meta: pageOptions?.meta,
+    pattern: pageOptions?.pattern,
     customName: pageOptions?.name,
     parentPath
   }
@@ -578,6 +579,10 @@ export function parseDefinePage(filePath: string): PageOptions | null {
         meta: {
           ...merged.meta,
           ...options.meta
+        },
+        pattern: {
+          ...merged.pattern,
+          ...options.pattern
         }
       }),
       {} as PageOptions
@@ -617,6 +622,11 @@ function extractOptionsFromObject(node: BabelTypes.ObjectExpression): PageOption
       if (property.value.type === 'ObjectExpression') {
         result.meta = extractMetaFromObject(property.value)
       }
+    } else if (keyName === 'pattern') {
+      // 提取 pattern 属性
+      if (property.value.type === 'ObjectExpression') {
+        result.pattern = extractPatternFromObject(property.value)
+      }
     }
   }
 
@@ -647,6 +657,109 @@ function extractMetaFromObject(
   }
 
   return meta
+}
+
+/**
+ * 从 Babel ObjectExpression 节点提取 pattern 对象
+ *
+ * 支持两种正则表达式语法：
+ * - 正则字面量：`/^\d+$/`
+ * - new RegExp()：`new RegExp("^\\d+$")` 或 `new RegExp(/^\d+$/)`
+ *
+ * @param node - Babel ObjectExpression 节点
+ * @returns pattern 对象，键为参数名，值为正则表达式
+ */
+function extractPatternFromObject(node: BabelTypes.ObjectExpression): Record<string, RegExp> {
+  const pattern: Record<string, RegExp> = {}
+
+  for (const property of node.properties) {
+    if (property.type !== 'ObjectProperty') continue
+
+    const key = property.key
+    if (key.type !== 'Identifier') continue
+
+    const regex = extractRegExpValue(property.value)
+    if (regex !== null) {
+      pattern[key.name] = regex
+    }
+  }
+
+  return pattern
+}
+
+/**
+ * 从 Babel 节点提取正则表达式值
+ *
+ * 支持以下语法：
+ * - 正则字面量：`/^\d+$/`
+ * - new RegExp(string)：`new RegExp("^\\d+$")`
+ * - new RegExp(regex)：`new RegExp(/^\d+$/)`
+ *
+ * @param node - Babel 节点
+ * @returns 正则表达式对象，无法提取时返回 null
+ */
+function extractRegExpValue(node: BabelTypes.Node): RegExp | null {
+  // 正则字面量：/pattern/flags
+  if (node.type === 'RegExpLiteral') {
+    try {
+      return new RegExp(node.pattern, node.flags || '')
+    } catch {
+      return null
+    }
+  }
+
+  // new RegExp(...) 调用
+  if (
+    node.type === 'NewExpression' &&
+    node.callee.type === 'Identifier' &&
+    node.callee.name === 'RegExp'
+  ) {
+    const args = node.arguments
+    if (args.length === 0) return null
+
+    const firstArg = args[0]
+
+    // new RegExp("/pattern/") - 字符串参数
+    if (firstArg.type === 'StringLiteral') {
+      try {
+        const pattern = firstArg.value
+        // 如果有第二个参数，作为 flags
+        const flags = args.length > 1 && args[1].type === 'StringLiteral' ? args[1].value : ''
+        return new RegExp(pattern, flags)
+      } catch {
+        return null
+      }
+    }
+
+    // new RegExp(/pattern/) - 正则字面量参数
+    if (firstArg.type === 'RegExpLiteral') {
+      try {
+        // 如果有第二个参数，作为新的 flags
+        const flags =
+          args.length > 1 && args[1].type === 'StringLiteral' ? args[1].value : firstArg.flags || ''
+        return new RegExp(firstArg.pattern, flags)
+      } catch {
+        return null
+      }
+    }
+
+    // new RegExp(templateLiteral) - 模板字面量参数
+    if (
+      firstArg.type === 'TemplateLiteral' &&
+      firstArg.expressions.length === 0 &&
+      firstArg.quasis.length === 1
+    ) {
+      try {
+        const pattern = firstArg.quasis[0].value.cooked || firstArg.quasis[0].value.raw
+        const flags = args.length > 1 && args[1].type === 'StringLiteral' ? args[1].value : ''
+        return new RegExp(pattern, flags)
+      } catch {
+        return null
+      }
+    }
+  }
+
+  return null
 }
 
 /**

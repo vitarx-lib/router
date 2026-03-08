@@ -30,6 +30,23 @@ export interface PageOptions {
   name?: string
   /** 路由元数据，可存储标题、权限等自定义信息 */
   meta?: RouteMetaData
+  /**
+   * 动态参数匹配模式
+   *
+   * 用于为动态路由参数定义更精确的匹配规则。
+   * 键为参数名，值为正则表达式。
+   *
+   * @example
+   * ```typescript
+   * definePage({
+   *   pattern: {
+   *     id: /^\d+$/,           // 匹配纯数字
+   *     slug: /^[a-z-]+$/      // 匹配小写字母和横线
+   *   }
+   * })
+   * ```
+   */
+  pattern?: Record<string, RegExp>
 }
 
 /**
@@ -57,6 +74,8 @@ export interface ParsedPage {
   meta?: RouteMetaData
   /** 自定义路由名称（通过 definePage 设置） */
   customName?: string
+  /** 动态参数匹配模式 */
+  pattern?: Record<string, RegExp>
   /** 父级路径 */
   parentPath: string
 }
@@ -75,6 +94,8 @@ export interface ResolvedRoute {
   component: string
   /** 路由元数据 */
   meta?: RouteMetaData
+  /** 动态参数匹配模式 */
+  pattern?: Record<string, RegExp>
   /** 子路由列表 */
   children?: ResolvedRoute[]
 }

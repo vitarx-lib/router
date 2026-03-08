@@ -292,6 +292,111 @@ describe('parseDefinePage', () => {
       expect(result!.meta!.weight).toBe(3.14)
     })
   })
+
+  describe('pattern 属性解析', () => {
+    it('应该正确解析正则字面量', () => {
+      const content = `
+        import { definePage } from 'vitarx-router/auto-routes'
+        definePage({
+          pattern: {
+            id: /^\\d+$/,
+            slug: /^[a-z-]+$/
+          }
+        })
+      `
+      createPageFile('test.tsx', content)
+      const result = parseDefinePage(path.join(testDir, 'test.tsx'))
+
+      expect(result!.pattern).toBeDefined()
+      expect(result!.pattern!.id).toBeInstanceOf(RegExp)
+      expect(result!.pattern!.id.source).toBe('^\\d+$')
+      expect(result!.pattern!.slug.source).toBe('^[a-z-]+$')
+    })
+
+    it('应该正确解析 new RegExp(string) 语法', () => {
+      const content = `
+        import { definePage } from 'vitarx-router/auto-routes'
+        definePage({
+          pattern: {
+            id: new RegExp('^\\\\d+$')
+          }
+        })
+      `
+      createPageFile('test.tsx', content)
+      const result = parseDefinePage(path.join(testDir, 'test.tsx'))
+
+      expect(result!.pattern).toBeDefined()
+      expect(result!.pattern!.id).toBeInstanceOf(RegExp)
+      expect(result!.pattern!.id.source).toBe('^\\d+$')
+    })
+
+    it('应该正确解析 new RegExp(regex) 语法', () => {
+      const content = `
+        import { definePage } from 'vitarx-router/auto-routes'
+        definePage({
+          pattern: {
+            id: new RegExp(/^\\d+$/)
+          }
+        })
+      `
+      createPageFile('test.tsx', content)
+      const result = parseDefinePage(path.join(testDir, 'test.tsx'))
+
+      expect(result!.pattern).toBeDefined()
+      expect(result!.pattern!.id).toBeInstanceOf(RegExp)
+      expect(result!.pattern!.id.source).toBe('^\\d+$')
+    })
+
+    it('应该正确解析带 flags 的正则表达式', () => {
+      const content = `
+        import { definePage } from 'vitarx-router/auto-routes'
+        definePage({
+          pattern: {
+            id: /^\\d+$/i,
+            slug: new RegExp('^[a-z]+$', 'gi')
+          }
+        })
+      `
+      createPageFile('test.tsx', content)
+      const result = parseDefinePage(path.join(testDir, 'test.tsx'))
+
+      expect(result!.pattern!.id.flags).toBe('i')
+      expect(result!.pattern!.slug.flags).toBe('gi')
+    })
+
+    it('应该正确解析模板字面量作为 RegExp 参数', () => {
+      const content = `
+        import { definePage } from 'vitarx-router/auto-routes'
+        definePage({
+          pattern: {
+            id: new RegExp(\`^\\\\d+$\`)
+          }
+        })
+      `
+      createPageFile('test.tsx', content)
+      const result = parseDefinePage(path.join(testDir, 'test.tsx'))
+
+      expect(result!.pattern).toBeDefined()
+      expect(result!.pattern!.id).toBeInstanceOf(RegExp)
+    })
+
+    it('应该合并多个 definePage 的 pattern 配置', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const content = `
+        import { definePage } from 'vitarx-router/auto-routes'
+        definePage({ pattern: { id: /^\\d+$/ } })
+        definePage({ pattern: { slug: /^[a-z]+$/ } })
+      `
+      createPageFile('test.tsx', content)
+      const result = parseDefinePage(path.join(testDir, 'test.tsx'))
+
+      expect(result!.pattern!.id).toBeInstanceOf(RegExp)
+      expect(result!.pattern!.slug).toBeInstanceOf(RegExp)
+
+      warnSpy.mockRestore()
+    })
+  })
 })
 
 describe('extractParamsFromPath', () => {

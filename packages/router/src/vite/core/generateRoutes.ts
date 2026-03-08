@@ -71,6 +71,11 @@ function buildResolvedRoute(page: ParsedPage): ResolvedRoute {
     route.meta = page.meta
   }
 
+  // 添加 pattern（如果存在）
+  if (page.pattern && Object.keys(page.pattern).length > 0) {
+    route.pattern = page.pattern
+  }
+
   // 递归处理子路由
   if (page.children.length > 0) {
     route.children = buildResolvedRoutes(page.children)
@@ -127,6 +132,11 @@ function generateRouteCode(route: ResolvedRoute, indent: string, isLast: boolean
     lines.push(`${indent}  meta: ${JSON.stringify(route.meta)}`)
   }
 
+  // 添加 pattern（正则表达式需要特殊处理）
+  if (route.pattern && Object.keys(route.pattern).length > 0) {
+    lines.push(`${indent}  pattern: ${generatePatternCode(route.pattern)}`)
+  }
+
   // 递归生成子路由
   if (route.children && route.children.length > 0) {
     lines.push(`${indent}  children: [`)
@@ -140,6 +150,30 @@ function generateRouteCode(route: ResolvedRoute, indent: string, isLast: boolean
   lines.push(`${indent}}${comma}`)
 
   return lines
+}
+
+/**
+ * 生成 pattern 对象的代码
+ *
+ * 将 RegExp 对象转换为可执行的代码字符串。
+ *
+ * @param pattern - pattern 对象
+ * @returns 代码字符串
+ *
+ * @example
+ * ```typescript
+ * generatePatternCode({ id: /^\d+$/ })
+ * // => '{ id: /^\\d+$/ }'
+ * ```
+ */
+function generatePatternCode(pattern: Record<string, RegExp>): string {
+  const entries = Object.entries(pattern).map(([key, regex]) => {
+    // 使用 regex.toString() 获取正则字面量字符串
+    // 例如：/^\d+$/.toString() => "/^\\d+$/"
+    return `    ${key}: ${regex.toString()}`
+  })
+
+  return `{\n${entries.join(',\n')}\n  }`
 }
 
 /**
