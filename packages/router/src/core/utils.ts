@@ -75,7 +75,9 @@ export function createDynamicPattern(
     if (!regex) {
       pattern[varName] = defaultPattern
     } else if (!(regex instanceof RegExp)) {
-      logger.warn(`[Router] Custom regex for dynamic path variable "${varName}" in path "${path}" must be of type RegExp`)
+      logger.warn(
+        `[Router] Custom regex for dynamic path variable "${varName}" in path "${path}" must be of type RegExp`
+      )
       pattern[varName] = defaultPattern
     }
 
@@ -84,7 +86,9 @@ export function createDynamicPattern(
       optional++
       return `(?:(${pattern[varName].source}))?`
     } else if (optional) {
-      throw new Error(`[Router] In dynamic path "${path}", required variables cannot follow optional variables`)
+      throw new Error(
+        `[Router] In dynamic path "${path}", required variables cannot follow optional variables`
+      )
     }
     // 如果是必填的或非最后一段可选变量，使用捕获组
     return `(${pattern[varName].source})`
@@ -147,7 +151,9 @@ export function mergePathParams(
     if (params[paramName] === undefined) {
       // 如果是可选参数并且 params 中没有对应值，跳过替换
       if (isOptional) return ''
-      throw new TypeError(`[Router] Missing required parameter "${paramName}" when accessing route "${oldPath}"`)
+      throw new TypeError(
+        `[Router] Missing required parameter "${paramName}" when accessing route "${oldPath}"`
+      )
     }
     // 返回对应的参数值
     return String(params[paramName]).replace(/\s+/g, '_')
@@ -323,4 +329,32 @@ export function addPathSuffix(path: string, suffix: string) {
 export function cloneRouteLocation(route: RouteLocation | ReadonlyRouteLocation): RouteLocation {
   const { matched, ...other } = route
   return Object.assign(deepClone(other), { matched: Array.from(matched) }) as RouteLocation
+}
+
+/**
+ * 检查路由参数是否符合预定义的模式
+ *
+ * @param route 路由对象，包含路由的规范化信息和模式
+ * @param params 需要检查的参数对象，键为参数名，值为参数值
+ * @returns - 如果所有参数都符合模式则返回true，否则返回false
+ */
+export function checkParams(
+  route: RouteNormalized,
+  params: Record<string, string | number>
+): boolean {
+  // 如果是动态路由且参数不为空，则进行参数检查
+  if (route.isDynamic && Object.keys(params).length) {
+    // 遍历路由模式中的每个参数及其对应的正则表达式
+    for (const [key, regex] of Object.entries(route.pattern)) {
+      // 获取参数值，如果不存在则使用空字符串作为默认值
+      const value = params[key] ?? ''
+      // 检查参数值是否符合正则表达式模式
+      // 如果不符合模式，立即返回false
+      if (!regex.exec(String(value))) {
+        return false
+      }
+    }
+    // 如果是静态路由或参数为空，或者所有参数都符合模式，则返回true
+  }
+  return true
 }

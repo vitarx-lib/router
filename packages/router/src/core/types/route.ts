@@ -146,6 +146,12 @@ export interface Route<T extends AllowedRouteComponent = AllowedRouteComponent> 
    * 默认继承`RouterOptions.afterEach`
    */
   afterEnter?: AfterEnterCallback
+  /**
+   * path中是否具有动态参数
+   *
+   * 此配置手动指定无效，在路由器初始化解析后会自动赋值。
+   */
+  isDynamic?: boolean
 }
 
 /**
@@ -169,7 +175,10 @@ export interface RouteMetaData {
 /**
  * 规范化路由线路配置
  */
-export interface RouteNormalized extends MakeRequired<Route, 'meta' | 'pattern' | 'suffix'> {
+export interface RouteNormalized extends MakeRequired<
+  Route,
+  'meta' | 'pattern' | 'suffix' | 'isDynamic'
+> {
   children: RouteNormalized[]
   component: undefined | NamedRouteComponent
   props: undefined | InjectNamedProps

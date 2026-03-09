@@ -113,6 +113,8 @@ export default abstract class RouterRegistry {
 
   /**
    * 获取已规范的路由表
+   *
+   * 在路由器初始化之前返回的路由还是未规范化的！！！
    */
   get routes(): ReadonlyArray<RouteNormalized> {
     return this._options.routes as ReadonlyArray<RouteNormalized>
@@ -177,7 +179,7 @@ export default abstract class RouterRegistry {
   }
 
   /**
-   * 根据索引或路由目标查找路由
+   * 根据索引或导航配置查找路由
    *
    * @param {string|Object} target 路由索引或目标对象
    * @returns {RouteNormalized|undefined} 匹配的路由对象，如果未找到则返回undefined
@@ -448,7 +450,7 @@ export default abstract class RouterRegistry {
 
     this._pathRoutes.set(path, route)
 
-    if (isVariablePath(route.path)) {
+    if (route.isDynamic) {
       this.recordDynamicRoute(route)
     }
   }

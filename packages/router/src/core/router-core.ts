@@ -36,6 +36,7 @@ import type {
 import { patchUpdateRoute } from './update.js'
 import {
   addPathSuffix,
+  checkParams,
   cloneRouteLocation,
   formatHash,
   formatPath,
@@ -270,7 +271,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     const { index, query = {}, params = {}, hash = '' } = target
     const path: RoutePath = route ? mergePathParams(route.path, params) : formatPath(index)
     const matched: RouteNormalized[] = []
-    if (route) {
+    if (route && checkParams(route, params)) {
       let parent = this.findParentRoute(route)
       while (parent) {
         // 如果父路由具有`component`则添加到匹配的路由栈中
