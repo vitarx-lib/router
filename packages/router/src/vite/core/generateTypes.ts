@@ -124,7 +124,7 @@ export function generateFullDtsFile(pages: ParsedPage[]): string {
 
   // 模块扩展声明
   lines.push(
-    "import type { RouteIndexMap as AutoRouteIndexMap } from 'virtual:vitarx-router/types'"
+    "import type { RouteIndexMap as AutoRouteIndexMap } from 'virtual:vitarx-router:types'"
   )
   lines.push('')
   lines.push("declare module 'vitarx-router' {")
