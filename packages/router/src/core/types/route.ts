@@ -150,6 +150,8 @@ export interface Route<T extends AllowedRouteComponent = AllowedRouteComponent> 
    * path中是否具有动态参数
    *
    * 此配置手动指定无效，在路由器初始化解析后会自动赋值。
+   *
+   * @internal
    */
   isDynamic?: boolean
 }
