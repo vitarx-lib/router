@@ -220,88 +220,194 @@ function isExcluded(
  *
  * 根据规则构建路由树结构：
  * 1. 同名文件+目录组合：文件作为布局组件，目录内文件作为子路由
- * 2. 子路由使用相对路径
- * 3. 有 index 子路由时自动添加 redirect
+ * 2. 目录下的所有文件（包括 index）都作为子路由
+ * 3. 子路由使用相对路径
+ * 4. 有 index 子路由时自动添加 redirect
  */
 export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
-  const root: ParsedPage[] = []
-  const pathMap = new Map<string, ParsedPage>()
-  const layoutFileMap = new Map<string, ParsedPage>()
-
   // 分离布局文件和普通页面
+  const layoutFiles = new Map<string, ParsedPage>()
+  const normalPages: ParsedPage[] = []
+
   for (const page of pages) {
     if (page.isLayoutFile) {
-      // 布局文件：key 为目录路径
-      const dirPath = page.path
-      layoutFileMap.set(dirPath, { ...page, children: [] })
+      layoutFiles.set(page.path, { ...page, children: [] })
     } else {
-      pathMap.set(page.path, { ...page, children: [] })
+      normalPages.push({ ...page, children: [] })
     }
   }
 
-  // 处理普通页面，建立父子关系
-  for (const page of pathMap.values()) {
+  // 按目录路径分组，确定哪些是目录路由
+  const pagesByDir = new Map<string, ParsedPage[]>()
+
+  for (const page of normalPages) {
     const pathParts = page.path.split('/').filter(Boolean)
 
-    // 根路由或一级路由
-    if (pathParts.length <= 1) {
-      // 检查是否有对应的布局文件
-      const layoutFile = layoutFileMap.get(page.path)
-      if (layoutFile) {
-        // 有布局文件，将当前页面作为子路由
-        layoutFile.children.push(page)
-        // 如果是 index 页面，添加 redirect
-        if (page.isIndex) {
-          layoutFile.redirect = `${page.path}/index`
-        }
-        // 添加到根列表（如果还没有）
-        if (!root.find(r => r.path === layoutFile.path)) {
-          root.push(layoutFile)
-        }
-      } else {
-        root.push(page)
-      }
-      continue
-    }
-
-    // 查找父路由路径
-    const parentPath = '/' + pathParts.slice(0, -1).join('/')
-
-    // 检查父路径是否有布局文件
-    const layoutFile = layoutFileMap.get(parentPath)
-    if (layoutFile) {
-      // 有布局文件，作为其子路由
-      layoutFile.children.push(page)
-      if (!root.find(r => r.path === layoutFile.path)) {
-        root.push(layoutFile)
-      }
-      continue
-    }
-
-    // 检查父路径是否有普通页面
-    const parent = pathMap.get(parentPath)
-    if (parent) {
-      parent.children.push(page)
+    let dirPath: string
+    if (page.isIndex) {
+      // index 文件属于它自己路径对应的目录
+      dirPath = page.path
     } else {
-      // 未找到父路由，作为根路由
-      root.push(page)
+      // 非 index 文件属于父目录
+      // 如果 parentPath 为空，说明在根目录
+      if (page.parentPath === '' || page.parentPath === '/') {
+        dirPath = '/'
+      } else if (pathParts.length === 0) {
+        dirPath = '/'
+      } else if (pathParts.length === 1) {
+        dirPath = '/'
+      } else {
+        dirPath = '/' + pathParts.slice(0, -1).join('/')
+      }
+    }
+
+    if (!pagesByDir.has(dirPath)) {
+      pagesByDir.set(dirPath, [])
+    }
+    pagesByDir.get(dirPath)!.push(page)
+  }
+
+  // 确定哪些目录需要创建目录路由
+  // 规则：有多个子文件，或有布局文件
+  // 注意：只有 index 文件时，直接使用 index 的组件，不创建 children
+  const dirRoutesToCreate = new Set<string>()
+  for (const [dirPath, dirPages] of pagesByDir) {
+    if (dirPath === '/') continue // 根目录不需要创建目录路由
+    if (dirPages.length > 1) {
+      // 多个文件需要目录路由
+      dirRoutesToCreate.add(dirPath)
+    } else if (dirPages.length === 1) {
+      if (layoutFiles.has(dirPath)) {
+        // 有布局文件需要目录路由
+        dirRoutesToCreate.add(dirPath)
+      }
+      // 只有 index 文件时，不创建目录路由，直接使用 index 作为路由
     }
   }
 
-  // 处理没有子路由的布局文件（无效布局）
-  for (const layoutFile of layoutFileMap.values()) {
-    if (layoutFile.children.length === 0 && !root.find(r => r.path === layoutFile.path)) {
-      // 布局文件没有子路由，作为普通路由处理
+  // 收集所有需要创建的目录路由（包括父目录）
+  const allDirPaths = new Set<string>()
+  for (const dirPath of dirRoutesToCreate) {
+    allDirPaths.add(dirPath)
+    // 添加所有父目录路径
+    const pathParts = dirPath.split('/').filter(Boolean)
+    for (let i = 1; i < pathParts.length; i++) {
+      const parentPath = '/' + pathParts.slice(0, i).join('/')
+      if (dirRoutesToCreate.has(parentPath)) {
+        allDirPaths.add(parentPath)
+      }
+    }
+  }
+
+  // 创建目录路由
+  const dirRoutes = new Map<string, ParsedPage>()
+
+  for (const dirPath of allDirPaths) {
+    const pathParts = dirPath.split('/').filter(Boolean)
+    const dirName = pathParts[pathParts.length - 1] || ''
+
+    // 检查是否有布局文件
+    const layoutFile = layoutFiles.get(dirPath)
+
+    // 获取该目录下的直接子页面
+    const dirPages = pagesByDir.get(dirPath) || []
+
+    // 创建目录路由
+    const dirRoute: ParsedPage = layoutFile
+      ? { ...layoutFile, children: [] }
+      : {
+          path: dirPath,
+          name: dirName,
+          filePath: '',
+          params: [],
+          isIndex: false,
+          isDynamic: false,
+          children: [],
+          parentPath: pathParts.length > 1 ? '/' + pathParts.slice(0, -1).join('/') : ''
+        }
+
+    // 添加子路由
+    for (const page of dirPages) {
+      dirRoute.children.push(createChildRoute(page))
+    }
+
+    dirRoutes.set(dirPath, dirRoute)
+  }
+
+  // 构建路由树层级关系
+  const root: ParsedPage[] = []
+
+  // 处理根目录下的文件
+  const rootPages = pagesByDir.get('/') || []
+  for (const page of rootPages) {
+    root.push({ ...page, children: [] })
+  }
+
+  // 处理只有 index 文件的目录（直接作为路由，不创建 children）
+  for (const [dirPath, dirPages] of pagesByDir) {
+    if (dirPath === '/') continue
+    if (dirRoutesToCreate.has(dirPath)) continue // 已经在目录路由中处理
+
+    if (dirPages.length === 1 && dirPages[0].isIndex) {
+      // 只有 index 文件，直接使用 index 作为路由
+      const indexPage = dirPages[0]
+      root.push({ ...indexPage, children: [] })
+    }
+  }
+
+  // 处理目录路由
+  for (const [dirPath, dirRoute] of dirRoutes) {
+    const pathParts = dirPath.split('/').filter(Boolean)
+
+    if (pathParts.length === 1) {
+      // 一级目录路由
+      root.push(dirRoute)
+    } else {
+      // 多级嵌套，找到父目录
+      const parentDirPath = '/' + pathParts.slice(0, -1).join('/')
+      const parentRoute = dirRoutes.get(parentDirPath)
+
+      if (parentRoute) {
+        // 作为父目录的子路由，使用相对路径
+        const relativePath = pathParts[pathParts.length - 1]
+        parentRoute.children.push({
+          ...dirRoute,
+          path: relativePath
+        })
+      } else {
+        // 没有父目录路由，添加到根
+        root.push(dirRoute)
+      }
+    }
+  }
+
+  // 处理没有子路由的布局文件
+  for (const layoutFile of layoutFiles.values()) {
+    if (!dirRoutes.has(layoutFile.path)) {
       root.push(layoutFile)
     }
   }
 
-  // 处理子路由的路径（转换为相对路径）和 redirect
+  // 添加 redirect 并排序
   return processRoutes(root)
 }
 
 /**
- * 处理路由：转换子路由路径为相对路径，添加 redirect
+ * 创建子路由（转换路径为相对路径）
+ */
+function createChildRoute(page: ParsedPage): ParsedPage {
+  const pathParts = page.path.split('/').filter(Boolean)
+  const relativePath = pathParts[pathParts.length - 1] || ''
+
+  return {
+    ...page,
+    path: page.isIndex ? 'index' : relativePath,
+    children: []
+  }
+}
+
+/**
+ * 处理路由：添加 redirect 并排序
  */
 function processRoutes(routes: ParsedPage[]): ParsedPage[] {
   return sortRoutes(routes).map(route => {
@@ -309,23 +415,14 @@ function processRoutes(routes: ParsedPage[]): ParsedPage[] {
 
     // 处理子路由
     if (route.children.length > 0) {
-      // 转换子路由路径为相对路径
       processed.children = route.children.map(child => {
-        const childPathParts = child.path.split('/').filter(Boolean)
-        const relativePath = childPathParts[childPathParts.length - 1] || ''
-
-        // index 文件的 path 为 'index'
         const newChild: ParsedPage = {
           ...child,
-          path: child.isIndex ? 'index' : relativePath,
           children: []
         }
-
-        // 递归处理嵌套子路由
         if (child.children.length > 0) {
           newChild.children = processRoutes(child.children)
         }
-
         return newChild
       })
 
