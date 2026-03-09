@@ -27,11 +27,11 @@ export interface RouteOptions {
    *
    * 渲染函数有两个可选参数：
    *  - `component`：当前要渲染的组件
-   *  - `routeProps`：要注入给组件的属性对象
+   *  - `props`：要注入给组件的属性对象
    *
-   * @default `component => createView(component)`
+   * @default `component => createView(component,props)`
    */
-  render?: (component: Component, routeProps: AnyProps) => View
+  render?: (component: Component, props: AnyProps) => View
 }
 
 // 路由视图层级索引
