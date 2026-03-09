@@ -283,6 +283,55 @@ describe('RouterLink', () => {
     })
   })
 
+  describe('查询参数解析', () => {
+    it('应该正确解析字符串路径中的查询参数', async () => {
+      mountComponent(ctx, h(RouterLink, { to: '/about?id=123&name=test' }))
+      await waitForRender()
+
+      const link = getLink(ctx)
+      expect(link).toBeDefined()
+      expect(link?.getAttribute('href')).toContain('id=123')
+      expect(link?.getAttribute('href')).toContain('name=test')
+    })
+
+    it('应该正确解析带 URL 编码的查询参数', async () => {
+      mountComponent(ctx, h(RouterLink, { to: '/about?name=%E4%B8%AD%E6%96%87' }))
+      await waitForRender()
+
+      const link = getLink(ctx)
+      expect(link).toBeDefined()
+    })
+
+    it('应该正确解析带 hash 和查询参数的路径', async () => {
+      mountComponent(ctx, h(RouterLink, { to: '/about?id=123#section' }))
+      await waitForRender()
+
+      const link = getLink(ctx)
+      expect(link).toBeDefined()
+      expect(link?.getAttribute('href')).toContain('id=123')
+      expect(link?.getAttribute('href')).toContain('#section')
+    })
+
+    it('应该正确解析没有值的查询参数', async () => {
+      mountComponent(ctx, h(RouterLink, { to: '/about?debug' }))
+      await waitForRender()
+
+      const link = getLink(ctx)
+      expect(link).toBeDefined()
+    })
+
+    it('应该正确解析多个查询参数', async () => {
+      mountComponent(ctx, h(RouterLink, { to: '/about?q=vitarx&page=1&size=10' }))
+      await waitForRender()
+
+      const link = getLink(ctx)
+      expect(link).toBeDefined()
+      expect(link?.getAttribute('href')).toContain('q=vitarx')
+      expect(link?.getAttribute('href')).toContain('page=1')
+      expect(link?.getAttribute('href')).toContain('size=10')
+    })
+  })
+
   describe('命名路由', () => {
     it('应该正确处理命名路由的激活状态', async () => {
       mountComponent(ctx, h(RouterLink, { to: 'home', active: 'strict' }))
