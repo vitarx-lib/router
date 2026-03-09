@@ -10,6 +10,7 @@ import type { RouteMetaData } from '../../core/index.js'
  * 页面配置选项
  *
  * 用于 definePage 宏函数，允许开发者在页面组件中自定义路由配置。
+ * 仅支持可序列化的配置项。
  *
  * @example
  * ```tsx
@@ -17,7 +18,9 @@ import type { RouteMetaData } from '../../core/index.js'
  *
  * definePage({
  *   name: 'user-detail',
- *   meta: { title: '用户详情', requiresAuth: true }
+ *   meta: { title: '用户详情', requiresAuth: true },
+ *   redirect: '/login',
+ *   pattern: { id: /^\d+$/ }
  * })
  *
  * export default function UserDetail() {
@@ -28,7 +31,11 @@ import type { RouteMetaData } from '../../core/index.js'
 export interface PageOptions {
   /** 自定义路由名称，优先级高于自动生成的名称 */
   name?: string
-  /** 路由元数据，可存储标题、权限等自定义信息 */
+  /**
+   * 路由元数据，可存储标题、权限等自定义信息
+   *
+   * 注意：meta 必须是可序列化的对象，不支持函数或复杂对象。
+   */
   meta?: RouteMetaData
   /**
    * 动态参数匹配模式
@@ -47,6 +54,35 @@ export interface PageOptions {
    * ```
    */
   pattern?: Record<string, RegExp>
+  /**
+   * 路由重定向目标
+   *
+   * 支持字符串路径或导航配置对象。
+   *
+   * @example
+   * ```TypeScript
+   * // 字符串路径
+   * definePage({ redirect: '/dashboard' })
+   *
+   * // 导航配置对象
+   * definePage({ redirect: { index: 'home', query: { from: 'old' } } })
+   * ```
+   */
+  redirect?: string | RedirectConfig
+}
+
+/**
+ * 重定向配置对象
+ *
+ * 与 NavigateConfig 类似，但仅包含可序列化的属性。
+ */
+export interface RedirectConfig {
+  /** 路由索引，/开头为路径，否则为名称 */
+  index: string
+  /** URL 查询参数 */
+  query?: Record<string, string>
+  /** 路由参数 */
+  params?: Record<string, string | number>
 }
 
 /**
@@ -78,6 +114,8 @@ export interface ParsedPage {
   pattern?: Record<string, RegExp>
   /** 父级路径 */
   parentPath: string
+  /** 路由重定向目标 */
+  redirect?: string | RedirectConfig
 }
 
 /**
@@ -100,27 +138,9 @@ export interface ResolvedRoute {
   /** 子路由列表 */
   children?: ResolvedRoute[]
   /**
-   * 路由重定向目标
-   * - 字符串：重定向路径
-   * - 对象：包含 index、params、query 等的导航目标对象（字符串形式）
+   * 路由重定向目标（代码字符串形式）
    */
   redirect?: string
-  /**
-   * 路由后缀配置
-   */
-  suffix?: string
-  /**
-   * 需要给 Component 注入的参数配置（字符串形式）
-   */
-  props?: string
-  /**
-   * 路由进入前的钩子函数（字符串形式）
-   */
-  beforeEnter?: string
-  /**
-   * 路由进入后的钩子函数（字符串形式）
-   */
-  afterEnter?: string
 }
 
 /**

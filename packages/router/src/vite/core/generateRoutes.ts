@@ -4,7 +4,13 @@
  * 负责将解析后的页面信息转换为可执行的路由配置代码。
  * 生成的代码使用 vitarx 的 lazy 函数实现组件懒加载。
  */
-import type { ExtendRouteHook, ImportMode, ParsedPage, ResolvedRoute } from './types.js'
+import type {
+  ExtendRouteHook,
+  ImportMode,
+  ParsedPage,
+  RedirectConfig,
+  ResolvedRoute
+} from './types.js'
 
 /**
  * 路由生成选项
@@ -112,6 +118,9 @@ async function buildResolvedRoute(
   if (page.pattern && Object.keys(page.pattern).length > 0) {
     route.pattern = page.pattern
   }
+  if (page.redirect !== undefined) {
+    route.redirect = formatRedirect(page.redirect)
+  }
   if (page.children.length > 0) {
     route.children = await buildResolvedRoutes(page.children, options)
   }
@@ -120,6 +129,24 @@ async function buildResolvedRoute(
     if (result) return result
   }
   return route
+}
+
+/**
+ * 格式化重定向配置为代码字符串
+ */
+function formatRedirect(redirect: string | RedirectConfig): string {
+  if (typeof redirect === 'string') {
+    return `'${redirect}'`
+  }
+  // 对象形式
+  const parts: string[] = [`index: '${redirect.index}'`]
+  if (redirect.query) {
+    parts.push(`query: ${JSON.stringify(redirect.query)}`)
+  }
+  if (redirect.params) {
+    parts.push(`params: ${JSON.stringify(redirect.params)}`)
+  }
+  return `{ ${parts.join(', ')} }`
 }
 
 /**
@@ -179,18 +206,6 @@ function generateRouteCode(
   }
   if (route.redirect !== undefined) {
     lines.push(`${indent}  redirect: ${route.redirect}`)
-  }
-  if (route.suffix !== undefined) {
-    lines.push(`${indent}  suffix: ${JSON.stringify(route.suffix)}`)
-  }
-  if (route.props !== undefined) {
-    lines.push(`${indent}  props: ${route.props}`)
-  }
-  if (route.beforeEnter !== undefined) {
-    lines.push(`${indent}  beforeEnter: ${route.beforeEnter}`)
-  }
-  if (route.afterEnter !== undefined) {
-    lines.push(`${indent}  afterEnter: ${route.afterEnter}`)
   }
   if (route.children && route.children.length > 0) {
     lines.push(`${indent}  children: [`)

@@ -7,12 +7,12 @@
  * - definePage 宏解析（使用 Babel AST 解析）
  * - default 导出函数组件检测
  */
-import fs from 'node:fs'
-import path from 'node:path'
 import { parse } from '@babel/parser'
 import traverse from '@babel/traverse'
 import type * as BabelTypes from '@babel/types'
-import type { PageOptions, ParsedPage } from './types.js'
+import fs from 'node:fs'
+import path from 'node:path'
+import type { PageOptions, ParsedPage, RedirectConfig } from './types.js'
 
 /** 动态参数匹配正则，如 [id]、[slug] */
 const DYNAMIC_PARAM_REGEX = /^\[(.+)]$/
@@ -346,7 +346,8 @@ export function parsePageFile(
     meta: pageOptions?.meta,
     pattern: pageOptions?.pattern,
     customName: pageOptions?.name,
-    parentPath
+    parentPath,
+    redirect: pageOptions?.redirect
   }
 }
 
@@ -612,25 +613,119 @@ function extractOptionsFromObject(node: BabelTypes.ObjectExpression): PageOption
     const keyName = key.name
 
     if (keyName === 'name') {
-      // 提取 name 属性
       const value = extractLiteralValue(property.value)
       if (typeof value === 'string') {
         result.name = value
       }
     } else if (keyName === 'meta') {
-      // 提取 meta 属性
       if (property.value.type === 'ObjectExpression') {
-        result.meta = extractMetaFromObject(property.value)
+        const meta = extractMetaFromObject(property.value)
+        // 检查 meta 是否可序列化
+        if (isSerializable(meta)) {
+          result.meta = meta
+        } else {
+          console.warn('[vitarx-router] definePage meta 必须是可序列化的对象，不支持函数或复杂对象')
+        }
       }
     } else if (keyName === 'pattern') {
-      // 提取 pattern 属性
       if (property.value.type === 'ObjectExpression') {
         result.pattern = extractPatternFromObject(property.value)
+      }
+    } else if (keyName === 'redirect') {
+      // 提取 redirect 属性
+      if (property.value.type === 'StringLiteral') {
+        result.redirect = property.value.value
+      } else if (property.value.type === 'ObjectExpression') {
+        result.redirect = extractRedirectConfig(property.value)
       }
     }
   }
 
   return result
+}
+
+/**
+ * 提取重定向配置对象
+ */
+function extractRedirectConfig(node: BabelTypes.ObjectExpression): RedirectConfig {
+  const config: RedirectConfig = { index: '' }
+
+  for (const property of node.properties) {
+    if (property.type !== 'ObjectProperty') continue
+
+    const key = property.key
+    if (key.type !== 'Identifier') continue
+
+    const keyName = key.name
+
+    if (keyName === 'index') {
+      const value = extractLiteralValue(property.value)
+      if (typeof value === 'string') {
+        config.index = value
+      }
+    } else if (keyName === 'query') {
+      if (property.value.type === 'ObjectExpression') {
+        config.query = extractStringRecord(property.value)
+      }
+    } else if (keyName === 'params') {
+      if (property.value.type === 'ObjectExpression') {
+        config.params = extractParamsRecord(property.value)
+      }
+    }
+  }
+
+  return config
+}
+
+/**
+ * 提取字符串键值对对象
+ */
+function extractStringRecord(node: BabelTypes.ObjectExpression): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const property of node.properties) {
+    if (property.type !== 'ObjectProperty') continue
+    const key = property.key
+    if (key.type !== 'Identifier') continue
+    const value = extractLiteralValue(property.value)
+    if (typeof value === 'string') {
+      result[key.name] = value
+    }
+  }
+  return result
+}
+
+/**
+ * 提取参数键值对对象
+ */
+function extractParamsRecord(node: BabelTypes.ObjectExpression): Record<string, string | number> {
+  const result: Record<string, string | number> = {}
+  for (const property of node.properties) {
+    if (property.type !== 'ObjectProperty') continue
+    const key = property.key
+    if (key.type !== 'Identifier') continue
+    const value = extractLiteralValue(property.value)
+    if (typeof value === 'string' || typeof value === 'number') {
+      result[key.name] = value
+    }
+  }
+  return result
+}
+
+/**
+ * 检查对象是否可序列化
+ */
+function isSerializable(obj: unknown): boolean {
+  if (obj === null || obj === undefined) return true
+  if (typeof obj === 'function') return false
+  if (typeof obj !== 'object') return true
+  if (obj instanceof RegExp) return true
+  if (obj instanceof Date) return true
+
+  if (Array.isArray(obj)) {
+    return obj.every(item => isSerializable(item))
+  }
+
+  return Object.values(obj).every(value => isSerializable(value))
 }
 
 /**
