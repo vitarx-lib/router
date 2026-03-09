@@ -4,7 +4,9 @@ import {
   deepClone,
   flushSync,
   isDeepEqual,
+  isFunction,
   isPlainObject,
+  isString,
   logger,
   markRaw,
   type Reactive,
@@ -364,18 +366,19 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       // 获取当前路由的最后一个匹配项
       const matched = to.matched.at(-1)
 
+      const redirect = matched
+        ? isFunction(matched.redirect)
+          ? matched.redirect.call(this, to)
+          : matched.redirect
+        : undefined
+
       // 处理路由重定向
-      if (matched?.redirect) {
+      if (redirect) {
         let redirectTarget: NavigateTarget | undefined
-        if (typeof matched.redirect === 'object' && matched.redirect.index) {
-          redirectTarget = matched.redirect
-        } else if (typeof matched.redirect === 'string') {
-          redirectTarget = { index: matched.redirect }
-        } else if (typeof matched.redirect === 'function') {
-          const redirectHandleResult = matched.redirect.call(this, to)
-          if (isPlainObject(redirectHandleResult)) {
-            redirectTarget = redirectHandleResult
-          }
+        if (isPlainObject(redirect)) {
+          redirectTarget = redirect
+        } else if (isString(redirect)) {
+          redirectTarget = { index: redirect }
         }
         if (redirectTarget?.index) return performNavigation(redirectTarget, true)
       }

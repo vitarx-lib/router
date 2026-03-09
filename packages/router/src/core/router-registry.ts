@@ -168,9 +168,11 @@ export default abstract class RouterRegistry {
     if (parent) {
       const parentRoute = this.findRoute(parent)
       if (!parentRoute) throw new Error(`[Router] Parent route "${parent}" not found in addRoute()`)
-      if (!parentRoute.children.includes(parentRoute)) {
+      if (parentRoute.children && !parentRoute.children.includes(parentRoute)) {
         // 父路由不存在子路由，则添加子路由
-        parentRoute.children.push(this.registerRoute(route, parentRoute))
+        parentRoute.children!.push(this.registerRoute(route, parentRoute))
+      } else {
+        parentRoute.children = [this.registerRoute(route, parentRoute)]
       }
     } else {
       this.registerRoute(route)
@@ -388,27 +390,15 @@ export default abstract class RouterRegistry {
     if (group) this._parentRoute.set(normalizedRoute, group)
     if (isRouteGroup(normalizedRoute)) {
       this.recordRoute(normalizedRoute)
-      for (const child of normalizedRoute.children) {
-        this.registerRoute(child, normalizedRoute)
-      }
-      if (!normalizedRoute.redirect) {
-        normalizedRoute.redirect = function (to) {
-          // 如果没有component，尝试找到第一个有component的路由作为重定向目标
-          let first = normalizedRoute.children[0]
-          while (first) {
-            if (first.redirect) {
-              return typeof first.redirect === 'function'
-                ? first.redirect.call(this, to)
-                : first.redirect
-            }
-            if (first.component) return { index: first.path }
-            first = first.children?.[0]
-          }
-          logger.error(
-            `[Router] Route group "${normalizedRoute.path}" must have either a component or redirect configured for its first child route, otherwise the view cannot be matched`,
-            normalizedRoute
-          )
+      if (normalizedRoute.children) {
+        for (const child of normalizedRoute.children) {
+          this.registerRoute(child, normalizedRoute)
         }
+      }
+      if (!normalizedRoute.redirect && !normalizedRoute.component) {
+        throw new Error(
+          `[Router] Group route "${normalizedRoute.path}" must have a redirect or component`
+        )
       }
     } else {
       this.recordRoute(normalizedRoute)

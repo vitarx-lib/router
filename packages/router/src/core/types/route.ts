@@ -1,5 +1,5 @@
 import type { AnyPrimitive, MakeRequired } from 'vitarx'
-import type RouterCore from '../router-core.js'
+import { Router } from '../index.js'
 import type { AfterEnterCallback, BeforeEnterCallback } from './hooks.js'
 import type {
   AllowedRouteComponent,
@@ -26,14 +26,14 @@ export type InjectProps = boolean | Record<string, any> | InjectPropsHandler
  * 命名的props
  */
 export type InjectNamedProps<k extends string = string> = Record<k, InjectProps>
-
+/**
+ * 重定向结果
+ */
+export type RedirectResult = NavigateTarget | string | undefined
 /**
  * 重定向处理器
  */
-export type RedirectHandler = (
-  this: RouterCore,
-  to: RouteLocation
-) => NavigateTarget | string | undefined
+export type RedirectHandler = (this: Router, to: RouteLocation) => RedirectResult
 
 /**
  * 路由路径
@@ -181,7 +181,7 @@ export interface RouteNormalized extends MakeRequired<
   Route,
   'meta' | 'pattern' | 'suffix' | 'isDynamic'
 > {
-  children: RouteNormalized[]
+  children: undefined | RouteNormalized[]
   component: undefined | NamedRouteComponent
   props: undefined | InjectNamedProps
 }

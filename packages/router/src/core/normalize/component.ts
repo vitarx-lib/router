@@ -24,7 +24,7 @@ const validComponentType = (component: any, path: string) => {
  * @private
  */
 export default function normalizeRouteComponent(route: Route): void {
-  const isGroup = route.children!.length
+  const isGroup = route.children?.length
   // 处理 widget 配置
   if (route.component) {
     validComponentType(route.component, route.path)

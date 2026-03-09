@@ -19,14 +19,13 @@ export default function normalizeRoute(
   // 初始化必要的属性
   route.meta = route.meta || {}
   route.pattern = route.pattern || {}
-  route.children = route.children || []
   if (!route.path.trim()) {
     throw new TypeError(`[Router] Route configuration "path" cannot be empty`)
   }
   // 格式化路径
   route.path = formatPath(group ? `${group.path}/${route.path}` : route.path)
   // 验证 children 是否为数组
-  if (!Array.isArray(route.children)) {
+  if (route.children && !Array.isArray(route.children)) {
     throw new TypeError(
       `[Router] Route "${route.path}" has invalid "children" configuration, it must be an array type.`
     )
