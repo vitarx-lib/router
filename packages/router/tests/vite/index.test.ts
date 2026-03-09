@@ -175,20 +175,6 @@ describe('Vite 插件', () => {
       expect(resolved).toBe('\0virtual:vitarx-router:routes')
     })
 
-    it('应该解析类型虚拟模块 ID', async () => {
-      const { default: VitarxRouter } = await import('../../src/vite/index.js')
-      const plugin = VitarxRouter({ dts: false }) as Plugin
-
-      // 模拟 configResolved 钩子
-      const configResolved = getHookFunction(plugin.configResolved)
-      configResolved?.({ root: tempDir } as ResolvedConfig)
-
-      const resolveId = getHookFunction(plugin.resolveId)
-      const resolved = resolveId?.('virtual:vitarx-router:types', '', {})
-
-      expect(resolved).toBe('\0virtual:vitarx-router:types')
-    })
-
     it('对非虚拟模块应返回 null', async () => {
       const { default: VitarxRouter } = await import('../../src/vite/index.js')
       const plugin = VitarxRouter({ dts: false }) as Plugin
@@ -216,20 +202,6 @@ describe('Vite 插件', () => {
       expect(code).toContain('export default [')
     })
 
-    it('应该为类型虚拟模块生成代码', async () => {
-      const { default: VitarxRouter } = await import('../../src/vite/index.js')
-      const plugin = VitarxRouter({ dts: false }) as Plugin
-
-      // 模拟 configResolved 钩子
-      const configResolved = getHookFunction(plugin.configResolved)
-      configResolved?.({ root: tempDir } as ResolvedConfig)
-
-      const load = getHookFunction(plugin.load)
-      const code = load?.('\0virtual:vitarx-router:types', {})
-
-      expect(code).toContain('export interface RouteIndexMap')
-    })
-
     it('对非虚拟模块应返回 null', async () => {
       const { default: VitarxRouter } = await import('../../src/vite/index.js')
       const plugin = VitarxRouter({ dts: false }) as Plugin
@@ -242,7 +214,7 @@ describe('Vite 插件', () => {
   })
 
   describe('transform 钩子', () => {
-    it('应该移除 definePage 调用', async () => {
+    it('开发模式下应该不移除 definePage', async () => {
       const { default: VitarxRouter } = await import('../../src/vite/index.js')
       const plugin = VitarxRouter({ dts: false }) as Plugin
 
@@ -250,9 +222,34 @@ describe('Vite 插件', () => {
       const pagesDir = path.join(tempDir, 'src', 'pages')
       fs.mkdirSync(pagesDir, { recursive: true })
 
-      // 模拟 configResolved 钩子
+      // 模拟 configResolved 钩子 - 开发模式
       const configResolved = getHookFunction(plugin.configResolved)
-      configResolved?.({ root: tempDir } as ResolvedConfig)
+      configResolved?.({ root: tempDir, command: 'serve' } as ResolvedConfig)
+
+      const code = `
+        import { definePage } from 'vitarx-router/auto-routes'
+        definePage({ name: 'test' })
+        export default function Page() {}
+      `
+
+      const transform = getHookFunction(plugin.transform)
+      const result = transform?.(code, path.join(pagesDir, 'index.tsx'), {})
+
+      // 开发模式应该返回 null，不移除 definePage
+      expect(result).toBeNull()
+    })
+
+    it('构建模式下应该移除 definePage 调用', async () => {
+      const { default: VitarxRouter } = await import('../../src/vite/index.js')
+      const plugin = VitarxRouter({ dts: false }) as Plugin
+
+      // 创建测试目录
+      const pagesDir = path.join(tempDir, 'src', 'pages')
+      fs.mkdirSync(pagesDir, { recursive: true })
+
+      // 模拟 configResolved 钩子 - 构建模式
+      const configResolved = getHookFunction(plugin.configResolved)
+      configResolved?.({ root: tempDir, command: 'build' } as ResolvedConfig)
 
       const code = `
         import { definePage } from 'vitarx-router/auto-routes'
@@ -267,7 +264,7 @@ describe('Vite 插件', () => {
       expect(result.code).not.toContain("definePage({ name: 'test' })")
     })
 
-    it('应该移除 definePage 导入', async () => {
+    it('构建模式下应该移除 definePage 导入', async () => {
       const { default: VitarxRouter } = await import('../../src/vite/index.js')
       const plugin = VitarxRouter({ dts: false }) as Plugin
 
@@ -275,9 +272,9 @@ describe('Vite 插件', () => {
       const pagesDir = path.join(tempDir, 'src', 'pages')
       fs.mkdirSync(pagesDir, { recursive: true })
 
-      // 模拟 configResolved 钩子
+      // 模拟 configResolved 钩子 - 构建模式
       const configResolved = getHookFunction(plugin.configResolved)
-      configResolved?.({ root: tempDir } as ResolvedConfig)
+      configResolved?.({ root: tempDir, command: 'build' } as ResolvedConfig)
 
       const code = `
         import { definePage } from 'vitarx-router/auto-routes'
@@ -292,7 +289,7 @@ describe('Vite 插件', () => {
       expect(result.code).not.toContain("import { definePage } from 'vitarx-router/auto-routes'")
     })
 
-    it('应该保留其他导入', async () => {
+    it('构建模式下应该保留其他导入', async () => {
       const { default: VitarxRouter } = await import('../../src/vite/index.js')
       const plugin = VitarxRouter({ dts: false }) as Plugin
 
@@ -300,9 +297,9 @@ describe('Vite 插件', () => {
       const pagesDir = path.join(tempDir, 'src', 'pages')
       fs.mkdirSync(pagesDir, { recursive: true })
 
-      // 模拟 configResolved 钩子
+      // 模拟 configResolved 钩子 - 构建模式
       const configResolved = getHookFunction(plugin.configResolved)
-      configResolved?.({ root: tempDir } as ResolvedConfig)
+      configResolved?.({ root: tempDir, command: 'build' } as ResolvedConfig)
 
       const code = `
         import { definePage, handleHotUpdate } from 'vitarx-router/auto-routes'
@@ -317,7 +314,7 @@ describe('Vite 插件', () => {
       expect(result.code).toContain('handleHotUpdate')
     })
 
-    it('应该处理导入别名', async () => {
+    it('构建模式下应该处理导入别名', async () => {
       const { default: VitarxRouter } = await import('../../src/vite/index.js')
       const plugin = VitarxRouter({ dts: false }) as Plugin
 
@@ -325,9 +322,9 @@ describe('Vite 插件', () => {
       const pagesDir = path.join(tempDir, 'src', 'pages')
       fs.mkdirSync(pagesDir, { recursive: true })
 
-      // 模拟 configResolved 钩子
+      // 模拟 configResolved 钩子 - 构建模式
       const configResolved = getHookFunction(plugin.configResolved)
-      configResolved?.({ root: tempDir } as ResolvedConfig)
+      configResolved?.({ root: tempDir, command: 'build' } as ResolvedConfig)
 
       const code = `
         import { definePage as config } from 'vitarx-router/auto-routes'
@@ -350,9 +347,9 @@ describe('Vite 插件', () => {
       const pagesDir = path.join(tempDir, 'src', 'pages')
       fs.mkdirSync(pagesDir, { recursive: true })
 
-      // 模拟 configResolved 钩子
+      // 模拟 configResolved 钩子 - 构建模式
       const configResolved = getHookFunction(plugin.configResolved)
-      configResolved?.({ root: tempDir } as ResolvedConfig)
+      configResolved?.({ root: tempDir, command: 'build' } as ResolvedConfig)
 
       const code = `
         import { definePage } from 'vitarx-router/auto-routes'
@@ -373,9 +370,9 @@ describe('Vite 插件', () => {
       const pagesDir = path.join(tempDir, 'src', 'pages')
       fs.mkdirSync(pagesDir, { recursive: true })
 
-      // 模拟 configResolved 钩子
+      // 模拟 configResolved 钩子 - 构建模式
       const configResolved = getHookFunction(plugin.configResolved)
-      configResolved?.({ root: tempDir } as ResolvedConfig)
+      configResolved?.({ root: tempDir, command: 'build' } as ResolvedConfig)
 
       const code = `
         export default function Page() {}

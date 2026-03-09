@@ -25,9 +25,6 @@
  *
  * @module vite
  */
-import generate from '@babel/generator'
-import { parse } from '@babel/parser'
-import traverse from '@babel/traverse'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
@@ -35,8 +32,9 @@ import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import { getAbsolutePagesDirs, isPageFileInDirs, normalizeConfig } from './core/configUtils.js'
 import { generateRoutes } from './core/generateRoutes.js'
 import { generateFullDtsFile } from './core/generateTypes.js'
+import { removeDefinePage } from './core/removeDefinePage.js'
 import { buildRouteTree, scanMultiplePages } from './core/scanPages.js'
-import type { ParsedPage, VitePluginRouterOptions } from './core/types.js'
+import type { PagesDirConfig, ParsedPage, VitePluginRouterOptions } from './core/types.js'
 import { validateOptions } from './core/validateOptions.js'
 
 /** definePage 的有效导入来源 */
@@ -102,6 +100,7 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
 
   // 插件内部状态
   let config: ResolvedConfig | null = null
+  let absolutePagesDirs: PagesDirConfig[] = []
   let pages: ParsedPage[] = []
   let routeTree: ParsedPage[] = []
   let cachedRoutes: string | null = null
@@ -110,8 +109,6 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
    * 扫描页面目录并构建路由树
    */
   function scanAndBuildRoutes(): void {
-    const absolutePagesDirs = getAbsolutePagesDirs(pagesDirs, config)
-
     // 扫描多个页面目录
     pages = scanMultiplePages({
       pagesDirs: absolutePagesDirs,
@@ -123,16 +120,6 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
 
     // 清空缓存
     cachedRoutes = null
-  }
-
-  /**
-   * 获取路由配置代码
-   */
-  function getRoutesCode(): string {
-    if (!cachedRoutes) {
-      cachedRoutes = generateRoutes(routeTree)
-    }
-    return cachedRoutes
   }
 
   /**
@@ -154,122 +141,15 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
     console.log(`[vitarx-router] 类型定义文件已生成: ${dtsPath}`)
   }
 
-  /**
-   * 处理页面文件变更
-   */
-  function handlePageFileChange(file: string, server: ViteDevServer): void {
-    const absolutePagesDirs = getAbsolutePagesDirs(pagesDirs, config)
-    if (isPageFileInDirs(file, absolutePagesDirs, extensions)) {
-      scanAndBuildRoutes()
-      writeDtsFile()
-      const mod = server.moduleGraph.getModuleById(RESOLVED_ROUTES_ID)
-      if (mod) {
-        server.moduleGraph.invalidateModule(mod)
-      }
-    }
-  }
-
-  /**
-   * 移除 definePage 宏调用
-   */
-  function removeDefinePage(code: string, id: string): { code: string; map: null } | null {
-    const hasDefinePageContent =
-      code.includes('definePage') || DEFINE_PAGE_SOURCES.some(src => code.includes(src))
-
-    if (!hasDefinePageContent) {
-      return null
-    }
-
-    try {
-      const ast = parse(code, {
-        sourceType: 'module',
-        plugins: [
-          'jsx',
-          'typescript',
-          'topLevelAwait',
-          'classProperties',
-          'objectRestSpread',
-          'dynamicImport'
-        ]
-      })
-
-      let hasDefinePage = false
-      let definePageLocalName: string | null = null
-
-      traverse(ast, {
-        ImportDeclaration(nodePath) {
-          const { node } = nodePath
-
-          if (!DEFINE_PAGE_SOURCES.includes(node.source.value)) {
-            return
-          }
-
-          const specifiers = node.specifiers.filter(spec => {
-            if (spec.type === 'ImportSpecifier') {
-              const importedName =
-                spec.imported.type === 'Identifier' ? spec.imported.name : spec.imported.value
-
-              if (importedName === 'definePage') {
-                definePageLocalName = spec.local.name
-                hasDefinePage = true
-                return false
-              }
-            }
-            return true
-          })
-
-          if (specifiers.length > 0) {
-            node.specifiers = specifiers
-          } else {
-            nodePath.remove()
-          }
-        },
-
-        CallExpression(nodePath) {
-          const { node } = nodePath
-
-          if (node.callee.type === 'Identifier' && node.callee.name === 'definePage') {
-            hasDefinePage = true
-            nodePath.remove()
-          }
-
-          if (
-            definePageLocalName &&
-            definePageLocalName !== 'definePage' &&
-            node.callee.type === 'Identifier' &&
-            node.callee.name === definePageLocalName
-          ) {
-            hasDefinePage = true
-            nodePath.remove()
-          }
-        }
-      })
-
-      if (!hasDefinePage) {
-        return null
-      }
-
-      const output = generate(ast, {
-        retainLines: false,
-        compact: false
-      })
-
-      return {
-        code: output.code,
-        map: null
-      }
-    } catch (error) {
-      console.warn(`[vitarx-router] 转换代码失败: ${id}`, error)
-      return null
-    }
-  }
-
   return {
     name: 'vite-plugin-vitarx-router',
     enforce: 'pre',
 
     configResolved(resolvedConfig) {
       config = resolvedConfig
+      // 缓存绝对路径配置，避免重复计算
+      absolutePagesDirs = getAbsolutePagesDirs(pagesDirs, config)
+      // 初始化扫描和生成类型文件
       scanAndBuildRoutes()
       writeDtsFile()
     },
@@ -283,36 +163,48 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
 
     load(id) {
       if (id === RESOLVED_ROUTES_ID) {
-        return getRoutesCode()
+        if (!cachedRoutes) {
+          cachedRoutes = generateRoutes(routeTree)
+        }
+        return cachedRoutes
       }
       return null
     },
 
     transform(code, id) {
-      const absolutePagesDirs = getAbsolutePagesDirs(pagesDirs, config)
+      // 只在构建模式下移除 definePage
+      // 开发模式下保留原始代码，让其他插件（如 vitarx）可以处理
+      if (config?.command !== 'build') {
+        return null
+      }
 
       if (!isPageFileInDirs(id, absolutePagesDirs, extensions)) {
         return null
       }
 
-      return removeDefinePage(code, id)
+      return removeDefinePage(code, id, DEFINE_PAGE_SOURCES)
     },
 
     configureServer(server) {
-      const absolutePagesDirs = getAbsolutePagesDirs(pagesDirs, config)
-
       for (const dirConfig of absolutePagesDirs) {
         server.watcher.add(dirConfig.dir)
       }
-
+      /**
+       * 处理页面文件变更
+       */
+      const handlePageFileChange = (file: string, server: ViteDevServer): void => {
+        if (isPageFileInDirs(file, absolutePagesDirs, extensions)) {
+          scanAndBuildRoutes()
+          writeDtsFile()
+          const mod = server.moduleGraph.getModuleById(RESOLVED_ROUTES_ID)
+          if (mod) {
+            server.moduleGraph.invalidateModule(mod)
+          }
+        }
+      }
       server.watcher.on('add', file => handlePageFileChange(file, server))
       server.watcher.on('unlink', file => handlePageFileChange(file, server))
       server.watcher.on('change', file => handlePageFileChange(file, server))
-    },
-
-    buildStart() {
-      scanAndBuildRoutes()
-      writeDtsFile()
     }
   }
 }
