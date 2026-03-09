@@ -33,7 +33,8 @@ describe('normalize', () => {
         children: [],
         suffix: 'html',
         component: undefined,
-        props: undefined
+        props: undefined,
+        isDynamic: false
       } as RouteNormalized
 
       const route: Route = {
@@ -59,7 +60,8 @@ describe('normalize', () => {
         component: undefined,
         props: undefined,
         beforeEnter,
-        afterEnter
+        afterEnter,
+        isDynamic: false
       } as RouteNormalized
 
       const route: Route = {
@@ -83,7 +85,9 @@ describe('normalize', () => {
 
       expect(() => {
         normalizeRoute(route, undefined, '*')
-      }).toThrow('[Router] Route "/home" has invalid "children" configuration, it must be an array type.')
+      }).toThrow(
+        '[Router] Route "/home" has invalid "children" configuration, it must be an array type.'
+      )
     })
 
     it('应该在path为空时抛出错误', () => {
