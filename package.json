@@ -3,7 +3,8 @@
   "author": "ZhuChongLin <8210856@qq.com>",
   "type": "module",
   "scripts": {
-    "test:browser": "vitest --config=vitest.browser.config.ts"
+    "test": "cd packages/router && pnpm test",
+    "test:watch": "cd packages/router && pnpm test:watch"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.3",

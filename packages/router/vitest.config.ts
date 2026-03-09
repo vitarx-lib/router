@@ -5,21 +5,35 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [Vitarx()],
   test: {
-    browser: {
-      provider: playwright(),
-      enabled: true,
-      headless: true,
-      // 至少需要一个实例
-      instances: [{ browser: 'chromium' }]
-    },
-    include: ['tests/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.ts'],
-    exclude: ['node_modules', 'dist'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'browser',
+          include: ['tests/core/**/*.{test,spec}.ts', 'tests/components/**/*.{test,spec}.ts'],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: 'chromium' }]
+          },
+          testTimeout: 10000
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'vite',
+          include: ['tests/vite/**/*.{test,spec}.ts'],
+          environment: 'node',
+          testTimeout: 30000
+        }
+      }
+    ],
     coverage: {
-      // 使用V8内置的覆盖率收集器
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules', 'dist', 'tests']
-    },
-    testTimeout: 10000
+    }
   }
 })

@@ -41,7 +41,7 @@
     "build": "rimraf dist && tsc",
     "check:circular": "madge --extensions js --circular dist --warning --exclude '.*\\\\.d\\\\.ts$'",
     "test": "vitest run",
-    "test:vite": "vitest run --config vitest.config.vite.ts"
+    "test:watch": "vitest watch"
   },
   "peerDependencies": {
     "vitarx": "^4.0.0-0",
