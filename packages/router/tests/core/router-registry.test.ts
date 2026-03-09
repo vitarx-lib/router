@@ -102,7 +102,7 @@ describe('RouterRegistry', () => {
       registry.addRoute({ path: '/child', component: createMockComponent() }, '/parent')
 
       const parent = registry.findRoute('/parent')
-      expect(parent?.children.length).toBe(1)
+      expect(parent?.children?.length).toBe(1)
     })
 
     it('应该在父路由不存在时抛出错误', () => {
