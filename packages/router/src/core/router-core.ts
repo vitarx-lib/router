@@ -334,13 +334,21 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       // 创建标准化的路由位置对象
       const to = this.createRouteLocation(_target)
 
-      // 检查是否导航到相同路由
-      if (to.fullPath === this.route.fullPath && isDeepEqual(to.params, this.route.params)) {
+      // 检查是否强制导航（跳过重复检查）
+      const isForce = '_force' in _target && _target._force
+
+      // 检查是否导航到相同路由（强制导航时跳过此检查）
+      if (
+        !isForce &&
+        to.fullPath === this.route.fullPath &&
+        isDeepEqual(to.params, this.route.params)
+      ) {
         return createNavigateResult({
           status: NavigateStatus.duplicated,
           message: 'Navigation blocked: target is the same as current route'
         })
       } else if (
+        !isForce &&
         to.matched.at(-1) === this._route.matched.at(-1) &&
         to.path === this._route.path &&
         isDeepEqual(to.query, this._route.query) &&
@@ -618,21 +626,6 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     } catch (e) {
       logger.error('[Router] Exception caught while handling scroll behavior', e)
     }
-  }
-
-  /**
-   * @inheritDoc
-   */
-  public override removeRoute(index: RouteIndex) {
-    const removed = super.removeRoute(index)
-    if (removed) {
-      const index = this._route.matched.indexOf(removed)
-      if (index !== -1) {
-        // 删除匹配的路由记录
-        this._route.matched.splice(index, 1)
-      }
-    }
-    return removed
   }
 
   /**

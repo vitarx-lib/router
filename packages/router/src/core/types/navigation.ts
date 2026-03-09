@@ -188,6 +188,12 @@ export interface NavigateTarget<T extends RouteIndex = RouteIndex> extends Navig
    * 是否替换当前路由
    */
   isReplace?: boolean
+  /**
+   * @internal
+   * 强制导航，跳过重复检查
+   * 主要用于热更新场景
+   */
+  _force?: boolean
 }
 
 /**
