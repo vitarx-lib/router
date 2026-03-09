@@ -225,7 +225,7 @@ describe('Vite 插件', () => {
       const plugin = VitarxRouter({ dts: false }) as Plugin
 
       const load = getHookFunction(plugin.load)
-      const code = load?.('/src/pages/index.tsx', {})
+      const code = await load?.('/src/pages/index.tsx', {})
 
       expect(code).toBeNull()
     })
