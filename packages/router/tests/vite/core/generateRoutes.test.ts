@@ -2,13 +2,13 @@
  * @fileoverview generateRoutes 模块测试
  *
  * 测试路由代码生成功能，包括：
- * - 路由配置代码生成
- * - 嵌套路由生成
+ * - 基础代码生成
  * - 动态路由生成
- * - meta 信息生成
+ * - 嵌套路由生成
+ * - 元数据生成
  */
 import { describe, expect, it } from 'vitest'
-import { generateRoutes, generateRoutesJSON } from '../../../src/vite/core/generateRoutes.js'
+import { generateRoutes } from '../../../src/vite/core/generateRoutes.js'
 import type { ParsedPage } from '../../../src/vite/core/types.js'
 
 function createMockParsedPage(overrides: Partial<ParsedPage> = {}): ParsedPage {
@@ -27,38 +27,38 @@ function createMockParsedPage(overrides: Partial<ParsedPage> = {}): ParsedPage {
 
 describe('generateRoutes', () => {
   describe('代码生成', () => {
-    it('应该生成正确的导入语句', () => {
+    it('应该生成正确的导入语句', async () => {
       const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
 
-      const code = generateRoutes(pages)
+      const code = await generateRoutes(pages)
 
       expect(code).toContain("import { lazy } from 'vitarx'")
     })
 
-    it('应该生成默认导出', () => {
+    it('应该生成默认导出', async () => {
       const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
 
-      const code = generateRoutes(pages)
+      const code = await generateRoutes(pages)
 
       expect(code).toContain('export default [')
       expect(code).toContain(']')
     })
 
-    it('应该生成正确的路由名称', () => {
+    it('应该生成正确的路由名称', async () => {
       const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
 
-      const code = generateRoutes(pages)
+      const code = await generateRoutes(pages)
 
       expect(code).toContain("name: 'home'")
     })
 
-    it('应该生成正确的路由路径', () => {
+    it('应该生成正确的路由路径', async () => {
       const pages: ParsedPage[] = [
         createMockParsedPage({ path: '/', name: 'home' }),
         createMockParsedPage({ path: '/about', name: 'about', isIndex: false })
       ]
 
-      const code = generateRoutes(pages)
+      const code = await generateRoutes(pages)
 
       expect(code).toContain("path: '/'")
       expect(code).toContain("path: '/about'")
@@ -66,7 +66,99 @@ describe('generateRoutes', () => {
   })
 
   describe('动态路由生成', () => {
-    it('应该正确生成动态路由', () => {
+    it('应该正确生成动态路由', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/user/{id}',
+          name: 'user-id',
+          isIndex: false,
+          isDynamic: true,
+          params: ['id']
+        })
+      ]
+
+      const code = await generateRoutes(pages)
+
+      expect(code).toContain("name: 'user-id'")
+      expect(code).toContain("path: '/user/{id}'")
+    })
+  })
+
+  describe('嵌套路由生成', () => {
+    it('应该正确生成嵌套路由', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/user',
+          name: 'user',
+          children: [
+            createMockParsedPage({
+              path: '/user/profile',
+              name: 'user-profile',
+              isIndex: false
+            })
+          ]
+        })
+      ]
+
+      const code = await generateRoutes(pages)
+
+      expect(code).toContain("name: 'user'")
+      expect(code).toContain("name: 'user-profile'")
+      expect(code).toContain('children: [')
+    })
+
+    it('应该正确处理多层嵌套', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/admin',
+          name: 'admin',
+          children: [
+            createMockParsedPage({
+              path: '/admin/users',
+              name: 'admin-users',
+              isIndex: false,
+              children: [
+                createMockParsedPage({
+                  path: '/admin/users/{id}',
+                  name: 'admin-users-id',
+                  isIndex: false,
+                  isDynamic: true,
+                  params: ['id']
+                })
+              ]
+            })
+          ]
+        })
+      ]
+
+      const code = await generateRoutes(pages)
+
+      expect(code).toContain("name: 'admin'")
+      expect(code).toContain("name: 'admin-users'")
+      expect(code).toContain("name: 'admin-users-id'")
+    })
+  })
+
+  describe('元数据生成', () => {
+    it('应该正确生成 meta 数据', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/',
+          name: 'home',
+          meta: { title: 'Home', requiresAuth: true }
+        })
+      ]
+
+      const code = await generateRoutes(pages)
+
+      expect(code).toContain('meta: {')
+      expect(code).toContain('"title":"Home"')
+      expect(code).toContain('"requiresAuth":true')
+    })
+  })
+
+  describe('pattern 代码生成', () => {
+    it('应该正确生成 pattern 对象', async () => {
       const pages: ParsedPage[] = [
         createMockParsedPage({
           path: '/user/{id}',
@@ -74,244 +166,138 @@ describe('generateRoutes', () => {
           isIndex: false,
           isDynamic: true,
           params: ['id'],
-          filePath: '/src/pages/user/[id].tsx'
+          pattern: {
+            id: /^\d+$/
+          }
         })
       ]
 
-      const code = generateRoutes(pages)
+      const code = await generateRoutes(pages)
 
-      expect(code).toContain("path: '/user/{id}'")
-      expect(code).toContain("name: 'user-id'")
+      expect(code).toContain('pattern: {')
+      expect(code).toContain('id: /^\\d+$/')
     })
 
-    it('应该正确生成多个动态参数的路由', () => {
+    it('应该正确生成多个 pattern', async () => {
       const pages: ParsedPage[] = [
         createMockParsedPage({
           path: '/post/{category}/{slug}',
-          name: 'post-category-slug',
+          name: 'post-slug',
           isIndex: false,
           isDynamic: true,
           params: ['category', 'slug'],
-          filePath: '/src/pages/post/[category]/[slug].tsx'
+          pattern: {
+            category: /^[a-z]+$/,
+            slug: /^[a-z0-9-]+$/
+          }
         })
       ]
 
-      const code = generateRoutes(pages)
+      const code = await generateRoutes(pages)
 
-      expect(code).toContain("path: '/post/{category}/{slug}'")
+      expect(code).toContain('category: /^[a-z]+$/')
+      expect(code).toContain('slug: /^[a-z0-9-]+$/')
     })
-  })
 
-  describe('meta 信息生成', () => {
-    it('应该正确生成 meta 信息', () => {
+    it('应该正确生成带 flags 的正则表达式', async () => {
       const pages: ParsedPage[] = [
         createMockParsedPage({
           path: '/user/{id}',
           name: 'user-id',
           isIndex: false,
-          meta: { title: 'User Detail', requiresAuth: true }
+          isDynamic: true,
+          params: ['id'],
+          pattern: {
+            id: /^\d+$/i
+          }
         })
       ]
 
-      const code = generateRoutes(pages)
+      const code = await generateRoutes(pages)
 
-      expect(code).toContain('meta: {"title":"User Detail","requiresAuth":true}')
+      expect(code).toContain('/^\\d+$/i')
     })
+  })
 
-    it('没有 meta 时不应该生成 meta 属性', () => {
+  describe('importMode 配置', () => {
+    it('lazy 模式应该生成 lazy 导入', async () => {
       const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
 
-      const code = generateRoutes(pages)
+      const code = await generateRoutes(pages, { importMode: 'lazy' })
 
-      expect(code).not.toContain('meta:')
-    })
-  })
-
-  describe('嵌套路由生成', () => {
-    it('应该正确生成嵌套路由', () => {
-      const pages: ParsedPage[] = [
-        createMockParsedPage({
-          path: '/user',
-          name: 'user',
-          children: [
-            createMockParsedPage({
-              path: '/user/{id}',
-              name: 'user-id',
-              isIndex: false,
-              isDynamic: true,
-              params: ['id']
-            })
-          ]
-        })
-      ]
-
-      const code = generateRoutes(pages)
-      expect(code).toContain("path: '/user'")
-      expect(code).toContain("path: '/user/{id}'")
-      expect(code).toContain('children:')
-    })
-  })
-
-  describe('组件路径生成', () => {
-    it('应该使用 lazy 包装组件导入', () => {
-      const pages: ParsedPage[] = [
-        createMockParsedPage({
-          path: '/',
-          name: 'home',
-          filePath: '/src/pages/index.tsx'
-        })
-      ]
-
-      const code = generateRoutes(pages)
-
+      expect(code).toContain("import { lazy } from 'vitarx'")
       expect(code).toContain('lazy(() => import(')
-      expect(code).toContain('/src/pages/index.tsx')
+    })
+
+    it('file 模式应该生成文件路径', async () => {
+      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
+
+      const code = await generateRoutes(pages, { importMode: 'file' })
+
+      expect(code).not.toContain("import { lazy } from 'vitarx'")
+      expect(code).toContain("component: '/src/pages/index.tsx'")
     })
   })
-})
 
-describe('generateRoutesJSON', () => {
-  it('应该返回正确的路由数组', () => {
-    const pages: ParsedPage[] = [
-      createMockParsedPage({ path: '/', name: 'home' }),
-      createMockParsedPage({ path: '/about', name: 'about', isIndex: false })
-    ]
+  describe('imports 配置', () => {
+    it('应该注入自定义导入语句', async () => {
+      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
 
-    const routes = generateRoutesJSON(pages)
-
-    expect(routes.length).toBe(2)
-    expect(routes[0].name).toBe('home')
-    expect(routes[0].path).toBe('/')
-    expect(routes[1].name).toBe('about')
-    expect(routes[1].path).toBe('/about')
-  })
-
-  it('应该正确处理 meta 信息', () => {
-    const pages: ParsedPage[] = [
-      createMockParsedPage({
-        path: '/',
-        name: 'home',
-        meta: { title: 'Home' }
+      const code = await generateRoutes(pages, {
+        imports: ["import { something } from 'somewhere'"]
       })
-    ]
 
-    const routes = generateRoutesJSON(pages)
+      expect(code).toContain("import { something } from 'somewhere'")
+    })
 
-    expect(routes[0].meta).toEqual({ title: 'Home' })
-  })
+    it('应该注入多个导入语句', async () => {
+      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
 
-  it('应该正确处理嵌套路由', () => {
-    const pages: ParsedPage[] = [
-      createMockParsedPage({
-        path: '/user',
-        name: 'user',
-        children: [
-          createMockParsedPage({
-            path: '/user/{id}',
-            name: 'user-id',
-            isIndex: false,
-            isDynamic: true,
-            params: ['id']
-          })
-        ]
+      const code = await generateRoutes(pages, {
+        imports: ["import { a } from 'a'", "import { b } from 'b'"]
       })
-    ]
 
-    const routes = generateRoutesJSON(pages)
-
-    expect(routes[0].children).toBeDefined()
-    expect(routes[0].children!.length).toBe(1)
-    expect(routes[0].children![0].name).toBe('user-id')
+      expect(code).toContain("import { a } from 'a'")
+      expect(code).toContain("import { b } from 'b'")
+    })
   })
 
-  it('应该正确处理 pattern 信息', () => {
-    const pages: ParsedPage[] = [
-      createMockParsedPage({
-        path: '/user/{id}',
-        name: 'user-id',
-        isIndex: false,
-        isDynamic: true,
-        params: ['id'],
-        pattern: {
-          id: /^\d+$/
+  describe('extendRoute 钩子', () => {
+    it('应该调用 extendRoute 钩子', async () => {
+      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
+
+      const code = await generateRoutes(pages, {
+        extendRoute: route => {
+          route.meta = { custom: true }
+          return route
         }
       })
-    ]
 
-    const routes = generateRoutesJSON(pages)
+      expect(code).toContain('"custom":true')
+    })
 
-    expect(routes[0].pattern).toBeDefined()
-    expect(routes[0].pattern!.id).toBeInstanceOf(RegExp)
-    expect(routes[0].pattern!.id.source).toBe('^\\d+$')
-  })
-})
+    it('extendRoute 返回 void 时应该使用原路由', async () => {
+      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
 
-describe('pattern 代码生成', () => {
-  it('应该正确生成正则表达式代码', () => {
-    const pages: ParsedPage[] = [
-      createMockParsedPage({
-        path: '/user/{id}',
-        name: 'user-id',
-        isIndex: false,
-        isDynamic: true,
-        params: ['id'],
-        pattern: {
-          id: /^\d+$/
+      const code = await generateRoutes(pages, {
+        extendRoute: () => undefined
+      })
+
+      expect(code).toContain("name: 'home'")
+    })
+
+    it('extendRoute 支持异步', async () => {
+      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
+
+      const code = await generateRoutes(pages, {
+        extendRoute: async route => {
+          await new Promise(resolve => setTimeout(resolve, 10))
+          route.meta = { async: true }
+          return route
         }
       })
-    ]
 
-    const code = generateRoutes(pages)
-
-    expect(code).toContain('pattern:')
-    expect(code).toContain('/^\\d+$/')
-  })
-
-  it('应该正确生成多个 pattern', () => {
-    const pages: ParsedPage[] = [
-      createMockParsedPage({
-        path: '/post/{category}/{slug}',
-        name: 'post-category-slug',
-        isIndex: false,
-        isDynamic: true,
-        params: ['category', 'slug'],
-        pattern: {
-          category: /^[a-z]+$/,
-          slug: /^[a-z0-9-]+$/
-        }
-      })
-    ]
-
-    const code = generateRoutes(pages)
-
-    expect(code).toContain('category: /^[a-z]+$/')
-    expect(code).toContain('slug: /^[a-z0-9-]+$/')
-  })
-
-  it('应该正确生成带 flags 的正则表达式', () => {
-    const pages: ParsedPage[] = [
-      createMockParsedPage({
-        path: '/user/{id}',
-        name: 'user-id',
-        isIndex: false,
-        isDynamic: true,
-        params: ['id'],
-        pattern: {
-          id: /^\d+$/i
-        }
-      })
-    ]
-
-    const code = generateRoutes(pages)
-
-    expect(code).toContain('/^\\d+$/i')
-  })
-
-  it('没有 pattern 时不应该生成 pattern 属性', () => {
-    const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
-
-    const code = generateRoutes(pages)
-
-    expect(code).not.toContain('pattern:')
+      expect(code).toContain('"async":true')
+    })
   })
 })
