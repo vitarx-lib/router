@@ -19,6 +19,7 @@ export default function normalizeRoute(
   // 初始化必要的属性
   route.meta = route.meta || {}
   route.pattern = route.pattern || {}
+  route.children = route.children || []
   if (!route.path.trim()) {
     throw new TypeError(`[Router] Route configuration "path" cannot be empty`)
   }

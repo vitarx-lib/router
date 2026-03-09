@@ -116,6 +116,16 @@ export interface ParsedPage {
   parentPath: string
   /** 路由重定向目标 */
   redirect?: string | RedirectConfig
+  /**
+   * 是否为布局文件
+   * 当同名文件和目录同时存在时，文件作为布局组件
+   */
+  isLayoutFile?: boolean
+  /**
+   * 布局文件路径
+   * 当目录有同名文件时，记录布局文件的路径
+   */
+  layoutFilePath?: string
 }
 
 /**
