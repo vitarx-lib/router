@@ -7,7 +7,7 @@ import micromatch from 'micromatch'
 import path from 'node:path'
 import type { ResolvedConfig } from 'vite'
 import { DEFAULT_DTS_FILE, DEFAULT_EXTENSIONS, DEFAULT_PAGES_DIR } from './constants.js'
-import type { PagesDirConfig, VitePluginRouterOptions } from './types.js'
+import type { ExtendRouteHook, ImportMode, PagesDirConfig, VitePluginRouterOptions } from './types.js'
 
 /**
  * 规范化后的插件配置
@@ -19,6 +19,12 @@ export interface NormalizedConfig {
   extensions: string[]
   /** 类型声明文件路径或 false */
   dts: string | false
+  /** 组件导入模式 */
+  importMode: ImportMode
+  /** 路由扩展钩子 */
+  extendRoute?: ExtendRouteHook
+  /** 自定义导入语句 */
+  imports?: string[]
 }
 
 /**
@@ -30,14 +36,26 @@ export interface NormalizedConfig {
  * @returns 规范化后的配置对象
  */
 export function normalizeConfig(options: VitePluginRouterOptions): NormalizedConfig {
-  const { pagesDir = DEFAULT_PAGES_DIR, extensions, include = [], exclude = [], dts } = options
+  const {
+    pagesDir = DEFAULT_PAGES_DIR,
+    extensions,
+    include = [],
+    exclude = [],
+    dts,
+    importMode = 'lazy',
+    extendRoute,
+    imports
+  } = options
 
   const pagesDirs = normalizePagesDirs(pagesDir, include, exclude)
 
   return {
     pagesDirs,
     extensions: extensions || DEFAULT_EXTENSIONS,
-    dts: dts ?? DEFAULT_DTS_FILE
+    dts: dts ?? DEFAULT_DTS_FILE,
+    importMode,
+    extendRoute,
+    imports
   }
 }
 

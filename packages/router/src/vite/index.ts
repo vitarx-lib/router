@@ -96,14 +96,14 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
 
   // 规范化配置
   const normalizedConfig = normalizeConfig(options)
-  const { pagesDirs, extensions, dts } = normalizedConfig
+  const { pagesDirs, extensions, dts, importMode, extendRoute, imports } = normalizedConfig
 
   // 插件内部状态
   let config: ResolvedConfig | null = null
   let absolutePagesDirs: PagesDirConfig[] = []
   let pages: ParsedPage[] = []
   let routeTree: ParsedPage[] = []
-  let cachedRoutes: string | null = null
+  let cachedRoutesPromise: Promise<string> | null = null
 
   /**
    * 扫描页面目录并构建路由树
@@ -119,7 +119,17 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
     routeTree = buildRouteTree(pages)
 
     // 清空缓存
-    cachedRoutes = null
+    cachedRoutesPromise = null
+  }
+
+  /**
+   * 获取路由配置代码
+   */
+  function getRoutesCode(): Promise<string> {
+    if (!cachedRoutesPromise) {
+      cachedRoutesPromise = generateRoutes(routeTree, { importMode, extendRoute, imports })
+    }
+    return cachedRoutesPromise
   }
 
   /**
@@ -161,12 +171,9 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
       return null
     },
 
-    load(id) {
+    async load(id) {
       if (id === RESOLVED_ROUTES_ID) {
-        if (!cachedRoutes) {
-          cachedRoutes = generateRoutes(routeTree)
-        }
-        return cachedRoutes
+        return await getRoutesCode()
       }
       return null
     },

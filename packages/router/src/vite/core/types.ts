@@ -84,6 +84,7 @@ export interface ParsedPage {
  * 解析后的路由配置
  *
  * 用于代码生成阶段的中间数据结构，表示一个完整的路由记录。
+ * 所有属性值都是字符串形式，因为需要生成可执行的代码。
  */
 export interface ResolvedRoute {
   /** 路由路径 */
@@ -98,7 +99,54 @@ export interface ResolvedRoute {
   pattern?: Record<string, RegExp>
   /** 子路由列表 */
   children?: ResolvedRoute[]
+  /**
+   * 路由重定向目标
+   * - 字符串：重定向路径
+   * - 对象：包含 index、params、query 等的导航目标对象（字符串形式）
+   */
+  redirect?: string
+  /**
+   * 路由后缀配置
+   */
+  suffix?: string
+  /**
+   * 需要给 Component 注入的参数配置（字符串形式）
+   */
+  props?: string
+  /**
+   * 路由进入前的钩子函数（字符串形式）
+   */
+  beforeEnter?: string
+  /**
+   * 路由进入后的钩子函数（字符串形式）
+   */
+  afterEnter?: string
 }
+
+/**
+ * 路由扩展钩子
+ *
+ * 在生成路由配置时调用，允许开发者自定义扩展路由配置。
+ * 支持异步操作，可以用于动态获取路由配置。
+ *
+ * @param route - 解析后的路由配置
+ * @returns 扩展后的路由配置或 void（表示不修改）
+ *
+ * @example
+ * ```typescript
+ * VitarxRouter({
+ *   extendRoute: async (route) => {
+ *     // 异步获取权限配置
+ *     const permissions = await fetchPermissions(route.path)
+ *     route.meta = { ...route.meta, permissions }
+ *     return route
+ *   }
+ * })
+ * ```
+ */
+export type ExtendRouteHook = (
+  route: ResolvedRoute
+) => ResolvedRoute | void | Promise<ResolvedRoute | void>
 
 /**
  * 页面目录配置项
@@ -157,6 +205,14 @@ export interface MultiScanOptions {
   /** 要处理的文件扩展名列表 */
   extensions: string[]
 }
+
+/**
+ * 组件导入模式
+ *
+ * - `lazy`: 使用 lazy(() => import(...)) 懒加载组件
+ * - `file`: 直接使用文件路径作为组件，由用户自行处理导入
+ */
+export type ImportMode = 'lazy' | 'file'
 
 /**
  * Vite 插件配置选项
@@ -276,6 +332,66 @@ export interface VitePluginRouterOptions {
   dts?: string | false
   /** 路由块解析语言（保留用于未来扩展） */
   routeBlockLang?: string
+  /**
+   * 组件导入模式
+   *
+   * - `lazy`: 使用 lazy(() => import(...)) 懒加载组件（默认）
+   * - `file`: 直接使用文件路径作为组件，由用户自行处理导入
+   *
+   * @default 'lazy'
+   *
+   * @example
+   * ```typescript
+   * // 使用 file 模式，手动处理导入
+   * VitarxRouter({
+   *   importMode: 'file'
+   * })
+   * // 生成的路由：
+   * // { path: '/', component: '/src/pages/index.tsx' }
+   * ```
+   */
+  importMode?: ImportMode
+  /**
+   * 路由扩展钩子
+   *
+   * 在生成每个路由配置时调用，允许开发者自定义扩展路由配置。
+   * 可以用于添加 redirect、children、自定义属性等。
+   *
+   * @example
+   * ```typescript
+   * VitarxRouter({
+   *   extendRoute(route) {
+   *     // 为所有路由添加重定向
+   *     if (route.path === '/old-path') {
+   *       route.redirect = '/new-path'
+   *     }
+   *     // 返回修改后的路由
+   *     return route
+   *   }
+   * })
+   * ```
+   */
+  extendRoute?: ExtendRouteHook
+  /**
+   * 自定义导入语句
+   *
+   * 允许开发者向虚拟模块注入自定义的导入语句。
+   * 当使用 `importMode: 'file'` 并在 `extendRoute` 中使用 `lazy` 时需要配置此项。
+   *
+   * @example
+   * ```typescript
+   * VitarxRouter({
+   *   importMode: 'file',
+   *   imports: ["import { lazy } from 'vitarx'"],
+   *   extendRoute(route) {
+   *     // 将文件路径转换为懒加载组件
+   *     route.component = `lazy(() => import('${route.component}'))`
+   *     return route
+   *   }
+   * })
+   * ```
+   */
+  imports?: string[]
 }
 
 /**

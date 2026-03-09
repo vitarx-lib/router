@@ -4,27 +4,50 @@
  * 负责将解析后的页面信息转换为可执行的路由配置代码。
  * 生成的代码使用 vitarx 的 lazy 函数实现组件懒加载。
  */
-import type { ParsedPage, ResolvedRoute } from './types.js'
+import type { ExtendRouteHook, ImportMode, ParsedPage, ResolvedRoute } from './types.js'
+
+/**
+ * 路由生成选项
+ */
+export interface GenerateRoutesOptions {
+  /**
+   * 组件导入模式
+   * - `lazy`: 使用 lazy(() => import(...)) 懒加载组件
+   * - `file`: 直接使用文件路径作为组件
+   */
+  importMode?: ImportMode
+  /**
+   * 路由扩展钩子
+   * 在生成每个路由配置时调用，允许开发者自定义扩展路由配置
+   */
+  extendRoute?: ExtendRouteHook
+  /**
+   * 自定义导入语句
+   * 允许向虚拟模块注入自定义的导入语句
+   */
+  imports?: string[]
+}
 
 /**
  * 生成路由配置代码
  *
  * 将页面列表转换为完整的路由配置模块代码。
  * 生成的代码包含：
- * - vitarx 的 lazy 函数导入
+ * - vitarx 的 lazy 函数导入（当 importMode 为 'lazy' 时）
  * - 默认导出的路由数组
  * - 每个路由的 name、path、component 和可选的 meta、children
  *
  * @param pages - 解析后的页面列表
- * @returns 可执行的路由配置代码字符串
+ * @param options - 路由生成选项
+ * @returns Promise 包含可执行路由配置代码字符串
  *
  * @example
  * ```typescript
- * const code = generateRoutes([
+ * const code = await generateRoutes([
  *   { path: '/', name: 'home', filePath: '/src/pages/index.tsx', ... }
  * ])
  *
- * // 生成的代码：
+ * // 生成的代码（lazy 模式）：
  * // import { lazy } from 'vitarx'
  * //
  * // export default [
@@ -34,157 +57,171 @@ import type { ParsedPage, ResolvedRoute } from './types.js'
  * //     component: lazy(() => import('/src/pages/index.tsx'))
  * //   }
  * // ]
+ *
+ * // 生成的代码（file 模式）：
+ * // export default [
+ * //   {
+ * //     name: 'home',
+ * //     path: '/',
+ * //     component: '/src/pages/index.tsx'
+ * //   }
+ * // ]
  * ```
  */
-export function generateRoutes(pages: ParsedPage[]): string {
-  const routes = buildResolvedRoutes(pages)
-  return generateRoutesCode(routes)
+export async function generateRoutes(
+  pages: ParsedPage[],
+  options: GenerateRoutesOptions = {}
+): Promise<string> {
+  const routes = await buildResolvedRoutes(pages, options)
+  return generateRoutesCode(routes, options.importMode, options.imports)
 }
 
 /**
  * 构建解析后的路由配置列表
- *
- * 将 ParsedPage 列表转换为 ResolvedRoute 列表。
- *
- * @param pages - 页面列表
- * @returns 路由配置列表
  */
-function buildResolvedRoutes(pages: ParsedPage[]): ResolvedRoute[] {
-  return pages.map(page => buildResolvedRoute(page))
+async function buildResolvedRoutes(
+  pages: ParsedPage[],
+  options: GenerateRoutesOptions
+): Promise<ResolvedRoute[]> {
+  const routes: ResolvedRoute[] = []
+  for (const page of pages) {
+    const route = await buildResolvedRoute(page, options)
+    routes.push(route)
+  }
+  return routes
 }
 
 /**
  * 构建单个路由配置
- *
- * @param page - 页面信息
- * @returns 路由配置对象
  */
-function buildResolvedRoute(page: ParsedPage): ResolvedRoute {
+async function buildResolvedRoute(
+  page: ParsedPage,
+  options: GenerateRoutesOptions
+): Promise<ResolvedRoute> {
+  const { importMode = 'lazy', extendRoute } = options
+  const component = importMode === 'file' ? page.filePath : `lazy(() => import('${page.filePath}'))`
+
   const route: ResolvedRoute = {
     path: page.path,
     name: page.name,
-    component: `lazy(() => import('${page.filePath}'))`
+    component
   }
-
-  // 添加元数据（如果存在）
   if (page.meta && Object.keys(page.meta).length > 0) {
     route.meta = page.meta
   }
-
-  // 添加 pattern（如果存在）
   if (page.pattern && Object.keys(page.pattern).length > 0) {
     route.pattern = page.pattern
   }
-
-  // 递归处理子路由
   if (page.children.length > 0) {
-    route.children = buildResolvedRoutes(page.children)
+    route.children = await buildResolvedRoutes(page.children, options)
   }
-
+  if (extendRoute) {
+    const result = await extendRoute(route)
+    if (result) return result
+  }
   return route
 }
 
 /**
  * 生成路由代码字符串
- *
- * @param routes - 路由配置列表
- * @param indent - 缩进字符串
- * @returns 代码字符串
  */
-function generateRoutesCode(routes: ResolvedRoute[], indent: string = '  '): string {
+function generateRoutesCode(
+  routes: ResolvedRoute[],
+  importMode: ImportMode = 'lazy',
+  customImports?: string[],
+  indent: string = '  '
+): string {
   const lines: string[] = []
-
-  // 导入语句
-  lines.push(`import { lazy } from 'vitarx'`)
-  lines.push('')
+  if (importMode === 'lazy') {
+    lines.push(`import { lazy } from 'vitarx'`)
+  }
+  if (customImports && customImports.length > 0) {
+    for (const imp of customImports) {
+      lines.push(imp)
+    }
+  }
+  if (importMode === 'lazy' || (customImports && customImports.length > 0)) {
+    lines.push('')
+  }
   lines.push('export default [')
-
-  // 生成每个路由的代码
   for (let i = 0; i < routes.length; i++) {
     const route = routes[i]
-    lines.push(...generateRouteCode(route, indent, i === routes.length - 1))
+    lines.push(...generateRouteCode(route, indent, i === routes.length - 1, importMode))
   }
-
   lines.push(']')
-
   return lines.join('\n')
 }
 
 /**
  * 生成单个路由的代码
- *
- * @param route - 路由配置
- * @param indent - 缩进字符串
- * @param isLast - 是否为最后一个路由（用于决定是否添加逗号）
- * @returns 代码行数组
  */
-function generateRouteCode(route: ResolvedRoute, indent: string, isLast: boolean): string[] {
+function generateRouteCode(
+  route: ResolvedRoute,
+  indent: string,
+  isLast: boolean,
+  importMode: ImportMode
+): string[] {
   const lines: string[] = []
   const comma = isLast ? '' : ','
-
   lines.push(`${indent}{`)
   lines.push(`${indent}  name: '${route.name}',`)
   lines.push(`${indent}  path: '${route.path}',`)
-  lines.push(`${indent}  component: ${route.component}`)
-
-  // 添加元数据
+  if (importMode === 'file') {
+    lines.push(`${indent}  component: '${route.component}'`)
+  } else {
+    lines.push(`${indent}  component: ${route.component}`)
+  }
   if (route.meta) {
     lines.push(`${indent}  meta: ${JSON.stringify(route.meta)}`)
   }
-
-  // 添加 pattern（正则表达式需要特殊处理）
   if (route.pattern && Object.keys(route.pattern).length > 0) {
     lines.push(`${indent}  pattern: ${generatePatternCode(route.pattern)}`)
   }
-
-  // 递归生成子路由
+  if (route.redirect !== undefined) {
+    lines.push(`${indent}  redirect: ${route.redirect}`)
+  }
+  if (route.suffix !== undefined) {
+    lines.push(`${indent}  suffix: ${JSON.stringify(route.suffix)}`)
+  }
+  if (route.props !== undefined) {
+    lines.push(`${indent}  props: ${route.props}`)
+  }
+  if (route.beforeEnter !== undefined) {
+    lines.push(`${indent}  beforeEnter: ${route.beforeEnter}`)
+  }
+  if (route.afterEnter !== undefined) {
+    lines.push(`${indent}  afterEnter: ${route.afterEnter}`)
+  }
   if (route.children && route.children.length > 0) {
     lines.push(`${indent}  children: [`)
     for (let i = 0; i < route.children.length; i++) {
       const child = route.children[i]
-      lines.push(...generateRouteCode(child, indent + '    ', i === route.children!.length - 1))
+      lines.push(
+        ...generateRouteCode(child, indent + '    ', i === route.children!.length - 1, importMode)
+      )
     }
     lines.push(`${indent}  ]`)
   }
-
   lines.push(`${indent}}${comma}`)
-
   return lines
 }
 
 /**
  * 生成 pattern 对象的代码
- *
- * 将 RegExp 对象转换为可执行的代码字符串。
- *
- * @param pattern - pattern 对象
- * @returns 代码字符串
- *
- * @example
- * ```typescript
- * generatePatternCode({ id: /^\d+$/ })
- * // => '{ id: /^\\d+$/ }'
- * ```
  */
 function generatePatternCode(pattern: Record<string, RegExp>): string {
   const entries = Object.entries(pattern).map(([key, regex]) => {
-    // 使用 regex.toString() 获取正则字面量字符串
-    // 例如：/^\d+$/.toString() => "/^\\d+$/"
     return `    ${key}: ${regex.toString()}`
   })
-
   return `{\n${entries.join(',\n')}\n  }`
 }
 
 /**
  * 生成路由配置 JSON 对象
- *
- * 与 generateRoutes 类似，但返回的是对象而非代码字符串。
- * 主要用于测试和调试。
- *
- * @param pages - 解析后的页面列表
- * @returns 路由配置对象数组
  */
-export function generateRoutesJSON(pages: ParsedPage[]): ResolvedRoute[] {
-  return buildResolvedRoutes(pages)
+export async function generateRoutesJSON(
+  pages: ParsedPage[],
+  options: GenerateRoutesOptions = {}
+): Promise<ResolvedRoute[]> {
+  return buildResolvedRoutes(pages, options)
 }
