@@ -22,7 +22,6 @@
  *
  * ## 虚拟模块
  * - `virtual:vitarx-router:routes` - 自动生成的路由配置
- * - `virtual:vitarx-router:types` - 自动生成的类型定义
  *
  * @module vite
  */
@@ -35,7 +34,7 @@ import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 
 import { getAbsolutePagesDirs, isPageFileInDirs, normalizeConfig } from './core/configUtils.js'
 import { generateRoutes } from './core/generateRoutes.js'
-import { generateFullDtsFile, generateTypes } from './core/generateTypes.js'
+import { generateFullDtsFile } from './core/generateTypes.js'
 import { buildRouteTree, scanMultiplePages } from './core/scanPages.js'
 import type { ParsedPage, VitePluginRouterOptions } from './core/types.js'
 import { validateOptions } from './core/validateOptions.js'
@@ -46,14 +45,8 @@ const DEFINE_PAGE_SOURCES: string[] = ['vitarx-router/auto-routes']
 /** 虚拟模块 ID：路由配置 */
 const VIRTUAL_ROUTES_ID = 'virtual:vitarx-router:routes'
 
-/** 虚拟模块 ID：类型定义 */
-const VIRTUAL_TYPES_ID = 'virtual:vitarx-router:types'
-
 /** 解析后的路由模块 ID（Vite 内部使用） */
 const RESOLVED_ROUTES_ID = '\0' + VIRTUAL_ROUTES_ID
-
-/** 解析后的类型模块 ID（Vite 内部使用） */
-const RESOLVED_TYPES_ID = '\0' + VIRTUAL_TYPES_ID
 
 // 导出类型和工具函数
 export type { VitePluginRouterOptions, PageOptions } from './core/types.js'
@@ -112,7 +105,6 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
   let pages: ParsedPage[] = []
   let routeTree: ParsedPage[] = []
   let cachedRoutes: string | null = null
-  let cachedTypes: string | null = null
 
   /**
    * 扫描页面目录并构建路由树
@@ -131,7 +123,6 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
 
     // 清空缓存
     cachedRoutes = null
-    cachedTypes = null
   }
 
   /**
@@ -142,16 +133,6 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
       cachedRoutes = generateRoutes(routeTree)
     }
     return cachedRoutes
-  }
-
-  /**
-   * 获取类型定义代码
-   */
-  function getTypesCode(): string {
-    if (!cachedTypes) {
-      cachedTypes = generateTypes(routeTree)
-    }
-    return cachedTypes
   }
 
   /**
@@ -297,18 +278,12 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
       if (id === VIRTUAL_ROUTES_ID) {
         return RESOLVED_ROUTES_ID
       }
-      if (id === VIRTUAL_TYPES_ID) {
-        return RESOLVED_TYPES_ID
-      }
       return null
     },
 
     load(id) {
       if (id === RESOLVED_ROUTES_ID) {
         return getRoutesCode()
-      }
-      if (id === RESOLVED_TYPES_ID) {
-        return getTypesCode()
       }
       return null
     },

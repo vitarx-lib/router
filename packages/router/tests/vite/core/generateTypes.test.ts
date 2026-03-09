@@ -7,7 +7,7 @@
  * - .d.ts 文件生成
  */
 import { describe, expect, it } from 'vitest'
-import { generateFullDtsFile, generateTypes } from '../../../src/vite/core/generateTypes.js'
+import { generateFullDtsFile } from '../../../src/vite/core/generateTypes.js'
 import type { ParsedPage } from '../../../src/vite/core/types.js'
 
 function createMockParsedPage(overrides: Partial<ParsedPage> = {}): ParsedPage {
@@ -23,108 +23,6 @@ function createMockParsedPage(overrides: Partial<ParsedPage> = {}): ParsedPage {
     ...overrides
   }
 }
-
-describe('generateTypes', () => {
-  describe('RouteIndexMap 类型生成', () => {
-    it('应该生成 RouteIndexMap 接口', () => {
-      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
-
-      const types = generateTypes(pages)
-
-      expect(types).toContain('export interface RouteIndexMap')
-    })
-
-    it('应该为静态路由生成空对象类型', () => {
-      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
-
-      const types = generateTypes(pages)
-
-      expect(types).toContain("'home': {}")
-      expect(types).toContain("'/': {}")
-    })
-
-    it('应该为动态路由生成参数类型', () => {
-      const pages: ParsedPage[] = [
-        createMockParsedPage({
-          path: '/user/{id}',
-          name: 'user-id',
-          isIndex: false,
-          isDynamic: true,
-          params: ['id']
-        })
-      ]
-
-      const types = generateTypes(pages)
-
-      expect(types).toContain("'user-id': { params: { id: string | number } }")
-      expect(types).toContain("'/user/{id}': { params: { id: string | number } }")
-    })
-
-    it('应该正确处理多个动态参数', () => {
-      const pages: ParsedPage[] = [
-        createMockParsedPage({
-          path: '/post/{category}/{slug}',
-          name: 'post-slug',
-          isIndex: false,
-          isDynamic: true,
-          params: ['category', 'slug']
-        })
-      ]
-
-      const types = generateTypes(pages)
-
-      expect(types).toContain('category: string | number')
-      expect(types).toContain('slug: string | number')
-    })
-  })
-
-  describe('多个路由类型生成', () => {
-    it('应该为所有路由生成类型', () => {
-      const pages: ParsedPage[] = [
-        createMockParsedPage({ path: '/', name: 'home' }),
-        createMockParsedPage({ path: '/about', name: 'about', isIndex: false }),
-        createMockParsedPage({
-          path: '/user/{id}',
-          name: 'user-id',
-          isIndex: false,
-          isDynamic: true,
-          params: ['id']
-        })
-      ]
-
-      const types = generateTypes(pages)
-
-      expect(types).toContain("'home': {}")
-      expect(types).toContain("'about': {}")
-      expect(types).toContain("'user-id': { params: { id: string | number } }")
-    })
-  })
-
-  describe('嵌套路由类型生成', () => {
-    it('应该为嵌套路由生成类型', () => {
-      const pages: ParsedPage[] = [
-        createMockParsedPage({
-          path: '/user',
-          name: 'user',
-          children: [
-            createMockParsedPage({
-              path: '/user/{id}',
-              name: 'user-id',
-              isIndex: false,
-              isDynamic: true,
-              params: ['id']
-            })
-          ]
-        })
-      ]
-
-      const types = generateTypes(pages)
-
-      expect(types).toContain("'user': {}")
-      expect(types).toContain("'user-id': { params: { id: string | number } }")
-    })
-  })
-})
 
 describe('generateFullDtsFile', () => {
   describe('文件头生成', () => {
@@ -146,11 +44,108 @@ describe('generateFullDtsFile', () => {
 
       const dts = generateFullDtsFile(pages)
 
-      expect(dts).toContain(
-        "import type { RouteIndexMap as AutoRouteIndexMap } from 'virtual:vitarx-router:types'"
-      )
       expect(dts).toContain("declare module 'vitarx-router'")
-      expect(dts).toContain('interface RouteIndexMap extends AutoRouteIndexMap')
+      expect(dts).toContain('interface RouteIndexMap')
+    })
+
+    it('不应该导入 virtual:vitarx-router:types', () => {
+      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
+
+      const dts = generateFullDtsFile(pages)
+
+      expect(dts).not.toContain('virtual:vitarx-router:types')
+    })
+  })
+
+  describe('RouteIndexMap 类型生成', () => {
+    it('应该为静态路由生成空对象类型', () => {
+      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
+
+      const dts = generateFullDtsFile(pages)
+
+      expect(dts).toContain("'home': {}")
+      expect(dts).toContain("'/': {}")
+    })
+
+    it('应该为动态路由生成参数类型', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/user/{id}',
+          name: 'user-id',
+          isIndex: false,
+          isDynamic: true,
+          params: ['id']
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      expect(dts).toContain("'user-id': { params: { id: string | number } }")
+      expect(dts).toContain("'/user/{id}': { params: { id: string | number } }")
+    })
+
+    it('应该正确处理多个动态参数', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/post/{category}/{slug}',
+          name: 'post-slug',
+          isIndex: false,
+          isDynamic: true,
+          params: ['category', 'slug']
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      expect(dts).toContain('category: string | number')
+      expect(dts).toContain('slug: string | number')
+    })
+  })
+
+  describe('多个路由类型生成', () => {
+    it('应该为所有路由生成类型', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({ path: '/', name: 'home' }),
+        createMockParsedPage({ path: '/about', name: 'about', isIndex: false }),
+        createMockParsedPage({
+          path: '/user/{id}',
+          name: 'user-id',
+          isIndex: false,
+          isDynamic: true,
+          params: ['id']
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      expect(dts).toContain("'home': {}")
+      expect(dts).toContain("'about': {}")
+      expect(dts).toContain("'user-id': { params: { id: string | number } }")
+    })
+  })
+
+  describe('嵌套路由类型生成', () => {
+    it('应该为嵌套路由生成类型', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/user',
+          name: 'user',
+          children: [
+            createMockParsedPage({
+              path: '/user/{id}',
+              name: 'user-id',
+              isIndex: false,
+              isDynamic: true,
+              params: ['id']
+            })
+          ]
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      expect(dts).toContain("'user': {}")
+      expect(dts).toContain("'user-id': { params: { id: string | number } }")
     })
   })
 
@@ -176,7 +171,7 @@ describe('generateFullDtsFile', () => {
       expect(dts).toContain("declare module 'vitarx-router'")
 
       // 检查类型定义
-      expect(dts).toContain('export interface RouteIndexMap')
+      expect(dts).toContain('interface RouteIndexMap')
       expect(dts).toContain("'home': {}")
       expect(dts).toContain("'user-id': { params: { id: string | number } }")
     })
