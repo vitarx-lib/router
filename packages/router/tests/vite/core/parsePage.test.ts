@@ -1,16 +1,20 @@
 /**
  * @fileoverview parsePage 模块测试
- * 
+ *
  * 测试页面文件解析功能，包括：
  * - 文件路径解析
  * - 动态参数识别
  * - definePage 宏解析
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'node:fs'
-import path from 'node:path'
 import os from 'node:os'
-import { parsePageFile, parseDefinePage, extractParamsFromPath } from '../../../src/vite/core/parsePage.js'
+import path from 'node:path'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  extractParamsFromPath,
+  parseDefinePage,
+  parsePageFile
+} from '../../../src/vite/core/parsePage.js'
 
 // 每个测试使用独立的临时目录
 let testDir: string
@@ -69,7 +73,11 @@ describe('parsePageFile', () => {
     it('应该正确解析多层嵌套索引文件', () => {
       const content = `export default function Page() { return <div>Page</div> }`
       createPageFile('admin/user/index.tsx', content)
-      const result = parsePageFile(path.join(testDir, 'admin/user/index.tsx'), testDir, 'admin/user')
+      const result = parsePageFile(
+        path.join(testDir, 'admin/user/index.tsx'),
+        testDir,
+        'admin/user'
+      )
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/admin/user')
       expect(result!.name).toBe('admin-user')
@@ -169,7 +177,7 @@ describe('parseDefinePage', () => {
       `
       createPageFile('test.tsx', content)
       const result = parseDefinePage(path.join(testDir, 'test.tsx'))
-      
+
       expect(result).not.toBeNull()
       expect(result!.name).toBe('user-detail')
     })
@@ -184,7 +192,7 @@ describe('parseDefinePage', () => {
       `
       createPageFile('test.tsx', content)
       const result = parseDefinePage(path.join(testDir, 'test.tsx'))
-      
+
       expect(result).not.toBeNull()
       expect(result!.name).toBe('user-detail')
       expect(result!.meta).toEqual({
@@ -202,7 +210,7 @@ describe('parseDefinePage', () => {
       `
       createPageFile('test.tsx', content)
       const result = parseDefinePage(path.join(testDir, 'test.tsx'))
-      
+
       expect(result).not.toBeNull()
       expect(result!.name).toBe('aliased')
     })
@@ -222,14 +230,14 @@ describe('parseDefinePage', () => {
 
     it('未导入 definePage 时应发出警告', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      
+
       const content = `definePage({ name: 'no-import' })`
       createPageFile('test.tsx', content)
       const result = parseDefinePage(path.join(testDir, 'test.tsx'))
-      
+
       expect(warnSpy).toHaveBeenCalled()
       expect(result).not.toBeNull()
-      
+
       warnSpy.mockRestore()
     })
   })
@@ -237,7 +245,7 @@ describe('parseDefinePage', () => {
   describe('多个 definePage 处理', () => {
     it('应该合并多个 definePage 配置', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      
+
       const content = `
         import { definePage } from 'vitarx-router/auto-routes'
         definePage({ name: 'first' })
@@ -245,12 +253,12 @@ describe('parseDefinePage', () => {
       `
       createPageFile('test.tsx', content)
       const result = parseDefinePage(path.join(testDir, 'test.tsx'))
-      
+
       expect(result).not.toBeNull()
       expect(result!.name).toBe('first')
       expect(result!.meta).toEqual({ title: 'Second' })
       expect(warnSpy).toHaveBeenCalled()
-      
+
       warnSpy.mockRestore()
     })
   })
@@ -263,7 +271,7 @@ describe('parseDefinePage', () => {
       `
       createPageFile('test.tsx', content)
       const result = parseDefinePage(path.join(testDir, 'test.tsx'))
-      
+
       expect(result!.meta!.title).toBe('首页')
       expect(result!.meta!.description).toBe('网站首页')
     })
@@ -275,7 +283,7 @@ describe('parseDefinePage', () => {
       `
       createPageFile('test.tsx', content)
       const result = parseDefinePage(path.join(testDir, 'test.tsx'))
-      
+
       expect(result!.meta!.requiresAuth).toBe(true)
       expect(result!.meta!.cache).toBe(false)
     })
@@ -287,7 +295,7 @@ describe('parseDefinePage', () => {
       `
       createPageFile('test.tsx', content)
       const result = parseDefinePage(path.join(testDir, 'test.tsx'))
-      
+
       expect(result!.meta!.order).toBe(1)
       expect(result!.meta!.weight).toBe(3.14)
     })
@@ -654,7 +662,7 @@ describe('默认导出检测', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       const content = `
-        import type { FC } from 'react'
+        import type { FC } from 'vitarx'
         
         const Page: FC = () => {
           return <div>Page</div>
