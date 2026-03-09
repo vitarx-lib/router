@@ -6,7 +6,7 @@
 import micromatch from 'micromatch'
 import path from 'node:path'
 import type { ResolvedConfig } from 'vite'
-import { DEFAULT_PAGES_DIR } from './constants.js'
+import { DEFAULT_DTS_FILE, DEFAULT_EXTENSIONS, DEFAULT_PAGES_DIR } from './constants.js'
 import type { PagesDirConfig, VitePluginRouterOptions } from './types.js'
 
 /**
@@ -30,20 +30,14 @@ export interface NormalizedConfig {
  * @returns 规范化后的配置对象
  */
 export function normalizeConfig(options: VitePluginRouterOptions): NormalizedConfig {
-  const {
-    pagesDir = DEFAULT_PAGES_DIR,
-    extensions,
-    include = [],
-    exclude = [],
-    dts
-  } = options
+  const { pagesDir = DEFAULT_PAGES_DIR, extensions, include = [], exclude = [], dts } = options
 
   const pagesDirs = normalizePagesDirs(pagesDir, include, exclude)
 
   return {
     pagesDirs,
-    extensions: extensions || ['.tsx', '.ts', '.jsx', '.js'],
-    dts: dts ?? 'src/auto-router.d.ts'
+    extensions: extensions || DEFAULT_EXTENSIONS,
+    dts: dts ?? DEFAULT_DTS_FILE
   }
 }
 
