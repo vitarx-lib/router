@@ -19,13 +19,39 @@ import {
 type HttpUrl = `http://${string}` | `https://${string}`
 type Hash = `#${string}`
 
+/**
+ * 解析查询字符串为对象
+ *
+ * @param queryString - 查询字符串（不含 ? 前缀）
+ * @returns 查询参数对象
+ */
+function parseQuery(queryString: string): Record<string, string> {
+  const query: Record<string, string> = {}
+  const pairs = queryString.split('&')
+
+  for (const pair of pairs) {
+    const [key, value] = pair.split('=', 2)
+    if (key) {
+      query[decodeURIComponent(key)] = value ? decodeURIComponent(value) : ''
+    }
+  }
+
+  return query
+}
+
 export interface RouterLinkProps extends WithProps<'a'> {
   /**
    * 要跳转的目标
    *
    * 可以是路由目标对象，也可以是路由索引
    */
-  to: NavigateTarget | RouteIndex | HttpUrl | Hash | `${RouteIndex}${Hash}`
+  to:
+    | NavigateTarget
+    | RouteIndex
+    | HttpUrl
+    | Hash
+    | `${RouteIndex}${Hash}`
+    | `${RouteIndex}?${string}${Hash}`
   /**
    * 子节点插槽
    */
@@ -103,6 +129,13 @@ export function RouterLink(props: RouterLinkProps): ElementView<'a'> {
       const [index, hash] = to.index.split('#', 2)
       to.index = index
       to.hash = `#${hash}`
+    }
+
+    // 解析查询参数
+    if (to.index.includes('?')) {
+      const [index, queryString] = to.index.split('?', 2)
+      to.index = index
+      to.query = parseQuery(queryString)
     }
 
     return to
