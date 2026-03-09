@@ -216,7 +216,7 @@ export default abstract class RouterRegistry {
     if (!this._options.strict) {
       path = path.toLowerCase() as RoutePath
     }
-    return this._pathRoutes.get(path)
+    return this.pathRoutes.get(path)
   }
 
   /**
@@ -226,7 +226,7 @@ export default abstract class RouterRegistry {
    * @returns {RouteNormalized|undefined} - 路由对象，如果未找到则返回undefined
    */
   public findNamedRoute(name: RouteName): RouteNormalized | undefined {
-    return this._namedRoutes.get(name)
+    return this.namedRoutes.get(name)
   }
 
   /**
@@ -258,7 +258,7 @@ export default abstract class RouterRegistry {
       const { path: shortPath, suffix } = splitPathAndSuffix(formattedPath)
 
       // 构建可能的路径选项，包括当前路径和去除尾部index的路径
-      const staticRoute = this._pathRoutes.get(shortPath)
+      const staticRoute = this.pathRoutes.get(shortPath)
       if (staticRoute) {
         // 验证后缀，如果匹配成功则返回结果，否则继续查找
         if (validateSuffix(suffix, staticRoute.suffix, formattedPath, staticRoute.path)) {
@@ -268,7 +268,7 @@ export default abstract class RouterRegistry {
 
       // 计算路径段数，用于匹配动态路由
       const segmentCount = shortPath.split('/').filter(Boolean).length
-      const candidates = this._dynamicRoutes.get(segmentCount)
+      const candidates = this.dynamicRoutes.get(segmentCount)
 
       // 如果存在候选动态路由
       if (candidates) {
@@ -307,7 +307,7 @@ export default abstract class RouterRegistry {
       }
       // 兼容 /index 访问 / 根
       else if (shortPath === '/index') {
-        const indexRoute = this._pathRoutes.get('/')
+        const indexRoute = this.pathRoutes.get('/')
         if (
           indexRoute &&
           validateSuffix(suffix, indexRoute.suffix, formattedPath, indexRoute.path)
@@ -358,7 +358,7 @@ export default abstract class RouterRegistry {
     const length = segments.length
 
     const removeRouteFromRecords = (key: number) => {
-      const records = this._dynamicRoutes.get(key)
+      const records = this.dynamicRoutes.get(key)
       if (records) {
         for (let i = 0; i < records.length; i++) {
           if (records[i].route.path === path) {
@@ -382,28 +382,29 @@ export default abstract class RouterRegistry {
    * 注册路由
    *
    * @param route 要注册的路由对象
-   * @param group 父路由对象
+   * @param parent 父路由对象
    * @returns {RouteNormalized} 规范化的路由对象
    */
-  private registerRoute(route: Route, group?: RouteNormalized): RouteNormalized {
-    const normalizedRoute = normalizeRoute(route, group, this.suffix)
-    if (group) this._parentRoute.set(normalizedRoute, group)
-    if (isRouteGroup(normalizedRoute)) {
-      this.recordRoute(normalizedRoute)
-      if (normalizedRoute.children) {
-        for (const child of normalizedRoute.children) {
-          this.registerRoute(child, normalizedRoute)
-        }
-      }
-      if (!normalizedRoute.redirect && !normalizedRoute.component) {
-        throw new Error(
-          `[Router] Group route "${normalizedRoute.path}" must have a redirect or component`
-        )
-      }
-    } else {
-      this.recordRoute(normalizedRoute)
+  private registerRoute(route: Route, parent?: RouteNormalized): RouteNormalized {
+    const normalized = normalizeRoute(route, parent, this.suffix)
+
+    if (parent) {
+      this._parentRoute.set(normalized, parent)
     }
-    return normalizedRoute
+
+    const recordable = normalized.component || normalized.redirect || !isRouteGroup(normalized)
+
+    if (recordable) {
+      this.recordRoute(normalized)
+    }
+
+    if (normalized.children) {
+      for (const child of normalized.children) {
+        this.registerRoute(child, normalized)
+      }
+    }
+
+    return normalized
   }
 
   /**
@@ -416,7 +417,7 @@ export default abstract class RouterRegistry {
   /**
    * 记录路由
    */
-  private recordRoute(route: RouteNormalized) {
+  private recordRoute(route: RouteNormalized): void {
     if (route.name) {
       if (route.name.startsWith('/')) {
         route.name = route.name.replace(/^\//, '')
@@ -459,7 +460,7 @@ export default abstract class RouterRegistry {
       if (!this._dynamicRoutes.has(len)) {
         this._dynamicRoutes.set(len, [])
       }
-      this._dynamicRoutes.get(len)!.push({ regex, route })
+      this.dynamicRoutes.get(len)!.push({ regex, route })
     }
     addToLengthMap(length)
     if (optional > 0) {
