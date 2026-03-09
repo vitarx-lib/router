@@ -1,4 +1,4 @@
-import type { AnyPrimitive, MakeRequired } from 'vitarx'
+import type { MakeRequired } from 'vitarx'
 import { Router } from '../index.js'
 import type { AfterEnterCallback, BeforeEnterCallback } from './hooks.js'
 import type {
@@ -171,7 +171,7 @@ export interface Route<T extends AllowedRouteComponent = AllowedRouteComponent> 
  * ```
  */
 export interface RouteMetaData {
-  [key: string]: AnyPrimitive
+  [key: string]: any
 }
 
 /**
