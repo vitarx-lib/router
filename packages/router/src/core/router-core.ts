@@ -75,6 +75,12 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    */
   private readonly _readonlyRouteLocation: ReadonlyRouteLocation
   /**
+   * 是否已初始化
+   *
+   * @private
+   */
+  private _isInitialized: boolean = false
+  /**
    * 路由器构造函数
    * 初始化路由器并确保单例
    *
@@ -213,6 +219,8 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @return {this} - 返回当前路由器实例
    */
   public initialize(): this {
+    if (this._isInitialized) return this
+    this._isInitialized = true
     // 初始化路由表
     this.setupRoutes(this._options.routes)
     if (typeof this.options.scrollBehavior === 'function') {
