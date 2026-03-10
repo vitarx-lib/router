@@ -47,8 +47,7 @@ const VIRTUAL_ROUTES_ID = 'virtual:vitarx-router:routes'
 const RESOLVED_ROUTES_ID = '\0' + VIRTUAL_ROUTES_ID
 
 // 导出类型和工具函数
-export type { VitePluginRouterOptions, PageOptions } from './core/types.js'
-export { definePage } from './auto-routes/definePage.js'
+export type { VitePluginRouterOptions } from './core/types.js'
 
 /**
  * 创建 Vitarx Router Vite 插件
