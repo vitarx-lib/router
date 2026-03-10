@@ -74,7 +74,6 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @private
    */
   private readonly _readonlyRouteLocation: ReadonlyRouteLocation
-
   /**
    * 路由器构造函数
    * 初始化路由器并确保单例
@@ -89,7 +88,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       index: this._options.base,
       path: this._options.base,
       hash: '',
-      fullPath: '',
+      fullPath: this._options.base,
       params: shallowReactive<Record<string, any>>({}),
       query: shallowReactive<Record<string, any>>({}),
       matched: shallowReactive<RouteNormalized[]>([]),
@@ -308,7 +307,9 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @param {NavigateTarget} target - 导航目标
    * @return {Promise<NavigateResult>} 导航结果
    */
-  public navigate(target: NavigateTarget | RouteLocation): Promise<NavigateResult> {
+  public navigate(
+    target: NavigateTarget | (RouteLocation & { replace?: boolean })
+  ): Promise<NavigateResult> {
     // 生成新的任务ID并更新当前任务
     const taskId = ++this._taskCounter
     this._currentTaskId = taskId
@@ -335,7 +336,6 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
 
       // 创建标准化的路由位置对象
       const to = this.createRouteLocation(_target)
-
       // 检查是否强制导航（跳过重复检查）
       const isForce = '_force' in _target && _target._force
 
