@@ -59,8 +59,12 @@ export { definePage } from './auto-routes/definePage.js'
  * @param options - 插件配置选项
  * @param [options.pagesDir] - 页面目录路径，支持字符串、字符串数组或对象数组
  * @param [options.extensions] - 支持的文件扩展名，默认为 ['.tsx', '.ts', '.jsx', '.js']
- * @param [options.exclude] - 要排除的文件/目录模式列表
+ * @param [options.include] - 要包含的文件/目录 glob 模式列表
+ * @param [options.exclude] - 要排除的文件/目录 glob 模式列表
  * @param [options.dts] - 类型声明文件路径，设为 false 可禁用生成
+ * @param [options.importMode] - 组件导入模式，'lazy' | 'file'，默认 'lazy'
+ * @param [options.extendRoute] - 路由扩展钩子，用于自定义扩展路由配置
+ * @param [options.imports] - 自定义导入语句，向虚拟模块注入额外的导入
  * @returns Vite 插件实例
  *
  * @example
@@ -87,6 +91,24 @@ export { definePage } from './auto-routes/definePage.js'
  *     { dir: 'src/pages', exclude: ['components'] },
  *     { dir: 'src/admin', include: ['**\/*.tsx'] }
  *   ]
+ * })
+ *
+ * // 使用路由扩展钩子
+ * VitarxRouter({
+ *   extendRoute(route) {
+ *     route.meta = { ...route.meta, layout: 'default' }
+ *     return route
+ *   }
+ * })
+ *
+ * // 使用 file 模式 + 自定义导入
+ * VitarxRouter({
+ *   importMode: 'file',
+ *   imports: ["import { lazy } from 'vitarx'"],
+ *   extendRoute(route) {
+ *     route.component = `lazy(() => import('${route.component}'))`
+ *     return route
+ *   }
  * })
  * ```
  */
