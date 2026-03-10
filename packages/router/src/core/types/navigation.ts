@@ -150,12 +150,17 @@ export interface NavigateResult {
  */
 export interface RouteIndexMap {}
 
+type PathExpandExt<T> = T extends `/${string}` ? `${T}.${string}` : T
+
 /**
  * 路由索引
  *
  * 可以是路径或路由命名
  */
-export type RouteIndex = keyof RouteIndexMap extends never ? string : keyof RouteIndexMap
+export type RouteIndex = keyof RouteIndexMap extends never
+  ? string
+  : keyof RouteIndexMap | PathExpandExt<keyof RouteIndexMap>
+
 /**
  * 路由索引类型
  */
@@ -204,7 +209,5 @@ export interface NavigateTarget<T extends RouteIndex = RouteIndex> extends Navig
 export type NavigateConfig<T extends RouteIndex = RouteIndex> = keyof RouteIndexMap extends never
   ? BaseNavigateOptions<T>
   : T extends keyof RouteIndexMap
-    ? 'params' extends keyof RouteIndexMap[T]
-      ? Omit<BaseNavigateOptions<T>, 'params'> & RouteIndexMap[T]
-      : BaseNavigateOptions<T>
+    ? Omit<BaseNavigateOptions<T>, keyof RouteIndexMap[T]> & RouteIndexMap[T]
     : BaseNavigateOptions<T>
