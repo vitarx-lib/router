@@ -186,8 +186,10 @@ interface BaseNavigateOptions<T extends RouteIndex> {
 export interface NavigateTarget<T extends RouteIndex = RouteIndex> extends NavigateConfig<T> {
   /**
    * 是否替换当前路由
+   *
+   * @default false
    */
-  isReplace?: boolean
+  replace?: boolean
   /**
    * @internal
    * 强制导航，跳过重复检查

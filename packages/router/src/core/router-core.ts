@@ -187,7 +187,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @return {Promise<NavigateResult>} - 导航结果
    */
   public replace<T extends RouteIndex>(options: NavigateConfig<T>): Promise<NavigateResult> {
-    return this.navigate({ ...options, isReplace: true })
+    return this.navigate({ ...options, replace: true })
   }
 
   /**
@@ -201,7 +201,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @return {Promise<NavigateResult>} - 导航结果
    */
   public push<T extends RouteIndex>(options: NavigateConfig<T>): Promise<NavigateResult> {
-    return this.navigate({ ...options, isReplace: false })
+    return this.navigate({ ...options, replace: false })
   }
 
   /**
@@ -405,10 +405,10 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
 
         // 处理重定向
         if (typeof result === 'object' && result.index !== _target.index) {
-          result.isReplace ??= false
+          result.replace ??= false
           return performNavigation(result, true)
         } else if (typeof result === 'string' && result !== _target.index) {
-          return performNavigation({ index: result, isReplace: false }, true)
+          return performNavigation({ index: result, replace: false }, true)
         }
 
         // 检查路由匹配结果
@@ -420,7 +420,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
         }
 
         // 更新路由历史
-        if ('isReplace' in _target && _target.isReplace) {
+        if ('replace' in _target && _target.replace) {
           this.replaceHistory(to, from)
         } else {
           this.pushHistory(to, from)
