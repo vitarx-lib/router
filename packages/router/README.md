@@ -26,10 +26,10 @@ npm install vitarx-router
 ### 1. 创建路由配置
 
 ```typescript
-// router/index.ts
+// src/router/index.ts
 import { createRouter, defineRoutes } from 'vitarx-router'
-import Home from './pages/Home.jsx'
-import About from './pages/About.jsx'
+import Home from '../pages/Home.jsx'
+import About from '../pages/About.jsx'
 
 const routes = defineRoutes(
   { path: '/', component: Home },
@@ -42,7 +42,7 @@ export const router = createRouter({ routes })
 ### 2. 注册路由器
 
 ```typescript
-// main.ts
+// src/main.ts
 import { createApp } from 'vitarx'
 import { router } from './router'
 import App from './App.jsx'
@@ -60,8 +60,8 @@ export default function App() {
   return (
     <div>
       <nav>
-        <a href="#/">首页</a>
-        <a href="#/about">关于</a>
+        <a href="/">首页</a>
+        <a href="/about">关于</a>
       </nav>
       <RouterView />
     </div>
