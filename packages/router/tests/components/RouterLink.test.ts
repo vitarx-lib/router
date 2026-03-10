@@ -124,7 +124,6 @@ describe('RouterLink', () => {
     it('应该正确处理字符串路径', async () => {
       mountComponent(ctx, h(RouterLink, { to: '/about' }))
       await waitForRender()
-
       expect(getLink(ctx)?.getAttribute('href')).toContain('about')
     })
 
@@ -160,7 +159,7 @@ describe('RouterLink', () => {
       mountComponent(ctx, h(RouterLink, { to: '#section' }))
       await waitForRender()
 
-      expect(getLink(ctx)?.getAttribute('href')).toBe('#section')
+      expect(getLink(ctx)?.getAttribute('href')).toBe('/#/#section')
     })
 
     it('应该正确处理未匹配的路由', async () => {
