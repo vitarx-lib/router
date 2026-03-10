@@ -2,12 +2,14 @@ import {
   Computed,
   createView,
   ElementView,
+  isPlainObject,
   isString,
   logger,
   type ValidChildren,
   type WithProps
 } from 'vitarx'
 import {
+  type HashStr,
   type NavigateResult,
   NavigateStatus,
   type NavigateTarget,
@@ -15,29 +17,10 @@ import {
   type RouteLocation,
   useRouter
 } from '../core/index.js'
+import { cloneRouteLocation, queryStringToObject } from '../core/utils.js'
 
 type HttpUrl = `http://${string}` | `https://${string}`
 type Hash = `#${string}`
-
-/**
- * 解析查询字符串为对象
- *
- * @param queryString - 查询字符串（不含 ? 前缀）
- * @returns 查询参数对象
- */
-function parseQuery(queryString: string): Record<string, string> {
-  const query: Record<string, string> = {}
-  const pairs = queryString.split('&')
-
-  for (const pair of pairs) {
-    const [key, value] = pair.split('=', 2)
-    if (key) {
-      query[decodeURIComponent(key)] = value ? decodeURIComponent(value) : ''
-    }
-  }
-
-  return query
-}
 
 export interface RouterLinkProps extends WithProps<'a'> {
   /**
@@ -101,7 +84,16 @@ const exclude = [
   'aria-current'
 ]
 const regex = /^(https?):\/\/[^\s\/$.?#].\S*$/i
-
+type NavigateInfo =
+  | {
+      href: string
+      navigate: false
+    }
+  | {
+      href: string
+      navigate: true
+      location: RouteLocation
+    }
 /**
  * 路由跳转组件
  *
@@ -113,16 +105,54 @@ const regex = /^(https?):\/\/[^\s\/$.?#].\S*$/i
  */
 export function RouterLink(props: RouterLinkProps): ElementView<'a'> {
   const router = useRouter()
-
-  const target = new Computed<NavigateTarget | HttpUrl | Hash | undefined>(() => {
-    if (!props.to) return undefined
+  const navigateInfo = new Computed<NavigateInfo>(() => {
+    if (!props.to) {
+      return {
+        href: 'javascript:void(0)',
+        navigate: false
+      }
+    }
 
     const to: NavigateTarget = isString(props.to)
       ? { index: decodeURIComponent(props.to) }
       : props.to
 
-    if (regex.test(to.index) || to.index.startsWith('#')) {
-      return to.index as HttpUrl | Hash
+    if (!isPlainObject(to) || !isString(to.index)) {
+      logger.warn('[RouterLink] Invalid "to" prop:', to)
+      return {
+        href: 'javascript:void(0)',
+        navigate: false
+      }
+    }
+
+    if (regex.test(to.index)) {
+      return {
+        href: to.index,
+        navigate: false
+      }
+    }
+
+    if (to.index.startsWith('#')) {
+      if (router.mode === 'hash') {
+        // 兼容hash模式，跳转到指定hash
+        const route = cloneRouteLocation(router.route)
+        if (route.hash) {
+          route.fullPath.replace(route.hash, to.index)
+        } else {
+          route.fullPath += to.index
+        }
+        route.hash = to.index as HashStr
+        return {
+          href: route.fullPath,
+          location: route,
+          navigate: true
+        }
+      } else {
+        return {
+          href: to.index,
+          navigate: false
+        }
+      }
     }
 
     if (to.index.includes('#')) {
@@ -135,80 +165,65 @@ export function RouterLink(props: RouterLinkProps): ElementView<'a'> {
     if (to.index.includes('?')) {
       const [index, queryString] = to.index.split('?', 2)
       to.index = index
-      to.query = parseQuery(queryString)
+      to.query = queryStringToObject(queryString)
     }
 
-    return to
-  })
-
-  const location = new Computed<RouteLocation | undefined>(() => {
-    if (!target.value || typeof target.value === 'string') return undefined
-
-    const location = router.createRouteLocation(target.value)
-
-    if (!location.matched.length) {
-      logger.warn(
-        `[RouterLink] Route target "${target.value.index}" did not match any valid route, please check the "to" prop configuration`
-      )
-    }
-
-    return location
+    const location = router.createRouteLocation(to)
+    return { href: location.fullPath, location, navigate: true }
   })
 
   let active: Computed<boolean> | undefined
 
   if (props.active && props.active !== 'none') {
     active = new Computed(() => {
-      if (!location.value) return false
-      const routeTarget = target.value
-      if (typeof routeTarget === 'string' || !routeTarget) return false
-
-      if (routeTarget.index.startsWith('/')) {
+      const info = navigateInfo.value
+      if (!info.navigate) return false
+      const loc = info.location
+      if (loc.index.startsWith('/')) {
         if (props.active === 'obscure') {
-          if (location.value.path === '/') {
+          if (loc.path === '/') {
             return router.route.path === '/'
           } else {
-            return router.route.fullPath.startsWith(location.value.path)
+            return router.route.fullPath.startsWith(loc.path)
           }
         } else {
-          return location.value.path === router.route.path
+          return loc.path === router.route.path
         }
       } else {
-        const index = routeTarget.index
-        return !!router.route.matched.find(route => route.name === index)
+        // 名称匹配
+        return !!router.route.matched.find(route => route.name === loc.index)
       }
     })
   }
 
   const isDisabled = () => props.disabled ?? false
 
-  const href = () => {
-    if (typeof target.value === 'string') return target.value
-    return location.value?.fullPath || 'javascript:void(0)'
-  }
-
   const navigate = (e: MouseEvent): void => {
-    if (typeof target.value !== 'string') {
-      e.preventDefault()
-
-      if (location.value && !isDisabled()) {
-        router.navigate(location.value).then(res => {
-          if (res.status !== NavigateStatus.success) {
-            logger.warn(
-              `[RouterLink] Navigation to target "${(target.value as NavigateTarget)?.index}" failed: ${res.message}`
-            )
-          }
-
-          if (props.callback) props.callback(res)
-        })
+    if (isDisabled()) return e.preventDefault()
+    const navigateTarget = navigateInfo.value
+    // 无需导航
+    if (!navigateTarget.navigate) return void 0
+    e.preventDefault()
+    const to = props.to
+    const location =
+      isPlainObject(to) && to.replace
+        ? { ...navigateTarget.location, replace: true }
+        : navigateTarget.location
+    router.navigate(location).then(res => {
+      if (__VITARX_DEV__ && res.status !== NavigateStatus.success) {
+        logger.warn(`[RouterLink] Navigation to target "${location.index}" failed: ${res.message}`)
       }
-    }
+      if (props.callback) props.callback(res)
+    })
   }
+
   const aProps = {
-    href: href(),
     onClick: navigate,
     children: props.children,
     'v-bind': [props, exclude],
+    get href() {
+      return navigateInfo.value.href
+    },
     get draggable() {
       return props.draggable ?? false
     },
