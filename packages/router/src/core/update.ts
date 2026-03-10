@@ -1,7 +1,7 @@
 import type { RouteLocation } from './router-types.js'
 
 // 字符串值的key
-const __stringValueKeys: (keyof RouteLocation)[] = ['path', 'hash', 'index', 'fullPath']
+const __stringValueKeys = ['path', 'hash', 'index', 'fullPath'] as const
 
 /**
  * 补丁更新路由对象
@@ -15,7 +15,6 @@ export function patchUpdateRoute(location: RouteLocation, newLocation: RouteLoca
   diffUpdateObject(location['query'], newLocation['query'])
   diffUpdateObject(location.meta, newLocation.meta)
   for (const key of __stringValueKeys) {
-    if (key === '__is_route_location') continue
     if (location[key] !== newLocation[key]) {
       location[key] = newLocation[key] as any
     }
