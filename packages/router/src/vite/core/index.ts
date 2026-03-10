@@ -19,7 +19,7 @@
  *     VitarxRouter({
  *       pagesDir: 'src/pages',
  *       extensions: ['.tsx', '.ts'],
- *       dts: 'src/auto-router.d.ts'
+ *       dts: 'typed-router.d.ts'
  *     })
  *   ]
  * })
