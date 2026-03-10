@@ -126,25 +126,42 @@ export function createRouter(options: RouterOptions): RouterCore {
   }
   return router.initialize()
 }
-
 /**
  * 获取路由器实例
- *
- * 与使用`Router.instance`静态属性获取是一致的效果。
  *
  * @return {RouterCore} - 路由器实例
  * @throws {Error} - 如果未创建路由器实例，则会抛出异常
  */
-export function useRouter<T extends RouterCore>(): T {
-  const router = inject<T>('router')
-  if (!router) throw new Error('[Router] Router instance not found')
+export function useRouter<T extends RouterCore>(): T
+
+/**
+ * 获取路由器实例
+ *
+ *
+ * @param {boolean} allowEmpty - 是否允许返回空值
+ * @return {RouterCore | null} - 如果存在则返回路由器实例
+ */
+export function useRouter<T extends RouterCore>(allowEmpty: false): T | null
+
+/**
+ * 获取路由器实例
+ *
+ * @param {boolean} allowEmpty - 是否允许返回空值
+ * @return {RouterCore} - 路由器实例
+ * @throws {Error} - 如果未创建路由器实例，则会抛出异常
+ */
+export function useRouter<T extends RouterCore>(allowEmpty: true): T
+
+export function useRouter<T extends RouterCore>(allowEmpty: boolean = false): T | null {
+  const router = inject<T | null>('router', null)
+  if (!allowEmpty && !router) {
+    throw new Error('[Router] Router instance not found')
+  }
   return router
 }
 
 /**
  * 获取当前`RouteLocation`对象
- *
- * 它是`Router.instance.currentRouteLocation`属性的助手函数，优化函数式编程体验。
  *
  * 简单示例：
  * ```jsx
