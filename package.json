@@ -10,7 +10,7 @@
     "@commitlint/cli": "^20.4.3",
     "@commitlint/config-conventional": "^20.4.3",
     "@commitlint/types": "^20.4.3",
-    "@types/node": "^22.19.2",
+    "@types/node": "^25.4.0",
     "@vitarx/plugin-vite": "^0.0.1-beta.3",
     "@vitest/browser-playwright": "^4.0.18",
     "husky": "^9.1.7",
@@ -24,6 +24,7 @@
   "packageManager": "pnpm@10.30.3",
   "pnpm": {
     "overrides": {
+      "@types/node": "^25.4.0",
       "rollup": "4.53.3",
       "vite": "7.2.7"
     }
