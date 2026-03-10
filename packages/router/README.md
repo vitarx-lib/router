@@ -405,11 +405,8 @@ const routes = defineRoutes({
 // 替换模式
 <RouterLink to="/about" replace>关于</RouterLink>
 
-// 自定义激活类名
-<RouterLink to="/" activeClass="active">首页</RouterLink>
-
-// 自定义标签
-<RouterLink to="/" tag="li">首页</RouterLink>
+// 激活匹配
+<RouterLink to="/" active="strict">首页</RouterLink>
 ```
 
 ---
