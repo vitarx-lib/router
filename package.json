@@ -10,23 +10,24 @@
     "@commitlint/cli": "^20.4.3",
     "@commitlint/config-conventional": "^20.4.3",
     "@commitlint/types": "^20.4.3",
-    "@types/node": "^25.4.0",
+    "@types/node": "25.4.0",
+    "@vitarx/plugin-vite": "0.0.1-beta.4",
     "@vitest/browser-playwright": "^4.0.18",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
-    "prettier": "^3.7.4",
+    "prettier": "^3.8.1",
     "typescript": "^5.9.3",
-    "vite": "^7.2.7",
-    "vitest": "^4.0.18",
-    "@vitarx/plugin-vite": "^0.0.1-beta.4"
+    "vite": "7.2.7",
+    "vitest": "^4.0.18"
   },
   "packageManager": "pnpm@10.30.3",
   "pnpm": {
     "overrides": {
-      "@types/node": "^25.4.0",
+      "@types/node": "25.4.0",
       "rollup": "4.53.3",
       "vite": "7.2.7",
-      "@vitarx/plugin-vite": "0.0.1-beta.4"
+      "@vitarx/plugin-vite": "0.0.1-beta.4",
+      "vitarx": "4.0.0-beta.5"
     }
   }
 }
