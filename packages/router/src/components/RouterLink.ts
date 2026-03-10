@@ -34,7 +34,7 @@ export interface RouterLinkProps extends WithProps<'a'> {
     | HttpUrl
     | Hash
     | `${RouteIndex}${Hash}`
-    | `${RouteIndex}?${string}${Hash}`
+    | `${RouteIndex}?${string}`
   /**
    * 子节点插槽
    */
