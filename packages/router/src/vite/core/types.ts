@@ -358,10 +358,12 @@ export interface VitePluginRouterOptions {
    * ```
    */
   exclude?: string[]
-  /** 类型声明文件路径，设为 false 可禁用生成 */
+  /**
+   * 类型声明文件路径，设为 false 可禁用生成
+   *
+   * @default 'typed-router.d.ts'
+   */
   dts?: string | false
-  /** 路由块解析语言（保留用于未来扩展） */
-  routeBlockLang?: string
   /**
    * 组件导入模式
    *
@@ -377,7 +379,7 @@ export interface VitePluginRouterOptions {
    *   importMode: 'file'
    * })
    * // 生成的路由：
-   * // { path: '/', component: '/src/pages/index.tsx' }
+   * // { path: '/', component: '/系统绝对路径/src/pages/index.tsx' }
    * ```
    */
   importMode?: ImportMode
@@ -415,7 +417,7 @@ export interface VitePluginRouterOptions {
    *   imports: ["import { lazy } from 'vitarx'"],
    *   extendRoute(route) {
    *     // 将文件路径转换为懒加载组件
-   *     route.component = `lazy(() => import('${route.component}'))`
+   *     if(route.component) route.component = `lazy(() => import('${route.component}'))`
    *     return route
    *   }
    * })
