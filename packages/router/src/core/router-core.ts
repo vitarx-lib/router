@@ -94,7 +94,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       index: this._options.base,
       path: this._options.base,
       hash: '',
-      fullPath: this._options.base,
+      fullPath: '',
       params: shallowReactive<Record<string, any>>({}),
       query: shallowReactive<Record<string, any>>({}),
       matched: shallowReactive<RouteNormalized[]>([]),
@@ -316,7 +316,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @return {Promise<NavigateResult>} 导航结果
    */
   public navigate(
-    target: NavigateTarget | (RouteLocation & { replace?: boolean })
+    target: NavigateTarget | (RouteLocation & { replace?: boolean; force?: boolean })
   ): Promise<NavigateResult> {
     // 生成新的任务ID并更新当前任务
     const taskId = ++this._taskCounter
@@ -345,7 +345,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       // 创建标准化的路由位置对象
       const to = this.createRouteLocation(_target)
       // 检查是否强制导航（跳过重复检查）
-      const isForce = '_force' in _target && _target._force
+      const isForce = 'force' in _target && _target.force
 
       // 检查是否导航到相同路由（强制导航时跳过此检查）
       if (
