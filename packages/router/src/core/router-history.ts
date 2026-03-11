@@ -94,8 +94,10 @@ export default class RouterHistory extends RouterCore {
     this._boundOnPopState = this.onPopState.bind(this)
     // 初始化时监听 popstate 事件，处理历史记录返回时的路由恢复
     window.addEventListener('popstate', this._boundOnPopState)
+    const target = this.currentRouteTarget
+    target.force = true
     // 替换路由
-    this.replace(this.currentRouteTarget).then(res => {
+    this.replace(target).then(res => {
       if (res.status !== NavigateStatus.success) {
         logger.warn(`[Router] Initial route matching failed: ${res.message}`)
       }
