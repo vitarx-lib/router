@@ -40,54 +40,6 @@ export interface GenerateRoutesOptions {
 }
 
 /**
- * 生成路由配置代码
- *
- * 将页面列表转换为完整的路由配置模块代码。
- * 生成的代码包含：
- * - vitarx 的 lazy 函数导入（当 importMode 为 'lazy' 时）
- * - 默认导出的路由数组
- * - 每个路由的 name、path、component 和可选的 meta、children
- *
- * @param pages - 解析后的页面列表
- * @param options - 路由生成选项
- * @returns Promise 包含可执行路由配置代码字符串
- *
- * @example
- * ```typescript
- * const code = await generateRoutes([
- *   { path: '/', name: 'home', filePath: '/src/pages/index.tsx', ... }
- * ])
- *
- * // 生成的代码（lazy 模式）：
- * // import { lazy } from 'vitarx'
- * //
- * // export default [
- * //   {
- * //     name: 'home',
- * //     path: '/',
- * //     component: lazy(() => import('/src/pages/index.tsx'))
- * //   }
- * // ]
- *
- * // 生成的代码（file 模式）：
- * // export default [
- * //   {
- * //     name: 'home',
- * //     path: '/',
- * //     component: '/src/pages/index.tsx'
- * //   }
- * // ]
- * ```
- */
-export async function generateRoutes(
-  pages: ParsedPage[],
-  options: GenerateRoutesOptions = {}
-): Promise<string> {
-  const routes = await buildResolvedRoutes(pages, options)
-  return generateRoutesCode(routes, options.importMode, options.imports)
-}
-
-/**
  * 构建解析后的路由配置列表
  */
 async function buildResolvedRoutes(
@@ -110,21 +62,26 @@ async function buildResolvedRoute(
   options: GenerateRoutesOptions
 ): Promise<ResolvedRoute> {
   const { importMode = 'lazy', extendRoute, lowercase = true } = options
-  
+
   let component: string
   if (page.namedViews) {
     // 生成命名视图组件对象
     const components: string[] = []
     // 默认视图
-    components.push(`default: ${importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`}`)
+    components.push(
+      `default: ${importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`}`
+    )
     // 其他命名视图
     for (const [viewName, viewPath] of Object.entries(page.namedViews)) {
-      components.push(`${viewName}: ${importMode === 'file' ? `'${viewPath}'` : `lazy(() => import('${viewPath}'))`}`)
+      components.push(
+        `${viewName}: ${importMode === 'file' ? `'${viewPath}'` : `lazy(() => import('${viewPath}'))`}`
+      )
     }
     component = `{ ${components.join(', ')} }`
   } else {
     // 单个组件
-    component = importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`
+    component =
+      importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`
   }
 
   const route: ResolvedRoute = {
@@ -252,11 +209,49 @@ function generatePatternCode(pattern: Record<string, RegExp>): string {
 }
 
 /**
- * 生成路由配置 JSON 对象
+ * 生成路由配置代码
+ *
+ * 将页面列表转换为完整的路由配置模块代码。
+ * 生成的代码包含：
+ * - vitarx 的 lazy 函数导入（当 importMode 为 'lazy' 时）
+ * - 默认导出的路由数组
+ * - 每个路由的 name、path、component 和可选的 meta、children
+ *
+ * @param pages - 解析后的页面列表
+ * @param options - 路由生成选项
+ * @returns Promise 包含可执行路由配置代码字符串
+ *
+ * @example
+ * ```typescript
+ * const code = await generateRoutes([
+ *   { path: '/', name: 'home', filePath: '/src/pages/index.tsx', ... }
+ * ])
+ *
+ * // 生成的代码（lazy 模式）：
+ * // import { lazy } from 'vitarx'
+ * //
+ * // export default [
+ * //   {
+ * //     name: 'home',
+ * //     path: '/',
+ * //     component: lazy(() => import('/src/pages/index.tsx'))
+ * //   }
+ * // ]
+ *
+ * // 生成的代码（file 模式）：
+ * // export default [
+ * //   {
+ * //     name: 'home',
+ * //     path: '/',
+ * //     component: '/src/pages/index.tsx'
+ * //   }
+ * // ]
+ * ```
  */
-export async function generateRoutesJSON(
+export async function generateRoutes(
   pages: ParsedPage[],
   options: GenerateRoutesOptions = {}
-): Promise<ResolvedRoute[]> {
-  return buildResolvedRoutes(pages, options)
+): Promise<string> {
+  const routes = await buildResolvedRoutes(pages, options)
+  return generateRoutesCode(routes, options.importMode, options.imports)
 }
