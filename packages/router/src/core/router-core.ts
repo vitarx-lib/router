@@ -94,7 +94,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
       index: this._options.base,
       path: this._options.base,
       hash: '',
-      fullPath: '',
+      fullPath: '', // 初始的路径必须为空字符串，避免重复检测
       params: shallowReactive<Record<string, any>>({}),
       query: shallowReactive<Record<string, any>>({}),
       matched: shallowReactive<RouteNormalized[]>([]),
