@@ -66,7 +66,7 @@ export function handleHotUpdate(
           query: { ...router.route.query },
           hash: router.route.hash,
           replace: true,
-          _force: true
+          force: true
         })
       }
     })
