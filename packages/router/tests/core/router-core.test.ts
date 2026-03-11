@@ -370,7 +370,8 @@ describe('RouterCore', () => {
 
     it('应该正确处理hash模式路径', async () => {
       const router = await createTestRouter()
-      ;(router as any)._options.mode = 'hash'
+      const options = (router as any)._options as any
+      options.mode = 'hash'
 
       const location = router.createRouteLocation({ index: '/home' })
 
