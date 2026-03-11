@@ -1,5 +1,5 @@
 import type { View } from 'vitarx'
-import { RouterLink } from 'vitarx-router'
+import { useRouter } from 'vitarx-router'
 
 const apis = [
   {
@@ -38,6 +38,7 @@ const components = [
 ]
 
 export default function About(): View {
+  const router = useRouter()
   return (
     <div
       style={{
@@ -206,8 +207,8 @@ export default function About(): View {
         </div>
       </div>
 
-      <RouterLink
-        to="/"
+      <a
+        href="/"
         style={{
           display: 'inline-block',
           padding: '14px 32px',
@@ -217,11 +218,16 @@ export default function About(): View {
           borderRadius: '30px',
           fontSize: '15px',
           fontWeight: '600',
-          boxShadow: '0 4px 15px rgba(118, 75, 162, 0.4)'
+          boxShadow: '0 4px 15px rgba(118, 75, 162, 0.4)',
+          cursor: 'pointer'
+        }}
+        onClick={(e) => {
+          e.preventDefault()
+          router.back()
         }}
       >
-        ← 返回首页
-      </RouterLink>
+        ← 返回上一页
+      </a>
     </div>
   )
 }
