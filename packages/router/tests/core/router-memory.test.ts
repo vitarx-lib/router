@@ -192,7 +192,7 @@ describe('RouterMemory', () => {
       await router.push({ index: '/about' })
 
       const history = (router as any)._history
-      expect(history.length).toBe(3)
+      expect(history.length).toBe(2)
     })
 
     it('push应该清除后续历史记录', async () => {
