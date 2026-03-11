@@ -25,7 +25,7 @@ export default class RouterMemory extends RouterCore {
   }
 
   /// 当前历史路由索引
-  private _currentIndex: number = 0
+  private _currentIndex: number = -1
 
   /**
    * 当前历史路由索引
@@ -57,9 +57,7 @@ export default class RouterMemory extends RouterCore {
   /**
    * @inheritDoc
    */
-  protected initializeRouter() {
-    this._history.push(this.route)
-  }
+  protected override initializeRouter(): void {}
 
   /**
    * 添加历史记录
@@ -108,6 +106,12 @@ export default class RouterMemory extends RouterCore {
     }
     this._currentIndex = newIndex
     this.completeNavigation(to, from)
+    this._pendingGo = null
+  }
+  public override destroy(): void {
+    super.destroy()
+    this._history = []
+    this._currentIndex = -1
     this._pendingGo = null
   }
 }
