@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    // 为发出的 JavaScript 设置 JavaScript 语言版本，并包含兼容的库声明
+    "target": "ES2022",
+    // 指定ES模块使用的语言版本
+    "module": "ESNext",
+    // 发出符合 ECMAScript 标准的类字段
+    "useDefineForClassFields": false,
+    // 跳过对所有 .d.ts 文件进行类型检查
+    "skipLibCheck": true,
+    // 不编译文件，只校验类型
+    "noEmit": true,
+    // 指定编译环境的 API，包含 ES2022 标准、DOM API 及 DOM 的可迭代特性
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    // 确保每个文件都有自己的模块
+    "isolatedModules": true,
+    /* 语法检测 */
+    "strict": true,
+    // 未使用的变量报告为错误
+    "noUnusedLocals": false,
+    // 未使用的参数报告为错误
+    "noUnusedParameters": false,
+    // 为 switch 语句中的故障案例启用错误报告
+    "noFallthroughCasesInSwitch": true,
+    // 确保导入时的大小写正确
+    "forceConsistentCasingInFileNames": true,
+    /* TSX类型校验 */
+    "jsx": "preserve",
+    "types": ["vite/client", "vitarx", "@vitarx/plugin-vite"],
+    /* 别名路径配置 */
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "typed-router.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}
