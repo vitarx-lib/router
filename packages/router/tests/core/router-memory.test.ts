@@ -198,14 +198,15 @@ describe('RouterMemory', () => {
     it('push应该清除后续历史记录', async () => {
       await router.push({ index: '/home' })
       await router.push({ index: '/about' })
+      expect((router as any).currentIndex).toBe(1)
       router.go(-1)
       await new Promise(resolve => setTimeout(resolve, 10))
-
+      expect((router as any).currentIndex).toBe(0)
       await router.push({ index: '/user/123' })
-
+      expect((router as any).currentIndex).toBe(1)
       const history = (router as any)._history
-      expect(history.length).toBe(3)
-      expect(history[2].path).toBe('/user/123')
+      expect(history.length).toBe(2)
+      expect(history[1].path).toBe('/user/123')
     })
   })
 
