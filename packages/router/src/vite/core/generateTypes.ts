@@ -12,9 +12,10 @@ import type { ParsedPage, RouteIndexMap } from './types.js'
  * 将页面列表转换为 RouteIndexMap 对象，包含每个路由的名称和路径作为键，以及对应的参数类型信息作为值。
  *
  * @param pages - 解析后的页面列表
+ * @param lowercase - 是否将路由名称和路径转换为小写
  * @returns 路由索引映射表
  */
-function buildRouteIndexMap(pages: ParsedPage[]): RouteIndexMap {
+function buildRouteIndexMap(pages: ParsedPage[], lowercase: boolean = true): RouteIndexMap {
   const map: RouteIndexMap = {}
 
   /**
@@ -30,8 +31,10 @@ function buildRouteIndexMap(pages: ParsedPage[]): RouteIndexMap {
         : {}
 
     // 同时使用 name 和 path 作为键，支持两种导航方式
-    map[page.name] = entry
-    map[page.path] = entry
+    const nameKey = lowercase ? page.name.toLowerCase() : page.name
+    const pathKey = lowercase ? page.path.toLowerCase() : page.path
+    map[nameKey] = entry
+    map[pathKey] = entry
 
     // 递归处理子路由
     for (const child of page.children) {
@@ -73,10 +76,11 @@ function formatRouteIndexEntry(
  * 生成的文件应该被用户项目的 TypeScript 配置引用。
  *
  * @param pages - 解析后的页面列表
+ * @param lowercase - 是否将路由名称和路径转换为小写
  * @returns 完整的 .d.ts 文件内容
  */
-export function generateFullDtsFile(pages: ParsedPage[]): string {
-  const indexMap = buildRouteIndexMap(pages)
+export function generateFullDtsFile(pages: ParsedPage[], lowercase: boolean = true): string {
+  const indexMap = buildRouteIndexMap(pages, lowercase)
 
   const lines: string[] = []
 

@@ -25,6 +25,8 @@ export interface NormalizedConfig {
   extendRoute?: ExtendRouteHook
   /** 自定义导入语句 */
   imports?: string[]
+  /** 是否将路由名称和路径转换为小写 */
+  lowercase: boolean
 }
 
 /**
@@ -44,7 +46,8 @@ export function normalizeConfig(options: VitePluginRouterOptions): NormalizedCon
     dts,
     importMode = 'lazy',
     extendRoute,
-    imports
+    imports,
+    lowercase = true
   } = options
 
   const pagesDirs = normalizePagesDirs(pagesDir, include, exclude)
@@ -55,7 +58,8 @@ export function normalizeConfig(options: VitePluginRouterOptions): NormalizedCon
     dts: dts ?? DEFAULT_DTS_FILE,
     importMode,
     extendRoute,
-    imports
+    imports,
+    lowercase
   }
 }
 

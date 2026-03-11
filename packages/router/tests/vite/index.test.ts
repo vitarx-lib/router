@@ -405,8 +405,8 @@ describe('Vite 插件', () => {
 })
 
 describe('导出', () => {
-  it('应该导出 definePage', async () => {
-    const module = await import('../../src/vite/index.js')
+  it('应该从 auto-routes/definePage 导出 definePage', async () => {
+    const module = await import('../../src/vite/auto-routes/definePage.js')
 
     expect(module.definePage).toBeDefined()
     expect(typeof module.definePage).toBe('function')

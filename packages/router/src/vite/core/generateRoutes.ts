@@ -32,6 +32,11 @@ export interface GenerateRoutesOptions {
    * 允许向虚拟模块注入自定义的导入语句
    */
   imports?: string[]
+  /**
+   * 是否将路由名称和路径转换为小写
+   * @default true
+   */
+  lowercase?: boolean
 }
 
 /**
@@ -104,12 +109,12 @@ async function buildResolvedRoute(
   page: ParsedPage,
   options: GenerateRoutesOptions
 ): Promise<ResolvedRoute> {
-  const { importMode = 'lazy', extendRoute } = options
+  const { importMode = 'lazy', extendRoute, lowercase = true } = options
   const component = importMode === 'file' ? page.filePath : `lazy(() => import('${page.filePath}'))`
 
   const route: ResolvedRoute = {
-    path: page.path,
-    name: page.name,
+    path: lowercase ? page.path.toLowerCase() : page.path,
+    name: lowercase ? page.name.toLowerCase() : page.name,
     component
   }
   if (page.meta && Object.keys(page.meta).length > 0) {
@@ -119,7 +124,7 @@ async function buildResolvedRoute(
     route.pattern = page.pattern
   }
   if (page.redirect !== undefined) {
-    route.redirect = formatRedirect(page.redirect)
+    route.redirect = formatRedirect(page.redirect, lowercase)
   }
   if (page.children.length > 0) {
     route.children = await buildResolvedRoutes(page.children, options)
@@ -134,12 +139,12 @@ async function buildResolvedRoute(
 /**
  * 格式化重定向配置为代码字符串
  */
-function formatRedirect(redirect: string | RedirectConfig): string {
+function formatRedirect(redirect: string | RedirectConfig, lowercase: boolean = true): string {
   if (typeof redirect === 'string') {
-    return `'${redirect}'`
+    return `'${lowercase ? redirect.toLowerCase() : redirect}'`
   }
   // 对象形式
-  const parts: string[] = [`index: '${redirect.index}'`]
+  const parts: string[] = [`index: '${lowercase ? redirect.index.toLowerCase() : redirect.index}'`]
   if (redirect.query) {
     parts.push(`query: ${JSON.stringify(redirect.query)}`)
   }

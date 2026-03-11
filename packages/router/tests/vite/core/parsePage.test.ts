@@ -54,7 +54,7 @@ describe('parsePageFile', () => {
       const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/')
-      expect(result!.name).toBe('')
+      expect(result!.name).toBe('index')
       expect(result!.isIndex).toBe(true)
       expect(result!.isDynamic).toBe(false)
       expect(result!.params).toEqual([])

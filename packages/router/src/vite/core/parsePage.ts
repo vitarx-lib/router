@@ -407,8 +407,8 @@ function generateRouteName(relativePath: string, baseName: string): string {
     segments.push(...dirPath.replace(/\\/g, '/').split('/'))
   }
 
-  // 添加文件名段（索引文件不添加）
-  if (baseName !== 'index') {
+  // 添加文件名段（根目录的 index 文件添加为 'index'）
+  if (baseName !== 'index' || dirPath === '.') {
     const dynamicMatch = baseName.match(DYNAMIC_PARAM_REGEX)
     if (dynamicMatch) {
       // 动态参数使用参数名

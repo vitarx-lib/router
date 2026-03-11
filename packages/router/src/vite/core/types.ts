@@ -424,6 +424,30 @@ export interface VitePluginRouterOptions {
    * ```
    */
   imports?: string[]
+  /**
+   * 是否将路由名称和路径转换为小写
+   *
+   * - `true`: 自动转换为小写（默认）
+   * - `false`: 保持原始大小写
+   *
+   * @default true
+   *
+   * @example
+   * ```typescript
+   * // 开启小写转换
+   * VitarxRouter({
+   *   lowercase: true
+   * })
+   * // 生成: { name: 'about', path: '/about' }
+   *
+   * // 关闭小写转换
+   * VitarxRouter({
+   *   lowercase: false
+   * })
+   * // 生成: { name: 'About', path: '/About' }
+   * ```
+   */
+  lowercase?: boolean
 }
 
 /**
