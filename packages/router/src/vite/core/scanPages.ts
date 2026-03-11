@@ -103,7 +103,9 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
   }
 
   scanDirectory(pagesDir)
-  return pages
+
+  // 聚合命名视图：将同一路径的不同视图文件聚合为一个路由
+  return aggregateNamedViews(pages)
 }
 
 /**
@@ -435,6 +437,69 @@ function processRoutes(routes: ParsedPage[]): ParsedPage[] {
 
     return processed
   })
+}
+
+/**
+ * 聚合命名视图
+ *
+ * 将同一路径的不同命名视图文件聚合为一个路由，生成组件对象。
+ * 规则：
+ * 1. index.tsx 和 index@default.tsx 都视为默认视图
+ * 2. index@aux.tsx 视为 aux 命名视图
+ * 3. 每个命名视图组必须有默认视图
+ */
+function aggregateNamedViews(pages: ParsedPage[]): ParsedPage[] {
+  // 按路由路径分组
+  const pagesByPath = new Map<string, ParsedPage[]>()
+
+  for (const page of pages) {
+    if (!pagesByPath.has(page.path)) {
+      pagesByPath.set(page.path, [])
+    }
+    pagesByPath.get(page.path)!.push(page)
+  }
+
+  const aggregatedPages: ParsedPage[] = []
+
+  for (const [path, pathPages] of pagesByPath) {
+    // 分离默认视图和命名视图
+    const defaultPages = pathPages.filter(p => p.viewName === null || p.viewName === 'default')
+    const namedViews = pathPages.filter(p => p.viewName !== null && p.viewName !== 'default')
+
+    // 检查是否有默认视图
+    if (defaultPages.length === 0 && namedViews.length > 0) {
+      const namedViewFiles = namedViews.map(p => p.filePath).join(', ')
+      // 从第一个命名视图文件中提取基础名称
+      const firstNamedView = namedViews[0]
+      const baseName =
+        firstNamedView.filePath.split('/').pop()?.split('@')[0].split('.')[0] || 'index'
+      throw new Error(
+        `[vitarx-router] 命名视图错误: 路径 "${path}" 只有命名视图文件 (${namedViewFiles})，` +
+          `缺少默认视图文件 (${baseName}.tsx 或 ${baseName}@default.tsx)。\n` +
+          `修复方案: 添加 ${baseName}.tsx 或 ${baseName}@default.tsx 文件。`
+      )
+    }
+
+    // 如果没有命名视图，直接添加所有页面
+    if (namedViews.length === 0) {
+      aggregatedPages.push(...pathPages)
+      continue
+    }
+
+    // 有命名视图，聚合处理
+    // 使用第一个默认视图作为基础路由，保留原始的children数组
+    const basePage = { ...defaultPages[0], children: defaultPages[0].children || [] }
+
+    // 聚合命名视图
+    basePage.namedViews = {}
+    namedViews.forEach(page => {
+      basePage.namedViews![page.viewName!] = page.filePath
+    })
+
+    aggregatedPages.push(basePage)
+  }
+
+  return aggregatedPages
 }
 
 /**

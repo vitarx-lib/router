@@ -292,6 +292,15 @@ export function parsePageFile(
   const ext = path.extname(fileName)
   const baseName = fileName.slice(0, -ext.length)
 
+  // 解析命名视图：index@aux.tsx -> base: index, view: aux
+  let viewName: string | null = null
+  let baseWithoutView = baseName
+  const viewSeparatorIndex = baseName.indexOf('@')
+  if (viewSeparatorIndex > -1) {
+    baseWithoutView = baseName.slice(0, viewSeparatorIndex)
+    viewName = baseName.slice(viewSeparatorIndex + 1)
+  }
+
   // 只对 js/ts/jsx/tsx 文件进行默认导出检测
   // 其他文件类型（如 .md）可能需要第三方插件转换，跳过检测
   if (CHECK_EXPORT_EXTENSIONS.includes(ext)) {
@@ -306,10 +315,10 @@ export function parsePageFile(
   const relativePath = path.relative(pagesDir, filePath)
   const dirPath = path.dirname(relativePath)
 
-  const isIndex = baseName === 'index'
+  const isIndex = baseWithoutView === 'index'
 
   // 解析文件名，提取路由名称和动态参数
-  const { name: routeName, params, isDynamic } = parseFileName(baseName)
+  const { name: routeName, params, isDynamic } = parseFileName(baseWithoutView)
 
   // 构建路由路径
   let routePath: string
@@ -330,7 +339,7 @@ export function parsePageFile(
   }
 
   // 生成路由名称（用于编程式导航）
-  const name = generateRouteName(relativePath, baseName)
+  const name = generateRouteName(relativePath, baseWithoutView)
 
   // 解析 definePage 宏配置
   const pageOptions = parseDefinePage(filePath)
@@ -347,7 +356,8 @@ export function parsePageFile(
     pattern: pageOptions?.pattern,
     customName: pageOptions?.name,
     parentPath,
-    redirect: pageOptions?.redirect
+    redirect: pageOptions?.redirect,
+    viewName
   }
 }
 

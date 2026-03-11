@@ -300,4 +300,60 @@ describe('generateRoutes', () => {
       expect(code).toContain('"async":true')
     })
   })
+
+  describe('命名视图代码生成', () => {
+    it('应该生成命名视图组件对象', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/',
+          name: 'home',
+          namedViews: {
+            aux: '/src/pages/index@aux.tsx'
+          }
+        })
+      ]
+
+      const code = await generateRoutes(pages)
+
+      expect(code).toContain('component: {')
+      expect(code).toContain('default: lazy(() => import')
+      expect(code).toContain('aux: lazy(() => import')
+    })
+
+    it('应该生成多个命名视图', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/',
+          name: 'home',
+          namedViews: {
+            aux: '/src/pages/index@aux.tsx',
+            sidebar: '/src/pages/index@sidebar.tsx'
+          }
+        })
+      ]
+
+      const code = await generateRoutes(pages)
+
+      expect(code).toContain('aux: lazy(() => import')
+      expect(code).toContain('sidebar: lazy(() => import')
+    })
+
+    it('file 模式应该生成命名视图文件路径对象', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/',
+          name: 'home',
+          namedViews: {
+            aux: '/src/pages/index@aux.tsx'
+          }
+        })
+      ]
+
+      const code = await generateRoutes(pages, { importMode: 'file' })
+
+      expect(code).toContain('component: {')
+      expect(code).toContain("default: '/src/pages/index.tsx'")
+      expect(code).toContain("aux: '/src/pages/index@aux.tsx'")
+    })
+  })
 })

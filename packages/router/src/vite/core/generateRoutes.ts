@@ -110,7 +110,22 @@ async function buildResolvedRoute(
   options: GenerateRoutesOptions
 ): Promise<ResolvedRoute> {
   const { importMode = 'lazy', extendRoute, lowercase = true } = options
-  const component = importMode === 'file' ? page.filePath : `lazy(() => import('${page.filePath}'))`
+  
+  let component: string
+  if (page.namedViews) {
+    // 生成命名视图组件对象
+    const components: string[] = []
+    // 默认视图
+    components.push(`default: ${importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`}`)
+    // 其他命名视图
+    for (const [viewName, viewPath] of Object.entries(page.namedViews)) {
+      components.push(`${viewName}: ${importMode === 'file' ? `'${viewPath}'` : `lazy(() => import('${viewPath}'))`}`)
+    }
+    component = `{ ${components.join(', ')} }`
+  } else {
+    // 单个组件
+    component = importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`
+  }
 
   const route: ResolvedRoute = {
     path: lowercase ? page.path.toLowerCase() : page.path,
@@ -199,7 +214,7 @@ function generateRouteCode(
   lines.push(`${indent}  name: '${route.name}',`)
   lines.push(`${indent}  path: '${route.path}',`)
   if (importMode === 'file') {
-    lines.push(`${indent}  component: '${route.component}'`)
+    lines.push(`${indent}  component: ${route.component}`)
   } else {
     lines.push(`${indent}  component: ${route.component}`)
   }

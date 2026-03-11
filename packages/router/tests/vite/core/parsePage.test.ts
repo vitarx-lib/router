@@ -158,6 +158,53 @@ describe('parsePageFile', () => {
       expect(result!.path).toBe('/')
     })
   })
+
+  describe('命名视图解析', () => {
+    it('应该正确解析默认视图文件', () => {
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/')
+      expect(result!.viewName).toBeNull()
+    })
+
+    it('应该正确解析 @default 命名视图', () => {
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('index@default.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index@default.tsx'), testDir, '')
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/')
+      expect(result!.viewName).toBe('default')
+    })
+
+    it('应该正确解析 @aux 命名视图', () => {
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('index@aux.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index@aux.tsx'), testDir, '')
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/')
+      expect(result!.viewName).toBe('aux')
+    })
+
+    it('应该正确解析嵌套目录中的命名视图', () => {
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('user/profile@aux.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'user/profile@aux.tsx'), testDir, 'user')
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/user/profile')
+      expect(result!.viewName).toBe('aux')
+    })
+
+    it('应该正确解析动态路由中的命名视图', () => {
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('user/[id]@detail.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'user/[id]@detail.tsx'), testDir, 'user')
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/user/{id}')
+      expect(result!.viewName).toBe('detail')
+    })
+  })
 })
 
 describe('parseDefinePage', () => {

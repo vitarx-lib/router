@@ -259,6 +259,89 @@ describe('scanPages', () => {
       expect(result[0].params).toContain('id')
     })
   })
+
+  describe('命名视图扫描', () => {
+    it('应该正确扫描单个默认视图文件', () => {
+      createPageFile('index.tsx')
+
+      const result = scanPages({
+        pagesDir: testDir,
+        extensions: ['.tsx', '.ts'],
+        include: [],
+        exclude: []
+      })
+
+      expect(result.length).toBe(1)
+      expect(result[0].path).toBe('/')
+      expect(result[0].viewName).toBeNull()
+      expect(result[0].namedViews).toBeUndefined()
+    })
+
+    it('应该正确扫描默认视图 + 命名视图组合', () => {
+      createPageFile('index.tsx')
+      createPageFile('index@aux.tsx')
+
+      const result = scanPages({
+        pagesDir: testDir,
+        extensions: ['.tsx', '.ts'],
+        include: [],
+        exclude: []
+      })
+
+      expect(result.length).toBe(1)
+      expect(result[0].path).toBe('/')
+      expect(result[0].namedViews).toBeDefined()
+      expect(Object.keys(result[0].namedViews!)).toContain('aux')
+    })
+
+    it('应该正确扫描多个命名视图', () => {
+      createPageFile('index.tsx')
+      createPageFile('index@aux.tsx')
+      createPageFile('index@sidebar.tsx')
+
+      const result = scanPages({
+        pagesDir: testDir,
+        extensions: ['.tsx', '.ts'],
+        include: [],
+        exclude: []
+      })
+
+      expect(result.length).toBe(1)
+      expect(result[0].namedViews).toBeDefined()
+      expect(Object.keys(result[0].namedViews!)).toContain('aux')
+      expect(Object.keys(result[0].namedViews!)).toContain('sidebar')
+    })
+
+    it('应该正确扫描嵌套目录中的命名视图', () => {
+      createPageFile('user/profile.tsx')
+      createPageFile('user/profile@detail.tsx')
+
+      const result = scanPages({
+        pagesDir: testDir,
+        extensions: ['.tsx', '.ts'],
+        include: [],
+        exclude: []
+      })
+
+      expect(result.length).toBe(1)
+      expect(result[0].path).toBe('/user/profile')
+      expect(result[0].namedViews).toBeDefined()
+      expect(Object.keys(result[0].namedViews!)).toContain('detail')
+    })
+
+    it('只有命名视图时应该抛出错误', () => {
+      createPageFile('index@aux.tsx')
+
+      expect(() => {
+        scanPages({
+          pagesDir: testDir,
+          extensions: ['.tsx', '.ts'],
+          include: [],
+          exclude: []
+        })
+      }).toThrow('命名视图错误')
+    })
+  })
 })
 
 describe('buildRouteTree', () => {

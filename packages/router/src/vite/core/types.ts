@@ -126,6 +126,17 @@ export interface ParsedPage {
    * 当目录有同名文件时，记录布局文件的路径
    */
   layoutFilePath?: string
+  /**
+   * 命名视图名称
+   * 从文件名解析，如 index@aux.tsx -> aux
+   * 默认为 null，表示默认视图
+   */
+  viewName?: string | null
+  /**
+   * 命名视图映射
+   * 键为视图名称，值为文件路径
+   */
+  namedViews?: Record<string, string>
 }
 
 /**

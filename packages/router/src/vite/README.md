@@ -276,6 +276,61 @@ definePage({
    - 导入路径是基于系统的绝对路径
    - 根据插件配置生成 `lazy(()=>import('路径'))` | `'路径'`
 
+### 命名视图
+
+支持通过文件名后缀 `@view` 语法定义命名视图，规则与 vue-router 一致：
+
+1. **默认视图**：
+   - `index.tsx` 或 `index@default.tsx` 作为默认视图
+   - 生成 `component: { default: lazy(() => import('...')) }`
+
+2. **命名视图**：
+   - `index@aux.tsx` 作为 `aux` 命名视图
+   - 与默认视图文件组合，生成组件对象
+
+3. **组合规则**：
+   - `index.tsx` + `index@aux.tsx` → 生成包含 default 和 aux 视图的组件对象
+   - `index@default.tsx` + `index@aux.tsx` → 与上面等价
+
+4. **验证规则**：
+   - 每个命名视图组必须包含默认视图（index.tsx 或 index@default.tsx）
+   - 如果只有命名视图文件（如 index@aux.tsx）而没有默认视图文件，会抛出错误
+
+#### 示例：命名视图
+
+```
+src/pages/
+├── index.tsx        ← 默认视图
+└── index@aux.tsx    ← aux 命名视图
+```
+
+生成：
+
+```typescript
+[
+  {
+    path: '/',
+    component: {
+      default: lazy(() => import('src/pages/index.tsx')),
+      aux: lazy(() => import('src/pages/index@aux.tsx'))
+    }
+  }
+]
+```
+
+#### 错误示例：缺少默认视图
+
+```
+src/pages/
+└── index@aux.tsx    ← 只有命名视图，缺少默认视图
+```
+
+错误信息：
+```
+[vitarx-router] 命名视图错误: 路径 "/" 只有命名视图文件 (/src/pages/index@aux.tsx)，缺少默认视图文件 (index.tsx 或 index@default.tsx)。
+修复方案: 添加 index.tsx 或 index@default.tsx 文件。
+```
+
 ---
 
 ## 示例
