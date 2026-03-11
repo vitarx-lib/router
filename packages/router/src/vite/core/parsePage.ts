@@ -41,6 +41,13 @@ interface DefaultExportCheckResult {
 /**
  * 检测文件是否具有有效的默认导出函数组件
  *
+ * 核心逻辑：
+ * 1. 快速检查文件是否包含 'export' 关键字（性能优化）
+ * 2. 使用 Babel 解析 AST
+ * 3. 遍历 AST 收集变量声明、函数声明、类声明
+ * 4. 检测 export default 声明类型
+ * 5. 检测 export { xxx as default } 命名导出
+ *
  * 支持检测以下导出语法：
  * - `export default function Component() {}` - 命名函数声明
  * - `export default function() {}` - 匿名函数声明
@@ -64,7 +71,8 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
 
   const content = fs.readFileSync(filePath, 'utf-8')
 
-  // 快速检查是否包含 export default 关键字
+  // 步骤1：快速检查是否包含 export default 关键字
+  // 这是一个性能优化，避免对不包含导出的文件进行 AST 解析
   if (!content.includes('export')) {
     return {
       hasDefaultExport: false,
@@ -75,6 +83,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
   }
 
   try {
+    // 步骤2：使用 Babel 解析 AST
     const ast = parse(content, {
       sourceType: 'module',
       plugins: [
@@ -87,22 +96,26 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
       ]
     })
 
-    // 存储命名导出的变量信息
+    // 步骤3：存储声明信息，用于后续检测导出类型
+    // 关键：需要先收集所有声明，才能判断 export default xxx 中的 xxx 是什么类型
     const namedExports = new Map<string, 'function' | 'class' | 'variable' | 'unknown'>()
-    // 存储变量声明信息
+    // 变量声明信息：存储变量名 -> 类型映射
     const variableDeclarations = new Map<string, 'function' | 'arrow' | 'class' | 'unknown'>()
+
     // 默认导出检测结果
     let hasDefaultExport = false
     let isFunctionOrClass = false
     let exportName: string | null = null
 
+    // 步骤4：遍历 AST 收集信息
     babelTraverse(ast, {
-      // 收集变量声明
+      // 收集变量声明：const Component = () => {}
       VariableDeclarator(nodePath) {
         const { node } = nodePath
         if (node.id.type === 'Identifier') {
           const name = node.id.name
           if (node.init) {
+            // 根据初始化表达式判断变量类型
             if (node.init.type === 'ArrowFunctionExpression') {
               variableDeclarations.set(name, 'arrow')
             } else if (node.init.type === 'FunctionExpression') {
@@ -116,7 +129,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
         }
       },
 
-      // 收集函数声明
+      // 收集函数声明：function Component() {}
       FunctionDeclaration(nodePath) {
         const { node } = nodePath
         if (node.id) {
@@ -124,7 +137,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
         }
       },
 
-      // 收集类声明
+      // 收集类声明：class Component {}
       ClassDeclaration(nodePath) {
         const { node } = nodePath
         if (node.id) {
@@ -139,26 +152,30 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
 
         const declaration = node.declaration
 
+        // 根据声明类型判断是否为有效的组件导出
         switch (declaration.type) {
           case 'FunctionDeclaration':
           case 'FunctionExpression':
+            // export default function Component() {}
             isFunctionOrClass = true
             exportName = declaration.id?.name || null
             break
 
           case 'ArrowFunctionExpression':
+            // export default () => {}
             isFunctionOrClass = true
             break
 
           case 'ClassDeclaration':
           case 'ClassExpression':
+            // export default class Component {}
             isFunctionOrClass = true
             exportName = declaration.id?.name || null
             break
 
           case 'Identifier':
             // export default Component
-            // 检查标识符是否指向函数或类
+            // 关键：需要检查标识符是否指向函数或类
             exportName = declaration.name
             const varType = variableDeclarations.get(declaration.name)
             if (varType === 'function' || varType === 'arrow' || varType === 'class') {
@@ -167,12 +184,12 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
             break
 
           default:
-            // 其他情况（如对象、字面量等）
+            // 其他情况（如对象、字面量等）不是有效的组件
             break
         }
       },
 
-      // 处理命名导出
+      // 处理命名导出：export { Component as default }
       ExportNamedDeclaration(nodePath) {
         const { node } = nodePath
 
@@ -208,7 +225,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
           }
         }
 
-        // export { Component as default }
+        // 处理 export { Component as default }
         if (node.specifiers) {
           for (const specifier of node.specifiers) {
             if (specifier.type === 'ExportSpecifier') {
@@ -233,7 +250,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
       }
     })
 
-    // 构建警告信息
+    // 步骤5：构建警告信息
     let warning: string | null = null
     if (!hasDefaultExport) {
       warning = `未检测到默认导出 (default export)，该文件将被跳过。请确保导出一个函数组件。`
@@ -260,13 +277,18 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
 /**
  * 解析页面文件
  *
- * 根据文件路径解析出路由配置信息，包括路径、名称、参数等。
- * 会检测文件是否具有有效的默认导出函数组件，如果没有则跳过该文件。
+ * 核心流程：
+ * 1. 解析命名视图（如 index@sidebar.tsx）
+ * 2. 检测默认导出函数组件
+ * 3. 解析文件名，提取路由名称和动态参数
+ * 4. 构建路由路径
+ * 5. 解析 definePage 宏配置
  *
  * 文件命名约定：
  * - `index.tsx` → 索引路由，路径为目录路径
  * - `[id].tsx` → 动态路由，路径包含参数 `{id}`
  * - `about.tsx` → 静态路由，路径为 `/about`
+ * - `index@sidebar.tsx` → 命名视图，sidebar 视图
  *
  * @param filePath - 文件绝对路径
  * @param pagesDir - 页面目录绝对路径
@@ -293,7 +315,9 @@ export function parsePageFile(
   const ext = path.extname(fileName)
   const baseName = fileName.slice(0, -ext.length)
 
-  // 解析命名视图：index@aux.tsx -> base: index, view: aux
+  // 步骤1：解析命名视图
+  // 命名视图格式：filename@viewName.ext
+  // 例如：index@sidebar.tsx → base: index, view: sidebar
   let viewName: string | null = null
   let baseWithoutView = baseName
   const viewSeparatorIndex = baseName.indexOf('@')
@@ -302,7 +326,8 @@ export function parsePageFile(
     viewName = baseName.slice(viewSeparatorIndex + 1)
   }
 
-  // 只对 js/ts/jsx/tsx 文件进行默认导出检测
+  // 步骤2：检测默认导出函数组件
+  // 只对 js/ts/jsx/tsx 文件进行检测
   // 其他文件类型（如 .md）可能需要第三方插件转换，跳过检测
   if (CHECK_EXPORT_EXTENSIONS.includes(ext)) {
     const exportCheck = checkDefaultExport(filePath)
@@ -313,15 +338,20 @@ export function parsePageFile(
     }
   }
 
+  // 步骤3：计算相对路径和目录路径
   const relativePath = path.relative(pagesDir, filePath)
   const dirPath = path.dirname(relativePath)
 
+  // 判断是否为索引文件
   const isIndex = baseWithoutView === 'index'
 
-  // 解析文件名，提取路由名称和动态参数
+  // 步骤4：解析文件名，提取路由名称和动态参数
   const { name: routeName, params, isDynamic } = parseFileName(baseWithoutView)
 
-  // 构建路由路径
+  // 步骤5：构建路由路径
+  // 关键逻辑：
+  // - 索引文件：路径为目录路径（如 users/index.tsx → /users）
+  // - 非索引文件：路径为目录路径 + 文件名（如 users/profile.tsx → /users/profile）
   let routePath: string
   if (isIndex) {
     // 索引文件：路径为目录路径
@@ -339,10 +369,10 @@ export function parsePageFile(
     }
   }
 
-  // 生成路由名称（用于编程式导航）
+  // 步骤6：生成路由名称（用于编程式导航）
   const name = generateRouteName(relativePath, baseWithoutView)
 
-  // 解析 definePage 宏配置
+  // 步骤7：解析 definePage 宏配置
   const pageOptions = parseDefinePage(filePath)
 
   return {
@@ -365,7 +395,10 @@ export function parsePageFile(
 /**
  * 解析文件名
  *
- * 识别文件名中的动态参数，如 `[id]` 会被解析为参数 `id`。
+ * 核心逻辑：
+ * 1. 使用正则匹配动态参数格式 [param] 或 [param?]
+ * 2. 提取参数名称和是否可选
+ * 3. 将 [id] 转换为 {id} 格式用于路由路径
  *
  * @param fileName - 文件名（不含扩展名）
  * @returns 包含路由名称、参数列表和是否动态路由的对象
@@ -382,8 +415,8 @@ function parseFileName(fileName: string): {
 
   if (dynamicMatch) {
     isDynamic = true
-    const paramName = dynamicMatch[1]
-    const isOptional = !!dynamicMatch[2]
+    const paramName = dynamicMatch[1] // 参数名
+    const isOptional = !!dynamicMatch[2] // 是否可选（?）
     params.push(paramName)
     // 将 [id] 转换为 {id} 格式，[param?] 转换为 {param?} 格式
     return { name: `{${paramName}${isOptional ? '?' : ''}}`, params, isDynamic }
@@ -395,8 +428,15 @@ function parseFileName(fileName: string): {
 /**
  * 生成路由名称
  *
- * 根据文件相对路径生成唯一的路由名称。
- * 命名规则：目录名用 "-" 连接，动态参数使用参数名。
+ * 核心逻辑：
+ * 1. 从相对路径中提取目录段
+ * 2. 添加文件名段（动态参数使用参数名）
+ * 3. 用 '-' 连接所有段
+ *
+ * 特殊处理：
+ * - 根目录的 index 文件名称为空字符串
+ * - 子目录的 index 文件名称为目录名
+ * - 动态参数使用参数名而非完整格式
  *
  * @param relativePath - 相对于 pages 目录的路径
  * @param baseName - 文件名（不含扩展名）
@@ -414,30 +454,36 @@ function generateRouteName(relativePath: string, baseName: string): string {
   const dirPath = path.dirname(relativePath)
   const segments: string[] = []
 
-  // 添加目录路径段
+  // 步骤1：添加目录路径段
   if (dirPath !== '.') {
     segments.push(...dirPath.replace(/\\/g, '/').split('/'))
   }
 
-  // 添加文件名段（根目录的 index 文件添加为 'index'）
+  // 步骤2：添加文件名段
+  // 特殊处理：根目录的 index 文件添加为 'index'
   if (baseName !== 'index' || dirPath === '.') {
     const dynamicMatch = baseName.match(DYNAMIC_PARAM_REGEX)
     if (dynamicMatch) {
-      // 动态参数使用参数名
+      // 动态参数使用参数名（去掉方括号）
       segments.push(dynamicMatch[1])
     } else {
       segments.push(baseName)
     }
   }
 
+  // 步骤3：用 '-' 连接所有段
   return segments.join('-')
 }
 
 /**
  * 解析 definePage 宏配置
  *
- * 使用 Babel AST 解析器从页面文件内容中提取 definePage 宏的配置信息。
- * 支持解析 name 和 meta 属性，能够正确处理各种复杂的 JavaScript 表达式。
+ * 核心流程：
+ * 1. 快速检查文件是否包含 definePage 相关内容（性能优化）
+ * 2. 使用 Babel 解析 AST
+ * 3. 遍历 AST 查找 definePage 导入和调用
+ * 4. 提取配置对象中的属性
+ * 5. 合并多个 definePage 调用的配置
  *
  * 特性：
  * - 自动检测 definePage 的导入别名
@@ -464,12 +510,14 @@ export function parseDefinePage(filePath: string): PageOptions | null {
 
   const content = fs.readFileSync(filePath, 'utf-8')
 
-  // 快速检查是否包含 definePage 相关内容，避免不必要的 AST 解析
+  // 步骤1：快速检查是否包含 definePage 相关内容
+  // 这是一个性能优化，避免对不包含 definePage 的文件进行 AST 解析
   if (!content.includes('definePage') && !DEFINE_PAGE_SOURCES.some(src => content.includes(src))) {
     return null
   }
 
   try {
+    // 步骤2：使用 Babel 解析 AST
     const ast = parse(content, {
       sourceType: 'module',
       plugins: [
@@ -482,6 +530,7 @@ export function parseDefinePage(filePath: string): PageOptions | null {
       ]
     })
 
+    // 步骤3：初始化状态变量
     // 用于存储导入的 definePage 的本地名称（可能是别名）
     let definePageLocalName: string | null = null
     // 用于存储所有找到的 definePage 配置
@@ -489,8 +538,9 @@ export function parseDefinePage(filePath: string): PageOptions | null {
     // 用于存储警告信息
     const warnings: string[] = []
 
+    // 步骤4：遍历 AST 查找 definePage 导入和调用
     babelTraverse(ast, {
-      // 首先处理导入语句，确定 definePage 的本地名称
+      // 步骤4.1：处理导入语句，确定 definePage 的本地名称
       ImportDeclaration(nodePath) {
         const { node } = nodePath
 
@@ -508,7 +558,7 @@ export function parseDefinePage(filePath: string): PageOptions | null {
                 : specifier.imported.value
 
             if (importedName === 'definePage') {
-              // 记录本地名称（可能是别名）
+              // 记录本地名称（可能是别名，如 import { definePage as dp }）
               definePageLocalName = specifier.local.name
             }
           } else if (specifier.type === 'ImportDefaultSpecifier') {
@@ -520,7 +570,7 @@ export function parseDefinePage(filePath: string): PageOptions | null {
         }
       },
 
-      // 然后处理函数调用
+      // 步骤4.2：处理函数调用，提取 definePage 配置
       CallExpression(nodePath) {
         const { node } = nodePath
 
@@ -549,7 +599,7 @@ export function parseDefinePage(filePath: string): PageOptions | null {
           }
         }
 
-        // 检查是否使用了别名调用
+        // 检查是否使用了别名调用（如 dp({ ... })）
         if (
           definePageLocalName &&
           definePageLocalName !== 'definePage' &&
@@ -567,12 +617,12 @@ export function parseDefinePage(filePath: string): PageOptions | null {
       }
     })
 
-    // 输出警告
+    // 步骤5：输出警告
     for (const warning of warnings) {
       warn(warning)
     }
 
-    // 检查是否有多个 definePage 调用
+    // 步骤6：检查是否有多个 definePage 调用
     if (pageOptionsList.length > 1) {
       warn(
         `警告: ${filePath}\n` +
@@ -580,7 +630,7 @@ export function parseDefinePage(filePath: string): PageOptions | null {
       )
     }
 
-    // 合并多个配置（后面的覆盖前面的）
+    // 步骤7：合并多个配置（后面的覆盖前面的）
     if (pageOptionsList.length === 0) {
       return null
     }
@@ -610,6 +660,11 @@ export function parseDefinePage(filePath: string): PageOptions | null {
 /**
  * 从 Babel ObjectExpression 节点提取配置选项
  *
+ * 核心逻辑：
+ * 1. 遍历对象的所有属性
+ * 2. 根据属性名提取对应的值
+ * 3. 支持的属性：name, meta, pattern, redirect
+ *
  * @param node - Babel ObjectExpression 节点
  * @returns 页面配置选项
  */
@@ -624,27 +679,33 @@ function extractOptionsFromObject(node: BabelTypes.ObjectExpression): PageOption
 
     const keyName = key.name
 
+    // 提取 name 属性
     if (keyName === 'name') {
       const value = extractLiteralValue(property.value)
       if (typeof value === 'string') {
         result.name = value
       }
-    } else if (keyName === 'meta') {
+    }
+    // 提取 meta 属性
+    else if (keyName === 'meta') {
       if (property.value.type === 'ObjectExpression') {
         const meta = extractMetaFromObject(property.value)
-        // 检查 meta 是否可序列化
+        // 检查 meta 是否可序列化（不支持函数）
         if (isSerializable(meta)) {
           result.meta = meta
         } else {
           warn('definePage meta 必须是可序列化的对象，不支持函数或复杂对象')
         }
       }
-    } else if (keyName === 'pattern') {
+    }
+    // 提取 pattern 属性
+    else if (keyName === 'pattern') {
       if (property.value.type === 'ObjectExpression') {
         result.pattern = extractPatternFromObject(property.value)
       }
-    } else if (keyName === 'redirect') {
-      // 提取 redirect 属性
+    }
+    // 提取 redirect 属性
+    else if (keyName === 'redirect') {
       if (property.value.type === 'StringLiteral') {
         result.redirect = property.value.value
       } else if (property.value.type === 'ObjectExpression') {
@@ -658,6 +719,11 @@ function extractOptionsFromObject(node: BabelTypes.ObjectExpression): PageOption
 
 /**
  * 提取重定向配置对象
+ *
+ * 支持的属性：
+ * - index: 目标路由索引
+ * - query: 查询参数对象
+ * - params: 路由参数对象
  */
 function extractRedirectConfig(node: BabelTypes.ObjectExpression): RedirectConfig {
   const config: RedirectConfig = { index: '' }
@@ -725,6 +791,17 @@ function extractParamsRecord(node: BabelTypes.ObjectExpression): Record<string, 
 
 /**
  * 检查对象是否可序列化
+ *
+ * 可序列化的类型：
+ * - null, undefined
+ * - 基本类型（string, number, boolean）
+ * - RegExp, Date
+ * - 数组（所有元素可序列化）
+ * - 对象（所有属性值可序列化）
+ *
+ * 不可序列化的类型：
+ * - 函数
+ * - 包含函数的对象或数组
  */
 function isSerializable(obj: unknown): boolean {
   if (obj === null || obj === undefined) return true
@@ -801,12 +878,13 @@ function extractPatternFromObject(node: BabelTypes.ObjectExpression): Record<str
  * - 正则字面量：`/^\d+$/`
  * - new RegExp(string)：`new RegExp("^\\d+$")`
  * - new RegExp(regex)：`new RegExp(/^\d+$/)`
+ * - new RegExp(template)：`new RegExp(\`^\\d+$\`)`
  *
  * @param node - Babel 节点
  * @returns 正则表达式对象，无法提取时返回 null
  */
 function extractRegExpValue(node: BabelTypes.Node): RegExp | null {
-  // 正则字面量：/pattern/flags
+  // 情况1：正则字面量 /pattern/flags
   if (node.type === 'RegExpLiteral') {
     try {
       return new RegExp(node.pattern, node.flags || '')
@@ -815,7 +893,7 @@ function extractRegExpValue(node: BabelTypes.Node): RegExp | null {
     }
   }
 
-  // new RegExp(...) 调用
+  // 情况2：new RegExp(...) 调用
   if (
     node.type === 'NewExpression' &&
     node.callee.type === 'Identifier' &&
@@ -872,7 +950,11 @@ function extractRegExpValue(node: BabelTypes.Node): RegExp | null {
 /**
  * 从 Babel 节点提取字面量值
  *
- * 支持提取字符串、布尔值和数字类型的字面量。
+ * 支持提取以下类型的字面量：
+ * - StringLiteral：字符串字面量
+ * - BooleanLiteral：布尔字面量
+ * - NumericLiteral：数字字面量
+ * - TemplateLiteral：简单模板字面量（无插值）
  *
  * @param node - Babel 节点
  * @returns 字面量值，无法提取时返回 null
@@ -886,7 +968,7 @@ function extractLiteralValue(node: BabelTypes.Node): string | boolean | number |
     case 'NumericLiteral':
       return node.value
     case 'TemplateLiteral':
-      // 简单模板字面量（无插值）
+      // 简单模板字面量（无插值表达式）
       if (node.expressions.length === 0 && node.quasis.length === 1) {
         return node.quasis[0].value.cooked || node.quasis[0].value.raw
       }
@@ -898,6 +980,9 @@ function extractLiteralValue(node: BabelTypes.Node): string | boolean | number |
 
 /**
  * 从路由路径中提取动态参数名称
+ *
+ * 用于从已生成的路由路径中提取参数名称列表。
+ * 参数格式为 {paramName}。
  *
  * @param routePath - 路由路径，如 '/user/{id}'
  * @returns 参数名称数组
