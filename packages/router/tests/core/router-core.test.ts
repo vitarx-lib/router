@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Route, RouterOptions } from '../../src/index.js'
-import { NavigateStatus } from '../../src/index.js'
+import { NavigateStatus, type Route, ROUTER, type RouterOptions } from '../../src/index.js'
 
 function createMockComponent() {
   return vi.fn()
@@ -404,7 +403,7 @@ describe('RouterCore', () => {
 
       router.install(mockApp)
 
-      expect(mockApp.provide).toHaveBeenCalledWith('router', router)
+      expect(mockApp.provide).toHaveBeenCalledWith(ROUTER, router)
     })
   })
 })

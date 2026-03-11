@@ -1,7 +1,13 @@
 import { type App as VitarxApp, createApp, h } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Route } from '../../src/index.js'
-import { createRouter, defineRoutes, NavigateStatus, RouterLink } from '../../src/index.js'
+import {
+  createRouter,
+  defineRoutes,
+  NavigateStatus,
+  type Route,
+  ROUTER,
+  RouterLink
+} from '../../src/index.js'
 
 function createMockComponent() {
   return vi.fn()
@@ -58,7 +64,7 @@ function mountComponent(
 ): void {
   ctx.router = router ?? createRouter({ mode: 'hash', routes: basicRoutes })
   ctx.app = createApp(() => component)
-  ctx.app.provide('router', ctx.router)
+  ctx.app.provide(ROUTER, ctx.router)
   ctx.app.mount(ctx.container)
 }
 
