@@ -56,16 +56,17 @@ const router = createRouter({
 
 ### VitePluginRouterOptions
 
-| 选项            | 类型                                       | 默认值                              | 说明           |
-|---------------|------------------------------------------|----------------------------------|--------------|
-| `pagesDir`    | `string \| string[] \| PagesDirConfig[]` | `'src/pages'`                    | 页面目录配置       |
-| `extensions`  | `string[]`                               | `['.tsx', '.ts', '.jsx', '.js']` | 支持的文件扩展名     |
-| `include`     | `string[]`                               | `[]`                             | 要包含的 glob 模式 |
-| `exclude`     | `string[]`                               | `[]`                             | 要排除的 glob 模式 |
-| `dts`         | `string \| false`                        | `'src/types/auto-router.d.ts'`   | 类型声明文件路径     |
-| `importMode`  | `'lazy' \| 'file'`                       | `'lazy'`                         | 组件导入模式       |
-| `extendRoute` | `ExtendRouteHook`                        | -                                | 路由扩展钩子       |
-| `imports`     | `string[]`                               | -                                | 自定义导入语句      |
+| 选项            | 类型                                       | 默认值                              | 说明              |
+|---------------|------------------------------------------|----------------------------------|-----------------|
+| `pagesDir`    | `string \| string[] \| PagesDirConfig[]` | `'src/pages'`                    | 页面目录配置          |
+| `extensions`  | `string[]`                               | `['.tsx', '.ts', '.jsx', '.js']` | 支持的文件扩展名        |
+| `include`     | `string[]`                               | `[]`                             | 要包含的 glob 模式    |
+| `exclude`     | `string[]`                               | `[]`                             | 要排除的 glob 模式    |
+| `dts`         | `string \| false`                        | `'types-router.d.ts'`            | 类型声明文件路径        |
+| `importMode`  | `'lazy' \| 'file'`                       | `'lazy'`                         | 组件导入模式          |
+| `extendRoute` | `ExtendRouteHook`                        | -                                | 路由扩展钩子          |
+| `imports`     | `string[]`                               | -                                | 自定义导入语句         |
+| `lowercase`   | `boolean`                                | `true`                           | 是否将路由名称和路径转换为小写 |
 
 ### pagesDir 配置
 
