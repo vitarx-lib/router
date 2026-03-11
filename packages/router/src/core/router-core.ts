@@ -13,7 +13,7 @@ import {
   readonly,
   shallowReactive
 } from 'vitarx'
-import { NavigateStatus } from './constant.js'
+import { NavigateStatus, ROUTER } from './constant.js'
 import RouterRegistry from './router-registry.js'
 import type {
   _ScrollBehavior,
@@ -644,7 +644,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    *
    * 此方法用于安装路由器，将路由器实例添加到应用程序中。
    *
-   * 安装路由器后，应用程序就可以使用 `inject('router')` 访问路由器实例。
+   * 安装路由器后，应用程序下的组件就可以使用 `useRouter()` 访问路由器实例。
    *
    * @example
    * import { createApp } from 'vitarx'
@@ -659,7 +659,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @returns {void}
    */
   install(app: App): void {
-    app.provide('router', this)
+    app.provide(ROUTER, this)
   }
 
   /**

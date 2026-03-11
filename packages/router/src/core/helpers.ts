@@ -1,5 +1,5 @@
 import { inject, logger, type MakeRequired } from 'vitarx'
-import type { NavigateStatus } from './constant.js'
+import { type NavigateStatus, ROUTER } from './constant.js'
 import RouterCore from './router-core.js'
 import RouterHistory from './router-history.js'
 import RouterMemory from './router-memory.js'
@@ -153,7 +153,7 @@ export function useRouter<T extends RouterCore>(allowEmpty: false): T | null
 export function useRouter<T extends RouterCore>(allowEmpty: true): T
 
 export function useRouter<T extends RouterCore>(allowEmpty: boolean = false): T | null {
-  const router = inject<T | null>('router', null)
+  const router = inject<T | null>(ROUTER, null)
   if (!allowEmpty && !router) {
     throw new Error('[Router] Router instance not found')
   }

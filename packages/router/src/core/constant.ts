@@ -37,3 +37,5 @@ export enum NavigateStatus {
    */
   exception
 }
+
+export const ROUTER = Symbol.for('__v_router')
