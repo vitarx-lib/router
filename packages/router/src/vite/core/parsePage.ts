@@ -8,10 +8,10 @@
  * - default 导出函数组件检测
  */
 import { parse } from '@babel/parser'
-import traverse from '@babel/traverse'
 import type * as BabelTypes from '@babel/types'
 import fs from 'node:fs'
 import path from 'node:path'
+import { babelTraverse } from './babelUtils.js'
 import type { PageOptions, ParsedPage, RedirectConfig } from './types.js'
 
 /** 动态参数匹配正则，如 [id]、[slug] */
@@ -95,7 +95,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
     let isFunctionOrClass = false
     let exportName: string | null = null
 
-    traverse(ast, {
+    babelTraverse(ast, {
       // 收集变量声明
       VariableDeclarator(nodePath) {
         const { node } = nodePath
@@ -477,7 +477,7 @@ export function parseDefinePage(filePath: string): PageOptions | null {
     // 用于存储警告信息
     const warnings: string[] = []
 
-    traverse(ast, {
+    babelTraverse(ast, {
       // 首先处理导入语句，确定 definePage 的本地名称
       ImportDeclaration(nodePath) {
         const { node } = nodePath
