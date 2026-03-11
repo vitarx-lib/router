@@ -46,10 +46,6 @@ export type AllowedRouteComponent = RouteComponent | NamedRouteComponent
  */
 export interface RouteLocation {
   /**
-   * 标识
-   */
-  readonly __is_route_location: true
-  /**
    * 路由索引，调用`push`|`replace`时传入的index
    */
   index: RouteIndex
@@ -91,6 +87,12 @@ export interface RouteLocation {
    * 从根路由开始，到当前路由结束
    */
   matched: RouteNormalized[]
+  /**
+   * 标识
+   *
+   * @internal
+   */
+  readonly __is_route_location: true
 }
 
 /**
