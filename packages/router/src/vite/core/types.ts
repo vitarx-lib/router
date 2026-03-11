@@ -150,8 +150,8 @@ export interface ResolvedRoute {
   path: string
   /** 路由名称 */
   name: string
-  /** 组件导入表达式 */
-  component: string
+  /** 组件导入表达式（目录路由无布局文件时可能为空） */
+  component?: string
   /** 路由元数据 */
   meta?: RouteMetaData
   /** 动态参数匹配模式 */

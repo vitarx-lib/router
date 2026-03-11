@@ -56,6 +56,12 @@ async function buildResolvedRoutes(
 
 /**
  * 构建单个路由配置
+ *
+ * 核心逻辑：
+ * 1. 创建基础路由对象（path、name）
+ * 2. 如果有文件路径，生成组件导入表达式
+ * 3. 处理命名视图（多个组件的情况）
+ * 4. 添加可选的 meta、pattern、redirect、children
  */
 async function buildResolvedRoute(
   page: ParsedPage,
@@ -63,32 +69,43 @@ async function buildResolvedRoute(
 ): Promise<ResolvedRoute> {
   const { importMode = 'lazy', extendRoute, lowercase = true } = options
 
-  let component: string
-  if (page.namedViews) {
-    // 生成命名视图组件对象
-    const components: string[] = []
-    // 默认视图
-    components.push(
-      `default: ${importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`}`
-    )
-    // 其他命名视图
-    for (const [viewName, viewPath] of Object.entries(page.namedViews)) {
-      components.push(
-        `${viewName}: ${importMode === 'file' ? `'${viewPath}'` : `lazy(() => import('${viewPath}'))`}`
-      )
-    }
-    component = `{ ${components.join(', ')} }`
-  } else {
-    // 单个组件
-    component =
-      importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`
-  }
-
+  // 步骤1：创建基础路由对象
+  // 注意：component 是可选的，目录路由没有布局文件时不会有 component
   const route: ResolvedRoute = {
     path: lowercase ? page.path.toLowerCase() : page.path,
-    name: lowercase ? page.name.toLowerCase() : page.name,
-    component
+    name: lowercase ? page.name.toLowerCase() : page.name
   }
+
+  // 步骤2：处理组件导入
+  // 只有当 filePath 非空时才生成 component 属性
+  // 目录路由（无布局文件）的 filePath 为空字符串
+  if (page.filePath && page.filePath.trim() !== '') {
+    let component: string
+
+    // 步骤2.1：处理命名视图（如 index@sidebar.tsx）
+    // 命名视图会生成组件对象：{ default: lazy(...), sidebar: lazy(...) }
+    if (page.namedViews) {
+      const components: string[] = []
+      // 默认视图始终存在
+      components.push(
+        `default: ${importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`}`
+      )
+      // 添加其他命名视图
+      for (const [viewName, viewPath] of Object.entries(page.namedViews)) {
+        components.push(
+          `${viewName}: ${importMode === 'file' ? `'${viewPath}'` : `lazy(() => import('${viewPath}'))`}`
+        )
+      }
+      component = `{ ${components.join(', ')} }`
+    } else {
+      // 步骤2.2：单一组件
+      component =
+        importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`
+    }
+    route.component = component
+  }
+
+  // 步骤3：添加可选属性
   if (page.meta && Object.keys(page.meta).length > 0) {
     route.meta = page.meta
   }
@@ -101,6 +118,8 @@ async function buildResolvedRoute(
   if (page.children.length > 0) {
     route.children = await buildResolvedRoutes(page.children, options)
   }
+
+  // 步骤4：调用扩展钩子（允许用户自定义修改路由）
   if (extendRoute) {
     const result = await extendRoute(route)
     if (result) return result
@@ -110,12 +129,16 @@ async function buildResolvedRoute(
 
 /**
  * 格式化重定向配置为代码字符串
+ *
+ * 支持两种格式：
+ * 1. 字符串路径：'/dashboard'
+ * 2. 对象形式：{ index: 'home', query: { from: 'old' }, params: { id: 1 } }
  */
 function formatRedirect(redirect: string | RedirectConfig, lowercase: boolean = true): string {
   if (typeof redirect === 'string') {
     return `'${lowercase ? redirect.toLowerCase() : redirect}'`
   }
-  // 对象形式
+  // 对象形式：构建导航配置对象
   const parts: string[] = [`index: '${lowercase ? redirect.index.toLowerCase() : redirect.index}'`]
   if (redirect.query) {
     parts.push(`query: ${JSON.stringify(redirect.query)}`)
@@ -136,17 +159,25 @@ function generateRoutesCode(
   indent: string = '  '
 ): string {
   const lines: string[] = []
+
+  // 添加 lazy 导入（仅 lazy 模式需要）
   if (importMode === 'lazy') {
     lines.push(`import { lazy } from 'vitarx'`)
   }
+
+  // 添加自定义导入语句
   if (customImports && customImports.length > 0) {
     for (const imp of customImports) {
       lines.push(imp)
     }
   }
+
+  // 添加空行分隔
   if (importMode === 'lazy' || (customImports && customImports.length > 0)) {
     lines.push('')
   }
+
+  // 生成路由数组
   lines.push('export default [')
   for (let i = 0; i < routes.length; i++) {
     const route = routes[i]
@@ -158,6 +189,20 @@ function generateRoutesCode(
 
 /**
  * 生成单个路由的代码
+ *
+ * 核心逻辑：
+ * 1. 按固定顺序生成属性：name → path → component → meta → pattern → redirect → children
+ * 2. 动态处理逗号分隔：每个属性生成后，为上一行添加逗号（如果还有后续属性）
+ * 3. 递归处理子路由
+ *
+ * 示例输出：
+ * {
+ *   name: 'admin',
+ *   path: '/admin',
+ *   component: lazy(() => import('/src/pages/admin.tsx')),
+ *   redirect: '/admin/index',
+ *   children: [...]
+ * }
  */
 function generateRouteCode(
   route: ResolvedRoute,
@@ -167,25 +212,34 @@ function generateRouteCode(
 ): string[] {
   const lines: string[] = []
   const comma = isLast ? '' : ','
+
   lines.push(`${indent}{`)
   lines.push(`${indent}  name: '${route.name}',`)
-  lines.push(`${indent}  path: '${route.path}',`)
-  if (importMode === 'file') {
-    lines.push(`${indent}  component: ${route.component}`)
-  } else {
+  lines.push(`${indent}  path: '${route.path}'`)
+
+  // 关键：动态添加逗号
+  // 每个可选属性生成前，先检查上一行是否需要逗号
+  // 这样可以确保只有存在后续属性时才添加逗号
+  if (route.component) {
+    lines[lines.length - 1] += ','
     lines.push(`${indent}  component: ${route.component}`)
   }
   if (route.meta) {
+    lines[lines.length - 1] += ','
     lines.push(`${indent}  meta: ${JSON.stringify(route.meta)}`)
   }
   if (route.pattern && Object.keys(route.pattern).length > 0) {
+    lines[lines.length - 1] += ','
     lines.push(`${indent}  pattern: ${generatePatternCode(route.pattern)}`)
   }
   if (route.redirect !== undefined) {
+    lines[lines.length - 1] += ','
     lines.push(`${indent}  redirect: ${route.redirect}`)
   }
   if (route.children && route.children.length > 0) {
+    lines[lines.length - 1] += ','
     lines.push(`${indent}  children: [`)
+    // 递归生成子路由
     for (let i = 0; i < route.children.length; i++) {
       const child = route.children[i]
       lines.push(
@@ -200,6 +254,9 @@ function generateRouteCode(
 
 /**
  * 生成 pattern 对象的代码
+ *
+ * 将正则表达式对象转换为代码字符串
+ * 示例：{ id: /^\d+$/ } → "{\n    id: /^\\d+$/\n  }"
  */
 function generatePatternCode(pattern: Record<string, RegExp>): string {
   const entries = Object.entries(pattern).map(([key, regex]) => {

@@ -7,14 +7,20 @@
 import micromatch from 'micromatch'
 import fs from 'node:fs'
 import path from 'node:path'
-import { parsePageFile } from './parsePage.js'
 import { warn } from './logger.js'
+import { parsePageFile } from './parsePage.js'
 import type { MultiScanOptions, ParsedPage, ScanOptions } from './types.js'
 
 const DEFAULT_INCLUDE = ['**/*']
 
 /**
  * 扫描页面目录
+ *
+ * 核心流程：
+ * 1. 递归扫描目录，收集文件和子目录
+ * 2. 检测同名文件+目录组合（布局路由）
+ * 3. 解析每个文件为 ParsedPage
+ * 4. 聚合命名视图
  */
 export function scanPages(options: ScanOptions): ParsedPage[] {
   const { pagesDir, extensions, include = DEFAULT_INCLUDE, exclude } = options
@@ -25,9 +31,19 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
 
   const pages: ParsedPage[] = []
 
+  /**
+   * 递归扫描目录
+   *
+   * 核心逻辑：
+   * 1. 分离文件和目录
+   * 2. 检测同名文件+目录组合（如 admin.tsx + admin/）
+   * 3. 解析文件为路由页面
+   * 4. 递归处理子目录
+   */
   function scanDirectory(dir: string, parentPath: string = ''): void {
     const entries = fs.readdirSync(dir, { withFileTypes: true })
 
+    // 步骤1：分离文件和目录，同时过滤
     const directories: fs.Dirent[] = []
     const files: fs.Dirent[] = []
 
@@ -35,6 +51,7 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
       const fullPath = path.join(dir, entry.name)
       const isDir = entry.isDirectory()
 
+      // 应用 include/exclude 过滤规则
       if (!isIncluded(fullPath, pagesDir, include, isDir)) {
         continue
       }
@@ -50,7 +67,8 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
       }
     }
 
-    // 检测同名文件+目录组合
+    // 步骤2：检测同名文件+目录组合
+    // 例如：admin.tsx + admin/ → admin.tsx 作为布局组件
     const dirNames = new Set(directories.map(d => d.name))
     const fileBaseNames = new Map<string, { entry: fs.Dirent; ext: string }>()
 
@@ -62,7 +80,7 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
       const baseName = path.basename(file.name, ext)
       const existing = fileBaseNames.get(baseName)
 
-      // 检测同名不同扩展名冲突
+      // 检测同名不同扩展名冲突（如 index.tsx 和 index.jsx）
       if (existing) {
         warn(
           `检测到同名文件冲突: "${baseName}" 存在多个扩展名版本 ` +
@@ -74,16 +92,14 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
       fileBaseNames.set(baseName, { entry: file, ext })
     }
 
-    // 处理文件
+    // 步骤3：处理文件
     for (const [baseName, { entry }] of fileBaseNames) {
       const filePath = path.join(dir, entry.name)
       const hasSameNameDir = dirNames.has(baseName)
 
       // 同名文件+目录：标记为布局文件
       if (hasSameNameDir) {
-        warn(
-          `检测到同名文件+目录: "${baseName}"，` + `"${entry.name}" 将作为布局组件`
-        )
+        warn(`检测到同名文件+目录: "${baseName}"，` + `"${entry.name}" 将作为布局组件`)
       }
 
       const parsed = parsePageFile(filePath, pagesDir, parentPath)
@@ -95,7 +111,7 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
       }
     }
 
-    // 递归处理子目录
+    // 步骤4：递归处理子目录
     for (const directory of directories) {
       const dirPath = path.join(dir, directory.name)
       const newParentPath = parentPath ? `${parentPath}/${directory.name}` : directory.name
@@ -137,6 +153,10 @@ export function scanMultiplePages(options: MultiScanOptions): ParsedPage[] {
 
 /**
  * 检查路径是否匹配包含模式
+ *
+ * 特殊处理目录匹配：
+ * - 以 glob 双星号结尾的模式匹配该目录及其所有子目录
+ * - 全局匹配模式可以匹配所有路径
  */
 function isIncluded(
   filePath: string,
@@ -151,19 +171,24 @@ function isIncluded(
   const relativePath = path.relative(pagesDir, filePath)
   const normalizedPath = relativePath.replace(/\\/g, '/')
 
+  // 目录需要特殊处理
   if (isDirectory) {
     for (const pattern of include) {
+      // 处理 'xxx/**' 模式：匹配 xxx 目录及其子目录
       if (pattern.endsWith('/**')) {
         const prefix = pattern.slice(0, -3)
         if (normalizedPath === prefix || normalizedPath.startsWith(prefix + '/')) {
           return true
         }
       } else if (pattern === '**' || pattern === '**/*') {
+        // 匹配所有
         return true
       } else {
+        // 使用 micromatch 进行 glob 匹配
         if (micromatch.isMatch(normalizedPath, pattern, { dot: true })) {
           return true
         }
+        // 处理多段模式：如果路径是模式的第一段，也认为匹配
         const patternParts = pattern.split('/')
         if (patternParts.length > 1 && normalizedPath === patternParts[0]) {
           return true
@@ -178,6 +203,8 @@ function isIncluded(
 
 /**
  * 检查路径是否应该被排除
+ *
+ * 排除逻辑与包含类似，但语义相反
  */
 function isExcluded(
   filePath: string,
@@ -221,14 +248,25 @@ function isExcluded(
 /**
  * 构建路由树
  *
- * 根据规则构建路由树结构：
+ * 核心规则：
  * 1. 同名文件+目录组合：文件作为布局组件，目录内文件作为子路由
+ *    例如：admin.tsx + admin/ → admin.tsx 是布局，admin/ 内的文件是子路由
+ *
  * 2. 目录下的所有文件（包括 index）都作为子路由
+ *    例如：users/index.tsx + users/profile.tsx → 都是 /users 的子路由
+ *
  * 3. 子路由使用相对路径
+ *    例如：users/index.tsx → path: 'index'（相对于父路由 /users）
+ *
  * 4. 有 index 子路由时自动添加 redirect
+ *    例如：/users 自动重定向到 /users/index
+ *
+ * 5. 只有 index 文件的目录不创建目录路由
+ *    例如：settings/index.tsx → 直接作为 /settings 路由
  */
 export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
-  // 分离布局文件和普通页面
+  // 步骤1：分离布局文件和普通页面
+  // 布局文件：与目录同名的文件（如 admin.tsx 对应 admin/ 目录）
   const layoutFiles = new Map<string, ParsedPage>()
   const normalPages: ParsedPage[] = []
 
@@ -240,7 +278,10 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
     }
   }
 
-  // 按目录路径分组，确定哪些是目录路由
+  // 步骤2：按目录路径分组，确定哪些是目录路由
+  // 关键逻辑：index 文件属于它自己路径对应的目录
+  // 例如：users/index.tsx 属于 /users 目录
+  //       users/profile.tsx 属于 /users 目录（父目录）
   const pagesByDir = new Map<string, ParsedPage[]>()
 
   for (const page of normalPages) {
@@ -252,7 +293,6 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
       dirPath = page.path
     } else {
       // 非 index 文件属于父目录
-      // 如果 parentPath 为空，说明在根目录
       if (page.parentPath === '' || page.parentPath === '/') {
         dirPath = '/'
       } else if (pathParts.length === 0) {
@@ -270,7 +310,7 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
     pagesByDir.get(dirPath)!.push(page)
   }
 
-  // 确定哪些目录需要创建目录路由
+  // 步骤3：确定哪些目录需要创建目录路由
   // 规则：有多个子文件，或有布局文件
   // 注意：只有 index 文件时，直接使用 index 的组件，不创建 children
   const dirRoutesToCreate = new Set<string>()
@@ -288,11 +328,12 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
     }
   }
 
-  // 收集所有需要创建的目录路由（包括父目录）
+  // 步骤4：收集所有需要创建的目录路由（包括父目录）
+  // 确保嵌套目录的层级关系正确
   const allDirPaths = new Set<string>()
   for (const dirPath of dirRoutesToCreate) {
     allDirPaths.add(dirPath)
-    // 添加所有父目录路径
+    // 添加所有父目录路径（如果父目录也是目录路由）
     const pathParts = dirPath.split('/').filter(Boolean)
     for (let i = 1; i < pathParts.length; i++) {
       const parentPath = '/' + pathParts.slice(0, i).join('/')
@@ -302,7 +343,7 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
     }
   }
 
-  // 创建目录路由
+  // 步骤5：创建目录路由
   const dirRoutes = new Map<string, ParsedPage>()
 
   for (const dirPath of allDirPaths) {
@@ -316,12 +357,14 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
     const dirPages = pagesByDir.get(dirPath) || []
 
     // 创建目录路由
+    // 关键：如果没有布局文件，filePath 为空字符串
+    // 后续生成代码时会跳过 component 属性
     const dirRoute: ParsedPage = layoutFile
       ? { ...layoutFile, children: [] }
       : {
           path: dirPath,
           name: dirName,
-          filePath: '',
+          filePath: '', // 无布局文件时为空
           params: [],
           isIndex: false,
           isDynamic: false,
@@ -337,7 +380,7 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
     dirRoutes.set(dirPath, dirRoute)
   }
 
-  // 构建路由树层级关系
+  // 步骤6：构建路由树层级关系
   const root: ParsedPage[] = []
 
   // 处理根目录下的文件
@@ -363,7 +406,7 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
     const pathParts = dirPath.split('/').filter(Boolean)
 
     if (pathParts.length === 1) {
-      // 一级目录路由
+      // 一级目录路由，直接添加到根
       root.push(dirRoute)
     } else {
       // 多级嵌套，找到父目录
@@ -391,26 +434,47 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
     }
   }
 
-  // 添加 redirect 并排序
+  // 步骤7：添加 redirect 并排序
   return processRoutes(root)
 }
 
 /**
  * 创建子路由（转换路径为相对路径）
+ *
+ * 核心逻辑：
+ * 1. 将绝对路径转换为相对路径
+ *    例如：/users/index → 'index'
+ *    例如：/users/profile → 'profile'
+ *
+ * 2. index 子路由的名称添加 '-index' 后缀
+ *    例如：users/index.tsx → name: 'users-index'
+ *    这样可以避免与父路由名称冲突
  */
 function createChildRoute(page: ParsedPage): ParsedPage {
   const pathParts = page.path.split('/').filter(Boolean)
   const relativePath = pathParts[pathParts.length - 1] || ''
 
-  return {
+  const childRoute: ParsedPage = {
     ...page,
     path: page.isIndex ? 'index' : relativePath,
     children: []
   }
+
+  // index 子路由添加 '-index' 后缀，避免名称冲突
+  if (page.isIndex && page.name) {
+    childRoute.name = `${page.name}-index`
+  }
+
+  return childRoute
 }
 
 /**
  * 处理路由：添加 redirect 并排序
+ *
+ * 核心逻辑：
+ * 1. 递归处理子路由
+ * 2. 如果有 index 子路由，自动添加 redirect
+ *    例如：/users 有 index 子路由 → redirect: '/users/index'
  */
 function processRoutes(routes: ParsedPage[]): ParsedPage[] {
   return sortRoutes(routes).map(route => {
@@ -444,10 +508,16 @@ function processRoutes(routes: ParsedPage[]): ParsedPage[] {
  * 聚合命名视图
  *
  * 将同一路径的不同命名视图文件聚合为一个路由，生成组件对象。
+ *
  * 规则：
  * 1. index.tsx 和 index@default.tsx 都视为默认视图
  * 2. index@aux.tsx 视为 aux 命名视图
  * 3. 每个命名视图组必须有默认视图
+ *
+ * 示例：
+ * - multi-view.tsx → 默认视图
+ * - multi-view@sidebar.tsx → sidebar 命名视图
+ * 聚合后生成：{ default: lazy(...), sidebar: lazy(...) }
  */
 function aggregateNamedViews(pages: ParsedPage[]): ParsedPage[] {
   // 按路由路径分组
@@ -468,6 +538,7 @@ function aggregateNamedViews(pages: ParsedPage[]): ParsedPage[] {
     const namedViews = pathPages.filter(p => p.viewName !== null && p.viewName !== 'default')
 
     // 检查是否有默认视图
+    // 命名视图组必须有默认视图
     if (defaultPages.length === 0 && namedViews.length > 0) {
       const namedViewFiles = namedViews.map(p => p.filePath).join(', ')
       // 从第一个命名视图文件中提取基础名称
@@ -491,7 +562,7 @@ function aggregateNamedViews(pages: ParsedPage[]): ParsedPage[] {
     // 使用第一个默认视图作为基础路由，保留原始的children数组
     const basePage = { ...defaultPages[0], children: defaultPages[0].children || [] }
 
-    // 聚合命名视图
+    // 聚合命名视图到 namedViews 字段
     basePage.namedViews = {}
     namedViews.forEach(page => {
       basePage.namedViews![page.viewName!] = page.filePath
@@ -505,6 +576,11 @@ function aggregateNamedViews(pages: ParsedPage[]): ParsedPage[] {
 
 /**
  * 对路由列表进行排序
+ *
+ * 排序规则：
+ * 1. 索引路由优先（index.tsx 排在前面）
+ * 2. 静态路由优先于动态路由
+ * 3. 按路径字母顺序排序
  */
 function sortRoutes(routes: ParsedPage[]): ParsedPage[] {
   return routes
