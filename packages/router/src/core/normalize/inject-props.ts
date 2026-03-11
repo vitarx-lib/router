@@ -27,34 +27,37 @@ const throwInjectPropsError = (path: string, message: string): never => {
  * @private
  */
 export default function normalizeInjectProps(route: Route): void {
-  if (!route.component) return // 如果没有widget，直接返回
+  if (!route.component) return
 
   const injectProps: Record<string, InjectProps> = {}
   const inputValue: InjectProps = route.props ?? true
   const isObjectInput = typeof inputValue === 'object'
   const isObjectWidget = typeof route.component === 'object'
 
-  // 处理命名视图情况
   if (isObjectWidget) {
-    if (!isObjectInput) {
-      throwInjectPropsError(
-        route.path,
-        '"props" must be an object with view names as keys when using named views (e.g., { default: true, sidebar: {} })'
-      )
-    }
-    // 为每个命名视图设置 injectProps
-    for (const name in route.component) {
-      const value = (inputValue as Record<string, any>)[name]
-      if (value && !validInjectProps(value)) {
+    if (isObjectInput) {
+      for (const name in route.component) {
+        const value = (inputValue as Record<string, any>)[name]
+        if (value !== undefined && !validInjectProps(value)) {
+          throwInjectPropsError(
+            route.path,
+            `"props.${name}" has invalid type, only boolean, object, or function types are supported`
+          )
+        }
+        injectProps[name] = value ?? true
+      }
+    } else {
+      if (!validInjectProps(inputValue)) {
         throwInjectPropsError(
           route.path,
-          `"props.${name}" has invalid type, only boolean, object, or function types are supported`
+          '"props" must be a boolean, object, or function type when using named views'
         )
       }
-      injectProps[name] = value ?? true
+      for (const name in route.component) {
+        injectProps[name] = inputValue
+      }
     }
   } else {
-    // 处理单一视图情况
     if (!validInjectProps(inputValue)) {
       throwInjectPropsError(
         route.path,
