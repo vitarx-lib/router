@@ -302,21 +302,21 @@ describe('normalize', () => {
       })
     })
 
-    it('应该在命名视图使用非对象props时抛出错误', () => {
+    it('应该支持命名视图使用布尔值props', () => {
       const route: Route = {
         path: '/layout',
         component: {
           default: createMockComponent(),
           sidebar: createMockComponent()
         },
-        props: true as any
+        props: true
       }
 
-      expect(() => {
-        normalizeInjectProps(route)
-      }).toThrow(
-        '[Router] Invalid route configuration for "/layout": "props" must be an object with view names as keys when using named views (e.g., { default: true, sidebar: {} })'
-      )
+      normalizeInjectProps(route)
+      expect(route.props).toEqual({
+        default: true,
+        sidebar: true
+      })
     })
 
     it('应该在props类型无效时抛出错误', () => {
