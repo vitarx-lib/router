@@ -98,6 +98,20 @@ describe('parsePageFile', () => {
       expect(result!.params).toContain('id')
     })
 
+    it('应该正确解析可选参数路由', () => {
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('articles/[param?].tsx', content)
+      const result = parsePageFile(path.join(testDir, 'articles/[param?].tsx'), testDir, 'articles')
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/articles/{param?}')
+      expect(result!.name).toBe('articles-param')
+      expect(result!.isIndex).toBe(false)
+      expect(result!.isDynamic).toBe(true)
+      console.log(result!.params)
+
+      expect(result!.params).toContain('param')
+    })
+
     it('应该正确解析根级动态路由', () => {
       const content = `export default function Page() { return <div>Page</div> }`
       createPageFile('[slug].tsx', content)
@@ -107,6 +121,17 @@ describe('parsePageFile', () => {
       expect(result!.name).toBe('slug')
       expect(result!.isDynamic).toBe(true)
       expect(result!.params).toContain('slug')
+    })
+
+    it('应该正确解析根级可选参数路由', () => {
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('[param?].tsx', content)
+      const result = parsePageFile(path.join(testDir, '[param?].tsx'), testDir, '')
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/{param?}')
+      expect(result!.name).toBe('param')
+      expect(result!.isDynamic).toBe(true)
+      expect(result!.params).toContain('param')
     })
   })
 
