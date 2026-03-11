@@ -103,6 +103,7 @@ export function generateFullDtsFile(pages: ParsedPage[]): string {
   lines.push('  }')
   lines.push('}')
   lines.push('')
+  lines.push('export {}')
 
   return lines.join('\n')
 }
