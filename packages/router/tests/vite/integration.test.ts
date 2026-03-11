@@ -8,6 +8,7 @@ import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateRoutes } from '../../src/vite/core/generateRoutes.js'
 import { buildRouteTree, scanPages } from '../../src/vite/core/scanPages.js'
+import * as logger from '../../src/vite/core/logger.js'
 
 let tempDir: string
 
@@ -46,7 +47,7 @@ describe('编译场景集成测试', () => {
 
   describe('布局路由（同名文件+目录）', () => {
     it('应正确处理同名文件+目录组合', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       createFile('users.tsx', 'export default function UsersLayout() {}')
       createFile('users/index.tsx', 'export default function UsersIndex() {}')
@@ -84,7 +85,7 @@ describe('编译场景集成测试', () => {
     })
 
     it('布局文件无 index 子路由时不应有 redirect', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       createFile('users.tsx', 'export default function UsersLayout() {}')
       createFile('users/profile.tsx', 'export default function UsersProfile() {}')
@@ -224,7 +225,7 @@ describe('编译场景集成测试', () => {
 
   describe('同名扩展名冲突', () => {
     it('同名不同扩展名应抛出警告并忽略后者', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       createFile('users.tsx', 'export default function Users() {}')
       createFile('users.jsx', 'export default function Users() {}')
@@ -249,7 +250,7 @@ describe('编译场景集成测试', () => {
 
   describe('代码生成', () => {
     it('应正确生成布局路由代码', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       createFile('users.tsx', 'export default function UsersLayout() {}')
       createFile('users/index.tsx', 'export default function UsersIndex() {}')
@@ -402,7 +403,7 @@ export default function OldPage() {}`
 
   describe('复杂场景', () => {
     it('应正确处理混合场景', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       // 布局路由
       createFile('admin.tsx', 'export default function AdminLayout() {}')

@@ -32,6 +32,7 @@ import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import { getAbsolutePagesDirs, isPageFileInDirs, normalizeConfig } from './core/configUtils.js'
 import { generateRoutes } from './core/generateRoutes.js'
 import { generateFullDtsFile } from './core/generateTypes.js'
+import { info } from './core/logger.js'
 import { removeDefinePage } from './core/removeDefinePage.js'
 import { buildRouteTree, scanMultiplePages } from './core/scanPages.js'
 import type { PagesDirConfig, ParsedPage, VitePluginRouterOptions } from './core/types.js'
@@ -169,7 +170,7 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
     const content = generateFullDtsFile(routeTree, lowercase)
     fs.writeFileSync(dtsPath, content, 'utf-8')
 
-    console.log(`[vitarx-router] 类型定义文件已生成: ${dtsPath}`)
+    info(`类型定义文件已生成: ${dtsPath}`)
   }
 
   return {

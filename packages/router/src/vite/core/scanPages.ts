@@ -8,6 +8,7 @@ import micromatch from 'micromatch'
 import fs from 'node:fs'
 import path from 'node:path'
 import { parsePageFile } from './parsePage.js'
+import { warn } from './logger.js'
 import type { MultiScanOptions, ParsedPage, ScanOptions } from './types.js'
 
 const DEFAULT_INCLUDE = ['**/*']
@@ -63,8 +64,8 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
 
       // 检测同名不同扩展名冲突
       if (existing) {
-        console.warn(
-          `[vitarx-router] 检测到同名文件冲突: "${baseName}" 存在多个扩展名版本 ` +
+        warn(
+          `检测到同名文件冲突: "${baseName}" 存在多个扩展名版本 ` +
             `(${existing.ext} 和 ${ext})，将忽略 "${file.name}"`
         )
         continue
@@ -80,8 +81,8 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
 
       // 同名文件+目录：标记为布局文件
       if (hasSameNameDir) {
-        console.warn(
-          `[vitarx-router] 检测到同名文件+目录: "${baseName}"，` + `"${entry.name}" 将作为布局组件`
+        warn(
+          `检测到同名文件+目录: "${baseName}"，` + `"${entry.name}" 将作为布局组件`
         )
       }
 

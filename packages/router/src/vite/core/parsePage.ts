@@ -12,6 +12,7 @@ import type * as BabelTypes from '@babel/types'
 import fs from 'node:fs'
 import path from 'node:path'
 import { babelTraverse } from './babelUtils.js'
+import { warn } from './logger.js'
 import type { PageOptions, ParsedPage, RedirectConfig } from './types.js'
 
 /** 动态参数匹配正则，如 [id]、[slug]、[param?] */
@@ -307,7 +308,7 @@ export function parsePageFile(
     const exportCheck = checkDefaultExport(filePath)
 
     if (exportCheck.warning) {
-      console.warn(`[vitarx-router] 警告: ${filePath}\n  ${exportCheck.warning}`)
+      warn(`警告: ${filePath}\n  ${exportCheck.warning}`)
       return null
     }
   }
@@ -528,13 +529,13 @@ export function parseDefinePage(filePath: string): PageOptions | null {
           // 检查是否已导入
           if (!definePageLocalName) {
             warnings.push(
-              `[vitarx-router] 警告: ${filePath}\n` +
+              `警告: ${filePath}\n` +
                 `  definePage 未从 'vitarx-router/auto-routes' 导入，请确保添加导入语句。`
             )
           } else if (definePageLocalName !== 'definePage') {
             // 如果使用了别名但调用的是原始名称
             warnings.push(
-              `[vitarx-router] 警告: ${filePath}\n` +
+              `警告: ${filePath}\n` +
                 `  definePage 已导入为 '${definePageLocalName}'，但代码中使用的是 'definePage'。`
             )
           }
@@ -568,13 +569,13 @@ export function parseDefinePage(filePath: string): PageOptions | null {
 
     // 输出警告
     for (const warning of warnings) {
-      console.warn(warning)
+      warn(warning)
     }
 
     // 检查是否有多个 definePage 调用
     if (pageOptionsList.length > 1) {
-      console.warn(
-        `[vitarx-router] 警告: ${filePath}\n` +
+      warn(
+        `警告: ${filePath}\n` +
           `  检测到 ${pageOptionsList.length} 个 definePage 调用，将合并配置。建议只使用一个 definePage。`
       )
     }
@@ -601,7 +602,7 @@ export function parseDefinePage(filePath: string): PageOptions | null {
     )
   } catch (error) {
     // AST 解析失败时返回 null
-    console.warn(`[vitarx-router] 解析 definePage 失败: ${filePath}`, error)
+    warn(`解析 definePage 失败: ${filePath}`, error?.toString())
     return null
   }
 }
@@ -635,7 +636,7 @@ function extractOptionsFromObject(node: BabelTypes.ObjectExpression): PageOption
         if (isSerializable(meta)) {
           result.meta = meta
         } else {
-          console.warn('[vitarx-router] definePage meta 必须是可序列化的对象，不支持函数或复杂对象')
+          warn('definePage meta 必须是可序列化的对象，不支持函数或复杂对象')
         }
       }
     } else if (keyName === 'pattern') {

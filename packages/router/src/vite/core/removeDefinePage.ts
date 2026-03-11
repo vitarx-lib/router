@@ -1,5 +1,6 @@
 import { parse } from '@babel/parser'
 import { babelGenerate, babelTraverse } from './babelUtils.js'
+import { warn } from './logger.js'
 
 /**
  * 移除 definePage 宏调用（仅在构建模式下）
@@ -95,7 +96,7 @@ export function removeDefinePage(
       map: null
     }
   } catch (error) {
-    console.warn(`[vitarx-router] 转换代码失败: ${id}`, error)
+    warn(`转换代码失败: ${id}`, error?.toString())
     return null
   }
 }

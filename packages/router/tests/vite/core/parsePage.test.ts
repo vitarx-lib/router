@@ -10,6 +10,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as logger from '../../../src/vite/core/logger.js'
 import {
   extractParamsFromPath,
   parseDefinePage,
@@ -301,7 +302,7 @@ describe('parseDefinePage', () => {
     })
 
     it('未导入 definePage 时应发出警告', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `definePage({ name: 'no-import' })`
       createPageFile('test.tsx', content)
@@ -316,7 +317,7 @@ describe('parseDefinePage', () => {
 
   describe('多个 definePage 处理', () => {
     it('应该合并多个 definePage 配置', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         import { definePage } from 'vitarx-router/auto-routes'
@@ -461,7 +462,7 @@ describe('parseDefinePage', () => {
     })
 
     it('应该合并多个 definePage 的 pattern 配置', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         import { definePage } from 'vitarx-router/auto-routes'
@@ -512,7 +513,7 @@ describe('默认导出检测', () => {
 
   describe('有效的函数组件导出', () => {
     it('应该识别 export default function 声明', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         export default function Page() {
@@ -530,7 +531,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该识别 export default 匿名函数', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         export default function() {
@@ -547,7 +548,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该识别 export default 箭头函数', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         export default () => {
@@ -564,7 +565,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该识别 export default 类组件', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         export default class Page extends React.Component {
@@ -583,7 +584,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该识别先声明再导出的函数', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         const Page = () => {
@@ -601,7 +602,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该识别 export { Component as default }', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         const Page = () => {
@@ -619,7 +620,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该识别 export function 配合 as default', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         function Page() {
@@ -639,7 +640,7 @@ describe('默认导出检测', () => {
 
   describe('无效的导出', () => {
     it('没有默认导出时应跳过并警告', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         export const Page = () => {
@@ -657,7 +658,7 @@ describe('默认导出检测', () => {
     })
 
     it('默认导出为对象时应跳过并警告', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         export default {
@@ -675,7 +676,7 @@ describe('默认导出检测', () => {
     })
 
     it('默认导出为字符串时应跳过并警告', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `export default 'not a component'`
       createPageFile('index.tsx', content)
@@ -688,7 +689,7 @@ describe('默认导出检测', () => {
     })
 
     it('默认导出为数字时应跳过并警告', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `export default 42`
       createPageFile('index.tsx', content)
@@ -701,7 +702,7 @@ describe('默认导出检测', () => {
     })
 
     it('没有任何导出时应跳过并警告', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         const Page = () => {
@@ -718,7 +719,7 @@ describe('默认导出检测', () => {
     })
 
     it('文件不存在时应跳过并警告', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const result = parsePageFile('/non/existent/file.tsx', '/non/existent', '')
 
@@ -731,7 +732,7 @@ describe('默认导出检测', () => {
 
   describe('TypeScript 类型支持', () => {
     it('应该识别带 TypeScript 类型的函数组件', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         import type { FC } from 'vitarx'
@@ -751,7 +752,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该识别带 Props 类型的函数组件', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `
         interface Props {
@@ -774,7 +775,7 @@ describe('默认导出检测', () => {
 
   describe('非 JS/TS 文件跳过检测', () => {
     it('应该跳过 .md 文件的默认导出检测', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       // .md 文件内容不是有效的 JS，但应该跳过检测
       const content = `# Page Title\n\nThis is markdown content.`
@@ -790,7 +791,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该跳过 .vue 文件的默认导出检测', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `<template><div>Page</div></template>`
       createPageFile('index.vue', content)
@@ -803,7 +804,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该跳过 .svelte 文件的默认导出检测', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `<script>export let name;</script><div>{name}</div>`
       createPageFile('index.svelte', content)
@@ -816,7 +817,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该对 .tsx 文件进行默认导出检测', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       // .tsx 文件没有默认导出，应该警告并跳过
       const content = `const Page = () => <div>Page</div>`
@@ -830,7 +831,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该对 .ts 文件进行默认导出检测', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `const Page = () => null`
       createPageFile('index.ts', content)
@@ -843,7 +844,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该对 .jsx 文件进行默认导出检测', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `const Page = () => <div>Page</div>`
       createPageFile('index.jsx', content)
@@ -856,7 +857,7 @@ describe('默认导出检测', () => {
     })
 
     it('应该对 .js 文件进行默认导出检测', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
       const content = `const Page = () => null`
       createPageFile('index.js', content)
