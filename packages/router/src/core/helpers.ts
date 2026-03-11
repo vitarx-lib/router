@@ -129,6 +129,8 @@ export function createRouter(options: RouterOptions): RouterCore {
 /**
  * 获取路由器实例
  *
+ * 可以传入一个 `true` 来抑制抛出异常，未找到路由器时返回 null
+ *
  * @return {RouterCore} - 路由器实例
  * @throws {Error} - 如果未创建路由器实例，则会抛出异常
  */
