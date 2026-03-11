@@ -178,6 +178,7 @@ export function useRouter<T extends RouterCore>(allowEmpty: boolean = false): T 
  * ```
  *
  * @return {ReadonlyRouteLocation} - 只读的`RouteLocation`对象
+ * @throws {Error} - 如果未获取到路由器实例，则会抛出异常
  */
 export function useRoute(): ReadonlyRouteLocation {
   return useRouter().route
