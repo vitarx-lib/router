@@ -567,7 +567,7 @@ export default defineConfig({
 ### 使用生成的路由
 
 ```typescript
-import routes from 'virtual:vitarx-router:routes'
+import { routes } from 'vitarx-router/auto-routes'
 import { createRouter } from 'vitarx-router'
 
 export const router = createRouter({ routes })
