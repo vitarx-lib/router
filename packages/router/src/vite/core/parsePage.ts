@@ -14,8 +14,8 @@ import path from 'node:path'
 import { babelTraverse } from './babelUtils.js'
 import type { PageOptions, ParsedPage, RedirectConfig } from './types.js'
 
-/** 动态参数匹配正则，如 [id]、[slug] */
-const DYNAMIC_PARAM_REGEX = /^\[(.+)]$/
+/** 动态参数匹配正则，如 [id]、[slug]、[param?] */
+const DYNAMIC_PARAM_REGEX = /^\[(.+?)(\?)?]$/
 
 /** definePage 的导入来源 */
 const DEFINE_PAGE_SOURCES = ['vitarx-router/auto-routes']
@@ -382,9 +382,10 @@ function parseFileName(fileName: string): {
   if (dynamicMatch) {
     isDynamic = true
     const paramName = dynamicMatch[1]
+    const isOptional = !!dynamicMatch[2]
     params.push(paramName)
-    // 将 [id] 转换为 {id} 格式
-    return { name: `{${paramName}}`, params, isDynamic }
+    // 将 [id] 转换为 {id} 格式，[param?] 转换为 {param?} 格式
+    return { name: `{${paramName}${isOptional ? '?' : ''}}`, params, isDynamic }
   }
 
   return { name: fileName, params, isDynamic }
