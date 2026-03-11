@@ -390,14 +390,20 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
   }
 
   // 处理只有 index 文件的目录（直接作为路由，不创建 children）
+  // 以及只有一个非 index 文件的目录（如动态路由 [id].tsx）
   for (const [dirPath, dirPages] of pagesByDir) {
     if (dirPath === '/') continue
     if (dirRoutesToCreate.has(dirPath)) continue // 已经在目录路由中处理
 
-    if (dirPages.length === 1 && dirPages[0].isIndex) {
-      // 只有 index 文件，直接使用 index 作为路由
-      const indexPage = dirPages[0]
-      root.push({ ...indexPage, children: [] })
+    if (dirPages.length === 1) {
+      const page = dirPages[0]
+      if (page.isIndex) {
+        // 只有 index 文件，直接使用 index 作为路由
+        root.push({ ...page, children: [] })
+      } else {
+        // 只有一个非 index 文件（如动态路由），也直接作为路由
+        root.push({ ...page, children: [] })
+      }
     }
   }
 
