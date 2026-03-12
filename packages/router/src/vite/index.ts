@@ -25,6 +25,7 @@
  *
  * @module vite
  */
+import chalk from 'chalk'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
@@ -118,7 +119,8 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
 
   // 规范化配置
   const normalizedConfig = normalizeConfig(options)
-  const { pagesDirs, extensions, dts, importMode, extendRoute, imports, lowercase } = normalizedConfig
+  const { pagesDirs, extensions, dts, importMode, extendRoute, imports, lowercase } =
+    normalizedConfig
 
   // 插件内部状态
   let config: ResolvedConfig | null = null
@@ -149,7 +151,12 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
    */
   function getRoutesCode(): Promise<string> {
     if (!cachedRoutesPromise) {
-      cachedRoutesPromise = generateRoutes(routeTree, { importMode, extendRoute, imports, lowercase })
+      cachedRoutesPromise = generateRoutes(routeTree, {
+        importMode,
+        extendRoute,
+        imports,
+        lowercase
+      })
     }
     return cachedRoutesPromise
   }
@@ -170,7 +177,7 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
     const content = generateFullDtsFile(routeTree, lowercase)
     fs.writeFileSync(dtsPath, content, 'utf-8')
 
-    info(`类型定义文件已生成: ${dtsPath}`)
+    info(`类型定义文件已生成: ${chalk.yellow(dtsPath)}`)
   }
 
   return {

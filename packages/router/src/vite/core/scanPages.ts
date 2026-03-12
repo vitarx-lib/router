@@ -98,9 +98,9 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
       const hasSameNameDir = dirNames.has(baseName)
 
       // 同名文件+目录：标记为布局文件
-      if (hasSameNameDir) {
-        warn(`检测到同名文件+目录: "${baseName}"，` + `"${entry.name}" 将作为布局组件`)
-      }
+      // if (hasSameNameDir) {
+      //   warn(`检测到同名文件+目录: "${baseName}"，` + `"${entry.name}" 将作为布局组件`)
+      // }
 
       const parsed = parsePageFile(filePath, pagesDir, parentPath)
       if (parsed) {
