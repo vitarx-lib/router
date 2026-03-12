@@ -33,6 +33,8 @@ export type ScrollResult = ScrollTarget | false
 
 /**
  * 滚动行为处理器
+ *
+ * 如果返回 false 则禁用路由器内部的滚动处理程序。
  */
 export type ScrollBehaviorHandler = (
   to: ReadonlyRouteLocation,
