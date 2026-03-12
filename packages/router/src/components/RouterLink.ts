@@ -169,6 +169,12 @@ export function RouterLink(props: RouterLinkProps): ElementView<'a'> {
     }
 
     const location = router.createRouteLocation(to)
+    if (__VITARX_DEV__ && location.matched.length) {
+      logger.warn(
+        `[RouterLink] No match found for location with path "${location.fullPath}, rawIndex "${location.index}"`,
+        location.matched
+      )
+    }
     return { href: location.fullPath, location, navigate: true }
   })
 
