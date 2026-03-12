@@ -81,6 +81,12 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    */
   private _isInitialized: boolean = false
   /**
+   * 待处理的滚动ID
+   *
+   * @private
+   */
+  private _pendingScrollId: number = 0
+  /**
    * 路由器构造函数
    * 初始化路由器并确保单例
    *
@@ -108,7 +114,10 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * 是否运行在浏览器环境
    * 用于区分服务端渲染和客户端渲染
    */
-  private _isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined'
+  private _isBrowser =
+    typeof window !== 'undefined' &&
+    typeof window.document !== 'undefined' &&
+    typeof window.scrollTo === 'function'
 
   /**
    * 是否运行在浏览器端
@@ -240,30 +249,35 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    */
   public scrollTo(scrollTarget: ScrollTarget | undefined): void {
     if (!this.isBrowser || !scrollTarget || typeof scrollTarget !== 'object') return
-    try {
-      if ('el' in scrollTarget) {
-        const { el, ...rest } = scrollTarget
-        const element = typeof el === 'string' ? document.querySelector(el) : el
-        if (element && element instanceof Element) {
-          if (element.scrollIntoView) {
-            element.scrollIntoView({ behavior: this.scrollBehavior, ...rest })
-          } else {
-            window.scrollTo({
-              behavior: this.scrollBehavior,
-              top: element.getBoundingClientRect().top + window.scrollY, // 获取元素位置并滚动
-              left: element.getBoundingClientRect().left + window.scrollX
-            })
+    this._pendingScrollId++
+    const id = this._pendingScrollId
+    requestAnimationFrame(() => {
+      if (id !== this._pendingScrollId) return
+      try {
+        if ('el' in scrollTarget) {
+          const { el, ...rest } = scrollTarget
+          const element = typeof el === 'string' ? document.querySelector(el) : el
+          if (element && element instanceof Element) {
+            if (element.scrollIntoView) {
+              element.scrollIntoView({ behavior: this.scrollBehavior, ...rest })
+            } else {
+              window.scrollTo({
+                behavior: this.scrollBehavior,
+                top: element.getBoundingClientRect().top + window.scrollY, // 获取元素位置并滚动
+                left: element.getBoundingClientRect().left + window.scrollX
+              })
+            }
           }
+          return
         }
-        return
+        window.scrollTo({ behavior: this.scrollBehavior, ...scrollTarget })
+      } catch (e) {
+        logger.error(
+          '[Router] Failed to scroll to specified position, please check scroll target parameters',
+          e
+        )
       }
-      window.scrollTo({ behavior: this.scrollBehavior, ...scrollTarget })
-    } catch (e) {
-      logger.error(
-        '[Router] Failed to scroll to specified position, please check scroll target parameters',
-        e
-      )
-    }
+    })
   }
 
   /**
@@ -513,7 +527,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     to: RouteLocation,
     from: RouteLocation,
     savedPosition?: _ScrollOptions
-  ) {
+  ): void {
     patchUpdateRoute(this._route, to)
     // 刷新视图
     flushSync()
