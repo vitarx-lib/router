@@ -1,6 +1,6 @@
 {
   "name": "vitarx-router",
-  "version": "3.0.0",
+  "version": "4.0.0-beta.0",
   "description": "Vitarx 前端框架官方路由解决方案，提供声明式路由配置、导航守卫、动态路由匹配、文件系统路由等企业级功能。",
   "author": "ZhuChongLin <8210856@qq.com>",
   "license": "MIT",
