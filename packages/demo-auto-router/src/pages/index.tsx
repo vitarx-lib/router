@@ -36,7 +36,7 @@ const routeCategories = [
     desc: '同名文件+目录组合，文件作为布局组件',
     routes: [
       { path: '/admin', name: '管理后台', file: 'admin.tsx + admin/ 目录' },
-      { path: '/admin/dashboard', name: '仪表盘', file: 'admin/dashboard.tsx' },
+      { path: '/admin/index', name: '仪表盘', file: 'admin/index.tsx' },
       { path: '/admin/users', name: '用户管理', file: 'admin/users.tsx' }
     ]
   },
