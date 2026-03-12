@@ -38,7 +38,7 @@
     }
   },
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "build": "rimraf dist && vitest run && tsc",
     "check:circular": "madge --extensions js --circular dist --warning --exclude '.*\\\\.d\\\\.ts$'",
     "test": "vitest run",
     "test:core": "vitest run --project browser",
