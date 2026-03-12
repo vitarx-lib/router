@@ -6,10 +6,33 @@
 declare module 'vitarx-router' {
   // 自动生成的路由索引映射类型
   interface RouteIndexMap {
-    '': {},
+    'index': {},
     '/': {},
-    'About': {},
-    '/About': {}
+    'users-settings': {},
+    '/users/settings': {},
+    'about': {},
+    '/about': {},
+    'admin': {},
+    '/admin': {},
+    'admin-index': {},
+    'admin-posts': {},
+    'posts': {},
+    'admin-users': {},
+    'users': {},
+    'contact': {},
+    '/contact': {},
+    'custom-route-demo': {},
+    '/custom-route': {},
+    'multi-view': {},
+    '/multi-view': {},
+    '/users': {},
+    'users-index': {},
+    'users-profile': {},
+    'profile': {},
+    'post-slug': { params: { slug: string | number } },
+    '/post/{slug}': { params: { slug: string | number } },
+    'user-id': { params: { id: string | number } },
+    '/user/{id}': { params: { id: string | number } }
   }
 }
 

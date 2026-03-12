@@ -1,129 +1,191 @@
 import type { View } from 'vitarx'
 import { RouterLink } from 'vitarx-router'
 
-const features = [
-  { icon: '🚀', title: '多种路由模式', desc: '支持 Hash、History、Memory 三种模式' },
-  { icon: '📁', title: '文件系统路由', desc: '基于 Vite 插件自动生成路由配置' },
-  { icon: '🛡️', title: '导航守卫', desc: '完整的路由守卫机制，支持权限控制' },
-  { icon: '⚡', title: '动态路由', desc: '支持参数、正则约束、可选参数' },
-  { icon: '📦', title: '嵌套路由', desc: '支持复杂的路由嵌套和多视图布局' },
-  { icon: '🎯', title: 'TypeScript', desc: '完整的类型定义和类型扩展能力' }
+const routeCategories = [
+  {
+    title: '📄 静态路由',
+    desc: '最基本的文件路由约定，一个文件对应一个路由',
+    routes: [
+      { path: '/about', name: '关于页面', file: 'about.tsx → /about' },
+      { path: '/contact', name: '联系页面', file: 'contact.tsx → /contact' }
+    ]
+  },
+  {
+    title: '🔀 动态路由',
+    desc: '使用 [param] 语法定义动态参数',
+    routes: [
+      { path: '/user/123', name: '用户详情 (ID=123)', file: 'user/[id].tsx → /user/{id}' },
+      { path: '/post/hello-world', name: '文章详情', file: 'post/[slug].tsx → /post/{slug}' }
+    ]
+  },
+  {
+    title: '📁 嵌套路由',
+    desc: '目录结构自动映射为嵌套路由',
+    routes: [
+      { path: '/users', name: '用户列表', file: 'users/index.tsx → /users' },
+      { path: '/users/profile', name: '用户资料', file: 'users/profile.tsx → /users/profile' },
+      {
+        path: '/users/settings',
+        name: '用户设置',
+        file: 'users/settings/index.tsx → /users/settings'
+      }
+    ]
+  },
+  {
+    title: '🎨 布局路由',
+    desc: '同名文件+目录组合，文件作为布局组件',
+    routes: [
+      { path: '/admin', name: '管理后台', file: 'admin.tsx + admin/ 目录' },
+      { path: '/admin/dashboard', name: '仪表盘', file: 'admin/dashboard.tsx' },
+      { path: '/admin/users', name: '用户管理', file: 'admin/users.tsx' }
+    ]
+  },
+  {
+    title: '👁️ 命名视图',
+    desc: '使用 @view 语法定义多个命名视图',
+    routes: [
+      { path: '/multi-view', name: '多视图页面', file: 'multi-view.tsx + multi-view@sidebar.tsx' }
+    ]
+  },
+  {
+    title: '⚙️ definePage 宏',
+    desc: '在组件内自定义路由配置',
+    routes: [
+      { path: '/custom-route', name: '自定义路由配置', file: 'custom-route.tsx (使用 definePage)' }
+    ]
+  }
 ]
 
 export default function Home(): View {
   return (
     <div
       style={{
-        textAlign: 'center',
-        padding: '50px 40px',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '20px',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)',
-        maxWidth: '700px',
-        width: '90%'
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        padding: '40px 20px'
       }}
     >
-      <h1
-        style={{
-          fontSize: '42px',
-          fontWeight: '700',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          marginBottom: '15px'
-        }}
-      >
-        Vitarx Router
-      </h1>
-      <p
-        style={{
-          color: '#888',
-          fontSize: '16px',
-          marginBottom: '35px',
-          letterSpacing: '1px'
-        }}
-      >
-        Vitarx 框架的官方路由解决方案
-      </p>
-
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: '20px',
-          marginBottom: '40px',
-          textAlign: 'left'
+          maxWidth: '900px',
+          margin: '0 auto'
         }}
       >
-        {features.map((feature, index) => (
-          <div
-            key={index}
+        <div
+          style={{
+            textAlign: 'center',
+            marginBottom: '40px'
+          }}
+        >
+          <h1
             style={{
-              padding: '18px 20px',
-              backgroundColor: '#f8f9ff',
-              borderRadius: '12px',
-              border: '1px solid #e8ecf4'
+              fontSize: '42px',
+              fontWeight: '700',
+              color: 'white',
+              marginBottom: '15px',
+              textShadow: '0 2px 10px rgba(0,0,0,0.2)'
             }}
           >
-            <div style={{ fontSize: '24px', marginBottom: '8px' }}>{feature.icon}</div>
-            <div
+            Vitarx Router 文件路由示例
+          </h1>
+          <p
+            style={{
+              fontSize: '18px',
+              color: 'rgba(255,255,255,0.9)',
+              maxWidth: '600px',
+              margin: '0 auto',
+              lineHeight: '1.6'
+            }}
+          >
+            本示例展示了文件路由系统支持的所有约定，点击下方链接查看不同类型的路由实现
+          </p>
+        </div>
+
+        {routeCategories.map((category, idx) => (
+          <div
+            key={idx}
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              borderRadius: '16px',
+              padding: '24px',
+              marginBottom: '20px',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)'
+            }}
+          >
+            <h2
               style={{
-                fontSize: '15px',
+                fontSize: '20px',
                 fontWeight: '600',
                 color: '#333',
-                marginBottom: '5px'
+                marginBottom: '8px'
               }}
             >
-              {feature.title}
+              {category.title}
+            </h2>
+            <p
+              style={{
+                fontSize: '14px',
+                color: '#666',
+                marginBottom: '16px'
+              }}
+            >
+              {category.desc}
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '10px'
+              }}
+            >
+              {category.routes.map((route, ridx) => (
+                <RouterLink
+                  key={ridx}
+                  to={route.path}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '10px 16px',
+                    backgroundColor: '#f8f9ff',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    color: '#667eea',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    border: '1px solid #e8ecf4',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {route.name}
+                </RouterLink>
+              ))}
             </div>
-            <div style={{ fontSize: '13px', color: '#666', lineHeight: '1.5' }}>{feature.desc}</div>
+            <div
+              style={{
+                marginTop: '12px',
+                padding: '12px',
+                backgroundColor: '#f5f7ff',
+                borderRadius: '8px',
+                fontSize: '12px',
+                color: '#888',
+                fontFamily: 'monospace'
+              }}
+            >
+              {category.routes.map(r => r.file).join(' | ')}
+            </div>
           </div>
         ))}
-      </div>
 
-      <div
-        style={{
-          display: 'flex',
-          gap: '15px',
-          justifyContent: 'center',
-          flexWrap: 'wrap'
-        }}
-      >
-        <RouterLink
-          to="/about"
+        <div
           style={{
-            display: 'inline-block',
-            padding: '14px 32px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            textDecoration: 'none',
-            borderRadius: '30px',
-            fontSize: '15px',
-            fontWeight: '600',
-            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+            textAlign: 'center',
+            padding: '20px',
+            color: 'rgba(255,255,255,0.8)',
+            fontSize: '14px'
           }}
         >
-          了解更多 →
-        </RouterLink>
-        <a
-          href="https://router.vitarx.cn"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-block',
-            padding: '14px 32px',
-            background: 'white',
-            color: '#667eea',
-            textDecoration: 'none',
-            borderRadius: '30px',
-            fontSize: '15px',
-            fontWeight: '600',
-            border: '2px solid #667eea'
-          }}
-        >
-          官方文档
-        </a>
+          <p>💡 提示：查看 pages 目录结构了解文件路由的实现方式</p>
+        </div>
       </div>
     </div>
   )
