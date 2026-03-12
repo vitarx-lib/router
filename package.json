@@ -19,7 +19,7 @@
     "typescript": "^5.9.3",
     "vite": "7.2.7",
     "vitest": "^4.0.18",
-    "vitarx": "4.0.0-beta.6"
+    "vitarx": "4.0.0-beta.7"
   },
   "packageManager": "pnpm@10.30.3",
   "pnpm": {
@@ -28,7 +28,7 @@
       "rollup": "4.53.3",
       "vite": "7.2.7",
       "@vitarx/plugin-vite": "0.0.1-beta.4",
-      "vitarx": "4.0.0-beta.6"
+      "vitarx": "4.0.0-beta.7"
     }
   }
 }
