@@ -78,7 +78,7 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    *
    * 允许用户定义复杂的路径匹配规则
    *
-   * @default `/[\w.]+/`
+   * @default `/[^/]+/`
    */
   pattern?: RegExp
 

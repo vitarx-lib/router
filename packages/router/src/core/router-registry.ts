@@ -47,7 +47,7 @@ export default abstract class RouterRegistry {
       scrollBehavior: 'auto',
       anchorsScrollBehavior: 'auto',
       suffix: '*',
-      pattern: /[\w.]+/,
+      pattern: /[^/]+/,
       defaultSuffix: '',
       ...options,
       routes: [...options.routes]
