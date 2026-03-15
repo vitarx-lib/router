@@ -1,4 +1,4 @@
-import { type App as VitarxApp, type Component, createApp, h } from 'vitarx'
+import { type App as VitarxApp, type Component, createApp, Dynamic, h } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RouterView } from '../../src/components/index.js'
 import { createRouter, defineRoutes } from '../../src/core/helpers.js'
@@ -298,12 +298,16 @@ describe('RouterView', () => {
   })
 
   describe('自定义渲染', () => {
-    it('应该使用自定义 render 函数', async () => {
+    it('应该使用自定义 children 函数', async () => {
       const customRender = vi.fn((component, props) => {
-        return h('section', { 'data-testid': 'custom-wrapper' }, h(component, props))
+        return h(
+          'section',
+          { 'data-testid': 'custom-wrapper' },
+          h(Dynamic, { is: component.value, 'v-bind': props.value })
+        )
       })
 
-      app = createApp(() => h(RouterView, { render: customRender }))
+      app = createApp(() => h(RouterView, { children: customRender }))
       router = createRouter({ mode: 'hash', routes: basicRoutes })
       app.provide(ROUTER, router)
       app.mount(container)
@@ -321,7 +325,7 @@ describe('RouterView', () => {
         throw new Error('Render error')
       }
 
-      app = createApp(() => h(RouterView, { render: customRender }))
+      app = createApp(() => h(RouterView, { children: customRender }))
       router = createRouter({ mode: 'hash', routes: basicRoutes })
       app.provide(ROUTER, router)
       app.mount(container)
