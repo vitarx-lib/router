@@ -407,7 +407,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
 
       try {
         // 执行前置守卫
-        const result = await this.onBeforeEach(to, from)
+        const result = await this.beforeEach(to, from)
 
         // 如果前置守卫返回false，取消导航
         if (result === false) {
@@ -472,19 +472,29 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    *
    * 会同步更新`fullPath`
    *
-   * @param {Record<string, string>} query - 新的query参数对象
+   * @param {Record<string, string>} newQuery - 新的query参数对象
    * @public
    */
-  public updateQuery(query: Record<string, string>) {
-    if (!isDeepEqual(this._route.query, query)) {
-      this._route.query = query
-      this._route.fullPath = this.makeFullPath(
-        this._route.path,
-        query,
-        this._route.hash,
-        this._route.suffix
-      )
-    }
+  public updateQuery(newQuery: Record<string, string>) {
+    // 1. 获取当前 query 的所有键
+    const currentQueryKeys = Object.keys(this._route.query)
+    // 2. 删除在新 query 中不存在的属性
+    currentQueryKeys.forEach(key => {
+      if (!(key in newQuery)) {
+        delete this._route.query[key]
+      }
+    })
+    // 3. 更新或添加新 query 中的属性
+    Object.keys(newQuery).forEach(key => {
+      this._route.query[key] = newQuery[key]
+    })
+    // 4. 更新完整的path
+    this._route.fullPath = this.makeFullPath(
+      this._route.path,
+      this._route.query,
+      this._route.hash,
+      this._route.suffix
+    )
   }
 
   /**
@@ -495,12 +505,8 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @param {`#${string}` | ''} hash - 新的hash参数，如果为空则表示无hash
    * @protected
    */
-  public updateHash(hash: `#${string}` | '') {
-    if (typeof hash !== 'string') {
-      throw new TypeError(
-        `[Router] updateHash() expects a string value, but received ${typeof hash}`
-      )
-    }
+  public updateHash(hash: `#${string}` | ''): void {
+    if (!isString(hash)) hash = ''
     const newHash = formatHash(hash, true)
     if (newHash !== this._route.hash) {
       this._route.hash = newHash
@@ -534,7 +540,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
     // 处理滚动行为
     this.onScrollBehavior(this.route, from, savedPosition).then()
     // 触发后置守卫
-    this.onAfterEach(this.route, from)
+    this.afterEach(this.route, from)
   }
 
   /**
@@ -599,7 +605,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @param {RouteLocation} from - 前路由对象
    * @return {false | NavigateTarget} - 返回false表示阻止导航，返回新的路由目标对象则表示导航到新的目标
    */
-  protected onBeforeEach(to: RouteLocation, from: RouteLocation): BeforeEachCallbackResult {
+  private beforeEach(to: RouteLocation, from: RouteLocation): BeforeEachCallbackResult {
     const matched = to.matched.at(-1)
     if (matched && 'beforeEnter' in matched && typeof matched.beforeEnter === 'function') {
       return matched.beforeEnter.call(this, to, from)
@@ -613,7 +619,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @param {ReadonlyRouteLocation} to - 路由目标对象
    * @param {ReadonlyRouteLocation} from - 前路由对象
    */
-  protected onAfterEach(to: ReadonlyRouteLocation, from: ReadonlyRouteLocation): void {
+  private afterEach(to: ReadonlyRouteLocation, from: ReadonlyRouteLocation): void {
     const matched = to.matched.at(-1)
     // 未匹配到路由时不触发后置守卫
     if (!matched) return void 0
@@ -632,7 +638,7 @@ export default abstract class RouterCore extends RouterRegistry implements AppOb
    * @param {_ScrollOptions} savedPosition - 保存的滚动位置
    * @private
    */
-  protected async onScrollBehavior(
+  private async onScrollBehavior(
     to: ReadonlyRouteLocation,
     from: ReadonlyRouteLocation,
     savedPosition: _ScrollOptions | undefined
