@@ -15,11 +15,10 @@ import {
   shallowReactive
 } from 'vitarx'
 import { __ROUTER_KEY__, NavState } from '../common/constant.js'
-import { normalizePath, stringifyQuery } from '../common/shared.js'
+import { cloneRouteLocation, normalizePath, stringifyQuery } from '../common/shared.js'
 import { updateRouteLocation } from '../common/update.js'
 import {
   checkRouterOptions,
-  cloneRouteLocation,
   hasOnlyChangeHash,
   isNavigateTarget,
   isPathIndex,
@@ -49,6 +48,7 @@ import type {
   URLParams,
   URLQuery
 } from '../types/index.js'
+import { hasNavState } from './helpers.js'
 import { RouteManager, type RouteMatchResult } from './manager.js'
 
 export abstract class Router {
@@ -62,6 +62,14 @@ export abstract class Router {
   private _taskCounter = 0
   // 等待滚动目标
   private _pendingScrollTarget: ScrollTarget | null = null
+  // 当前路由位置 - 仅内部使用
+  private readonly _routeLocation: ShallowReactive<RouteLocation>
+  /**
+   * 路由位置
+   *
+   * @readonly
+   */
+  public readonly currentRoute: RouteLocationRaw
   /**
    * 路由器配置
    */
@@ -72,17 +80,6 @@ export abstract class Router {
    * @see {@link RouteManager}
    */
   public readonly manager: RouteManager
-  /**
-   * 当前路由位置信息 - 仅内部使用
-   * @private
-   */
-  private readonly _routeLocation: ShallowReactive<RouteLocation>
-  /**
-   * 当前路由位置信息
-   *
-   * @readonly
-   */
-  private readonly _readonlyRouteLocation: RouteLocationRaw
   constructor(options: RouterOptions) {
     if (__VITARX_DEV__) checkRouterOptions(options)
     const { routes, beforeEach, afterEach, ...userConfig } = options
@@ -115,19 +112,11 @@ export abstract class Router {
       matched: shallowReactive<RouteRecord[]>([]),
       meta: markRaw({})
     })
-    this._readonlyRouteLocation = readonly(this._routeLocation)
+    this.currentRoute = readonly(this._routeLocation)
   }
   public isReady(): Promise<void> {
     // TODO  待实现isReady逻辑
     throw new Error('Not implemented')
-  }
-  /**
-   * 获取只读的路由位置对象
-   *
-   * @returns {RouteLocationRaw} 返回只读的路由位置对象
-   */
-  get currentRoute(): RouteLocationRaw {
-    return this._readonlyRouteLocation
   }
   /**
    * 安装路由器
@@ -289,7 +278,6 @@ export abstract class Router {
     if (loadTask.length) {
       await Promise.allSettled(loadTask)
     }
-    await nextTick()
     return void 0
   }
 
@@ -356,7 +344,7 @@ export abstract class Router {
       if (this._currentTaskId !== taskId) {
         result.state = NavState.aborted
         result.message = 'Navigation superseded by a newer navigation'
-        return result
+        return Promise.resolve(result)
       }
 
       // 如果钩子返回了新的目标，进行重定向
@@ -374,14 +362,14 @@ export abstract class Router {
       this._routeLocation.href = resolvedRoute.href
       result.state = NavState.success
       result.message = 'Navigation succeeded: only hash changed'
-      return result
+      return Promise.resolve(result)
     }
     // 4.2 非替换路由导航时进行重复路由检测
     if (!target.replace) {
       if (resolvedRoute.href === from.href) {
-        result.state = NavState.aborted
+        result.state = NavState.duplicated
         result.message = 'Navigation aborted due to the same route'
-        return result
+        return Promise.resolve(result)
       }
     }
     // ----------------------------------------------------------------
@@ -389,43 +377,63 @@ export abstract class Router {
     // ----------------------------------------------------------------
     try {
       // 执行全局前置守卫
-      // 只有匹配成功才会触发 before hooks
       const guardResult = await this.runBeforeGuards(resolvedRoute, from)
 
       // 5.1 守卫拦截
       if (guardResult === false) {
         result.state = NavState.aborted
         result.message = 'Navigation aborted by guard'
-        return result
+        // 这里不抛错，属于正常中止，最后会 Resolve
       }
       // 5.2 守卫重定向
-      if (isNavigateTarget(guardResult)) {
-        return await this.navigate(guardResult, from, redirectFrom ?? resolvedRoute)
+      else if (isNavigateTarget(guardResult)) {
+        // 直接返回递归结果，如果内部 Reject 会自动向上传播
+        return this.navigate(guardResult, from, redirectFrom ?? resolvedRoute)
       }
+
       // 5.3 并发竞争检查
-      // 如果在等待守卫期间，产生了新的导航任务，则放弃当前任务
       if (this._currentTaskId !== taskId) {
         result.state = NavState.aborted
         result.message = 'Navigation superseded by a newer navigation'
-        return result
       }
     } catch (error: unknown) {
+      // 捕获守卫内部的同步/异步错误
       if (isFunction(this.config.onError)) {
         this.config.onError.call(this, error, resolvedRoute, from)
-      } else {
-        logger.error('[Router] Unknown error during navigation:', error)
       }
-      // 异常处理
       result.state = NavState.exception
       result.error = error
-      result.message = error instanceof Error ? error.message : 'Unknown error during navigation'
-      return result
+      result.message = error instanceof Error ? error.message : 'Unknown error'
+
+      // 【优化】直接在这里返回 Reject，逻辑更清晰，不再走后面的流程
+      return Promise.reject(result)
     }
-    // 更新路由历史
-    const scrollPosition = this[target.replace ? 'replaceHistory' : 'pushHistory'](resolvedRoute)
-    // 完成导航
-    await this.completeNavigation(resolvedRoute, from, scrollPosition ?? null)
-    return result
+
+    // ----------------------------------------------------------------
+    // 6. 决定最终状态：更新历史 & 完成导航
+    // ----------------------------------------------------------------
+
+    // 只有成功才更新历史和触发 complete
+    if (result.state === NavState.success) {
+      const scrollPosition = this[target.replace ? 'replaceHistory' : 'pushHistory'](resolvedRoute)
+      this.completeNavigation(resolvedRoute, from, scrollPosition ?? null)
+    }
+
+    // ----------------------------------------------------------------
+    // 7. 根据状态决定 Resolve 还是 Reject
+    // ----------------------------------------------------------------
+
+    // 关键修正：
+    // 1. exception (异常) -> Reject (触发 isReady 报错)
+    // 2. notfound (未找到) -> Reject (触发 isReady 报错)
+    // 3. aborted (取消/替代) -> Resolve (正常结束，业务判断 state 即可)
+    // 4. duplicated (重复)  -> Resolve (正常结束)
+    // 5. success (成功)     -> Resolve
+    if (hasNavState(result, NavState.exception | NavState.notfound)) {
+      return Promise.reject(result)
+    }
+
+    return Promise.resolve(result)
   }
   /**
    * 完成导航过程
@@ -436,17 +444,15 @@ export abstract class Router {
    * @param {ScrollOptions} savedPosition - 保存的滚动位置
    * @protected
    */
-  private async completeNavigation(
+  private completeNavigation(
     to: RouteLocationRaw,
     from: RouteLocationRaw,
     savedPosition: ScrollPosition | null = null
-  ): Promise<void> {
+  ): void {
     // 1. 确认导航：更新路由状态
     updateRouteLocation(this._routeLocation, to)
     // 2. 触发全局后置钩子
     this.runAfterHooks(to, from)
-    // 确保View更新
-    await nextTick()
     // 3. 处理滚动行为
     this.runScrollBehavior(to, from, savedPosition)
   }
@@ -483,6 +489,7 @@ export abstract class Router {
     this._pendingScrollTarget = target
     // 等待路由组件解析完成后滚动
     this.loadRouteLocation().then(async () => {
+      await nextTick()
       // 确保滚动目标未改变
       if (this._pendingScrollTarget === target) {
         // 清除待处理的滚动目标
