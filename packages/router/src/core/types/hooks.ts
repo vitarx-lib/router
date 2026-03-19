@@ -1,16 +1,16 @@
-import type RouterCore from '../router-core.js'
-import type { NavigateTarget, ReadonlyRouteLocation, RouteIndex } from './navigation.js'
+import type { Router } from '../router/router.js'
+import type { NavigateTarget, RouteLocationRaw } from './navigation.js'
+import type { RouteIndex } from './route.js'
 
 /**
- * 路由前置钩子返回值
+ * 守卫结果
  *
- * - boolean: true继续导航,false阻止导航
- * - RouteTarget: 重定向到新的目标
- * - string: 重定向到新的path/name
+ * - false: 阻止导航
+ * - NavigateTarget / RouteIndex: 重定向到新目标
  * - void: 继续导航
- * - Promise: 异步处理,resolve的值同上
+ * - Promise: 异步处理
  */
-export type BeforeEachCallbackResult =
+export type GuardResult =
   | boolean
   | NavigateTarget
   | RouteIndex
@@ -18,33 +18,59 @@ export type BeforeEachCallbackResult =
   | Promise<boolean | NavigateTarget | RouteIndex | void>
 
 /**
- * 路由前置钩子
+ * 前置守卫钩子
  *
- * 在导航确认前调用,可以通过返回false来取消导航
+ * 触发时机: 路由匹配成功后，导航确认前。
+ * 说明: 只有路由匹配成功才会触发此钩子。
  *
  * @param this - 路由器实例
- * @param to - 即将要进入的目标路由对象
- * @param from - 当前导航正要离开的路由对象
- * @returns {BeforeEachCallbackResult} 返回false可以取消导航
+ * @param to - 目标路由对象 (匹配成功，必定存在)
+ * @param from - 来源路由对象
+ * @returns {GuardResult}
  */
-export type BeforeEnterCallback = (
-  this: RouterCore,
-  to: ReadonlyRouteLocation,
-  from: ReadonlyRouteLocation
-) => BeforeEachCallbackResult
+export type NavigationGuard = (
+  this: Router,
+  to: RouteLocationRaw,
+  from: RouteLocationRaw | null
+) => GuardResult
 
 /**
  * 路由后置钩子
  *
- * 在导航确认后调用
+ * 触发时机: 导航成功结束后。
  *
  * @param this - 路由器实例
- * @param to - 即将要进入的目标路由对象
- * @param from - 当前导航正要离开的路由对象
- * @returns {void}
+ * @param to - 当前激活的路由对象
+ * @param from - 上一个路由对象
  */
-export type AfterEnterCallback = (
-  this: RouterCore,
-  to: ReadonlyRouteLocation,
-  from: ReadonlyRouteLocation
+export type AfterCallback = (this: Router, to: RouteLocationRaw, from: RouteLocationRaw) => void
+
+/**
+ * 路由未匹配钩子
+ *
+ * 触发时机: 路由匹配失败 (404) 时。
+ * 用途: 可用于统一跳转 404 页面或记录错误日志。
+ *
+ * @param this - 路由器实例
+ * @param target - 用户的原始导航意图
+ * @returns {NavigateTarget | RouteIndex | void} 返回新目标表示重定向，无返回值则抛出错误
+ */
+export type NotFoundHandler = (
+  this: Router,
+  target: NavigateTarget
+) => NavigateTarget | void | Promise<NavigateTarget | void>
+
+/**
+ * 路由错误处理钩子
+ *
+ * @param this - 路由器实例
+ * @param error - 错误对象
+ * @param to - 目标路由对象
+ * @param from - 源路由对象
+ */
+export type NavErrorListener = (
+  this: Router,
+  error: unknown,
+  to: RouteLocationRaw,
+  from: RouteLocationRaw
 ) => void

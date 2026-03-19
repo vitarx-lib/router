@@ -1,10 +1,5 @@
-import { NavigateStatus } from './constant.js'
-import RouterCore from './router-core.js'
-import {
-  type ReadonlyRouteLocation,
-  type RouteLocation,
-  type RouterOptions
-} from './router-types.js'
+import type { RouteLocationRaw } from '../types/index.js'
+import { Router } from './router.js'
 
 /**
  * 基于内存实现的路由器
@@ -13,16 +8,11 @@ import {
  *
  * > 注意：不要在浏览器端使用，因为浏览器端有原生的history对象，使用内存模式会和浏览器端的历史记录冲突，导致路由异常。
  */
-export default class RouterMemory extends RouterCore {
+export class MemoryRouter extends Router {
   // 路由历史记录数组
-  protected _history: ReadonlyRouteLocation[] = []
+  protected _history: RouteLocationRaw[] = []
   // 标记是否有go方法触发的导航
   protected _pendingGo: number | null = null
-
-  constructor(options: RouterOptions<'memory'>) {
-    super(options)
-    options.mode = 'memory'
-  }
 
   /// 当前历史路由索引
   private _currentIndex: number = -1
@@ -39,7 +29,7 @@ export default class RouterMemory extends RouterCore {
   /**
    * @inheritDoc
    */
-  public override go(delta?: number): void {
+  public override go(delta: number): void {
     if (!delta) return
     const currentIndex = this.currentIndex
     const targetIndex = Math.max(0, Math.min(this._history.length - 1, this.currentIndex + delta)) // 限制在合法范围内
@@ -47,65 +37,56 @@ export default class RouterMemory extends RouterCore {
 
     const target = this._history[targetIndex]
     this._pendingGo = targetIndex
-    this.navigate(target).then(res => {
-      if (res.status !== NavigateStatus.success) {
-        this._pendingGo = null
-      }
+    this.navigate({
+      to: target.path,
+      query: target.query,
+      hash: target.hash
+    }).finally(() => {
+      this._pendingGo = null
     })
   }
 
   /**
-   * @inheritDoc
-   */
-  protected override initializeRouter(): void {}
-
-  /**
    * 添加历史记录
    */
-  protected override pushHistory(to: RouteLocation, from: RouteLocation): void {
-    this._updateHistory(to, from, false)
+  protected override pushHistory(to: RouteLocationRaw): void {
+    this._updateHistory(to, false)
   }
 
   /**
    * 替换历史记录
    */
-  protected replaceHistory(to: RouteLocation, from: RouteLocation): void {
-    this._updateHistory(to, from, true)
+  protected override replaceHistory(to: RouteLocationRaw): void {
+    this._updateHistory(to, true)
   }
 
   /**
    * 更新历史记录
    *
-   * @param to
-   * @param from
+   * @param to - 目标路由
    * @param {boolean} isReplace - 是否为替换操作
    * @private
    */
-  private _updateHistory(to: RouteLocation, from: RouteLocation, isReplace: boolean): void {
+  private _updateHistory(to: RouteLocationRaw, isReplace: boolean): void {
     let newIndex: number
     if (this._pendingGo !== null) {
-      this._history[this._pendingGo] = to
       newIndex = this._pendingGo
     } else if (isReplace) {
-      // 替换当前路由
-      this._history[this.currentIndex] = to
-      newIndex = this.currentIndex
+      newIndex = this.currentIndex === -1 ? 0 : this.currentIndex
     } else {
-      // push新路由
       const nextIndex = this.currentIndex + 1
+      // 如果下一个索引小于历史记录长度，则清除后面的历史记录
       if (nextIndex < this._history.length) {
         // 清除后面的历史记录
-        this._history[nextIndex] = to
         this._history.length = nextIndex + 1
         newIndex = nextIndex
       } else {
         // 添加新路由
-        this._history.push(to)
-        newIndex = this._history.length - 1
+        newIndex = this._history.length
       }
     }
+    this._history[newIndex] = to
     this._currentIndex = newIndex
-    this.completeNavigation(to, from)
     this._pendingGo = null
   }
   public override destroy(): void {

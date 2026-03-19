@@ -1,43 +1,35 @@
-import type { ReadonlyRouteLocation } from './navigation.js'
+import type { RouteLocationRaw } from './navigation.js'
 
 /**
  * 滚动行为
  */
-export type _ScrollBehavior = 'auto' | 'instant' | 'smooth'
+export type ScrollBehavior = 'auto' | 'instant' | 'smooth'
 
 /**
  * 滚动配置
  */
-export interface _ScrollOptions {
+export interface ScrollTarget {
+  el?: string
   left?: number
   top?: number
-  behavior?: _ScrollBehavior
+  behavior?: ScrollBehavior
 }
 
 /**
- * 滚动到视图配置
+ * 保存的页面位置
  */
-export interface _ScrollIntoViewOptions extends ScrollIntoViewOptions {
-  el: Element | `#${string}` | string
+export interface ScrollPosition {
+  left: number
+  top: number
 }
-
-/**
- * 滚动目标
- */
-export type ScrollTarget = _ScrollOptions | _ScrollIntoViewOptions
-
-/**
- * 滚动结果
- */
-export type ScrollResult = ScrollTarget | false
 
 /**
  * 滚动行为处理器
  *
  * 如果返回 false 则禁用路由器内部的滚动处理程序。
  */
-export type ScrollBehaviorHandler = (
-  to: ReadonlyRouteLocation,
-  from: ReadonlyRouteLocation,
-  savedPosition: _ScrollOptions | undefined
-) => ScrollResult | Promise<ScrollResult>
+export type BeforeScrollCallback = (
+  to: RouteLocationRaw,
+  from: RouteLocationRaw,
+  savedPosition: ScrollPosition | null
+) => ScrollTarget | false | void

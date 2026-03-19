@@ -1,82 +1,59 @@
-import type { Component, DeepReadonly } from 'vitarx'
-import type { NavigateStatus } from '../constant.js'
-import type { RouteMetaData, RouteNormalized } from './route.js'
+import type { DeepReadonly } from 'vitarx'
+import { type NavState } from '../common/constant.js'
+import type { RouteIndex, RouteIndexMap, RouteMetaData, RoutePath, RouteRecord } from './route.js'
 
 /**
- * hash字符串类型
- *
- * 以#开头的字符串或空字符串
+ * URL 路径参数
  */
-export type HashStr = `#${string}` | ''
-
+export type URLParams = Record<string, string>
 /**
- * 路由模式
- *
- * - hash: 使用URL hash实现路由
- * - path: 使用HTML5 History API实现路由
- * - memory: 使用内存实现路由
+ * URL 查询参数
  */
-export type HistoryMode = 'hash' | 'path' | 'memory'
+export type URLQuery = Record<string, string>
 
 /**
- * 路由组件
- *
- * 可以是普通组件或懒加载组件
+ * URL hash
  */
-export type RouteComponent = Component
+export type URLHash = `#${string}`
 
 /**
- * 命名的路由视图小部件
+ * URL 路径生成模式
  *
- * 用于多视图布局
+ * - hash: 使用hash模式生成fullPath，支持无服务端重定向刷新页面。
+ * - path: 使用常规path模式生成fullPath，需搭配服务端重定向使用。
  */
-export type NamedRouteComponent<K extends string = string> = Record<K, RouteComponent>
+export type URLMode = 'hash' | 'path'
 
 /**
- * 允许的路由小部件联合类型
- *
- * 可以是单个视图组件或命名视图组件的记录
- */
-export type AllowedRouteComponent = RouteComponent | NamedRouteComponent
-
-/**
- * 路由匹配的详情数据
- *
- * 所有和url相关的数据都已`decodeURIComponent`解码
+ * 路由位置的详情数据
  */
 export interface RouteLocation {
   /**
-   * 路由索引，调用`push`|`replace`时传入的index
+   * 完整的href
    */
-  index: RouteIndex
-  /**
-   * 完整的path，包含了query和hash
-   */
-  fullPath: string
-  /**
-   * `index`所带的后缀
-   *
-   * 如果没有后缀则为空字符串
-   */
-  suffix: '' | `.${string}`
+  href: string
   /**
    * 路由路径
    *
-   * 如果匹配到路由则为路由的`path`属性
+   * 可用于导航的路由path
    */
-  path: `/${string}`
+  path: RoutePath
   /**
    * URL hash
    */
-  hash: HashStr
+  hash: URLHash | ''
   /**
    * 路由参数
+   *
+   * 具有响应性，可持续监听
    */
-  params: Record<string, any>
+  params: URLParams
   /**
    * URL 查询参数
+   *
+   * 具有响应性，可持续监听
    */
-  query: Record<string, string>
+  query: URLQuery
   /**
    * 路由元数据
    */
@@ -86,19 +63,62 @@ export interface RouteLocation {
    *
    * 从根路由开始，到当前路由结束
    */
-  matched: RouteNormalized[]
+  matched: RouteRecord[]
   /**
-   * 标识
-   *
-   * @internal
+   * 如果在守卫过程中被重定向，则为最初需要导航的路由位置
    */
-  readonly __is_route_location: true
+  redirectFrom?: RouteLocationRaw
 }
 
 /**
- * 只读路由位置对象
+ * 路由位置原始对象 - 只读
  */
-export type ReadonlyRouteLocation = DeepReadonly<RouteLocation>
+export type RouteLocationRaw = DeepReadonly<RouteLocation>
+
+/**
+ * 路由索引类型
+ */
+interface BaseNavigateOptions<T extends RouteIndex> {
+  /**
+   * 路由索引，/开头为路径，否则为名称
+   */
+  to: T
+  /**
+   * URL hash
+   */
+  hash?: URLHash | ''
+  /**
+   * URL 查询参数
+   */
+  query?: URLQuery
+  /**
+   * 路由参数
+   */
+  params?: URLParams
+}
+
+/**
+ * 路由目标
+ *
+ * 用于描述导航的目标位置
+ */
+export interface NavigateTarget<T extends RouteIndex = RouteIndex> extends NavigateOptions<T> {
+  /**
+   * 是否替换当前路由
+   *
+   * @default false
+   */
+  replace?: boolean
+}
+
+/**
+ * 导航配置
+ */
+export type NavigateOptions<T extends RouteIndex = RouteIndex> = keyof RouteIndexMap extends never
+  ? BaseNavigateOptions<T>
+  : T extends keyof RouteIndexMap
+    ? Omit<BaseNavigateOptions<T>, keyof RouteIndexMap[T]> & RouteIndexMap[T]
+    : BaseNavigateOptions<T>
 
 /**
  * 导航结果
@@ -109,108 +129,27 @@ export interface NavigateResult {
   /**
    * 导航状态
    */
-  status: NavigateStatus
+  state: NavState
   /**
    * 状态描述
    */
   message: string
   /**
    * 最终的导航数据
+   *
+   * 如果导航匹配成功则存在，否则为null
    */
-  to: ReadonlyRouteLocation
+  to: RouteLocationRaw | null
   /**
    * 导航完成前的路由数据
    */
-  from: ReadonlyRouteLocation
+  from: RouteLocationRaw
   /**
-   * 如果在守卫过程中被重定向，则为最初的路由目标
+   * 如果在守卫过程中被重定向，则为最初需要导航的路由目标
    */
-  redirectFrom: NavigateTarget | undefined
+  redirectFrom?: RouteLocationRaw
   /**
    * 捕获到的异常
    */
   error?: unknown
 }
-
-/**
- * 路由索引映射
- *
- * 可以通过扩展此接口实现类型化路由，
- * router.push/replace 等方法会根据此接口进行类型推断参数类型。
- *
- * @example
- * ```ts
- * declare module 'vitarx-router' {
- *   interface RouteIndexMap {
- *      user: {
- *       params: { id: string }
- *     }
- *   }
- * }
- * export {}
- * ```
- */
-export interface RouteIndexMap {}
-
-type PathExpandExt<T> = T extends `/${string}` ? `${T}.${string}` : T
-
-/**
- * 路由索引
- *
- * 可以是路径或路由命名
- */
-export type RouteIndex = keyof RouteIndexMap extends never
-  ? string
-  : keyof RouteIndexMap | PathExpandExt<keyof RouteIndexMap>
-
-/**
- * 路由索引类型
- */
-interface BaseNavigateOptions<T extends RouteIndex> {
-  /**
-   * 路由索引，/开头为路径，否则为名称
-   */
-  index: T
-  /**
-   * URL hash
-   */
-  hash?: HashStr
-  /**
-   * URL 查询参数
-   */
-  query?: Record<string, string>
-  /**
-   * 路由参数
-   */
-  params?: Record<string, string | number>
-}
-
-/**
- * 路由目标
- *
- * 用于描述导航的目标位置
- */
-export interface NavigateTarget<T extends RouteIndex = RouteIndex> extends NavigateConfig<T> {
-  /**
-   * 是否替换当前路由
-   *
-   * @default false
-   */
-  replace?: boolean
-  /**
-   * @internal
-   *
-   * 强制导航，跳过重复检查
-   * 主要用于热更新场景
-   */
-  force?: boolean
-}
-
-/**
- * 导航配置
- */
-export type NavigateConfig<T extends RouteIndex = RouteIndex> = keyof RouteIndexMap extends never
-  ? BaseNavigateOptions<T>
-  : T extends keyof RouteIndexMap
-    ? Omit<BaseNavigateOptions<T>, keyof RouteIndexMap[T]> & RouteIndexMap[T]
-    : BaseNavigateOptions<T>

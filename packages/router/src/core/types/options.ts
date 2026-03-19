@@ -1,8 +1,8 @@
 import type { MakeRequired } from 'vitarx'
-import type { AfterEnterCallback, BeforeEnterCallback } from './hooks.js'
-import type { HistoryMode, RouteComponent } from './navigation.js'
-import type { Route } from './route.js'
-import type { _ScrollBehavior, ScrollBehaviorHandler } from './scroll.js'
+import type { RouteManager } from '../router/manager.js'
+import type { AfterCallback, NavErrorListener, NavigationGuard, NotFoundHandler } from './hooks.js'
+import type { InjectPropsHandler, Route, RouteViewComponent } from './route.js'
+import type { BeforeScrollCallback } from './scroll.js'
 
 /**
  * 定义路由器配置选项接口
@@ -11,7 +11,7 @@ import type { _ScrollBehavior, ScrollBehaviorHandler } from './scroll.js'
  *
  * @template T - 历史模式类型，支持：'hash' | 'path' | 'memory'
  */
-export interface RouterOptions<T extends HistoryMode = HistoryMode> {
+export interface RouterOptions {
   /**
    * 指定路由的基础路径
    *
@@ -20,23 +20,12 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
   base?: `/${string}`
 
   /**
-   * 指定路由的历史模式，可以是  'path' | 'hash' | 'memory'
-   *
-   * @default 'hash'
+   * 路径模式
    */
-  mode?: T
+  mode?: 'hash' | 'path'
 
   /**
-   * 是否启用严格模式
-   *
-   * 在严格模式下，会区分大小写
-   *
-   * @default false
-   */
-  strict?: boolean
-
-  /**
-   * 定义路由规则的数组
+   * 定义路由规则的数组或路由注册表
    *
    * 每个路由规则描述了路径和对应的组件或其他信息
    *
@@ -49,84 +38,74 @@ export interface RouterOptions<T extends HistoryMode = HistoryMode> {
    * ]
    * ```
    */
-  routes: Route[]
+  routes: Route[] | RouteManager
 
   /**
-   * 指定路由的后缀
+   * 强制使用指定的后缀
    *
-   * 可选值：
-   * - '*'：表示匹配任何后缀
-   * - 字符串：表示匹配指定后缀
-   * - 字符串数组：表示匹配多个后缀
-   * - false：表示完全匹配路径路由path
-   *
-   * @default '*'
+   * 如需使url地址看起来更符合静态站点特征，可以指定一个默认的后缀，例如'.html'。
    */
-  suffix?: '*' | string | string[] | false
+  suffix?: `.${string}`
 
   /**
-   * 默认的后缀
+   * 全局启用 props 注入功能
    *
-   * 如需使url地址看起来更符合静态网站特征，可以指定一个默认的后缀，例如'.html'。
-   *
-   * @default ''
+   * @default false
    */
-  defaultSuffix?: string
-
-  /**
-   * 动态路由匹配模式
-   *
-   * 允许用户定义复杂的路径匹配规则
-   *
-   * @default `/[^/]+/`
-   */
-  pattern?: RegExp
+  props?: boolean | InjectPropsHandler
 
   /**
    * 切换页面时的滚动行为
    *
    * 可以是一个函数或行为标识符，决定了当路由变化时如何滚动页面
-   *
-   * @default 'auto'
    */
-  scrollBehavior?: _ScrollBehavior | ScrollBehaviorHandler
-
-  /**
-   * 锚点跳转时的滚动行为
-   *
-   * 仅支持 'auto' | 'smooth' | 'instant'
-   *
-   * @default 'auto'
-   */
-  anchorsScrollBehavior?: _ScrollBehavior
+  scrollBehavior?: BeforeScrollCallback
 
   /**
    * 在每个路由进入之前调用的钩子函数
    * 允许用户在路由激活之前执行逻辑检查或重定向
    */
-  beforeEach?: BeforeEnterCallback
+  beforeEach?: NavigationGuard | NavigationGuard[]
 
   /**
    * 在每个路由进入之后调用的钩子函数
    * 允许用户在路由激活之后执行逻辑，例如页面初始化
    */
-  afterEach?: AfterEnterCallback
+  afterEach?: AfterCallback | AfterCallback[]
 
   /**
-   * 未匹配到路由时要渲染的组件（仅在根`RouterView`渲染）
+   * 未匹配到路由时要渲染的组件
    *
-   * 如果你需要在未匹配到路由时重定向到指定的页面，你不应该使用`missing`选项，
-   * 而是应该在路由`beforeEach`钩子中判断`to.matched.length === 0`时返回重定向目标。
+   * 如果你需要在未匹配到路由时重定向到指定的页面，则不应该使用`missing`选项，
+   * 而是应该使用 `onNotFound` 钩子指定重定向目标。
    *
-   * > 注意：如果你设置了`missing`选项，新路由没有匹配时也会更新`URL`地址，然后渲染`missing`组件。
+   * > 注意：如果你设置了`missing`选项，`path` 导航不匹配时也会更新`URL`地址，然后渲染`missing`组件。
    */
-  missing?: RouteComponent
+  missing?: RouteViewComponent
+
+  /**
+   * 路由未匹配钩子
+   *
+   * 触发时机: 路由匹配失败 (404) 时。
+   * 用途: 可用于统一跳转 404 页面或记录错误日志。
+   *
+   * @param this - 路由器实例
+   * @param target - 用户的原始导航意图
+   * @returns {NavigateTarget | void} 返回新目标表示重定向，无返回值则抛出错误
+   */
+  onNotFound?: NotFoundHandler
+
+  /**
+   * 路由错误处理钩子
+   *
+   * @param error - 错误对象
+   * @param to - 目标路由对象
+   * @param from - 源路由对象
+   */
+  onError?: NavErrorListener
 }
 
-/**
- * 已解析的路由配置
- */
-export type ResolvedRouterOptions = MakeRequired<
-  RouterOptions,
-  Exclude<keyof RouterOptions, 'beforeEach' | 'afterEach' | 'missing'>
+export type ResolvedRouterConfig = MakeRequired<
+  Omit<RouterOptions, 'routes' | 'beforeEach' | 'afterEach'>,
+  'mode' | 'base'
 >
