@@ -174,7 +174,7 @@ export function useRoute(): RouteLocationRaw {
  * @param status - 要检查的状态
  * @returns {boolean} - 如果导航结果包含指定状态则返回true，否则返回false
  */
-export function hasNavStatus(result: NavigateResult, status: NavState): boolean {
+export function hasNavState(result: NavigateResult, status: NavState): boolean {
   // 导航状态检查函数，接收导航结果和状态作为参数
   return (result.state & status) === result.state
 }

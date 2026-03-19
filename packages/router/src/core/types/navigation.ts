@@ -78,7 +78,7 @@ export type RouteLocationRaw = DeepReadonly<RouteLocation>
 /**
  * 路由索引类型
  */
-interface BaseNavigateOptions<T extends RouteIndex> {
+interface BaseNavOptions<T extends RouteIndex> {
   /**
    * 路由索引，/开头为路径，否则为名称
    */
@@ -102,7 +102,7 @@ interface BaseNavigateOptions<T extends RouteIndex> {
  *
  * 用于描述导航的目标位置
  */
-export interface NavigateTarget<T extends RouteIndex = RouteIndex> extends NavigateOptions<T> {
+export interface NavTarget<T extends RouteIndex = RouteIndex> extends TypedNavOptions<T> {
   /**
    * 是否替换当前路由
    *
@@ -114,11 +114,11 @@ export interface NavigateTarget<T extends RouteIndex = RouteIndex> extends Navig
 /**
  * 导航配置
  */
-export type NavigateOptions<T extends RouteIndex = RouteIndex> = keyof RouteIndexMap extends never
-  ? BaseNavigateOptions<T>
+export type TypedNavOptions<T extends RouteIndex = RouteIndex> = keyof RouteIndexMap extends never
+  ? BaseNavOptions<T>
   : T extends keyof RouteIndexMap
-    ? Omit<BaseNavigateOptions<T>, keyof RouteIndexMap[T]> & RouteIndexMap[T]
-    : BaseNavigateOptions<T>
+    ? Omit<BaseNavOptions<T>, keyof RouteIndexMap[T]> & RouteIndexMap[T]
+    : BaseNavOptions<T>
 
 /**
  * 导航结果

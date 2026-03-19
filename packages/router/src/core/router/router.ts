@@ -27,10 +27,9 @@ import {
 } from '../common/utils.js'
 import type {
   AfterCallback,
-  NavigateOptions,
   NavigateResult,
-  NavigateTarget,
   NavigationGuard,
+  NavTarget,
   ResolvedRouterConfig,
   Route,
   RouteIndex,
@@ -44,6 +43,7 @@ import type {
   RouteViewComponent,
   ScrollPosition,
   ScrollTarget,
+  TypedNavOptions,
   URLHash,
   URLParams,
   URLQuery
@@ -62,12 +62,16 @@ export abstract class Router {
   private _taskCounter = 0
   // 等待滚动目标
   private _pendingScrollTarget: ScrollTarget | null = null
+  // 存储就绪状态的 Promise
+  private readonly _readyPromise: Promise<NavigateResult>
+  //  resolve 函数引用
+  private _resolveReadyPromise!: (value: NavigateResult) => void
+  // reject 函数引用
+  private _rejectReadyPromise!: (reason: NavigateResult) => void
   // 当前路由位置 - 仅内部使用
   private readonly _routeLocation: ShallowReactive<RouteLocation>
   /**
-   * 路由位置
-   *
-   * @readonly
+   * 路由位置 - 只读
    */
   public readonly currentRoute: RouteLocationRaw
   /**
@@ -113,10 +117,26 @@ export abstract class Router {
       meta: markRaw({})
     })
     this.currentRoute = readonly(this._routeLocation)
+    this._readyPromise = new Promise<NavigateResult>((resolve, reject) => {
+      this._resolveReadyPromise = resolve
+      this._rejectReadyPromise = reject
+    })
   }
-  public isReady(): Promise<void> {
-    // TODO  待实现isReady逻辑
-    throw new Error('Not implemented')
+
+  /**
+   * 判断路由器是否已准备就绪
+   *
+   * 返回一个 Promise，它会在路由器完成初始导航之后被解析，
+   * 如果初始导航已经发生，则该 Promise 会被立刻解析。
+   *
+   * @returns {Promise<NavigateResult>} - 导航结果
+   */
+  public isReady(): Promise<NavigateResult> {
+    // 如果没有初始化直接 reject
+    if (this._currentTaskId === null) {
+      return Promise.reject(new Error('Router is not initialized.'))
+    }
+    return this._readyPromise
   }
   /**
    * 安装路由器
@@ -200,27 +220,37 @@ export abstract class Router {
   /**
    * 替换当前页面
    *
-   * @param {NavigateOptions} options - 导航选项
+   * @param {TypedNavOptions} options - 导航选项
    * @param [options.params] - 路由参数对象
    * @param [options.query] - 查询参数对象
    * @param [options.hash] - 哈希值，如：`#hash`
    * @return {Promise<NavigateResult>} - 导航结果
    */
-  public replace<T extends RouteIndex>(options: NavigateOptions<T>): Promise<NavigateResult> {
-    return this.navigate({ ...options, replace: true })
+  public replace<T extends RouteIndex>(options: TypedNavOptions<T>): Promise<NavigateResult> {
+    const target = { ...options, replace: true }
+    // 如果是首次导航，走特殊处理通道
+    if (this._currentTaskId === null) {
+      return this.initialNavigation(target)
+    }
+    return this.navigate(target)
   }
   /**
    * 跳转到新的页面
    *
-   * @param {NavigateOptions} options - 导航选项
+   * @param {TypedNavOptions} options - 导航选项
    * @param options.index - 路由索引
    * @param [options.params] - 路由参数对象
    * @param [options.query] - 查询参数对象
    * @param [options.hash] - 哈希值，如：`#hash`
    * @return {Promise<NavigateResult>} - 导航结果
    */
-  public push<T extends RouteIndex>(options: NavigateOptions<T>): Promise<NavigateResult> {
-    return this.navigate({ ...options, replace: false })
+  public push<T extends RouteIndex>(options: TypedNavOptions<T>): Promise<NavigateResult> {
+    const target = { ...options, replace: false }
+    // 如果是首次导航，走特殊处理通道
+    if (this._currentTaskId === null) {
+      return this.initialNavigation(target)
+    }
+    return this.navigate(target)
   }
   /**
    * 添加路由
@@ -252,12 +282,15 @@ export abstract class Router {
     return !!this.manager.find(index)
   }
   /**
-   * 等待路由要渲染的组件被解析并渲染完成
+   * 等待要渲染的异步组件被解析完成
+   *
+   * 此方法仅保证当前路由匹配的组件被加载完成，不保证其百分百渲染完成，
+   * 可以额外 `await nextTick()` 来确保组件百分百渲染完成。
    *
    * @param route - 可选的路由位置参数，如果未提供则使用当前路由位置
    * @returns Promise<void> - 无返回值的Promise
    */
-  public async loadRouteLocation(route?: RouteLocationRaw): Promise<void> {
+  public async resolveComponents(route?: RouteLocationRaw): Promise<void> {
     // 创建一个空数组来存储加载任务
     const loadTask: Promise<Component>[] = []
     // 获取路由匹配项，如果传入route则使用其matched属性，否则使用当前路由的matched属性
@@ -280,7 +313,6 @@ export abstract class Router {
     }
     return void 0
   }
-
   /**
    * 添加历史记录
    *
@@ -308,13 +340,13 @@ export abstract class Router {
   protected hashUpdate?(route: RouteLocationRaw): void
   /**
    * 导航到指定位置
-   * @param target - 导航目标对象
+   * @param target - 导航目标对象 | 路由位置对象
    * @param fromRoute - 来源路由对象
    * @param redirectFrom - 重定向来源对象
    * @returns - 返回导航结果
    */
   protected async navigate(
-    target: NavigateTarget,
+    target: NavTarget,
     fromRoute?: RouteLocationRaw,
     redirectFrom?: RouteLocationRaw
   ): Promise<NavigateResult> {
@@ -322,7 +354,7 @@ export abstract class Router {
     const taskId = ++this._taskCounter
     this._currentTaskId = taskId
     // 1. 解析目标路由
-    const resolvedRoute = this.createRouteLocation(target, redirectFrom)
+    const resolvedRoute = this.matchRoute(target, redirectFrom)
     // 2. 确保 from 对象存在
     const from = fromRoute ?? cloneRouteLocation(this._routeLocation)
     // 3. 构建 NavigationResult 基础对象
@@ -338,7 +370,7 @@ export abstract class Router {
     // ----------------------------------------------------------------
     if (!resolvedRoute) {
       // 触发全局 onNotFound 钩子
-      const notFoundResult = await this.runNotFoundHook(target)
+      const notFoundResult = await this.runNotFoundHook(target as NavTarget)
 
       //  并发竞争检查
       if (this._currentTaskId !== taskId) {
@@ -351,7 +383,7 @@ export abstract class Router {
       if (notFoundResult) {
         return this.navigate(notFoundResult, from)
       }
-      result.message = `No match found for target: ${JSON.stringify(target.to)}`
+      result.message = `No match found for target: ${JSON.stringify((target as NavTarget).to)}`
       // 如果钩子未处理，标记为失败
       result.state = NavState.notfound
       return result
@@ -436,6 +468,50 @@ export abstract class Router {
     return Promise.resolve(result)
   }
   /**
+   * 处理首次导航
+   * 它会拦截 navigate 的结果，仅在首次调用时生效，用于控制 isReady 状态
+   *
+   * @param target - 导航目标
+   * @returns 返回标准的导航结果 Promise
+   */
+  private async initialNavigation(target: NavTarget): Promise<NavigateResult> {
+    // 双重检查：如果已经初始化过，直接执行普通导航，不再处理 isReady 逻辑
+    // 注意：这里利用 _currentTaskId 作为初始化标志位是非常合适的
+    if (this._currentTaskId !== null) {
+      return this.navigate(target)
+    }
+
+    try {
+      // 1. 执行底层导航
+      const result = await this.navigate(target)
+
+      // 2. 只有导航真正成功，才去加载组件并 resolve isReady
+      if (result.state === NavState.success) {
+        try {
+          await this.resolveComponents(result.to!)
+          this._resolveReadyPromise(result)
+        } catch (error) {
+          // 组件加载失败，转为异常状态
+          result.state = NavState.exception
+          result.error = error
+          result.message = 'Initial navigation failed: async component load error'
+          this._rejectReadyPromise(result)
+          // 注意：这里需要将成功的结果转为 reject 抛出，告知调用者实际上失败了
+          return Promise.reject(result)
+        }
+      } else {
+        // 3. 如果首次导航结果是 aborted/duplicated/notfound，视为初始化失败
+        this._rejectReadyPromise(result)
+      }
+      return result
+    } catch (error) {
+      // 4. 如果 navigate 本身抛出异常
+      this._rejectReadyPromise(error as NavigateResult)
+      // 继续向上抛出，让调用者能捕获到
+      return Promise.reject(error)
+    }
+  }
+  /**
    * 完成导航过程
    * 更新路由状态并触发相关的生命周期钩子
    *
@@ -488,7 +564,7 @@ export abstract class Router {
     }
     this._pendingScrollTarget = target
     // 等待路由组件解析完成后滚动
-    this.loadRouteLocation().then(async () => {
+    this.resolveComponents().then(async () => {
       await nextTick()
       // 确保滚动目标未改变
       if (this._pendingScrollTarget === target) {
@@ -504,7 +580,7 @@ export abstract class Router {
    * @param target - 导航目标对象
    * @returns - 返回处理结果
    */
-  private async runNotFoundHook(target: NavigateTarget): Promise<NavigateTarget | void> {
+  private async runNotFoundHook(target: NavTarget): Promise<NavTarget | void> {
     if (isFunction(this.config.onNotFound)) {
       const res = await this.config.onNotFound.call(this, target)
       if (isNavigateTarget(res)) return res
@@ -538,7 +614,7 @@ export abstract class Router {
   private async runBeforeGuards(
     to: RouteLocationRaw,
     from: RouteLocationRaw
-  ): Promise<boolean | NavigateTarget | void> {
+  ): Promise<boolean | NavTarget | void> {
     // 执行全局前置守卫
     if (this._beforeGuards) {
       for (const guard of this._beforeGuards) {
@@ -565,15 +641,13 @@ export abstract class Router {
     return true
   }
   /**
-   * 创建路由位置对象
+   * 匹配路由
+   *
    * @param target 导航目标对象，包含目标路径、参数、查询和哈希信息
-   * @param redirectFrom - 重定向来源对象
-   * @returns {RouteLocation | null} 返回创建的路由位置对象，如果无法匹配则返回null
+   * @param [redirectFrom] - 重定向来源对象
+   * @returns {RouteLocation | null} 返回路由位置对象，如果无法匹配则返回null
    */
-  private createRouteLocation(
-    target: NavigateTarget,
-    redirectFrom?: RouteLocationRaw
-  ): RouteLocationRaw | null {
+  public matchRoute(target: NavTarget, redirectFrom?: RouteLocationRaw): RouteLocationRaw | null {
     let matchTarget = target.to
     const isPath = isPathIndex(matchTarget)
     // 如果配置了后缀且目标是路径，则去除后缀

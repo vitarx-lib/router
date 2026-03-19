@@ -2,7 +2,7 @@ import { deepClone, isString, logger } from 'vitarx'
 import { normalizePath, parseQuery } from '../common/shared.js'
 import { parseHashContent } from '../common/utils.js'
 import type {
-  NavigateTarget,
+  NavTarget,
   RouteLocationRaw,
   RoutePath,
   RouterOptions,
@@ -103,9 +103,9 @@ export class WebRouter extends Router {
   /**
    * 将当前 URL 转换为 NavigateTarget 对象
    *
-   * @returns {NavigateTarget} - 包含 to、hash 和 query 的对象
+   * @returns {NavTarget} - 包含 to、hash 和 query 的对象
    */
-  private urlToNavigateTarget(): NavigateTarget {
+  private urlToNavigateTarget(): NavTarget {
     const location = window.location
     const base = this.config.base
     const mode = this.config.mode
@@ -150,7 +150,7 @@ export class WebRouter extends Router {
    * 处理浏览器历史记录的返回/前进事件
    */
   private onPopState = (event: PopStateEvent): void => {
-    let newTarget: NavigateTarget
+    let newTarget: NavTarget
     if (event.state?.path) {
       newTarget = {
         to: event.state.path,

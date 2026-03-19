@@ -1,5 +1,5 @@
 import type { Router } from '../router/router.js'
-import type { NavigateTarget, RouteLocationRaw } from './navigation.js'
+import type { NavTarget, RouteLocationRaw } from './navigation.js'
 import type { RouteIndex } from './route.js'
 
 /**
@@ -12,10 +12,10 @@ import type { RouteIndex } from './route.js'
  */
 export type GuardResult =
   | boolean
-  | NavigateTarget
+  | NavTarget
   | RouteIndex
   | void
-  | Promise<boolean | NavigateTarget | RouteIndex | void>
+  | Promise<boolean | NavTarget | RouteIndex | void>
 
 /**
  * 前置守卫钩子
@@ -53,12 +53,12 @@ export type AfterCallback = (this: Router, to: RouteLocationRaw, from: RouteLoca
  *
  * @param this - 路由器实例
  * @param target - 用户的原始导航意图
- * @returns {NavigateTarget | RouteIndex | void} 返回新目标表示重定向，无返回值则抛出错误
+ * @returns {NavTarget | RouteIndex | void} 返回新目标表示重定向，无返回值则抛出错误
  */
 export type NotFoundHandler = (
   this: Router,
-  target: NavigateTarget
-) => NavigateTarget | void | Promise<NavigateTarget | void>
+  target: NavTarget
+) => NavTarget | void | Promise<NavTarget | void>
 
 /**
  * 路由错误处理钩子

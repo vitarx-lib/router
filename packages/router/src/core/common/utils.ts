@@ -1,16 +1,8 @@
-import {
-  deepClone,
-  isBool,
-  isComponent,
-  isDeepEqual,
-  isFunction,
-  isPlainObject,
-  isString
-} from 'vitarx'
+import { isBool, isComponent, isDeepEqual, isFunction, isPlainObject, isString } from 'vitarx'
 import { RouteManager } from '../router/manager.js'
 import type {
   GuardResult,
-  NavigateTarget,
+  NavTarget,
   RouteIndex,
   RouteLocationRaw,
   RoutePath,
@@ -22,23 +14,12 @@ import type {
 import { normalizePath, parseQuery } from './shared.js'
 
 /**
- * 克隆路由位置对象
- *
- * @param {RouteLocation} route
- * @return {RouteLocation} - 克隆过后的对象
- */
-export function cloneRouteLocation(route: RouteLocationRaw): RouteLocationRaw {
-  const { matched, ...other } = route
-  return Object.assign(deepClone(other), { matched: Array.from(matched) }) as RouteLocationRaw
-}
-
-/**
  * 检查给定的值是否是一个导航目标对象
  *
  * @param val 要检查的未知类型值
  * @returns {boolean} 如果值是一个导航目标对象则返回true，否则返回false
  */
-export function isNavigateTarget(val: unknown): val is NavigateTarget {
+export function isNavigateTarget(val: unknown): val is NavTarget {
   // 首先检查值是否是一个普通对象
   // 然后检查该对象是否包含'to'属性
   return isPlainObject(val) && 'to' in val
@@ -218,7 +199,7 @@ export function parseHashContent(hashContent: string): {
  * 处理守卫函数的执行结果
  * @private
  */
-export function processGuardResult(res: GuardResult): boolean | NavigateTarget | void {
+export function processGuardResult(res: GuardResult): boolean | NavTarget | void {
   if (res === false) return false
   if ((res && isString(res)) || typeof res === 'symbol') {
     return { to: res }
