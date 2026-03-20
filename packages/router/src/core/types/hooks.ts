@@ -55,10 +55,7 @@ export type AfterCallback = (this: Router, to: RouteLocation, from: RouteLocatio
  * @param target - 用户的原始导航意图
  * @returns {NavTarget | RouteIndex | void} 返回新目标表示重定向，无返回值则抛出错误
  */
-export type NotFoundHandler = (
-  this: Router,
-  target: NavTarget
-) => NavTarget | void | Promise<NavTarget | void>
+export type NotFoundHandler = (this: Router, target: NavTarget) => NavTarget | RouteIndex | void
 
 /**
  * 路由错误处理钩子
@@ -74,3 +71,23 @@ export type NavErrorListener = (
   to: RouteLocation,
   from: RouteLocation
 ) => void
+
+/**
+ * 路由离开守卫钩子
+ *
+ * @param to - 目标路由对象
+ * @param from - 来源路由对象
+ * @returns {false | void | Promise<false | void>} 返回 false 阻止导航，返回 Promise 则异步处理
+ */
+export type RouteLeaveGuard = (
+  to: RouteLocation,
+  from: RouteLocation
+) => false | void | Promise<false | void>
+
+/**
+ * 路由更新前回调
+ *
+ * @param to - 目标路由对象
+ * @param from - 来源路由对象
+ */
+export type RouteUpdateCallback = (to: RouteLocation, from: RouteLocation) => void

@@ -1,7 +1,7 @@
 import type { Component } from 'vitarx'
 import { type AfterCallback, type NavigationGuard } from '../index.js'
 import { Router } from '../router/index.js'
-import type { NavTarget, RouteLocation, RouteLocationRaw } from './navigation.js'
+import type { NavTarget, RouteLocation } from './navigation.js'
 
 /**
  * 注入参数处理函数
@@ -20,13 +20,12 @@ export type InjectProps = boolean | Record<string, any> | InjectPropsHandler
  */
 export type NamedInjectProps = Record<string, InjectProps>
 /**
- * 重定向结果
- */
-export type RedirectResult = NavTarget | string | undefined
-/**
  * 重定向处理器
  */
-export type RedirectHandler = (this: Router, to: RouteLocationRaw) => RedirectResult
+export type RedirectHandler = (
+  this: Router,
+  to: RouteLocation
+) => NavTarget | string | symbol | void
 
 /**
  * 解析后的动态路由参数匹配模式
@@ -119,7 +118,7 @@ export interface Route {
   /**
    * 路由重定向的目标地址或处理函数
    */
-  redirect?: NavTarget | RedirectHandler | string
+  redirect?: NavTarget | string | symbol | RedirectHandler
   /**
    * 子路由配置，用于嵌套路由
    */

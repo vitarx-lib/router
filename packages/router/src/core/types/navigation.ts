@@ -1,5 +1,6 @@
 import type { DeepReadonly } from 'vitarx'
 import { type NavState } from '../common/constant.js'
+import type { RouteLeaveGuard, RouteUpdateCallback } from './hooks.js'
 import type { RouteIndex, RouteIndexMap, RouteMetaData, RoutePath, RouteRecord } from './route.js'
 
 /**
@@ -68,6 +69,18 @@ export interface RouteLocationRaw {
    * 如果在守卫过程中被重定向，则为最初需要导航的路由位置
    */
   redirectFrom?: RouteLocation
+  /**
+   * 路由组件实例化后注册的守卫钩子
+   *
+   * @internal
+   */
+  leaveGuards?: Set<RouteLeaveGuard>
+  /**
+   * 路由组件实例化后注册的更新守卫钩子
+   *
+   * @internal
+   */
+  beforeUpdateHooks?: Set<RouteUpdateCallback>
 }
 
 /**
@@ -148,8 +161,4 @@ export interface NavigateResult {
    * 如果在守卫过程中被重定向，则为最初需要导航的路由目标
    */
   redirectFrom?: RouteLocation
-  /**
-   * 捕获到的异常
-   */
-  error?: unknown
 }

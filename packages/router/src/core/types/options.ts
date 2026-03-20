@@ -72,17 +72,6 @@ export interface RouterOptions {
    * 允许用户在路由激活之后执行逻辑，例如页面初始化
    */
   afterEach?: AfterCallback | AfterCallback[]
-
-  /**
-   * 未匹配到路由时要渲染的组件
-   *
-   * 如果你需要在未匹配到路由时重定向到指定的页面，则不应该使用`missing`选项，
-   * 而是应该使用 `onNotFound` 钩子指定重定向目标。
-   *
-   * > 注意：如果你设置了`missing`选项，`path` 导航不匹配时也会更新`URL`地址，然后渲染`missing`组件。
-   */
-  missing?: RouteViewComponent
-
   /**
    * 路由未匹配钩子
    *
@@ -93,7 +82,7 @@ export interface RouterOptions {
    * @param target - 用户的原始导航意图
    * @returns {NavTarget | void} 返回新目标表示重定向，无返回值则抛出错误
    */
-  onNotFound?: NotFoundHandler
+  onNotFound?: NotFoundHandler | NotFoundHandler[]
 
   /**
    * 路由错误处理钩子
@@ -102,10 +91,20 @@ export interface RouterOptions {
    * @param to - 目标路由对象
    * @param from - 源路由对象
    */
-  onError?: NavErrorListener
+  onError?: NavErrorListener | NavErrorListener[]
+
+  /**
+   * 未匹配到路由时要渲染的组件
+   *
+   * 如果你需要在未匹配到路由时重定向到指定的页面，则不应该使用`missing`选项，
+   * 而是应该使用 `onNotFound` 钩子指定重定向目标。
+   *
+   * > 注意：如果你设置了`missing`选项，`path` 导航不匹配时也会更新`URL`地址，然后渲染`missing`组件。
+   */
+  missing?: RouteViewComponent
 }
 
 export type ResolvedRouterConfig = MakeRequired<
-  Omit<RouterOptions, 'routes' | 'beforeEach' | 'afterEach'>,
+  Omit<RouterOptions, 'routes' | 'beforeEach' | 'afterEach' | 'onError' | 'onNotFound'>,
   'mode' | 'base'
 >
