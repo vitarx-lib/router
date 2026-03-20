@@ -284,13 +284,14 @@ export abstract class Router {
     return !!this.manager.find(index)
   }
   /**
-   * 等待要渲染的异步组件被解析完成
+   * 解析路由匹配到的所有异步组件
    *
-   * 此方法仅保证当前路由匹配的组件被加载完成，不保证其百分百渲染完成，
-   * 可以额外 `await nextTick()` 来确保组件百分百渲染完成。
+   * 此方法会确保所有匹配到的异步组件加载完成（无论成功或失败）。
+   * 采用 allSettled 策略：即使部分组件加载失败，也不会阻断路由导航。
+   * 组件加载的具体错误应由视图层捕获和处理。
    *
-   * @param route - 可选的路由位置参数，如果未提供则使用当前路由位置
-   * @returns Promise<void> - 无返回值的Promise
+   * @param route - 可选的路由位置，默认使用当前路由
+   * @returns {Promise<void>} 等待所有加载任务结束
    */
   public async resolveComponents(route?: RouteLocation): Promise<void> {
     // 创建一个空数组来存储加载任务
