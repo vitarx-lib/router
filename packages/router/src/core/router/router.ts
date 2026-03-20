@@ -169,6 +169,8 @@ export abstract class Router {
    */
   public destroy(): void {
     this.manager.clearRoutes()
+    this._beforeGuards = null
+    this._afterHooks = null
   }
   /**
    * 添加后置回调函数
