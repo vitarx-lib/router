@@ -4,7 +4,7 @@ import type {
   GuardResult,
   NavTarget,
   RouteIndex,
-  RouteLocationRaw,
+  RouteLocation,
   RoutePath,
   RouterOptions,
   URLHash,
@@ -130,7 +130,7 @@ export function checkRouterOptions(options: RouterOptions): void {
  * @param route1
  * @param route2
  */
-export function hasOnlyChangeHash(route1: RouteLocationRaw, route2: RouteLocationRaw) {
+export function hasOnlyChangeHash(route1: RouteLocation, route2: RouteLocation) {
   return (
     route1.hash !== route2.hash &&
     route1.path === route2.path &&

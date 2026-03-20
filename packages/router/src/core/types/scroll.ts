@@ -1,4 +1,4 @@
-import type { RouteLocationRaw } from './navigation.js'
+import type { RouteLocation } from './navigation.js'
 
 /**
  * 滚动行为
@@ -29,7 +29,7 @@ export interface ScrollPosition {
  * 如果返回 false 则禁用路由器内部的滚动处理程序。
  */
 export type BeforeScrollCallback = (
-  to: RouteLocationRaw,
-  from: RouteLocationRaw,
+  to: RouteLocation,
+  from: RouteLocation,
   savedPosition: ScrollPosition | null
 ) => ScrollTarget | false | void

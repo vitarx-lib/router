@@ -3,7 +3,7 @@ import { normalizePath, parseQuery } from '../common/shared.js'
 import { parseHashContent } from '../common/utils.js'
 import type {
   NavTarget,
-  RouteLocationRaw,
+  RouteLocation,
   RoutePath,
   RouterOptions,
   ScrollPosition,
@@ -40,7 +40,7 @@ export class WebRouter extends Router {
   /**
    * @inheritDoc
    */
-  protected override pushHistory(to: RouteLocationRaw): void {
+  protected override pushHistory(to: RouteLocation): void {
     this.saveCurrentScrollPosition()
     // 跳转到新路由
     this.history.pushState(this.createState(to), '', to.href)
@@ -48,7 +48,7 @@ export class WebRouter extends Router {
   /**
    * @inheritDoc
    */
-  protected override replaceHistory(to: RouteLocationRaw): ScrollPosition | void {
+  protected override replaceHistory(to: RouteLocation): ScrollPosition | void {
     const scrollPosition = this.history.state?.scrollPosition
     this.history.replaceState(this.createState(to), '', to.href)
     return scrollPosition
@@ -56,7 +56,7 @@ export class WebRouter extends Router {
   /**
    * @inheritDoc
    */
-  protected override hashUpdate(route: RouteLocationRaw): void {
+  protected override hashUpdate(route: RouteLocation): void {
     // 保存滚动位置
     this.saveCurrentScrollPosition()
     // 更新hash地址
@@ -199,7 +199,7 @@ export class WebRouter extends Router {
    * @param route - 路由
    * @private
    */
-  private createState(route: RouteLocationRaw): Omit<RouteLocationRaw, 'matched'> {
+  private createState(route: RouteLocation): Omit<RouteLocation, 'matched'> {
     const { matched, ...state } = route
     return deepClone(state)
   }

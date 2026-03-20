@@ -1,4 +1,4 @@
-import type { RouteLocationRaw } from '../types/index.js'
+import type { RouteLocation } from '../types/index.js'
 import { Router } from './router.js'
 
 /**
@@ -10,7 +10,7 @@ import { Router } from './router.js'
  */
 export class MemoryRouter extends Router {
   // 路由历史记录数组
-  protected _history: RouteLocationRaw[] = []
+  protected _history: RouteLocation[] = []
   // 标记是否有go方法触发的导航
   protected _pendingGo: number | null = null
 
@@ -49,14 +49,14 @@ export class MemoryRouter extends Router {
   /**
    * 添加历史记录
    */
-  protected override pushHistory(to: RouteLocationRaw): void {
+  protected override pushHistory(to: RouteLocation): void {
     this._updateHistory(to, false)
   }
 
   /**
    * 替换历史记录
    */
-  protected override replaceHistory(to: RouteLocationRaw): void {
+  protected override replaceHistory(to: RouteLocation): void {
     this._updateHistory(to, true)
   }
 
@@ -67,7 +67,7 @@ export class MemoryRouter extends Router {
    * @param {boolean} isReplace - 是否为替换操作
    * @private
    */
-  private _updateHistory(to: RouteLocationRaw, isReplace: boolean): void {
+  private _updateHistory(to: RouteLocation, isReplace: boolean): void {
     let newIndex: number
     if (this._pendingGo !== null) {
       newIndex = this._pendingGo

@@ -1,6 +1,6 @@
 import { inject, logger } from 'vitarx'
 import { __ROUTER_KEY__, type NavState } from '../common/constant.js'
-import type { NavigateResult, Route, RouteLocationRaw, RouterOptions } from '../types/index.js'
+import type { NavigateResult, Route, RouteLocation, RouterOptions } from '../types/index.js'
 import { RouteManager, type RouteManagerOptions } from './manager.js'
 import { MemoryRouter } from './memory.js'
 import type { Router } from './router.js'
@@ -159,10 +159,10 @@ export function useRouter<T extends Router>(allowEmpty: boolean = false): T | nu
  * }
  * ```
  *
- * @return {RouteLocationRaw} - 只读的`RouteLocation`对象
+ * @return {RouteLocation} - 只读的`RouteLocation`对象
  * @throws {Error} - 如果未获取到路由器实例，则会抛出异常
  */
-export function useRoute(): RouteLocationRaw {
+export function useRoute(): RouteLocation {
   return useRouter().currentRoute
 }
 

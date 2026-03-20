@@ -6,10 +6,10 @@ import type { NavTarget, RouteLocation, RouteLocationRaw } from './navigation.js
 /**
  * 注入参数处理函数
  *
- * @param {RouteLocationRaw} location 路由匹配的位置信息
+ * @param {RouteLocation} location 路由匹配的位置信息
  * @return {Record<string, any>} 注入的参数，必须是可JSON序列化的对象
  */
-export type InjectPropsHandler = (location: RouteLocationRaw) => Record<string, any>
+export type InjectPropsHandler = (location: RouteLocation) => Record<string, any>
 
 /**
  * 路由参数注入
@@ -26,7 +26,7 @@ export type RedirectResult = NavTarget | string | undefined
 /**
  * 重定向处理器
  */
-export type RedirectHandler = (this: Router, to: RouteLocation) => RedirectResult
+export type RedirectHandler = (this: Router, to: RouteLocationRaw) => RedirectResult
 
 /**
  * 解析后的动态路由参数匹配模式

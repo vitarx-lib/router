@@ -91,7 +91,7 @@ export interface RouterOptions {
    *
    * @param this - 路由器实例
    * @param target - 用户的原始导航意图
-   * @returns {NavigateTarget | void} 返回新目标表示重定向，无返回值则抛出错误
+   * @returns {NavTarget | void} 返回新目标表示重定向，无返回值则抛出错误
    */
   onNotFound?: NotFoundHandler
 

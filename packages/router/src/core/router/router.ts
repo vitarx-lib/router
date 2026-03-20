@@ -69,11 +69,11 @@ export abstract class Router {
   // reject 函数引用
   private _rejectReadyPromise!: (reason: NavigateResult) => void
   // 当前路由位置 - 仅内部使用
-  private readonly _routeLocation: ShallowReactive<RouteLocation>
+  private readonly _routeLocation: ShallowReactive<RouteLocationRaw>
   /**
    * 路由位置 - 只读
    */
-  public readonly currentRoute: RouteLocationRaw
+  public readonly currentRoute: RouteLocation
   /**
    * 路由器配置
    */
@@ -107,7 +107,7 @@ export abstract class Router {
     } else {
       this.manager = routes
     }
-    this._routeLocation = shallowReactive<RouteLocation>({
+    this._routeLocation = shallowReactive<RouteLocationRaw>({
       path: '' as RoutePath,
       hash: '',
       href: '' as RoutePath,
@@ -290,7 +290,7 @@ export abstract class Router {
    * @param route - 可选的路由位置参数，如果未提供则使用当前路由位置
    * @returns Promise<void> - 无返回值的Promise
    */
-  public async resolveComponents(route?: RouteLocationRaw): Promise<void> {
+  public async resolveComponents(route?: RouteLocation): Promise<void> {
     // 创建一个空数组来存储加载任务
     const loadTask: Promise<Component>[] = []
     // 获取路由匹配项，如果传入route则使用其matched属性，否则使用当前路由的matched属性
@@ -319,13 +319,13 @@ export abstract class Router {
    * @protected
    * @param to
    */
-  protected abstract pushHistory(to: RouteLocationRaw): ScrollPosition | void
+  protected abstract pushHistory(to: RouteLocation): ScrollPosition | void
   /**
    * 替换历史记录
    *
    * @param to
    */
-  protected abstract replaceHistory(to: RouteLocationRaw): ScrollPosition | void
+  protected abstract replaceHistory(to: RouteLocation): ScrollPosition | void
   /**
    * 滚动到指定位置
    *
@@ -337,7 +337,7 @@ export abstract class Router {
    *
    * @param route - 路由
    */
-  protected hashUpdate?(route: RouteLocationRaw): void
+  protected hashUpdate?(route: RouteLocation): void
   /**
    * 导航到指定位置
    * @param target - 导航目标对象 | 路由位置对象
@@ -347,8 +347,8 @@ export abstract class Router {
    */
   protected async navigate(
     target: NavTarget,
-    fromRoute?: RouteLocationRaw,
-    redirectFrom?: RouteLocationRaw
+    fromRoute?: RouteLocation,
+    redirectFrom?: RouteLocation
   ): Promise<NavigateResult> {
     // 0. 生成任务ID并开始导航
     const taskId = ++this._taskCounter
@@ -521,8 +521,8 @@ export abstract class Router {
    * @protected
    */
   private completeNavigation(
-    to: RouteLocationRaw,
-    from: RouteLocationRaw,
+    to: RouteLocation,
+    from: RouteLocation,
     savedPosition: ScrollPosition | null = null
   ): void {
     // 1. 确认导航：更新路由状态
@@ -539,8 +539,8 @@ export abstract class Router {
    * @param savedPosition - 保存的滚动位置
    */
   private runScrollBehavior(
-    to: RouteLocationRaw,
-    from: RouteLocationRaw,
+    to: RouteLocation,
+    from: RouteLocation,
     savedPosition: ScrollPosition | null
   ): void {
     // 如果在 SSR 环境下，或者没有配置 scrollTo 函数，则直接返回
@@ -591,7 +591,7 @@ export abstract class Router {
    * @param to - 目标路由
    * @param from - 来源路由
    */
-  private runAfterHooks(to: RouteLocationRaw, from: RouteLocationRaw): void {
+  private runAfterHooks(to: RouteLocation, from: RouteLocation): void {
     if (!this._afterHooks) return
     for (const hook of this._afterHooks) {
       if (!isFunction(hook)) continue
@@ -612,8 +612,8 @@ export abstract class Router {
    * 注意：守卫内的异常会直接向上抛出，由 navigate 方法捕获
    */
   private async runBeforeGuards(
-    to: RouteLocationRaw,
-    from: RouteLocationRaw
+    to: RouteLocation,
+    from: RouteLocation
   ): Promise<boolean | NavTarget | void> {
     // 执行全局前置守卫
     if (this._beforeGuards) {
@@ -645,9 +645,9 @@ export abstract class Router {
    *
    * @param target 导航目标对象，包含目标路径、参数、查询和哈希信息
    * @param [redirectFrom] - 重定向来源对象
-   * @returns {RouteLocation | null} 返回路由位置对象，如果无法匹配则返回null
+   * @returns {RouteLocationRaw | null} 返回路由位置对象，如果无法匹配则返回null
    */
-  public matchRoute(target: NavTarget, redirectFrom?: RouteLocationRaw): RouteLocationRaw | null {
+  public matchRoute(target: NavTarget, redirectFrom?: RouteLocation): RouteLocation | null {
     let matchTarget = target.to
     const isPath = isPathIndex(matchTarget)
     // 如果配置了后缀且目标是路径，则去除后缀
@@ -719,14 +719,14 @@ export abstract class Router {
    * @param path - 路径
    * @param query - 查询参数
    * @param hash - 哈希值
-   * @returns {RouteLocation} - 返回创建的路由位置对象
+   * @returns {RouteLocationRaw} - 返回创建的路由位置对象
    */
   private createMissingRoute(
     component: RouteViewComponent,
-    path: RouteLocation['path'],
-    query: RouteLocation['query'] = {},
-    hash: RouteLocation['hash'] = ''
-  ): RouteLocation {
+    path: RouteLocationRaw['path'],
+    query: RouteLocationRaw['query'] = {},
+    hash: RouteLocationRaw['hash'] = ''
+  ): RouteLocationRaw {
     return {
       href: this.buildUrl(path, query, hash),
       path,

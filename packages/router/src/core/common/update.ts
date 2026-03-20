@@ -47,7 +47,7 @@ function patchObject<T extends Record<string, any>>(target: T, source: Partial<T
  * @param location
  * @param newLocation
  */
-export function updateRouteLocation(location: RouteLocation, newLocation: RouteLocationRaw): void {
+export function updateRouteLocation(location: RouteLocationRaw, newLocation: RouteLocation): void {
   // 1. 更新基础属性
   location.path = newLocation.path
   location.href = newLocation.href

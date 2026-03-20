@@ -58,10 +58,10 @@ export function normalizePath(path: string, hashMode: boolean = false): `/${stri
 /**
  * 克隆路由位置对象
  *
- * @param {RouteLocationRaw} route - 要克隆的路由位置对象
- * @return {RouteLocation} - 克隆过后的对象
+ * @param {RouteLocation} route - 要克隆的路由位置对象
+ * @return {RouteLocationRaw} - 克隆过后的对象
  */
-export function cloneRouteLocation(route: RouteLocationRaw): RouteLocation {
+export function cloneRouteLocation(route: RouteLocation): RouteLocationRaw {
   const { matched, ...other } = route
-  return Object.assign(deepClone(other), { matched: Array.from(matched) }) as RouteLocation
+  return Object.assign(deepClone(other), { matched: Array.from(matched) }) as RouteLocationRaw
 }

@@ -1,5 +1,5 @@
 import type { Router } from '../router/router.js'
-import type { NavTarget, RouteLocationRaw } from './navigation.js'
+import type { NavTarget, RouteLocation } from './navigation.js'
 import type { RouteIndex } from './route.js'
 
 /**
@@ -30,8 +30,8 @@ export type GuardResult =
  */
 export type NavigationGuard = (
   this: Router,
-  to: RouteLocationRaw,
-  from: RouteLocationRaw | null
+  to: RouteLocation,
+  from: RouteLocation | null
 ) => GuardResult
 
 /**
@@ -43,7 +43,7 @@ export type NavigationGuard = (
  * @param to - 当前激活的路由对象
  * @param from - 上一个路由对象
  */
-export type AfterCallback = (this: Router, to: RouteLocationRaw, from: RouteLocationRaw) => void
+export type AfterCallback = (this: Router, to: RouteLocation, from: RouteLocation) => void
 
 /**
  * 路由未匹配钩子
@@ -71,6 +71,6 @@ export type NotFoundHandler = (
 export type NavErrorListener = (
   this: Router,
   error: unknown,
-  to: RouteLocationRaw,
-  from: RouteLocationRaw
+  to: RouteLocation,
+  from: RouteLocation
 ) => void

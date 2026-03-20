@@ -27,7 +27,7 @@ export type URLMode = 'hash' | 'path'
 /**
  * 路由位置的详情数据
  */
-export interface RouteLocation {
+export interface RouteLocationRaw {
   /**
    * 完整的href
    */
@@ -67,13 +67,13 @@ export interface RouteLocation {
   /**
    * 如果在守卫过程中被重定向，则为最初需要导航的路由位置
    */
-  redirectFrom?: RouteLocationRaw
+  redirectFrom?: RouteLocation
 }
 
 /**
  * 路由位置原始对象 - 只读
  */
-export type RouteLocationRaw = DeepReadonly<RouteLocation>
+export type RouteLocation = DeepReadonly<RouteLocationRaw>
 
 /**
  * 路由索引类型
@@ -139,15 +139,15 @@ export interface NavigateResult {
    *
    * 如果导航匹配成功则存在，否则为null
    */
-  to: RouteLocationRaw | null
+  to: RouteLocation | null
   /**
    * 导航完成前的路由数据
    */
-  from: RouteLocationRaw
+  from: RouteLocation
   /**
    * 如果在守卫过程中被重定向，则为最初需要导航的路由目标
    */
-  redirectFrom?: RouteLocationRaw
+  redirectFrom?: RouteLocation
   /**
    * 捕获到的异常
    */
