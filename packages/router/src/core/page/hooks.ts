@@ -1,6 +1,6 @@
 import { onScopeDispose } from 'vitarx'
-import type { RouteLeaveGuard, RouteLocation, RouteUpdateCallback } from '../types/index.js'
-import { useRouter } from './helpers.js'
+import { useRouter } from '../router/helpers.js'
+import type { RouteLeaveGuard, RouteUpdateCallback } from '../types/index.js'
 
 /**
  * 注册一个路由离开守卫（Route Leave Guard），在当前路由即将离开时触发。
@@ -56,7 +56,7 @@ export function onBeforeRouteLeave(guard: RouteLeaveGuard): void {
  * })
  * ```
  */
-export function onBeforeRouteUpdate(cb: RouteUpdateCallback) {
+export function onBeforeRouteUpdate(cb: RouteUpdateCallback): void {
   const router = useRouter(true)
   if (!router) {
     console.warn('[Router]: onBeforeRouteUpdate is called but there is no active router.')
@@ -69,45 +69,4 @@ export function onBeforeRouteUpdate(cb: RouteUpdateCallback) {
     route.beforeUpdateHooks = new Set([cb])
   }
   onScopeDispose(() => route.beforeUpdateHooks?.delete(cb))
-}
-
-/**
- * 执行路由离开守卫（leave guards）的异步函数
- *
- * @internal
- * @param to - 目标路由位置对象
- * @param from - 当前路由位置对象
- * @returns Promise<boolean> 返回一个布尔值，表示是否允许离开当前路由
- * @description 该函数会依次执行当前路由的所有离开守卫，如果任一守卫返回 false，则阻止路由跳转
- * @example
- * // 示例用法
- * const canLeave = await runLeaveGuards(toRoute, fromRoute)
- * if (!canLeave) {
- *   console.log('路由跳转被阻止')
- * }
- */
-export async function runLeaveGuards(to: RouteLocation, from: RouteLocation): Promise<boolean> {
-  if (!from.leaveGuards) return true
-  for (const guard of from.leaveGuards) {
-    const result = await guard(to, from)
-    if (result === false) return false
-  }
-  return true
-}
-/**
- * 执行路由更新前的钩子函数
- *
- * 该函数会遍历当前路由(from)的 beforeUpdateHooks 数组，并依次执行其中的钩子函数。
- * 每个钩子函数都会接收目标路由(to)和当前路由(from)作为参数。
- *
- * @internal
- * @param to - 目标路由位置对象
- * @param from - 当前路由位置对象
- * @returns void
- */
-export function runRouteUpdateHooks(to: RouteLocation, from: RouteLocation): void {
-  if (!from.beforeUpdateHooks) return
-  for (const hook of from.beforeUpdateHooks) {
-    hook(to, from)
-  }
 }

@@ -26,7 +26,9 @@ import {
   processGuardResult,
   registerHookTool,
   removePathSuffix,
-  resolveNavTarget
+  resolveNavTarget,
+  runLeaveGuards,
+  runRouteUpdateHooks
 } from '../common/utils.js'
 import type {
   AfterCallback,
@@ -52,7 +54,6 @@ import type {
   URLHash,
   URLQuery
 } from '../types/index.js'
-import { runLeaveGuards, runRouteUpdateHooks } from './hooks.js'
 import { RouteManager, type RouteMatchResult } from './manager.js'
 
 interface Hooks {
