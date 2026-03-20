@@ -29,11 +29,7 @@ export enum NavState {
   /**
    * 路由未匹配 (二进制: 10000)
    */
-  notfound = 1 << 4, // 16
-  /**
-   * 捕获到异常 (二进制: 100000)
-   */
-  exception = 1 << 5 // 32
+  notfound = 1 << 4 // 16
 }
 
 export const __ROUTER_KEY__ = Symbol.for('__v_router_inject_key')

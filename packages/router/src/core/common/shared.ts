@@ -1,6 +1,3 @@
-import { deepClone } from 'vitarx'
-import type { RouteLocation, RouteLocationRaw } from '../types/index.js'
-
 /**
  * 将 query 字符串转为对象
  *
@@ -53,15 +50,4 @@ export function normalizePath(path: string, hashMode: boolean = false): `/${stri
   if (formated === '/' || (hashMode && formated === '/#/')) return formated
 
   return formated.replace(/\/$/, '') as `/${string}`
-}
-
-/**
- * 克隆路由位置对象
- *
- * @param {RouteLocation} route - 要克隆的路由位置对象
- * @return {RouteLocationRaw} - 克隆过后的对象
- */
-export function cloneRouteLocation(route: RouteLocation): RouteLocationRaw {
-  const { matched, ...other } = route
-  return Object.assign(deepClone(other), { matched: Array.from(matched) }) as RouteLocationRaw
 }

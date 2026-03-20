@@ -42,42 +42,54 @@ function patchObject<T extends Record<string, any>>(target: T, source: Partial<T
 }
 
 /**
+ * 判断两个路由对象是否相同
+ *
+ * @param to - 要导航到的路由对象
+ * @param from - 当前路由对象
+ */
+export function isSameRouteLocation(to: RouteLocation, from: RouteLocation): boolean {
+  return (
+    to.path === from.path &&
+    to.matched.length === from.matched.length &&
+    to.matched.at(-1) === from.matched.at(-1)
+  )
+}
+/**
  * 补丁更新路由对象
  *
- * @param location
+ * @param cache
  * @param newLocation
  */
-export function updateRouteLocation(location: RouteLocationRaw, newLocation: RouteLocation): void {
-  // 1. 更新基础属性
-  location.path = newLocation.path
-  location.href = newLocation.href
-  location.hash = newLocation.hash
-
-  // 2. 判断路由线路是否变化
-  const isSwitchRoute =
-    location.matched.length !== newLocation.matched.length ||
-    location.matched.at(-1) !== newLocation.matched.at(-1)
-
-  // 3. 更新 matched 和 params , query
-  if (isSwitchRoute) {
-    // 【切换策略】：替换 params，切断旧监听
-    patchArray(location.matched, newLocation.matched)
-    // 确保 params 永远是对象，防止 undefined 导致 shallowReactive 报错
-    location.params = shallowReactive(newLocation.params || {})
-    location.query = shallowReactive(newLocation.query || {})
-  } else {
-    // 【复用策略】：补丁更新 params,query，保持引用
-    patchObject(location.params, newLocation.params || {})
-    patchObject(location.query, newLocation.query || {})
+export function updateRouteLocation(
+  cache: Map<string, RouteLocationRaw>,
+  newLocation: RouteLocation
+): RouteLocationRaw {
+  const cacheKey = newLocation.matched.at(-1)!.path
+  const cachedRoute = cache.get(cacheKey)
+  // 如果缓存中存在该路由对象，则进行差异化更新
+  if (cachedRoute) {
+    cachedRoute.href = newLocation.href
+    cachedRoute.path = newLocation.path
+    cachedRoute.hash = newLocation.hash
+    patchArray(cachedRoute.matched, newLocation.matched)
+    patchObject(cachedRoute.params, newLocation.params)
+    patchObject(cachedRoute.query, newLocation.query)
+    cachedRoute.redirectFrom = newLocation.redirectFrom
+      ? markRaw(newLocation.redirectFrom)
+      : undefined
+    return cachedRoute
   }
-
-  // 4. 更新 meta (始终补丁)
-  patchObject(location.meta, newLocation.meta)
-
-  // 5. 更新 redirectFrom
-  if (newLocation.redirectFrom) {
-    location.redirectFrom = markRaw(newLocation.redirectFrom)
-  } else {
-    delete location.redirectFrom
+  // 如果缓存中不存在该路由对象，则创建一个新的路由对象
+  const location = {
+    href: newLocation.href,
+    path: newLocation.path,
+    hash: newLocation.hash,
+    params: shallowReactive({ ...newLocation.params }),
+    query: shallowReactive({ ...newLocation.query }),
+    matched: shallowReactive(Array.from(newLocation.matched)),
+    meta: markRaw({ ...newLocation.meta }),
+    redirectFrom: newLocation.redirectFrom ? markRaw(newLocation.redirectFrom) : undefined
   }
+  cache.set(cacheKey, location)
+  return location
 }
