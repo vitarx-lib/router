@@ -11,25 +11,30 @@ import {
   nextTick,
   preloadComponent,
   readonly,
-  type ShallowReactive,
-  shallowReactive
+  shallowRef,
+  type ShallowRef
 } from 'vitarx'
 import { __ROUTER_KEY__, NavState } from '../common/constant.js'
-import { cloneRouteLocation, normalizePath, stringifyQuery } from '../common/shared.js'
-import { updateRouteLocation } from '../common/update.js'
+import { normalizePath, stringifyQuery } from '../common/shared.js'
+import { isSameRouteLocation, updateRouteLocation } from '../common/update.js'
 import {
   checkRouterOptions,
+  cloneRouteLocation,
   hasOnlyChangeHash,
   isNavigateTarget,
   isPathIndex,
   processGuardResult,
-  removePathSuffix
+  registerHookTool,
+  removePathSuffix,
+  resolveNavTarget
 } from '../common/utils.js'
 import type {
   AfterCallback,
+  NavErrorListener,
   NavigateResult,
   NavigationGuard,
   NavTarget,
+  NotFoundHandler,
   ResolvedRouterConfig,
   Route,
   RouteIndex,
@@ -45,35 +50,86 @@ import type {
   ScrollTarget,
   TypedNavOptions,
   URLHash,
-  URLParams,
   URLQuery
 } from '../types/index.js'
-import { hasNavState } from './helpers.js'
+import { runLeaveGuards, runRouteUpdateHooks } from './hooks.js'
 import { RouteManager, type RouteMatchResult } from './manager.js'
 
+interface Hooks {
+  beforeEach: Set<NavigationGuard> | null
+  afterEach: Set<AfterCallback> | null
+  onError: Set<NavErrorListener> | null
+  onNotFound: Set<NotFoundHandler> | null
+}
+
+/**
+ * 路由器抽象基类
+ *
+ * 提供路由导航、历史记录管理、守卫钩子等核心功能。
+ * 具体实现需继承此类并实现抽象方法。
+ *
+ * @example
+ * ```ts
+ * import { createRouter } from 'vitarx-router'
+ *
+ * const router = createRouter({
+ *   routes: [...],
+ *   beforeEach: (to, from) => { ... },
+ *   afterEach: (to, from) => { ... }
+ * })
+ * ```
+ */
 export abstract class Router {
-  // 导航守卫
-  private _beforeGuards: Set<NavigationGuard> | null = null
-  // 后置钩子
-  private _afterHooks: Set<AfterCallback> | null = null
-  // 当前执行的导航任务ID，用于处理并发导航请求
-  private _currentTaskId: number | null = null
-  // 任务计数器，用于生成唯一的任务ID
-  private _taskCounter = 0
-  // 等待滚动目标
-  private _pendingScrollTarget: ScrollTarget | null = null
-  // 存储就绪状态的 Promise
-  private readonly _readyPromise: Promise<NavigateResult>
-  //  resolve 函数引用
-  private _resolveReadyPromise!: (value: NavigateResult) => void
-  // reject 函数引用
-  private _rejectReadyPromise!: (reason: NavigateResult) => void
-  // 当前路由位置 - 仅内部使用
-  private readonly _routeLocation: ShallowReactive<RouteLocationRaw>
   /**
-   * 路由位置 - 只读
+   * 当前路由位置 - 仅内部使用
+   * @private
    */
-  public readonly currentRoute: RouteLocation
+  private readonly _routeLocation: ShallowRef<RouteLocationRaw>
+  /**
+   * 缓存路由位置对象
+   * @private
+   */
+  private readonly _cache: Map<string, RouteLocationRaw> = new Map()
+  /**
+   * 存储就绪状态的 Promise
+   * @private
+   */
+  private readonly _readyPromise: Promise<NavigateResult>
+  /**
+   *  resolve 函数引用
+   * @private
+   */
+  private _resolveReadyPromise!: (value: NavigateResult) => void
+  /**
+   * reject 函数引用
+   * @private
+   */
+  private _rejectReadyPromise!: (reason: unknown) => void
+  /**
+   * 钩子函数
+   * @private
+   */
+  private readonly _hooks: Hooks = {
+    beforeEach: null,
+    afterEach: null,
+    onError: null,
+    onNotFound: null
+  }
+  /**
+   * 当前执行的导航任务ID，用于处理并发导航请求
+   * @private
+   */
+  private _currentTaskId: number | null = null
+  /**
+   * 任务计数器，用于生成唯一的任务ID
+   * @private
+   */
+  private _taskCounter = 0
+  /**
+   * 等待滚动目标
+   * @private
+   */
+  private _scrollTaskID: number = 0
   /**
    * 路由器配置
    */
@@ -86,43 +142,57 @@ export abstract class Router {
   public readonly manager: RouteManager
   constructor(options: RouterOptions) {
     if (__VITARX_DEV__) checkRouterOptions(options)
-    const { routes, beforeEach, afterEach, ...userConfig } = options
+    const { routes, beforeEach, afterEach, onError, onNotFound, ...userConfig } = options
     this.config = {
       base: '/',
       mode: 'path',
       ...userConfig
     }
     if (isFunction(beforeEach)) {
-      this._beforeGuards = new Set([beforeEach])
+      this._hooks.beforeEach = new Set([beforeEach])
     } else if (isArray(beforeEach)) {
-      this._beforeGuards = new Set(beforeEach)
+      this._hooks.beforeEach = new Set(beforeEach)
     }
     if (isFunction(afterEach)) {
-      this._afterHooks = new Set([afterEach])
+      this._hooks.afterEach = new Set([afterEach])
     } else if (isArray(afterEach)) {
-      this._afterHooks = new Set(afterEach)
+      this._hooks.afterEach = new Set(afterEach)
+    }
+    if (isFunction(onError)) {
+      this._hooks.onError = new Set([onError])
+    } else if (isArray(onError)) {
+      this._hooks.onError = new Set(onError)
+    }
+    if (isFunction(onNotFound)) {
+      this._hooks.onNotFound = new Set([onNotFound])
+    } else if (isArray(onNotFound)) {
+      this._hooks.onNotFound = new Set(onNotFound)
     }
     if (isArray(routes)) {
       this.manager = new RouteManager(routes)
     } else {
       this.manager = routes
     }
-    this._routeLocation = shallowReactive<RouteLocationRaw>({
-      path: '' as RoutePath,
+    this._routeLocation = shallowRef<RouteLocationRaw>({
+      path: '/',
       hash: '',
-      href: '' as RoutePath,
-      params: shallowReactive<URLParams>({}),
-      query: shallowReactive<URLQuery>({}),
-      matched: shallowReactive<RouteRecord[]>([]),
+      href: '/',
+      params: markRaw({}),
+      query: markRaw({}),
+      matched: markRaw([]),
       meta: markRaw({})
     })
-    this.currentRoute = readonly(this._routeLocation)
     this._readyPromise = new Promise<NavigateResult>((resolve, reject) => {
       this._resolveReadyPromise = resolve
       this._rejectReadyPromise = reject
     })
   }
-
+  /**
+   * 获取当前路由位置对象
+   */
+  get currentRoute(): RouteLocation {
+    return readonly(this._routeLocation.value)
+  }
   /**
    * 判断路由器是否已准备就绪
    *
@@ -169,8 +239,6 @@ export abstract class Router {
    */
   public destroy(): void {
     this.manager.clearRoutes()
-    this._beforeGuards = null
-    this._afterHooks = null
   }
   /**
    * 添加后置回调函数
@@ -178,26 +246,14 @@ export abstract class Router {
    * @param hook
    */
   public afterEach(hook: AfterCallback): void {
-    if (!isFunction(hook)) {
-      throw new TypeError('The "hook" argument must be a function')
-    }
-    if (!this._afterHooks) {
-      this._afterHooks = new Set()
-    }
-    this._afterHooks!.add(hook)
+    registerHookTool(this._hooks, 'afterEach', hook)
   }
   /**
    * 添加导航守卫
    * @param guard
    */
   public beforeEach(guard: NavigationGuard): void {
-    if (!isFunction(guard)) {
-      throw new TypeError('The "guard" argument must be a function')
-    }
-    if (!this._beforeGuards) {
-      this._beforeGuards = new Set()
-    }
-    this._beforeGuards!.add(guard)
+    registerHookTool(this._hooks, 'beforeEach', guard)
   }
   /**
    * 跳转指定的历史记录位置
@@ -222,37 +278,37 @@ export abstract class Router {
   /**
    * 替换当前页面
    *
-   * @param {TypedNavOptions} options - 导航选项
-   * @param [options.params] - 路由参数对象
-   * @param [options.query] - 查询参数对象
-   * @param [options.hash] - 哈希值，如：`#hash`
+   * @param {TypedNavOptions} target - 导航目标对象 / 路由索引
+   * @param [target.params] - 路由参数对象
+   * @param [target.query] - 查询参数对象
+   * @param [target.hash] - 哈希值，如：`#hash`
    * @return {Promise<NavigateResult>} - 导航结果
    */
-  public replace<T extends RouteIndex>(options: TypedNavOptions<T>): Promise<NavigateResult> {
-    const target = { ...options, replace: true }
+  public replace<T extends RouteIndex>(target: T | TypedNavOptions<T>): Promise<NavigateResult> {
+    const resolved = { ...resolveNavTarget(target), replace: true }
     // 如果是首次导航，走特殊处理通道
     if (this._currentTaskId === null) {
-      return this.initialNavigation(target)
+      return this.initialNavigation(resolved)
     }
-    return this.navigate(target)
+    return this.navigate(resolved)
   }
   /**
    * 跳转到新的页面
    *
-   * @param {TypedNavOptions} options - 导航选项
-   * @param options.index - 路由索引
-   * @param [options.params] - 路由参数对象
-   * @param [options.query] - 查询参数对象
-   * @param [options.hash] - 哈希值，如：`#hash`
+   * @param {TypedNavOptions} target - 导航目标对象 / 路由索引
+   * @param target.index - 路由索引
+   * @param [target.params] - 路由参数对象
+   * @param [target.query] - 查询参数对象
+   * @param [target.hash] - 哈希值，如：`#hash`
    * @return {Promise<NavigateResult>} - 导航结果
    */
-  public push<T extends RouteIndex>(options: TypedNavOptions<T>): Promise<NavigateResult> {
-    const target = { ...options, replace: false }
+  public push<T extends RouteIndex>(target: T | TypedNavOptions<T>): Promise<NavigateResult> {
+    const resolved = { ...resolveNavTarget(target), replace: false }
     // 如果是首次导航，走特殊处理通道
     if (this._currentTaskId === null) {
-      return this.initialNavigation(target)
+      return this.initialNavigation(resolved)
     }
-    return this.navigate(target)
+    return this.navigate(resolved)
   }
   /**
    * 添加路由
@@ -297,7 +353,7 @@ export abstract class Router {
     // 创建一个空数组来存储加载任务
     const loadTask: Promise<Component>[] = []
     // 获取路由匹配项，如果传入route则使用其matched属性，否则使用当前路由的matched属性
-    const matched = route?.matched || this._routeLocation.matched
+    const matched = route?.matched || this._routeLocation.value.matched
     // 遍历目标路由的所有匹配项
     for (const route of matched) {
       // 遍历路由中的所有组件
@@ -356,14 +412,20 @@ export abstract class Router {
     // 0. 生成任务ID并开始导航
     const taskId = ++this._taskCounter
     this._currentTaskId = taskId
+    const hasChanged = (): boolean => {
+      if (this._currentTaskId === taskId) return false
+      result.state = NavState.cancelled
+      result.message = 'Navigation superseded by a newer navigation'
+      return true
+    }
     // 1. 解析目标路由
-    const resolvedRoute = this.matchRoute(target, redirectFrom)
+    const to = this.matchRoute(target, redirectFrom)
     // 2. 确保 from 对象存在
-    const from = fromRoute ?? cloneRouteLocation(this._routeLocation)
+    const from = fromRoute ?? cloneRouteLocation(this._routeLocation.value)
     // 3. 构建 NavigationResult 基础对象
     const result: NavigateResult = {
       state: NavState.success, // 初始状态
-      to: resolvedRoute, // 最终导航位置
+      to, // 最终导航位置
       from, // 来源位置
       redirectFrom, // 最初的导航位置
       message: 'Navigation successful'
@@ -371,104 +433,92 @@ export abstract class Router {
     // ----------------------------------------------------------------
     // 4. 场景 A: 路由未匹配 (404)
     // ----------------------------------------------------------------
-    if (!resolvedRoute) {
+    if (!to) {
       // 触发全局 onNotFound 钩子
-      const notFoundResult = await this.runNotFoundHook(target as NavTarget)
-
-      //  并发竞争检查
-      if (this._currentTaskId !== taskId) {
-        result.state = NavState.aborted
-        result.message = 'Navigation superseded by a newer navigation'
-        return Promise.resolve(result)
-      }
-
+      const notFoundResult = this.runNotFoundHook(target)
       // 如果钩子返回了新的目标，进行重定向
       if (notFoundResult) {
         return this.navigate(notFoundResult, from)
       }
       result.message = `No match found for target: ${JSON.stringify((target as NavTarget).to)}`
-      // 如果钩子未处理，标记为失败
       result.state = NavState.notfound
       return result
     }
-    // 4.1 处理仅哈希变化的情况
-    if (hasOnlyChangeHash(from, resolvedRoute)) {
-      this.hashUpdate?.(resolvedRoute)
-      this._routeLocation.href = resolvedRoute.href
+    // ----------------------------------------------------------------
+    // 5. 场景 B: 仅hash变化 / 重复路由
+    // ----------------------------------------------------------------
+    // 5.1 重复路由
+    if (to.href === from.href && to.matched.length === from.matched.length) {
+      result.state = NavState.duplicated
+      result.message = 'Navigation aborted due to the same route'
+      return result
+    }
+    // 5.2 仅hash变化
+    if (hasOnlyChangeHash(to, from)) {
+      this.hashUpdate?.(to)
+      this._routeLocation.value.href = to.href
       result.state = NavState.success
       result.message = 'Navigation succeeded: only hash changed'
-      return Promise.resolve(result)
+      return result
     }
-    // 4.2 非替换路由导航时进行重复路由检测
-    if (!target.replace) {
-      if (resolvedRoute.href === from.href) {
-        result.state = NavState.duplicated
-        result.message = 'Navigation aborted due to the same route'
-        return Promise.resolve(result)
+    // ----------------------------------------------------------------
+    // 6. 场景 C: 路由重定向
+    // ----------------------------------------------------------------
+    const matched = to.matched.at(-1)!
+    const redirect = isFunction(matched.redirect)
+      ? matched.redirect.call(this, to)
+      : matched.redirect
+    if (redirect) {
+      if (isString(redirect) || typeof redirect === 'symbol') {
+        return this.navigate({ to: redirect }, from, redirectFrom ?? to)
+      } else if (isNavigateTarget(redirect)) {
+        return this.navigate(redirect, from, redirectFrom ?? to)
       }
     }
     // ----------------------------------------------------------------
-    // 5. 场景 B: 路由匹配成功，执行守卫流程
+    // 7. 场景 D: 路由匹配成功，执行守卫流程
     // ----------------------------------------------------------------
     try {
       // 执行全局前置守卫
-      const guardResult = await this.runBeforeGuards(resolvedRoute, from)
+      const guardResult = await this.runBeforeGuards(to, from)
 
-      // 5.1 守卫拦截
+      // 7.1 并发竞争检查
+      if (hasChanged()) return result
+
+      if (guardResult === 'same') {
+        result.state = NavState.success
+        result.message = 'Navigation succeeded: params or query changed'
+        return result
+      }
+      // 7.2 守卫拦截
       if (guardResult === false) {
         result.state = NavState.aborted
-        result.message = 'Navigation aborted by guard'
-        // 这里不抛错，属于正常中止，最后会 Resolve
+        result.message = 'Navigation aborted by before guard'
+        return result
       }
-      // 5.2 守卫重定向
-      else if (isNavigateTarget(guardResult)) {
+      // 7.3 守卫重定向
+      if (isNavigateTarget(guardResult)) {
         // 直接返回递归结果，如果内部 Reject 会自动向上传播
-        return this.navigate(guardResult, from, redirectFrom ?? resolvedRoute)
+        return this.navigate(guardResult, from, redirectFrom ?? to)
       }
+      // 7.4 离开守卫
+      const leaveGuardResult = await runLeaveGuards(to, from)
 
-      // 5.3 并发竞争检查
-      if (this._currentTaskId !== taskId) {
+      if (hasChanged()) return result
+
+      if (!leaveGuardResult) {
         result.state = NavState.aborted
-        result.message = 'Navigation superseded by a newer navigation'
+        result.message = 'Navigation aborted by leave guard'
+        return result
       }
     } catch (error: unknown) {
       // 捕获守卫内部的同步/异步错误
-      if (isFunction(this.config.onError)) {
-        this.config.onError.call(this, error, resolvedRoute, from)
-      }
-      result.state = NavState.exception
-      result.error = error
-      result.message = error instanceof Error ? error.message : 'Unknown error'
-
-      // 【优化】直接在这里返回 Reject，逻辑更清晰，不再走后面的流程
-      return Promise.reject(result)
+      this.reportError(error, to, from)
+      return Promise.reject(error)
     }
-
-    // ----------------------------------------------------------------
-    // 6. 决定最终状态：更新历史 & 完成导航
-    // ----------------------------------------------------------------
-
-    // 只有成功才更新历史和触发 complete
-    if (result.state === NavState.success) {
-      const scrollPosition = this[target.replace ? 'replaceHistory' : 'pushHistory'](resolvedRoute)
-      this.completeNavigation(resolvedRoute, from, scrollPosition ?? null)
-    }
-
-    // ----------------------------------------------------------------
-    // 7. 根据状态决定 Resolve 还是 Reject
-    // ----------------------------------------------------------------
-
-    // 关键修正：
-    // 1. exception (异常) -> Reject (触发 isReady 报错)
-    // 2. notfound (未找到) -> Reject (触发 isReady 报错)
-    // 3. aborted (取消/替代) -> Resolve (正常结束，业务判断 state 即可)
-    // 4. duplicated (重复)  -> Resolve (正常结束)
-    // 5. success (成功)     -> Resolve
-    if (hasNavState(result, NavState.exception | NavState.notfound)) {
-      return Promise.reject(result)
-    }
-
-    return Promise.resolve(result)
+    const scrollPosition = this[target.replace ? 'replaceHistory' : 'pushHistory'](to)
+    this.completeNavigation(to, from, scrollPosition ?? null)
+    return result
   }
   /**
    * 处理首次导航
@@ -478,12 +528,6 @@ export abstract class Router {
    * @returns 返回标准的导航结果 Promise
    */
   private async initialNavigation(target: NavTarget): Promise<NavigateResult> {
-    // 双重检查：如果已经初始化过，直接执行普通导航，不再处理 isReady 逻辑
-    // 注意：这里利用 _currentTaskId 作为初始化标志位是非常合适的
-    if (this._currentTaskId !== null) {
-      return this.navigate(target)
-    }
-
     try {
       // 1. 执行底层导航
       const result = await this.navigate(target)
@@ -494,13 +538,8 @@ export abstract class Router {
           await this.resolveComponents(result.to!)
           this._resolveReadyPromise(result)
         } catch (error) {
-          // 组件加载失败，转为异常状态
-          result.state = NavState.exception
-          result.error = error
-          result.message = 'Initial navigation failed: async component load error'
           this._rejectReadyPromise(result)
-          // 注意：这里需要将成功的结果转为 reject 抛出，告知调用者实际上失败了
-          return Promise.reject(result)
+          return Promise.reject(error)
         }
       } else {
         // 3. 如果首次导航结果是 aborted/duplicated/notfound，视为初始化失败
@@ -509,7 +548,7 @@ export abstract class Router {
       return result
     } catch (error) {
       // 4. 如果 navigate 本身抛出异常
-      this._rejectReadyPromise(error as NavigateResult)
+      this._rejectReadyPromise(error)
       // 继续向上抛出，让调用者能捕获到
       return Promise.reject(error)
     }
@@ -529,7 +568,7 @@ export abstract class Router {
     savedPosition: ScrollPosition | null = null
   ): void {
     // 1. 确认导航：更新路由状态
-    updateRouteLocation(this._routeLocation, to)
+    this._routeLocation.value = updateRouteLocation(this._cache, to)
     // 2. 触发全局后置钩子
     this.runAfterHooks(to, from)
     // 3. 处理滚动行为
@@ -565,14 +604,12 @@ export abstract class Router {
         logger.error('[Router] Error in scrollBehavior callback:', e)
       }
     }
-    this._pendingScrollTarget = target
+    const id = this._scrollTaskID++
     // 等待路由组件解析完成后滚动
     this.resolveComponents().then(async () => {
       await nextTick()
       // 确保滚动目标未改变
-      if (this._pendingScrollTarget === target) {
-        // 清除待处理的滚动目标
-        this._pendingScrollTarget = null
+      if (id === this._scrollTaskID) {
         // 执行滚动到目标位置
         this.scrollTo?.(target)
       }
@@ -583,10 +620,20 @@ export abstract class Router {
    * @param target - 导航目标对象
    * @returns - 返回处理结果
    */
-  private async runNotFoundHook(target: NavTarget): Promise<NavTarget | void> {
-    if (isFunction(this.config.onNotFound)) {
-      const res = await this.config.onNotFound.call(this, target)
-      if (isNavigateTarget(res)) return res
+  private runNotFoundHook(target: NavTarget): NavTarget | void {
+    if (!this._hooks.onNotFound) return
+    for (const hook of this._hooks.onNotFound) {
+      try {
+        const result = hook.call(this, target)
+        if (isNavigateTarget(result)) return result
+        if (isString(result) || typeof result === 'symbol') {
+          return {
+            to: result
+          }
+        }
+      } catch (e) {
+        logger.error('[Router] Error in onNotFound callback:', e)
+      }
     }
   }
   /**
@@ -595,18 +642,32 @@ export abstract class Router {
    * @param from - 来源路由
    */
   private runAfterHooks(to: RouteLocation, from: RouteLocation): void {
-    if (!this._afterHooks) return
-    for (const hook of this._afterHooks) {
-      if (!isFunction(hook)) continue
+    if (!this._hooks.afterEach) return
+    for (const hook of this._hooks.afterEach) {
       try {
         hook.call(this, to, from)
       } catch (e) {
-        if (this.config.onError) {
-          this.config.onError.call(this, e, to, from)
-        } else {
-          logger.error('[Router] Error in after hook:', e)
+        this.reportError(e, to, from)
+      }
+    }
+  }
+  /**
+   * 报告错误
+   *
+   * @param error - 错误对象
+   * @param to - 目标路由
+   * @param from - 来源路由
+   * @private
+   */
+  private reportError(error: unknown, to: RouteLocation, from: RouteLocation): void {
+    if (this._hooks.onError) {
+      for (const hook of this._hooks.onError) {
+        if (isFunction(hook)) {
+          hook.call(this, error, to, from)
         }
       }
+    } else {
+      logger.error('[Router] Error:', error)
     }
   }
   /**
@@ -617,15 +678,27 @@ export abstract class Router {
   private async runBeforeGuards(
     to: RouteLocation,
     from: RouteLocation
-  ): Promise<boolean | NavTarget | void> {
+  ): Promise<boolean | NavTarget | void | 'same'> {
     // 执行全局前置守卫
-    if (this._beforeGuards) {
-      for (const guard of this._beforeGuards) {
+    if (this._hooks.beforeEach) {
+      for (const guard of this._hooks.beforeEach) {
         const result = await guard.call(this, to, from)
         const processedResult = processGuardResult(result)
         if (processedResult !== true) return processedResult
       }
+      return true
     }
+
+    // 如果是相同路由，则执行路由更新钩子
+    if (isSameRouteLocation(to, from)) {
+      try {
+        runRouteUpdateHooks(to, from)
+      } catch (e) {
+        this.reportError(e, to, from)
+      }
+      return 'same'
+    }
+
     // 执行路由独享守卫 (顺序：父 -> 子)
     for (const record of to.matched) {
       if (isFunction(record.beforeEnter)) {
@@ -642,6 +715,50 @@ export abstract class Router {
     }
     // 全部通过，放行
     return true
+  }
+  /**
+   * 创建缺失的路由
+   * @param component - 路由组件
+   * @param path - 路径
+   * @param query - 查询参数
+   * @param hash - 哈希值
+   * @returns {RouteLocationRaw} - 返回创建的路由位置对象
+   */
+  private createMissingRoute(
+    component: RouteViewComponent,
+    path: RouteLocationRaw['path'],
+    query: RouteLocationRaw['query'] = {},
+    hash: RouteLocationRaw['hash'] = ''
+  ): RouteLocationRaw {
+    return {
+      href: this.buildUrl(path, query, hash),
+      path,
+      hash,
+      params: {},
+      query,
+      meta: {},
+      matched: [{ path, isGroup: false, component: { default: component } }]
+    }
+  }
+  /**
+   * 构建完整URL路径
+   *
+   * @param path - 路径
+   * @param [query] - 查询参数
+   * @param [hash] - 哈希值
+   * @returns {string} - 返回完整路径
+   */
+  public buildUrl(path: string, query: URLQuery = {}, hash: URLHash | '' = ''): `/${string}` {
+    const suffix = this.config.suffix
+    if (suffix && !path.endsWith('/') && !path.includes('.')) {
+      path += suffix.startsWith('.') ? suffix : `.${suffix}`
+    }
+    const hashStr = isString(hash) && hash.startsWith('#') ? hash.trim() : ''
+    const queryStr = stringifyQuery(query)
+    const href = `${path}${queryStr}${hashStr}`
+    return this.config.mode === 'hash'
+      ? normalizePath(`${this.config.base}/#${href}`, true)
+      : normalizePath(`${this.config.base}${href}`)
   }
   /**
    * 匹配路由
@@ -692,7 +809,7 @@ export abstract class Router {
     // 初始化元数据，使用当前路由的元数据
     let meta: RouteMetaData = route.meta ?? {}
     // 创建完整路径，包含路径、查询、哈希和配置信息
-    const fullPath = this.buildUrl(path, query, hash)
+    const href = this.buildUrl(path, query, hash)
     // 向上遍历父路由
     let parent = route.parent
     while (parent) {
@@ -707,7 +824,7 @@ export abstract class Router {
     // 返回路由位置对象
     return {
       path,
-      href: fullPath,
+      href,
       params,
       query,
       hash,
@@ -715,50 +832,5 @@ export abstract class Router {
       meta,
       redirectFrom
     }
-  }
-  /**
-   * 创建缺失的路由
-   * @param component - 路由组件
-   * @param path - 路径
-   * @param query - 查询参数
-   * @param hash - 哈希值
-   * @returns {RouteLocationRaw} - 返回创建的路由位置对象
-   */
-  private createMissingRoute(
-    component: RouteViewComponent,
-    path: RouteLocationRaw['path'],
-    query: RouteLocationRaw['query'] = {},
-    hash: RouteLocationRaw['hash'] = ''
-  ): RouteLocationRaw {
-    return {
-      href: this.buildUrl(path, query, hash),
-      path,
-      hash,
-      params: {},
-      query,
-      meta: {},
-      matched: [{ path, isGroup: false, component: { default: component } }]
-    }
-  }
-
-  /**
-   * 构建完整URL路径
-   *
-   * @param path - 路径
-   * @param [query] - 查询参数
-   * @param [hash] - 哈希值
-   * @returns {string} - 返回完整路径
-   */
-  public buildUrl(path: string, query: URLQuery = {}, hash: URLHash | '' = ''): `/${string}` {
-    const suffix = this.config.suffix
-    if (suffix && !path.endsWith('/') && !path.includes('.')) {
-      path += suffix.startsWith('.') ? suffix : `.${suffix}`
-    }
-    const hashStr = isString(hash) && hash.startsWith('#') ? hash.trim() : ''
-    const queryStr = stringifyQuery(query)
-    const href = `${path}${queryStr}${hashStr}`
-    return this.config.mode === 'hash'
-      ? normalizePath(`${this.config.base}/#${href}`, true)
-      : normalizePath(`${this.config.base}${href}`)
   }
 }

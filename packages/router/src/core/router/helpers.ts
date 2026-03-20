@@ -1,5 +1,5 @@
 import { inject, logger } from 'vitarx'
-import { __ROUTER_KEY__, type NavState } from '../common/constant.js'
+import { __ROUTER_KEY__, NavState } from '../common/constant.js'
 import type { NavigateResult, Route, RouteLocation, RouterOptions } from '../types/index.js'
 import { RouteManager, type RouteManagerOptions } from './manager.js'
 import { MemoryRouter } from './memory.js'
@@ -29,6 +29,44 @@ export function createRouteManager(routes: Route[], options?: RouteManagerOption
   return new RouteManager(routes, options)
 }
 /**
+ * 创建Web模式路由实例
+ *
+ * @param options - 路由配置选项
+ * @param {RouterOptions} options - 路由配置选项
+ * @param options.routes - 路由配置表或管理器
+ * @param [options.base] - 基础路径
+ * @param [options.mode] - URL模式
+ * @param [options.suffix] - 强制后缀
+ * @param [options.scrollBehavior] - 滚动行为
+ * @param [options.beforeEach] - 全局前置钩子
+ * @param [options.afterEach] - 全局后置钩子
+ * @param [options.missing] - 未匹配时要渲染的组件
+ * @param [options.onNotFound] - 导航不匹配时触发的回调函数
+ * @returns {WebRouter} 返回Web模式路由实例
+ */
+export function createWebRouter(options: RouterOptions): WebRouter {
+  return new WebRouter(options)
+}
+/**
+ * 创建内存模式路由实例
+ *
+ * @param options - 路由配置选项
+ * @param {RouterOptions} options - 路由配置选项
+ * @param options.routes - 路由配置表或管理器
+ * @param [options.base] - 基础路径
+ * @param [options.mode] - URL模式
+ * @param [options.suffix] - 强制后缀
+ * @param [options.scrollBehavior] - 滚动行为
+ * @param [options.beforeEach] - 全局前置钩子
+ * @param [options.afterEach] - 全局后置钩子
+ * @param [options.missing] - 未匹配时要渲染的组件
+ * @param [options.onNotFound] - 导航不匹配时触发的回调函数
+ * @returns {MemoryRouter} 返回内存模式路由实例
+ */
+export function createMemoryRouter(options: RouterOptions): MemoryRouter {
+  return new MemoryRouter(options)
+}
+/**
  * 创建路由实例的工厂函数
  *
  * @param {RouterOptions} options - 路由配置选项
@@ -54,49 +92,9 @@ export function createRouter(options: RouterOptions, skipEnvWarn: boolean = fals
         '[Router] createRouter() - Non-browser environment detected, forcing memory mode routing, please use createMemoryRouter'
       )
     }
-    return new MemoryRouter(options)
+    return createMemoryRouter(options)
   }
-  return new WebRouter(options)
-}
-
-/**
- * 创建Web模式路由实例
- *
- * @param options - 路由配置选项
- * @param {RouterOptions} options - 路由配置选项
- * @param options.routes - 路由配置表或管理器
- * @param [options.base] - 基础路径
- * @param [options.mode] - URL模式
- * @param [options.suffix] - 强制后缀
- * @param [options.scrollBehavior] - 滚动行为
- * @param [options.beforeEach] - 全局前置钩子
- * @param [options.afterEach] - 全局后置钩子
- * @param [options.missing] - 未匹配时要渲染的组件
- * @param [options.onNotFound] - 导航不匹配时触发的回调函数
- * @returns {WebRouter} 返回Web模式路由实例
- */
-export function createWebRouter(options: RouterOptions): WebRouter {
-  return new WebRouter(options)
-}
-
-/**
- * 创建内存模式路由实例
- *
- * @param options - 路由配置选项
- * @param {RouterOptions} options - 路由配置选项
- * @param options.routes - 路由配置表或管理器
- * @param [options.base] - 基础路径
- * @param [options.mode] - URL模式
- * @param [options.suffix] - 强制后缀
- * @param [options.scrollBehavior] - 滚动行为
- * @param [options.beforeEach] - 全局前置钩子
- * @param [options.afterEach] - 全局后置钩子
- * @param [options.missing] - 未匹配时要渲染的组件
- * @param [options.onNotFound] - 导航不匹配时触发的回调函数
- * @returns {MemoryRouter} 返回内存模式路由实例
- */
-export function createMemoryRouter(options: RouterOptions): Router {
-  return new MemoryRouter(options)
+  return createWebRouter(options)
 }
 
 /**
@@ -107,7 +105,7 @@ export function createMemoryRouter(options: RouterOptions): Router {
  * @return {Router} - 路由器实例
  * @throws {Error} - 如果未创建路由器实例，则会抛出异常
  */
-export function useRouter<T extends Router>(): T
+export function useRouter(): Router
 
 /**
  * 获取路由器实例
@@ -116,7 +114,7 @@ export function useRouter<T extends Router>(): T
  * @param {boolean} allowEmpty - 是否允许返回空值
  * @return {Router | null} - 如果存在则返回路由器实例
  */
-export function useRouter<T extends Router>(allowEmpty: false): T | null
+export function useRouter(allowEmpty: false): Router | null
 
 /**
  * 获取路由器实例
@@ -125,7 +123,7 @@ export function useRouter<T extends Router>(allowEmpty: false): T | null
  * @return {Router} - 路由器实例
  * @throws {Error} - 如果未创建路由器实例，则会抛出异常
  */
-export function useRouter<T extends Router>(allowEmpty: true): T
+export function useRouter(allowEmpty: true): Router
 
 /**
  * 获取路由器实例
@@ -134,8 +132,8 @@ export function useRouter<T extends Router>(allowEmpty: true): T
  * @return {Router | null} - 如果存在则返回路由器实例，否则返回 null
  * @throws {Error} - 如果未创建路由器实例且不允许返回空值，则会抛出异常
  */
-export function useRouter<T extends Router>(allowEmpty: boolean = false): T | null {
-  const router = inject<T | null>(__ROUTER_KEY__, null)
+export function useRouter(allowEmpty: boolean = false): Router | null {
+  const router = inject<Router | null>(__ROUTER_KEY__, null)
   if (!allowEmpty && !router) {
     throw new Error('[Router] Router instance not found')
   }
@@ -160,7 +158,7 @@ export function useRouter<T extends Router>(allowEmpty: boolean = false): T | nu
  * ```
  *
  * @return {RouteLocation} - 只读的`RouteLocation`对象
- * @throws {Error} - 如果未获取到路由器实例，则会抛出异常
+ * @throws {Error} - 如果未获取到路由器实例或路由没有就绪，则会抛出异常
  */
 export function useRoute(): RouteLocation {
   return useRouter().currentRoute
@@ -174,7 +172,17 @@ export function useRoute(): RouteLocation {
  * @param status - 要检查的状态
  * @returns {boolean} - 如果导航结果包含指定状态则返回true，否则返回false
  */
-export function hasNavState(result: NavigateResult, status: NavState): boolean {
+export function hasState(result: NavigateResult, status: NavState): boolean {
   // 导航状态检查函数，接收导航结果和状态作为参数
   return (result.state & status) === result.state
+}
+
+/**
+ * 检查导航结果是否成功
+ *
+ * @param result - 导航结果
+ * @returns {boolean} - 如果导航结果成功则返回true，否则返回false
+ */
+export function hasSuccess(result: NavigateResult): boolean {
+  return result.state === NavState.success
 }
