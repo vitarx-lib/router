@@ -173,15 +173,17 @@ export abstract class Router {
     } else {
       this.manager = routes
     }
-    this._routeLocation = shallowRef<RouteLocationRaw>({
-      path: '/',
-      hash: '',
-      href: '/',
-      params: markRaw({}),
-      query: markRaw({}),
-      matched: markRaw([]),
-      meta: markRaw({})
-    })
+    this._routeLocation = shallowRef(
+      markRaw({
+        path: '/',
+        hash: '',
+        href: '/',
+        params: {},
+        query: {},
+        matched: [],
+        meta: {}
+      })
+    )
     this._readyPromise = new Promise<NavigateResult>((resolve, reject) => {
       this._resolveReadyPromise = resolve
       this._rejectReadyPromise = reject
@@ -284,7 +286,9 @@ export abstract class Router {
    * @param [target.hash] - 哈希值，如：`#hash`
    * @return {Promise<NavigateResult>} - 导航结果
    */
-  public replace<T extends RouteIndex>(target: T | TypedNavOptions<T>): Promise<NavigateResult> {
+  public replace<T extends RouteIndex>(
+    target: T | TypedNavOptions<T> | RouteLocation
+  ): Promise<NavigateResult> {
     const resolved = { ...resolveNavTarget(target), replace: true }
     // 如果是首次导航，走特殊处理通道
     if (this._currentTaskId === null) {
@@ -302,7 +306,9 @@ export abstract class Router {
    * @param [target.hash] - 哈希值，如：`#hash`
    * @return {Promise<NavigateResult>} - 导航结果
    */
-  public push<T extends RouteIndex>(target: T | TypedNavOptions<T>): Promise<NavigateResult> {
+  public push<T extends RouteIndex>(
+    target: T | TypedNavOptions<T> | RouteLocation
+  ): Promise<NavigateResult> {
     const resolved = { ...resolveNavTarget(target), replace: false }
     // 如果是首次导航，走特殊处理通道
     if (this._currentTaskId === null) {
@@ -753,7 +759,7 @@ export abstract class Router {
     if (suffix && !path.endsWith('/') && !path.includes('.')) {
       path += suffix.startsWith('.') ? suffix : `.${suffix}`
     }
-    const hashStr = isString(hash) && hash.startsWith('#') ? hash.trim() : ''
+    const hashStr = isString(hash) && hash.startsWith('#') && hash.length > 1 ? hash.trim() : ''
     const queryStr = stringifyQuery(query)
     const href = `${path}${queryStr}${hashStr}`
     return this.config.mode === 'hash'
