@@ -20,13 +20,13 @@ export type URLHash = `#${string}`
 /**
  * URL 路径生成模式
  *
- * - hash: 使用hash模式生成fullPath，支持无服务端重定向刷新页面。
- * - path: 使用常规path模式生成fullPath，需搭配服务端重定向使用。
+ * - hash: 使用hash模式生成href，支持无服务端重定向刷新页面。
+ * - path: 使用常规path模式生成href，需搭配服务端重定向使用。
  */
 export type URLMode = 'hash' | 'path'
 
 /**
- * 路由位置的详情数据
+ * 路由位置 (可变内部状态)
  */
 export interface RouteLocationRaw {
   /**
@@ -70,21 +70,17 @@ export interface RouteLocationRaw {
    */
   redirectFrom?: RouteLocation
   /**
-   * 路由组件实例化后注册的守卫钩子
-   *
-   * @internal
+   * @internal 离开守卫
    */
   leaveGuards?: Set<RouteLeaveGuard>
   /**
-   * 路由组件实例化后注册的更新守卫钩子
-   *
-   * @internal
+   * @internal 更新钩子
    */
   beforeUpdateHooks?: Set<RouteUpdateCallback>
 }
 
 /**
- * 路由位置原始对象 - 只读
+ * 当前路由位置 (对外只读)
  */
 export type RouteLocation = DeepReadonly<RouteLocationRaw>
 
@@ -115,9 +111,9 @@ interface BaseNavOptions<T extends RouteIndex> {
  *
  * 用于描述导航的目标位置
  */
-export interface NavTarget<T extends RouteIndex = RouteIndex> extends TypedNavOptions<T> {
+export interface NavTarget<T extends RouteIndex = RouteIndex> extends NavOptions<T> {
   /**
-   * 是否替换当前路由
+   * 是否替换当前历史记录
    *
    * @default false
    */
@@ -127,7 +123,7 @@ export interface NavTarget<T extends RouteIndex = RouteIndex> extends TypedNavOp
 /**
  * 导航配置
  */
-export type TypedNavOptions<T extends RouteIndex = RouteIndex> = keyof RouteIndexMap extends never
+export type NavOptions<T extends RouteIndex = RouteIndex> = keyof RouteIndexMap extends never
   ? BaseNavOptions<T>
   : T extends keyof RouteIndexMap
     ? Omit<BaseNavOptions<T>, keyof RouteIndexMap[T]> & RouteIndexMap[T]
@@ -148,17 +144,17 @@ export interface NavigateResult {
    */
   message: string
   /**
-   * 最终的导航数据
+   * 目标路由位置
    *
-   * 如果导航匹配成功则存在，否则为null
+   * `state !== NavState.notfound` 时存在
    */
   to: RouteLocation | null
   /**
-   * 导航完成前的路由数据
+   * 来源路由位置
    */
   from: RouteLocation
   /**
-   * 如果在守卫过程中被重定向，则为最初需要导航的路由目标
+   * 重定向来源
    */
   redirectFrom?: RouteLocation
 }
