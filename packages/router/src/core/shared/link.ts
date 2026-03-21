@@ -117,7 +117,9 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
       target = { to }
     } else {
       if (__VITARX_DEV__) {
-        logger.warn(`[RouterLink] Invalid "to" prop: ${String(to)}`)
+        logger.warn(
+          `[RouterLink] Invalid "to" prop: ${isPlainObject(to) ? JSON.stringify(to) : String(to)}`
+        )
       }
       return null
     }
