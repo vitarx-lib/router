@@ -190,10 +190,17 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
    */
   const navigate = async (e?: MouseEvent): Promise<NavigateResult | void> => {
     const matchedRoute = route.value
-    /**
-     * 如果没有匹配的路由，则返回 void 0
-     */
-    if (!matchedRoute) return void 0
+
+    // 如果没有匹配的路由，则返回 void 0
+    if (!matchedRoute) {
+      if (href.value === 'javascript:void(0)') {
+        logger.warn(
+          `[RouterLink] No match found for to ${isPlainObject(props.to) ? JSON.stringify(props.to) : String(props.to)}`
+        )
+        e?.preventDefault()
+      }
+      return void 0
+    }
 
     // 阻止默认行为
     e?.preventDefault()
