@@ -62,6 +62,15 @@ export function normalizePath(path: string, hashMode: boolean = false): `/${stri
  * @return {RouteLocationRaw} - 克隆过后的对象
  */
 export function cloneRouteLocation(route: RouteLocation): RouteLocationRaw {
-  const { matched, redirectFrom, leaveGuards, beforeUpdateHooks, ...other } = toRaw(route)
-  return Object.assign(other, { matched: Array.from(matched) }) as RouteLocationRaw
+  const { matched, ...other } = toRaw(route)
+  return Object.assign(
+    {
+      href: other.href,
+      path: other.path,
+      hash: other.hash,
+      params: other.params,
+      query: other.query
+    },
+    { matched: Array.from(matched) }
+  ) as RouteLocationRaw
 }
