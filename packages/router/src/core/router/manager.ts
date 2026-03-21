@@ -1,7 +1,7 @@
 import { isArray, isFunction, isString, logger, markRaw } from 'vitarx'
 import { resolveComponent, resolvePattern, resolveProps } from '../common/resolve.js'
 import { normalizePath } from '../common/shared.js'
-import { hasValidNavOptions, hasValidRouteIndex, isPathIndex } from '../common/utils.js'
+import { hasValidNavTarget, hasValidRouteIndex, isPathIndex } from '../common/utils.js'
 import { isVariablePath, mergePathVariable, optionalVariableCount } from '../common/variable.js'
 import type {
   DynamicRouteRecord,
@@ -469,7 +469,7 @@ export class RouteManager {
       route.redirect &&
       (isFunction(route.redirect) ||
         hasValidRouteIndex(route.redirect) ||
-        hasValidNavOptions(route.redirect))
+        hasValidNavTarget(route.redirect))
     ) {
       record.redirect = route.redirect
     }
