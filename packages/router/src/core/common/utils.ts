@@ -22,15 +22,27 @@ import type {
 import { normalizePath, parseQuery } from './shared.js'
 
 /**
- * 检查给定的值是否是一个导航目标对象
+ * 检查给定的值是否为一个合法的导航配置对象
  *
  * @param val 要检查的未知类型值
  * @returns {boolean} 如果值是一个导航目标对象则返回true，否则返回false
  */
-export function isNavigateTarget(val: unknown): val is NavTarget {
+export function hasValidNavTarget(val: unknown): val is NavTarget {
   // 首先检查值是否是一个普通对象
   // 然后检查该对象是否包含'to'属性
-  return isPlainObject(val) && 'to' in val
+  return isPlainObject(val) && 'to' in val && hasValidRouteIndex(val.to)
+}
+
+/**
+ * 检查给定的值是否为有效的路由索引
+ *
+ * @param val - 需要检查的值，类型为unknown
+ * @returns {boolean} 返回一个布尔值，表示值是否为有效的路由索引
+ * 同时使用类型谓词(val is RouteIndex)来缩小类型范围
+ */
+export function hasValidRouteIndex(val: unknown): val is RouteIndex {
+  // 检查值是否为字符串类型或者是否为symbol类型
+  return isString(val) || typeof val === 'symbol'
 }
 
 /**
@@ -56,7 +68,7 @@ export function checkRouterOptions(options: RouterOptions): void {
 
   // 3. 检查 mode 的值是否合法
   if ('mode' in options && options.mode !== undefined) {
-    const validModes: URLMode[] = ['path', 'hash']
+    const validModes: URLMode[] = ['hash', 'path']
     if (!validModes.includes(options.mode)) {
       throw new Error(
         `[Router] "mode" must be one of: ${validModes.join(', ')}. Received "${options.mode}".`
@@ -249,7 +261,7 @@ export function processGuardResult(res: GuardResult): boolean | NavTarget | void
   if ((res && isString(res)) || typeof res === 'symbol') {
     return { to: res }
   }
-  if (isNavigateTarget(res)) return res
+  if (hasValidNavTarget(res)) return res
   return true
 }
 
@@ -258,14 +270,21 @@ export function processGuardResult(res: GuardResult): boolean | NavTarget | void
  *
  * @param to - 导航目标
  */
-export function resolveNavTarget(to: NavTarget | string | symbol): NavTarget {
+export function resolveNavTarget(to: NavTarget | string | symbol | RouteLocation): NavTarget {
   if (isString(to) || typeof to === 'symbol') {
     return { to }
   }
-  if (!to || !isNavigateTarget(to)) {
-    throw new Error('Invalid navigation target')
+  if (hasValidNavTarget(to)) {
+    return to
   }
-  return to
+  if (isPlainObject(to) && to.path) {
+    return {
+      to: to.matched.at(-1)?.name || to.path, // 使用最后一个匹配的路由名称，如果没有则使用路径
+      params: to.params, // 路由参数
+      query: to.query // 查询参数
+    }
+  }
+  throw new Error('Invalid navigation target')
 }
 
 /**
