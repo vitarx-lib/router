@@ -63,7 +63,7 @@ export interface RouterViewOptions {
 }
 
 // 路由视图层级索引
-const INDEX_SYMBOL = Symbol.for('__v_router_view_counter')
+const INDEX_SYMBOL = Symbol.for('__v_router_view_index')
 
 /**
  * 路由视图
@@ -84,9 +84,9 @@ export function RouterView(props: RouterViewOptions): View {
 
   // 视图属性计算
   const routeProps = computed((): AnyProps | null => {
-    const route = router.route // 获取当前路由信息
+    const route = router.currentRoute // 获取当前路由信息
     const name = props.name || 'default' // 获取视图名称，默认为 'default'
-    let injectProps = route.matched[index]?.props?.[name] // 获取匹配路由中的属性
+    let injectProps = route.matched[index]?.props?.[name] ?? router.config.props ?? false
 
     if (injectProps === false) return null // 如果属性为 false，返回null
     if (injectProps === true) return route.params // 如果属性为 true，返回路由参数
@@ -103,11 +103,8 @@ export function RouterView(props: RouterViewOptions): View {
 
   // 组件计算
   const component = computed(() => {
-    const route = router.route.matched[index] // 获取匹配的路由记录
-    if (!route) {
-      // 如果是根组件且没有默认视图，返回缺失组件
-      return index === 0 && name === 'default' && router.missing ? router.missing : null
-    }
+    const route = router.currentRoute.matched[index] // 获取匹配的路由记录
+    if (!route) return null
     return route.component?.[name] ?? null // 返回匹配的组件或 null
   })
 
