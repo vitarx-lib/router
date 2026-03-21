@@ -575,13 +575,8 @@ export abstract class Router {
 
       // 2. 只有导航真正成功，才去加载组件并 resolve isReady
       if (result.state === NavState.success) {
-        try {
-          await this.resolveComponents(result.to!)
-          this._resolveReadyPromise(result)
-        } catch (error) {
-          this._rejectReadyPromise(result)
-          return Promise.reject(error)
-        }
+        await this.waitViewRender()
+        this._resolveReadyPromise(result)
       } else {
         // 3. 如果首次导航结果是 aborted/duplicated/notfound，视为初始化失败
         this._rejectReadyPromise(result)
