@@ -790,7 +790,8 @@ export abstract class Router {
     if (suffix && !path.endsWith('/') && !path.includes('.')) {
       path += suffix.startsWith('.') ? suffix : `.${suffix}`
     }
-    const hashStr = isString(hash) && hash.startsWith('#') && hash.length > 1 ? hash.trim() : ''
+    hash = hash.trim() as URLHash
+    const hashStr = isString(hash) && hash.startsWith('#') && hash.length > 1 ? hash : ''
     const queryStr = stringifyQuery(query)
     const href = `${path}${queryStr}${hashStr}`
     return this.config.mode === 'hash'
@@ -822,13 +823,8 @@ export abstract class Router {
     // 如果没有匹配的路由，则返回null
     if (!match) {
       const component = this.config.missing
-      if (component && isString(target.index) && target.index.startsWith('/')) {
-        return this.createMissingRoute(
-          component,
-          target.index as `/${string}`,
-          target.query,
-          target.hash
-        )
+      if (component && hasValidPath(target.index)) {
+        return this.createMissingRoute(component, target.index, target.query, target.hash)
       }
       return null
     }
