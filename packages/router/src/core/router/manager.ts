@@ -1,7 +1,7 @@
 import { isArray, isFunction, isString, logger, markRaw } from 'vitarx'
 import { resolveComponent, resolvePattern, resolveProps } from '../common/resolve.js'
 import { normalizePath } from '../common/shared.js'
-import { isPathIndex } from '../common/utils.js'
+import { hasValidNavOptions, hasValidRouteIndex, isPathIndex } from '../common/utils.js'
 import { isVariablePath, mergePathVariable, optionalVariableCount } from '../common/variable.js'
 import type {
   DynamicRouteRecord,
@@ -234,6 +234,7 @@ export class RouteManager {
         }
       }
     }
+
     if (formattedPath.endsWith('/index') && this.config.fallbackIndex) {
       const shortPath = formattedPath.slice(0, -6)
       const staticRoute = this.staticRoutes.get(shortPath || '/')
@@ -464,7 +465,12 @@ export class RouteManager {
     if (props) {
       record.props = props
     }
-    if (route.redirect) {
+    if (
+      route.redirect &&
+      (isFunction(route.redirect) ||
+        hasValidRouteIndex(route.redirect) ||
+        hasValidNavOptions(route.redirect))
+    ) {
       record.redirect = route.redirect
     }
     if (!component && !route.redirect && !isGroup) {
