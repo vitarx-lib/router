@@ -1,5 +1,5 @@
 import type { Component } from 'vitarx'
-import { type AfterCallback, type NavigationGuard } from '../index.js'
+import { type AfterCallback, type NavigationGuard, type NavOptions } from '../index.js'
 import { Router } from '../router/index.js'
 import type { NavTarget, RouteLocation } from './navigation.js'
 
@@ -118,7 +118,7 @@ export interface Route {
   /**
    * 路由重定向的目标地址或处理函数
    */
-  redirect?: NavTarget | string | symbol | RedirectHandler
+  redirect?: NavOptions | string | symbol | RedirectHandler
   /**
    * 子路由配置，用于嵌套路由
    */
