@@ -95,20 +95,25 @@ export abstract class Router {
    */
   private readonly _cache: Map<string, RouteLocationRaw> = new Map()
   /**
-   * 存储就绪状态的 Promise
+   * 存储就绪状态的 Promise（延迟创建）
    * @private
    */
-  private readonly _readyPromise: Promise<NavigateResult>
+  private _readyPromise: Promise<void> | null = null
   /**
-   *  resolve 函数引用
+   * resolve 函数引用
    * @private
    */
-  private _resolveReadyPromise!: (value: NavigateResult) => void
+  private _readyResolve: ((value: void) => void) | null = null
   /**
    * reject 函数引用
    * @private
    */
-  private _rejectReadyPromise!: (reason: unknown) => void
+  private _readyReject: ((reason: unknown) => void) | null = null
+  /**
+   * 是否已完成初始导航
+   * @private
+   */
+  private _isReady: boolean = false
   /**
    * 钩子函数
    * @private
@@ -188,10 +193,6 @@ export abstract class Router {
         meta: {}
       })
     )
-    this._readyPromise = new Promise<NavigateResult>((resolve, reject) => {
-      this._resolveReadyPromise = resolve
-      this._rejectReadyPromise = reject
-    })
   }
   /**
    * 获取当前路由位置对象
@@ -205,12 +206,20 @@ export abstract class Router {
    * 返回一个 Promise，它会在路由器完成初始导航之后被解析，
    * 如果初始导航已经发生，则该 Promise 会被立刻解析。
    *
-   * @returns {Promise<NavigateResult>} - 导航结果
+   * @returns {Promise<void>} - 导航结果
    */
-  public isReady(): Promise<NavigateResult> {
-    // 如果没有初始化直接 reject
+  public isReady(): Promise<void> {
+    if (this._isReady) {
+      return Promise.resolve()
+    }
     if (this._currentTaskId === null) {
       return Promise.reject(new Error('Router is not initialized.'))
+    }
+    if (!this._readyPromise) {
+      this._readyPromise = new Promise<void>((resolve, reject) => {
+        this._readyResolve = resolve
+        this._readyReject = reject
+      })
     }
     return this._readyPromise
   }
@@ -244,6 +253,14 @@ export abstract class Router {
    * @returns {void}
    */
   public destroy(): void {
+    if (this._readyReject && !this._isReady) {
+      this._readyReject(new Error('Router was destroyed before initialization completed.'))
+    }
+    this._readyPromise = null
+    this._readyResolve = null
+    this._readyReject = null
+    this._isReady = false
+    this._currentTaskId = null
     this.manager.clearRoutes()
   }
   /**
@@ -572,22 +589,24 @@ export abstract class Router {
    */
   private async initialNavigation(target: NavTarget): Promise<NavigateResult> {
     try {
-      // 1. 执行底层导航
       const result = await this.navigate(target)
 
-      // 2. 只有导航真正成功，才去加载组件并 resolve isReady
       if (result.state === NavState.success) {
         await this.waitViewRender()
-        this._resolveReadyPromise(result)
+        this._isReady = true
+        if (this._readyResolve) {
+          this._readyResolve()
+        }
       } else {
-        // 3. 如果首次导航结果是 aborted/duplicated/notfound，视为初始化失败
-        this._rejectReadyPromise(result)
+        if (this._readyReject) {
+          this._readyReject(result)
+        }
       }
       return result
     } catch (error) {
-      // 4. 如果 navigate 本身抛出异常
-      this._rejectReadyPromise(error)
-      // 继续向上抛出，让调用者能捕获到
+      if (this._readyReject) {
+        this._readyReject(error)
+      }
       return Promise.reject(error)
     }
   }
