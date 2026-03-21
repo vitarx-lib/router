@@ -1,5 +1,5 @@
+import { normalizePath } from '../shared/utils.js'
 import type { RoutePath } from '../types/index.js'
-import { normalizePath } from './shared.js'
 
 /**
  * 判断path是否包含变量

@@ -1,8 +1,8 @@
 import { isArray, isFunction, isString, logger, markRaw } from 'vitarx'
 import { resolveComponent, resolvePattern, resolveProps } from '../common/resolve.js'
-import { normalizePath } from '../common/shared.js'
 import { hasValidNavTarget, hasValidRouteIndex, isPathIndex } from '../common/utils.js'
 import { isVariablePath, mergePathVariable, optionalVariableCount } from '../common/variable.js'
+import { normalizePath } from '../shared/utils.js'
 import type {
   DynamicRouteRecord,
   Route,

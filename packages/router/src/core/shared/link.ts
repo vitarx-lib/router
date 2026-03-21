@@ -1,5 +1,4 @@
 import { type Computed, computed, isPlainObject, isString, logger } from 'vitarx'
-import { cloneRouteLocation, parseQuery } from '../common/shared.js'
 import { hasValidNavTarget } from '../common/utils.js'
 import { useRouter } from '../router/index.js'
 import type {
@@ -11,6 +10,7 @@ import type {
   RoutePath,
   URLHash
 } from '../types/index.js'
+import { cloneRouteLocation, parseQuery } from './utils.js'
 
 export type HTTPUrl = `http://${string}` | `https://${string}`
 type LinkToTarget<T extends RouteIndex = RouteIndex> =

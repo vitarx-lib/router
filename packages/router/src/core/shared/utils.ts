@@ -38,10 +38,10 @@ export function stringifyQuery(obj: Record<string, string>): `?${string}` | '' {
  * 去除所有空格、替换重复的斜杠、去除尾部的斜杠
  *
  * @example
- * formatPath('/  foo') // '/foo'
- * formatPath('/foo/') // '/foo'
- * formatPath('/foo/bar') // '/foo/bar'
- * formatPath('foo/') // '/foo'
+ * normalizePath('/  foo') // '/foo'
+ * normalizePath('/foo/') // '/foo'
+ * normalizePath('/foo/bar') // '/foo/bar'
+ * normalizePath('foo/') // '/foo'
  *
  * @param {string} path - 路径字符串
  * @param [hashMode = false] -  是否为hash模式，如果是则兼容`/#/`

@@ -1,6 +1,6 @@
 import { deepClone, isString, logger } from 'vitarx'
-import { normalizePath, parseQuery } from '../common/shared.js'
 import { parseHashContent } from '../common/utils.js'
+import { normalizePath, parseQuery } from '../shared/utils.js'
 import type {
   NavTarget,
   RouteLocation,
