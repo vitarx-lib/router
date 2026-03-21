@@ -5,6 +5,7 @@ import {
   isArray,
   isFunction,
   isPlainObject,
+  isPromise,
   isString,
   logger,
   markRaw,
@@ -20,7 +21,7 @@ import { isSameRouteLocation, updateRouteLocation } from '../common/update.js'
 import {
   checkRouterOptions,
   hasOnlyChangeHash,
-  hasValidNavOptions,
+  hasValidNavTarget,
   hasValidRouteIndex,
   isPathIndex,
   processGuardResult,
@@ -380,6 +381,35 @@ export abstract class Router {
     return void 0
   }
   /**
+   * 等待视图渲染完成。
+   *
+   * 该方法会等待异步组件解析完成以及 DOM 更新周期结束。
+   * 如果在导航后立即调用，可确保视图过渡所需的 DOM 已渲染；
+   * 如果在页面稳定后调用，则等待下一个微任务周期。
+   *
+   * @param [navResult] - 可选的异步导航结果（由 router.push/replace 返回）
+   * @returns {Promise<void>}
+   * @example
+   * // 方式一：链式调用（推荐，性能更佳）
+   * // 不必等待 push 完成，直接传入，减少等待延迟
+   * await router.waitViewRender(router.push('/foo'))
+   *
+   * // 方式二：分步调用
+   * await router.push('/foo')
+   * await router.waitViewRender()
+   *
+   * // 此时 DOM 已确保更新
+   * console.log(document.querySelector('#app').innerHTML)
+   */
+  public async waitViewRender(navResult?: Promise<NavigateResult>): Promise<void> {
+    // 兼容处理：如果传入了导航结果，先等待导航成功
+    if (isPromise(navResult)) await navResult
+
+    // 核心逻辑：等待异步组件加载 + 框架调度器更新 DOM
+    await this.resolveComponents()
+    await nextTick()
+  }
+  /**
    * 添加历史记录
    *
    * @protected
@@ -478,7 +508,7 @@ export abstract class Router {
     if (redirect) {
       if (hasValidRouteIndex(redirect)) {
         return this.navigate({ to: redirect }, from, redirectFrom ?? to)
-      } else if (hasValidNavOptions(redirect)) {
+      } else if (hasValidNavTarget(redirect)) {
         return this.navigate(redirect, from, redirectFrom ?? to)
       } else if (!matched.component) {
         throw new Error(
@@ -508,7 +538,7 @@ export abstract class Router {
         return result
       }
       // 7.3 守卫重定向
-      if (hasValidNavOptions(guardResult)) {
+      if (hasValidNavTarget(guardResult)) {
         // 直接返回递归结果，如果内部 Reject 会自动向上传播
         return this.navigate(guardResult, from, redirectFrom ?? to)
       }
@@ -617,8 +647,7 @@ export abstract class Router {
     }
     const id = this._scrollTaskID++
     // 等待路由组件解析完成后滚动
-    this.resolveComponents().then(async () => {
-      await nextTick()
+    this.waitViewRender().then(async () => {
       // 确保滚动目标未改变
       if (id === this._scrollTaskID) {
         // 执行滚动到目标位置
@@ -636,7 +665,7 @@ export abstract class Router {
     for (const hook of this._hooks.onNotFound) {
       try {
         const result = hook.call(this, target)
-        if (hasValidNavOptions(result)) return result
+        if (hasValidNavTarget(result)) return result
         if (isString(result) || typeof result === 'symbol') {
           return {
             to: result
