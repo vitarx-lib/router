@@ -1,6 +1,6 @@
 import { createView, ElementView, isFunction, type ValidChildren, type WithProps } from 'vitarx'
 import { type NavigateResult } from '../core/index.js'
-import { useLink, type UseLinkOptions } from '../core/page/index.js'
+import { useLink, type UseLinkOptions } from '../core/shared/index.js'
 
 export interface RouterLinkProps extends UseLinkOptions, WithProps<'a'> {
   /**
