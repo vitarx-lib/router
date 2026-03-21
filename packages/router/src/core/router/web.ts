@@ -1,4 +1,4 @@
-import { deepClone, isString, logger } from 'vitarx'
+import { isString, logger } from 'vitarx'
 import { parseHashContent } from '../common/utils.js'
 import { normalizePath, parseQuery } from '../shared/utils.js'
 import type {
@@ -13,6 +13,11 @@ import type {
 } from '../types/index.js'
 import { Router } from './router.js'
 
+interface HistoryState {
+  path: RoutePath
+  hash: URLHash | ''
+  query: URLQuery
+}
 export class WebRouter extends Router {
   private readonly history = window.history
   constructor(options: RouterOptions) {
@@ -144,7 +149,7 @@ export class WebRouter extends Router {
       }
     }
 
-    return { to: path, hash, query }
+    return { index: path, hash, query }
   }
   /**
    * 处理浏览器历史记录的返回/前进事件
@@ -153,7 +158,7 @@ export class WebRouter extends Router {
     let newTarget: NavTarget
     if (event.state?.path) {
       newTarget = {
-        to: event.state.path,
+        index: event.state.path,
         hash: event.state.hash,
         query: event.state.query
       }
@@ -199,9 +204,12 @@ export class WebRouter extends Router {
    * @param route - 路由
    * @private
    */
-  private createState(route: RouteLocation): Omit<RouteLocation, 'matched'> {
-    const { matched, ...state } = route
-    return deepClone(state)
+  private createState(route: RouteLocation): HistoryState {
+    return {
+      path: route.path,
+      hash: route.hash,
+      query: route.query
+    }
   }
   public destroy() {
     super.destroy()
