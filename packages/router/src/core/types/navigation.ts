@@ -91,7 +91,7 @@ interface BaseNavOptions<T extends RouteIndex> {
   /**
    * 路由索引，/开头为路径，否则为名称
    */
-  to: T
+  index: T
   /**
    * URL hash
    */

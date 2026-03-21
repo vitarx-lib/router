@@ -18,8 +18,8 @@ import type {
  */
 export function hasValidNavTarget(val: unknown): val is NavTarget {
   // 首先检查值是否是一个普通对象
-  // 然后检查该对象是否包含'to'属性
-  return isPlainObject(val) && 'to' in val && hasValidRouteIndex(val.to)
+  // 然后检查该对象是否包含 'index' 属性
+  return isPlainObject(val) && 'index' in val && hasValidRouteIndex(val.index)
 }
 
 /**
@@ -54,7 +54,7 @@ export function hasOnlyChangeHash(route1: RouteLocation, route2: RouteLocation) 
  * @param index - 要判断的索引
  * @returns {boolean} - 如果索引为路径索引则返回true，否则返回false
  */
-export function isPathIndex(index: RouteIndex): index is RoutePath {
+export function hasValidPath(index: any): index is RoutePath {
   return isString(index) && index.startsWith('/')
 }
 
@@ -112,7 +112,7 @@ export function parseHashContent(hashContent: string): {
 export function processGuardResult(res: GuardResult): boolean | NavTarget | void {
   if (res === false) return false
   if ((res && isString(res)) || typeof res === 'symbol') {
-    return { to: res }
+    return { index: res }
   }
   if (hasValidNavTarget(res)) return res
   return true
@@ -121,20 +121,20 @@ export function processGuardResult(res: GuardResult): boolean | NavTarget | void
 /**
  * 解析导航目标
  *
- * @param to - 导航目标
+ * @param index - 导航目标
  */
-export function resolveNavTarget(to: NavTarget | string | symbol | RouteLocation): NavTarget {
-  if (isString(to) || typeof to === 'symbol') {
-    return { to }
+export function resolveNavTarget(index: NavTarget | RouteIndex | RouteLocation): NavTarget {
+  if (isString(index) || typeof index === 'symbol') {
+    return { index }
   }
-  if (hasValidNavTarget(to)) {
-    return to
+  if (hasValidNavTarget(index)) {
+    return index
   }
-  if (isPlainObject(to) && to.path) {
+  if (isPlainObject(index) && index.path) {
     return {
-      to: to.matched.at(-1)?.name || to.path, // 使用最后一个匹配的路由名称，如果没有则使用路径
-      params: to.params, // 路由参数
-      query: to.query // 查询参数
+      index: index.matched.at(-1)?.name || index.path, // 使用最后一个匹配的路由名称，如果没有则使用路径
+      params: index.params, // 路由参数
+      query: index.query // 查询参数
     }
   }
   throw new Error('Invalid navigation target')

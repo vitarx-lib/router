@@ -22,8 +22,8 @@ import { isSameRouteLocation, updateRouteLocation } from '../common/update.js'
 import {
   hasOnlyChangeHash,
   hasValidNavTarget,
+  hasValidPath,
   hasValidRouteIndex,
-  isPathIndex,
   processGuardResult,
   registerHookTool,
   removePathSuffix,
@@ -479,7 +479,7 @@ export abstract class Router {
       if (notFoundResult) {
         return this.navigate(notFoundResult, from)
       }
-      result.message = `No match found for target: ${JSON.stringify((target as NavTarget).to)}`
+      result.message = `No match found for target: ${JSON.stringify((target as NavTarget).index)}`
       result.state = NavState.notfound
       return result
     }
@@ -509,7 +509,7 @@ export abstract class Router {
       : matched.redirect
     if (redirect) {
       if (hasValidRouteIndex(redirect)) {
-        return this.navigate({ to: redirect }, from, redirectFrom ?? to)
+        return this.navigate({ index: redirect }, from, redirectFrom ?? to)
       } else if (hasValidNavTarget(redirect)) {
         return this.navigate(redirect, from, redirectFrom ?? to)
       } else if (!matched.component) {
@@ -665,7 +665,7 @@ export abstract class Router {
         if (hasValidNavTarget(result)) return result
         if (isString(result) || typeof result === 'symbol') {
           return {
-            to: result
+            index: result
           }
         }
       } catch (e) {
@@ -805,12 +805,12 @@ export abstract class Router {
    * @returns {RouteLocationRaw | null} 返回路由位置对象，如果无法匹配则返回null
    */
   public matchRoute(target: NavTarget, redirectFrom?: RouteLocation): RouteLocation | null {
-    let matchTarget = target.to
-    const isPath = isPathIndex(matchTarget)
+    let matchTarget = target.index
+    const isPath = hasValidPath(matchTarget)
     // 如果配置了后缀且目标是路径，则去除后缀
     if (this.config.suffix && isPath) {
       // 去除路径后缀
-      matchTarget = removePathSuffix(target.to as string, this.config.suffix)
+      matchTarget = removePathSuffix(target.index as string, this.config.suffix)
     }
     // 在路由注册表中匹配目标路径
     let match: RouteMatchResult | null
@@ -822,10 +822,10 @@ export abstract class Router {
     // 如果没有匹配的路由，则返回null
     if (!match) {
       const component = this.config.missing
-      if (component && isString(target.to) && target.to.startsWith('/')) {
+      if (component && isString(target.index) && target.index.startsWith('/')) {
         return this.createMissingRoute(
           component,
-          target.to as `/${string}`,
+          target.index as `/${string}`,
           target.query,
           target.hash
         )

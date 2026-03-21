@@ -37,11 +37,7 @@ export class MemoryRouter extends Router {
 
     const target = this._history[targetIndex]
     this._pendingGo = targetIndex
-    this.navigate({
-      to: target.path,
-      query: target.query,
-      hash: target.hash
-    }).finally(() => {
+    this.push(target).finally(() => {
       this._pendingGo = null
     })
   }

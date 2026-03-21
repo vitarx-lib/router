@@ -1,6 +1,6 @@
 import { isArray, isFunction, isString, logger, markRaw } from 'vitarx'
 import { resolveComponent, resolvePattern, resolveProps } from '../common/resolve.js'
-import { hasValidNavTarget, hasValidRouteIndex, isPathIndex } from '../common/utils.js'
+import { hasValidNavTarget, hasValidPath, hasValidRouteIndex } from '../common/utils.js'
 import { isVariablePath, mergePathVariable, optionalVariableCount } from '../common/variable.js'
 import { normalizePath } from '../shared/utils.js'
 import type {
@@ -317,8 +317,8 @@ export class RouteManager {
     index: RouteIndex,
     params?: Record<string, string | number>
   ): RouteMatchResult | null {
-    if (isPathIndex(index)) {
-      return this.matchByPath(index as RoutePath)
+    if (hasValidPath(index)) {
+      return this.matchByPath(index)
     }
     return this.matchByName(index, params)
   }
