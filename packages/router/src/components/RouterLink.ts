@@ -75,7 +75,7 @@ export function RouterLink(props: RouterLinkProps): ElementView<'a'> {
       props,
       ['to', 'children', 'href', 'disabled', 'callback', 'onClick', 'onclick', 'aria-current']
     ],
-    get className() {
+    get class() {
       return [
         !isDisabled() && link.isActive.value ? props.activeClass : undefined,
         !isDisabled() && link.isExactActive.value ? props.exactActiveClass : undefined
