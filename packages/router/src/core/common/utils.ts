@@ -1,6 +1,5 @@
 import {
   type AnyCallback,
-  deepClone,
   isBool,
   isComponent,
   isDeepEqual,
@@ -267,16 +266,6 @@ export function resolveNavTarget(to: NavTarget | string | symbol): NavTarget {
     throw new Error('Invalid navigation target')
   }
   return to
-}
-/**
- * 克隆路由位置对象
- *
- * @param {RouteLocation} route - 要克隆的路由位置对象
- * @return {RouteLocationRaw} - 克隆过后的对象
- */
-export function cloneRouteLocation(route: RouteLocation): RouteLocation {
-  const { matched, ...other } = route
-  return Object.assign(deepClone(other), { matched: Array.from(matched) }) as RouteLocation
 }
 
 /**

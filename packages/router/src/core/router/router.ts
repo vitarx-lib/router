@@ -15,11 +15,10 @@ import {
   type ShallowRef
 } from 'vitarx'
 import { __ROUTER_KEY__, NavState } from '../common/constant.js'
-import { normalizePath, stringifyQuery } from '../common/shared.js'
+import { cloneRouteLocation, normalizePath, stringifyQuery } from '../common/shared.js'
 import { isSameRouteLocation, updateRouteLocation } from '../common/update.js'
 import {
   checkRouterOptions,
-  cloneRouteLocation,
   hasOnlyChangeHash,
   isNavigateTarget,
   isPathIndex,
