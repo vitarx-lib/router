@@ -1,5 +1,5 @@
 import { type Computed, computed, isPlainObject, isString, logger } from 'vitarx'
-import { hasValidNavTarget } from '../common/utils.js'
+import { hasValidNavTarget, hasValidPath } from '../common/utils.js'
 import { useRouter } from '../router/index.js'
 import type {
   NavigateResult,
@@ -112,9 +112,9 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
     } else if (isString(to)) {
       // 如果是 HTTP/HTTPS 链接则返回 null
       if (httpRegex.test(to)) return null
-      target = { to }
+      target = { index: to }
     } else if (typeof to === 'symbol') {
-      target = { to }
+      target = { index: to }
     } else {
       if (__VITARX_DEV__) {
         logger.warn(
@@ -125,23 +125,24 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
     }
 
     // 处理字符串目标
-    if (isString(target.to)) {
+    if (isString(target.index)) {
       // 兼容纯锚点连接跳转
-      if (target.to.startsWith('#')) {
+      if (target.index.startsWith('#')) {
         const route = cloneRouteLocation(router.currentRoute)
-        route.hash = target.to as URLHash
+        route.hash = target.index as URLHash
+        route.href = router.buildUrl(route.path, route.query, route.hash)
         return route
       }
       // 解析片段标识符
-      if (target.to.includes('#')) {
-        const [index, hash] = target.to.split('#', 2)
-        target.to = index
+      if (target.index.includes('#')) {
+        const [index, hash] = target.index.split('#', 2)
+        target.index = index
         target.hash = hash ? `#${hash}` : ''
       }
       // 解析查询参数
-      if (target.to.includes('?')) {
-        const [index, queryString] = target.to.split('?', 2)
-        target.to = index
+      if (target.index.includes('?')) {
+        const [index, queryString] = target.index.split('?', 2)
+        target.index = index
         target.query = parseQuery(queryString)
       }
     }
@@ -162,7 +163,21 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
    * @returns 返回路由的 href 或原始字符串，默认返回 'javascript:void(0)'
    */
   const href = computed(() => {
-    return route.value?.href ?? (isString(props.to) ? props.to : 'javascript:void(0)')
+    if (route.value?.href) {
+      return route.value.href
+    }
+    if (isPlainObject(props.to) && hasValidPath(props.to.index)) {
+      return props.to.index
+    }
+    if (isString(props.to)) {
+      if (httpRegex.test(props.to)) {
+        return props.to
+      }
+      if (props.to.startsWith('/')) {
+        return props.to
+      }
+    }
+    return 'javascript:void(0)'
   })
 
   /**
