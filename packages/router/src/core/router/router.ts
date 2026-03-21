@@ -20,7 +20,8 @@ import { isSameRouteLocation, updateRouteLocation } from '../common/update.js'
 import {
   checkRouterOptions,
   hasOnlyChangeHash,
-  isNavigateTarget,
+  hasValidNavOptions,
+  hasValidRouteIndex,
   isPathIndex,
   processGuardResult,
   registerHookTool,
@@ -34,6 +35,7 @@ import type {
   NavErrorListener,
   NavigateResult,
   NavigationGuard,
+  NavOptions,
   NavTarget,
   NotFoundHandler,
   ResolvedRouterConfig,
@@ -49,7 +51,6 @@ import type {
   RouteViewComponent,
   ScrollPosition,
   ScrollTarget,
-  TypedNavOptions,
   URLHash,
   URLQuery
 } from '../types/index.js'
@@ -280,14 +281,14 @@ export abstract class Router {
   /**
    * 替换当前页面
    *
-   * @param {TypedNavOptions} target - 导航目标对象 / 路由索引
+   * @param {NavOptions} target - 导航目标对象 / 路由索引
    * @param [target.params] - 路由参数对象
    * @param [target.query] - 查询参数对象
    * @param [target.hash] - 哈希值，如：`#hash`
    * @return {Promise<NavigateResult>} - 导航结果
    */
   public replace<T extends RouteIndex>(
-    target: T | TypedNavOptions<T> | RouteLocation
+    target: T | NavOptions<T> | RouteLocation
   ): Promise<NavigateResult> {
     const resolved = { ...resolveNavTarget(target), replace: true }
     // 如果是首次导航，走特殊处理通道
@@ -299,7 +300,7 @@ export abstract class Router {
   /**
    * 跳转到新的页面
    *
-   * @param {TypedNavOptions} target - 导航目标对象 / 路由索引
+   * @param {NavOptions} target - 导航目标对象 / 路由索引
    * @param target.index - 路由索引
    * @param [target.params] - 路由参数对象
    * @param [target.query] - 查询参数对象
@@ -307,7 +308,7 @@ export abstract class Router {
    * @return {Promise<NavigateResult>} - 导航结果
    */
   public push<T extends RouteIndex>(
-    target: T | TypedNavOptions<T> | RouteLocation
+    target: T | NavOptions<T> | RouteLocation
   ): Promise<NavigateResult> {
     const resolved = { ...resolveNavTarget(target), replace: false }
     // 如果是首次导航，走特殊处理通道
@@ -475,10 +476,14 @@ export abstract class Router {
       ? matched.redirect.call(this, to)
       : matched.redirect
     if (redirect) {
-      if (isString(redirect) || typeof redirect === 'symbol') {
+      if (hasValidRouteIndex(redirect)) {
         return this.navigate({ to: redirect }, from, redirectFrom ?? to)
-      } else if (isNavigateTarget(redirect)) {
+      } else if (hasValidNavOptions(redirect)) {
         return this.navigate(redirect, from, redirectFrom ?? to)
+      } else if (!matched.component) {
+        throw new Error(
+          `[Router] Navigation failed: The redirect configuration for the matching destination route is invalid and the components are not defined, check the configuration of the ${to.path} route`
+        )
       }
     }
     // ----------------------------------------------------------------
@@ -503,7 +508,7 @@ export abstract class Router {
         return result
       }
       // 7.3 守卫重定向
-      if (isNavigateTarget(guardResult)) {
+      if (hasValidNavOptions(guardResult)) {
         // 直接返回递归结果，如果内部 Reject 会自动向上传播
         return this.navigate(guardResult, from, redirectFrom ?? to)
       }
@@ -631,7 +636,7 @@ export abstract class Router {
     for (const hook of this._hooks.onNotFound) {
       try {
         const result = hook.call(this, target)
-        if (isNavigateTarget(result)) return result
+        if (hasValidNavOptions(result)) return result
         if (isString(result) || typeof result === 'symbol') {
           return {
             to: result
