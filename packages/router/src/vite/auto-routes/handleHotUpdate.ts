@@ -40,18 +40,11 @@ export function handleHotUpdate(
     import.meta.hot!.accept('virtual:vitarx-router:routes', newRoutes => {
       if (newRoutes && typeof newRoutes === 'object' && 'default' in newRoutes) {
         const routes = newRoutes.default as Route[]
-        const existingRoutes = [...router.routes]
 
-        for (const route of existingRoutes) {
-          if (route.name) {
-            router.removeRoute(route.name)
-          } else {
-            router.removeRoute(route.path)
-          }
-        }
+        router.manager.clearRoutes()
 
         for (const route of routes) {
-          router.addRoute(route)
+          router.manager.addRoute(route)
         }
 
         // 路由更新完成后调用回调函数
@@ -60,14 +53,14 @@ export function handleHotUpdate(
         }
 
         // 强制重新导航到当前路由，跳过重复检查
-        router.navigate({
-          index: router.route.index,
-          params: { ...router.route.params },
-          query: { ...router.route.query },
-          hash: router.route.hash,
-          replace: true,
-          force: true
-        })
+        router
+          .replace({
+            to: router.currentRoute.matched.at(-1)?.name || router.currentRoute.path,
+            params: { ...router.currentRoute.params },
+            query: { ...router.currentRoute.query },
+            hash: router.currentRoute.hash
+          })
+          .then()
       }
     })
   }
