@@ -157,31 +157,19 @@ export abstract class Router {
       mode: 'path',
       ...userConfig
     }
-    if (isFunction(beforeEach)) {
-      this._hooks.beforeEach = new Set([beforeEach])
-    } else if (isArray(beforeEach)) {
-      this._hooks.beforeEach = new Set(beforeEach)
+    if (beforeEach) {
+      this._hooks.beforeEach = new Set(isArray(beforeEach) ? beforeEach : [beforeEach])
     }
-    if (isFunction(afterEach)) {
-      this._hooks.afterEach = new Set([afterEach])
-    } else if (isArray(afterEach)) {
-      this._hooks.afterEach = new Set(afterEach)
+    if (afterEach) {
+      this._hooks.afterEach = new Set(isArray(afterEach) ? afterEach : [afterEach])
     }
-    if (isFunction(onError)) {
-      this._hooks.onError = new Set([onError])
-    } else if (isArray(onError)) {
-      this._hooks.onError = new Set(onError)
+    if (onError) {
+      this._hooks.onError = new Set(isArray(onError) ? onError : [onError])
     }
-    if (isFunction(onNotFound)) {
-      this._hooks.onNotFound = new Set([onNotFound])
-    } else if (isArray(onNotFound)) {
-      this._hooks.onNotFound = new Set(onNotFound)
+    if (onNotFound) {
+      this._hooks.onNotFound = new Set(isArray(onNotFound) ? onNotFound : [onNotFound])
     }
-    if (isArray(routes)) {
-      this.manager = new RouteManager(routes)
-    } else {
-      this.manager = routes
-    }
+    this.manager = isArray(routes) ? new RouteManager(routes) : routes
     this._routeLocation = shallowRef(
       markRaw({
         path: '/',
