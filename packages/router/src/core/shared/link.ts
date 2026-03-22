@@ -3,7 +3,6 @@ import { hasValidNavTarget, hasValidPath } from '../common/utils.js'
 import { useRouter } from '../router/index.js'
 import type {
   NavigateResult,
-  NavOptions,
   NavTarget,
   RouteIndex,
   RouteLocation,
@@ -14,7 +13,7 @@ import { cloneRouteLocation, parseQuery } from './utils.js'
 
 export type HTTPUrl = `http://${string}` | `https://${string}`
 type LinkToTarget<T extends RouteIndex = RouteIndex> =
-  | NavOptions<T>
+  | NavTarget<T>
   | T
   | `${RoutePath}?${string}`
   | URLHash

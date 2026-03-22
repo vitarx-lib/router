@@ -9,8 +9,17 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          name: 'jsdom',
+          include: ['tests/core/**/*.{test,spec}.ts'],
+          environment: 'jsdom',
+          testTimeout: 30000
+        }
+      },
+      {
+        extends: true,
+        test: {
           name: 'browser',
-          include: ['tests/core/**/*.{test,spec}.ts', 'tests/components/**/*.{test,spec}.ts'],
+          include: ['tests/components/**/*.{test,spec}.ts'],
           browser: {
             enabled: true,
             provider: playwright(),
