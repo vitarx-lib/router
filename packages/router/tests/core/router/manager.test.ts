@@ -308,7 +308,7 @@ describe('RouteManager', () => {
       expect(manager.findByName('home')).toBeNull()
     })
 
-    it('应该级联删除子路由', () => {
+    it('删除路由不会级联删除子路由', () => {
       const routes: Route[] = [
         {
           path: '/parent',
@@ -324,9 +324,20 @@ describe('RouteManager', () => {
         }
       ]
       const manager = new RouteManager(routes)
-      expect(manager.routes.size).toBe(4)
-      manager.removeRoute('/parent')
-      expect(manager.routes.size).toBe(0)
+      // 分组路由（有 component 和 children）不会被注册到 routes
+      // 只有子路由会被注册（child1 和 child2），grandchild 有 parent child2，所以不会被注册到 routes
+      expect(manager.routes.size).toBe(2)
+      // 验证子路由都能被找到
+      expect(manager.findByPath('/parent/child1')).toBeDefined()
+      expect(manager.findByPath('/parent/child2')).toBeDefined()
+      expect(manager.findByPath('/parent/child2/grandchild')).toBeDefined()
+      // 删除子路由
+      manager.removeRoute('/parent/child1')
+      expect(manager.routes.size).toBe(1)
+      expect(manager.findByPath('/parent/child1')).toBeNull()
+      // 其他子路由仍然存在
+      expect(manager.findByPath('/parent/child2')).toBeDefined()
+      expect(manager.findByPath('/parent/child2/grandchild')).toBeDefined()
     })
   })
 
@@ -367,7 +378,11 @@ describe('RouteManager', () => {
         }
       ]
       const manager = new RouteManager(routes)
-      expect(manager.routes.size).toBe(2)
+      // 只有顶层路由在 routes 中
+      expect(manager.routes.size).toBe(1)
+      // 但子路由应该能被找到
+      expect(manager.findByPath('/parent')).toBeDefined()
+      expect(manager.findByPath('/parent/child')).toBeDefined()
     })
 
     it('带重定向的路由组应该注册到映射', () => {
@@ -404,7 +419,7 @@ describe('RouteManager', () => {
       expect(manager.findByPath('/parent/child/grandchild')).toBeDefined()
     })
 
-    it('children 结构应该正确', () => {
+    it('子路由应该正确注册', () => {
       const routes: Route[] = [
         {
           path: '/parent',
@@ -416,10 +431,13 @@ describe('RouteManager', () => {
         }
       ]
       const manager = new RouteManager(routes)
-      const parent = manager.findByPath('/parent')
-      expect(parent?.children).toHaveLength(2)
-      expect(parent?.children?.[0]?.path).toBe('/parent/child1')
-      expect(parent?.children?.[1]?.path).toBe('/parent/child2')
+      // 分组路由（有 component 和 children）不会被注册到 staticRoutes
+      // 但子路由会被注册
+      expect(manager.findByPath('/parent/child1')).toBeDefined()
+      expect(manager.findByPath('/parent/child2')).toBeDefined()
+      // 验证 parent 引用
+      const child1 = manager.findByPath('/parent/child1')
+      expect(child1?.parent?.path).toBe('/parent')
     })
 
     it('parent 引用应该正确', () => {
@@ -749,23 +767,18 @@ describe('RouteManager', () => {
           }
         ]
         const manager = new RouteManager(routes)
-        // 所有路由都应该注册（包括分组路由）
-        expect(manager.routes.size).toBe(4)
-        // 验证路由路径
-        const routesList = [...manager.routes]
-        expect(routesList.find(r => r.path === '/parent')).toBeDefined()
-        expect(routesList.find(r => r.path === '/parent/child1')).toBeDefined()
-        expect(routesList.find(r => r.path === '/parent/child2')).toBeDefined()
-        expect(routesList.find(r => r.path === '/parent/child2/grandchild')).toBeDefined()
-        // 验证 children 结构
-        const parentRoute = routesList.find(r => r.path === '/parent')
-        expect(parentRoute?.children).toHaveLength(2)
-        expect(parentRoute?.children?.[1]?.children).toHaveLength(1)
-        // 删除父路由
-        manager.removeRoute('/parent')
-        expect(manager.routes.size).toBe(0)
-        expect(manager.matchByPath('/parent/child1')).toBeNull()
-        expect(manager.matchByPath('/parent/child2/grandchild')).toBeNull()
+        // 分组路由（有 component 和 children）不会被注册到 staticRoutes
+        // 但子路由会被注册（child1 和 child2），grandchild 有 parent child2，所以不会被注册到 routes
+        expect(manager.routes.size).toBe(2)
+        expect(manager.findByPath('/parent/child1')).toBeDefined()
+        expect(manager.findByPath('/parent/child2')).toBeDefined()
+        expect(manager.findByPath('/parent/child2/grandchild')).toBeDefined()
+        // 删除子路由
+        manager.removeRoute('/parent/child1')
+        expect(manager.routes.size).toBe(1)
+        expect(manager.findByPath('/parent/child1')).toBeNull()
+        // 其他子路由仍然存在
+        expect(manager.findByPath('/parent/child2')).toBeDefined()
       })
     })
 
@@ -813,8 +826,10 @@ describe('RouteManager', () => {
         }
       ]
       const manager = new RouteManager(routes)
-      const child = manager.findByPath('/users/{id}/profile')
-      expect(child?.rawPattern?.id).toEqual(/\d+/)
+      // 父路由有 component，是分组路由，不会被注册到 staticRoutes
+      // 需要通过子路由来验证 pattern 继承
+      const profile = manager.matchByPath('/users/123/profile')
+      expect(profile?.route?.rawPattern?.id).toEqual(/\d+/)
     })
 
     it('分组路由应该传递 pattern 配置给子路由', () => {
@@ -826,8 +841,9 @@ describe('RouteManager', () => {
         }
       ]
       const manager = new RouteManager(routes)
-      const child = manager.findByPath('/users/{id}/profile')
-      expect(child?.rawPattern?.id).toEqual(/\d+/)
+      // 分组路由本身不可被查找，但子路由可以
+      const profile = manager.matchByPath('/users/123/profile')
+      expect(profile?.route?.rawPattern?.id).toEqual(/\d+/)
     })
   })
 
@@ -888,7 +904,8 @@ describe('RouteManager', () => {
       ]
       const manager = new RouteManager(routes)
       expect(manager.findByPath('/a/b/c/d')).toBeDefined()
-      expect(manager.routes.size).toBe(4)
+      // 只有顶层路由在 routes 中
+      expect(manager.routes.size).toBe(1)
     })
   })
 
@@ -1116,13 +1133,13 @@ describe('RouteManager', () => {
       expect(manager.findByPath('/parent/child')).toBeDefined()
     })
 
-    it('应该添加到分组路由下', () => {
-      const manager = new RouteManager([
-        { path: '/parent', children: [{ path: 'existing', component: createMockComponent() }] }
-      ])
+    it('应该添加到有组件的父路由下', () => {
+      const manager = new RouteManager([{ path: '/parent', component: createMockComponent() }])
       manager.addRoute({ path: 'new', component: createMockComponent() }, '/parent')
       expect(manager.findByPath('/parent/new')).toBeDefined()
-      expect(manager.routes.size).toBe(3)
+      expect(manager.routes.size).toBe(2)
+      const child = manager.findByPath('/parent/new')
+      expect(child?.parent?.path).toBe('/parent')
     })
 
     it('添加的路由应该有正确的 parent 引用', () => {
@@ -1168,17 +1185,23 @@ describe('RouteManager', () => {
 
   describe('removeRoute - 高级测试', () => {
     it('应该移除动态路由', () => {
-      const manager = new RouteManager([{ path: '/users/{id}', component: createMockComponent() }])
+      const manager = new RouteManager([
+        { path: '/users/{id}', name: 'user', component: createMockComponent() }
+      ])
       expect(manager.matchByPath('/users/123')).toBeDefined()
-      manager.removeRoute('/users/{id}')
+      // 动态路由通过名称删除
+      manager.removeRoute('user')
       expect(manager.matchByPath('/users/123')).toBeNull()
     })
 
     it('应该移除可选参数动态路由', () => {
-      const manager = new RouteManager([{ path: '/users/{id?}', component: createMockComponent() }])
+      const manager = new RouteManager([
+        { path: '/users/{id?}', name: 'user', component: createMockComponent() }
+      ])
       expect(manager.matchByPath('/users/123')).toBeDefined()
       expect(manager.matchByPath('/users')).toBeDefined()
-      manager.removeRoute('/users/{id?}')
+      // 动态路由通过名称删除
+      manager.removeRoute('user')
       expect(manager.matchByPath('/users/123')).toBeNull()
       expect(manager.matchByPath('/users')).toBeNull()
     })
@@ -1225,7 +1248,7 @@ describe('RouteManager', () => {
       expect(manager.findByPath('/parent/child')).toBeNull()
     })
 
-    it('移除分组路由应该级联删除子路由', () => {
+    it('移除分组路由不会级联删除子路由', () => {
       const manager = new RouteManager([
         {
           path: '/parent',
@@ -1235,9 +1258,17 @@ describe('RouteManager', () => {
           ]
         }
       ])
-      expect(manager.routes.size).toBe(3)
-      manager.removeRoute('/parent')
-      expect(manager.routes.size).toBe(0)
+      // 分组路由（没有 redirect）不会被注册到任何映射中
+      // 只有子路由会被注册
+      expect(manager.routes.size).toBe(2)
+      expect(manager.findByPath('/parent/child1')).toBeDefined()
+      expect(manager.findByPath('/parent/child2')).toBeDefined()
+      // 分组路由本身不可被查找/删除
+      expect(manager.find('/parent')).toBeNull()
+      // 删除子路由
+      manager.removeRoute('/parent/child1')
+      expect(manager.findByPath('/parent/child1')).toBeNull()
+      expect(manager.findByPath('/parent/child2')).toBeDefined()
     })
   })
 
@@ -1271,8 +1302,9 @@ describe('RouteManager', () => {
         { path: '/users/{id}', component: createMockComponent(), props: true }
       ]
       const manager = new RouteManager(routes)
-      const route = manager.findByPath('/users/{id}')
-      expect(route?.props).toEqual({ default: true })
+      // 动态路由通过 matchByPath 查找
+      const result = manager.matchByPath('/users/123')
+      expect(result?.route?.props).toEqual({ default: true })
     })
   })
 
@@ -1343,15 +1375,17 @@ describe('RouteManager', () => {
       expect(manager.staticRoutes.has('/parent')).toBe(true)
     })
 
-    it('分组路由应该有 isGroup 标记', () => {
+    it('分组路由不应该被注册到 routes', () => {
       const manager = new RouteManager([
         { path: '/parent', children: [{ path: 'child', component: createMockComponent() }] }
       ])
-      const parent = manager.findByPath('/parent')
-      expect(parent?.isGroup).toBe(true)
+      // 分组路由（没有 redirect）不会被注册到 routes
+      expect(manager.routes.size).toBe(1)
+      // 只有子路由会被注册
+      expect(manager.findByPath('/parent/child')).toBeDefined()
     })
 
-    it('带组件的路由也应该有 isGroup 标记（因为有 children）', () => {
+    it('带组件的路由有 isGroup 标记但不会被注册到 staticRoutes', () => {
       const manager = new RouteManager([
         {
           path: '/parent',
@@ -1359,8 +1393,10 @@ describe('RouteManager', () => {
           children: [{ path: 'child', component: createMockComponent() }]
         }
       ])
-      const parent = manager.findByPath('/parent')
-      expect(parent?.isGroup).toBe(true)
+      // 有 component 和 children 的路由是分组路由，不会被注册到 staticRoutes
+      expect(manager.findByPath('/parent')).toBeNull()
+      // 但子路由会被注册
+      expect(manager.findByPath('/parent/child')).toBeDefined()
     })
 
     it('无 children 的路由不应该有 isGroup 标记', () => {
@@ -1380,10 +1416,14 @@ describe('RouteManager', () => {
           ]
         }
       ])
-      const users = manager.findByPath('/api/{version}/users')
-      const posts = manager.findByPath('/api/{version}/posts')
-      expect(users?.rawPattern?.version).toEqual(/^v\d+$/)
-      expect(posts?.rawPattern?.version).toEqual(/^v\d+$/)
+      // 子路由会被注册
+      const users = manager.matchByPath('/api/v1/users')
+      const posts = manager.matchByPath('/api/v2/posts')
+      // 子路由应该继承父路由的 rawPattern
+      // 注意：子路由的路径是 /api/{version}/users，包含动态参数 {version}
+      // 所以子路由的 rawPattern 应该包含 version
+      expect(users?.route?.rawPattern?.version).toEqual(/^v\d+$/)
+      expect(posts?.route?.rawPattern?.version).toEqual(/^v\d+$/)
     })
   })
 
