@@ -703,11 +703,13 @@ export abstract class Router {
     if (this._hooks.onError) {
       for (const hook of this._hooks.onError) {
         if (isFunction(hook)) {
-          hook.call(this, error, to, from)
+          try {
+            hook.call(this, error, to, from)
+          } catch (e) {
+            logger.error('[Router] Error in onError callback:', e)
+          }
         }
       }
-    } else {
-      logger.error('[Router] Error:', error)
     }
   }
   /**
