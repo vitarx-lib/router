@@ -251,14 +251,14 @@ definePage({
    - 当 `xxx.jsx` 和 `xxx/` 目录同时存在时
    - `xxx.jsx` 作为布局组件（父路由的 component）
    - `xxx/` 目录内的页面文件作为子路由
-   - `xxx/index.jsx` 的 path 为 `index`
-   - 父路由自动添加 `redirect` 重定向到 `index`
+   - `xxx/index.jsx` 的 path 为空字符串 `''`（与 vue-router 一致）
 
 2. **纯目录**
    - 当只有 `xxx/` 目录存在时
    - 目录内有多个文件时，创建目录路由
    - 目录内只有 `index.jsx` 时，直接作为独立路由
    - 目录内的其他页面文件作为子路由
+   - `index.jsx` 作为子路由时 path 为空字符串 `''`
 
 3. **无效目录**
    - 目录既没有同名文件，也没有任何页面文件
@@ -349,9 +349,8 @@ src/pages/
 ```typescript
 [{
   path: '/users',
-  redirect: '/users/index',
   children: [
-    { path: 'index', component: lazy(() => import('src/pages/users/index.jsx')) },
+    { path: '', component: lazy(() => import('src/pages/users/index.jsx')) },
     { path: 'profile', component: lazy(() => import('src/pages/users/profile.jsx')) }
   ]
 }]
@@ -412,16 +411,22 @@ src/pages/
 ```typescript
 [{
   path: '/users',
-  redirect: '/users/index',
   children: [
+    {
+      path: '',
+      component: lazy(() => import('src/pages/users/index.jsx'))
+    },
     {
       path: 'profile',
       component: lazy(() => import('src/pages/users/profile.jsx'))
     },
     {
       path: 'settings',
-      component: lazy(() => import('src/pages/users/settings/index.jsx')),
       children: [
+        {
+          path: '',
+          component: lazy(() => import('src/pages/users/settings/index.jsx'))
+        },
         {
           path: 'security',
           component: lazy(() => import('src/pages/users/settings/security.jsx'))
@@ -478,9 +483,8 @@ src/pages/
 [{
   path: '/users',
   component: lazy(() => import('src/pages/users.jsx')),
-  redirect: '/users/index',
   children: [
-    { path: 'index', component: lazy(() => import('src/pages/users/index.jsx')) },
+    { path: '', component: lazy(() => import('src/pages/users/index.jsx')) },
     { path: 'profile', component: lazy(() => import('src/pages/users/profile.jsx')) }
   ]
 }]

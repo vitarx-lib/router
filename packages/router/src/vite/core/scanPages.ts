@@ -449,10 +449,12 @@ export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
  *
  * 核心逻辑：
  * 1. 将绝对路径转换为相对路径
- *    例如：/users/index → 'index'
  *    例如：/users/profile → 'profile'
  *
- * 2. index 子路由的名称添加 '-index' 后缀
+ * 2. index 子路由的 path 为空字符串（与 vue-router 一致）
+ *    例如：users/index.tsx → path: ''
+ *
+ * 3. index 子路由的名称添加 '-index' 后缀
  *    例如：users/index.tsx → name: 'users-index'
  *    这样可以避免与父路由名称冲突
  */
@@ -462,7 +464,7 @@ function createChildRoute(page: ParsedPage): ParsedPage {
 
   const childRoute: ParsedPage = {
     ...page,
-    path: page.isIndex ? 'index' : relativePath,
+    path: page.isIndex ? '' : relativePath,
     children: []
   }
 
@@ -475,12 +477,11 @@ function createChildRoute(page: ParsedPage): ParsedPage {
 }
 
 /**
- * 处理路由：添加 redirect 并排序
+ * 处理路由：排序
  *
  * 核心逻辑：
  * 1. 递归处理子路由
- * 2. 如果有 index 子路由，自动添加 redirect
- *    例如：/users 有 index 子路由 → redirect: '/users/index'
+ * 2. 对路由进行排序
  */
 function processRoutes(routes: ParsedPage[]): ParsedPage[] {
   return sortRoutes(routes).map(route => {
@@ -498,12 +499,6 @@ function processRoutes(routes: ParsedPage[]): ParsedPage[] {
         }
         return newChild
       })
-
-      // 检查是否有 index 子路由，自动添加 redirect
-      const hasIndexChild = processed.children.some(c => c.path === 'index')
-      if (hasIndexChild && !processed.redirect) {
-        processed.redirect = `${route.path}/index`
-      }
     }
 
     return processed

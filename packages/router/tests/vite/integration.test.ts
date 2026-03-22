@@ -66,16 +66,13 @@ describe('编译场景集成测试', () => {
       expect(tree[0].isLayoutFile).toBe(true)
       expect(tree[0].children.length).toBe(2)
 
-      // index 子路由
-      const indexChild = tree[0].children.find(c => c.path === 'index')
+      // index 子路由（path 为空字符串）
+      const indexChild = tree[0].children.find(c => c.path === '')
       expect(indexChild).toBeDefined()
 
       // profile 子路由
       const profileChild = tree[0].children.find(c => c.path === 'profile')
       expect(profileChild).toBeDefined()
-
-      // 自动 redirect
-      expect(tree[0].redirect).toBe('/users/index')
 
       // 验证警告日志
       // expect(warnSpy).toHaveBeenCalled()
@@ -103,7 +100,6 @@ describe('编译场景集成测试', () => {
       expect(tree[0].path).toBe('/users')
       expect(tree[0].isLayoutFile).toBe(true)
       expect(tree[0].children.length).toBe(1)
-      expect(tree[0].redirect).toBeUndefined()
 
       warnSpy.mockRestore()
     })
@@ -128,15 +124,12 @@ describe('编译场景集成测试', () => {
       expect(tree[0].isLayoutFile).toBeUndefined()
       expect(tree[0].children.length).toBe(2)
 
-      // index 子路由
-      const indexChild = tree[0].children.find(c => c.path === 'index')
+      // index 子路由（path 为空字符串）
+      const indexChild = tree[0].children.find(c => c.path === '')
       expect(indexChild).toBeDefined()
-
-      // 自动 redirect
-      expect(tree[0].redirect).toBe('/users/index')
     })
 
-    it('目录+子页面（无index）不应有 component 和 redirect', async () => {
+    it('目录+子页面（无index）不应有 component', async () => {
       createFile('users/profile1.tsx', 'export default function Profile1() {}')
       createFile('users/profile2.tsx', 'export default function Profile2() {}')
 
@@ -152,7 +145,6 @@ describe('编译场景集成测试', () => {
       expect(tree.length).toBe(1)
       expect(tree[0].path).toBe('/users')
       expect(tree[0].children.length).toBe(2)
-      expect(tree[0].redirect).toBeUndefined()
     })
 
     it('目录+index 应作为独立路由', async () => {
@@ -271,10 +263,9 @@ describe('编译场景集成测试', () => {
 
       // 验证布局路由
       expect(code).toContain("path: '/users'")
-      expect(code).toContain("redirect: '/users/index'")
 
-      // 验证子路由
-      expect(code).toContain("path: 'index'")
+      // 验证子路由（index 的 path 为空字符串）
+      expect(code).toContain("path: ''")
       expect(code).toContain("path: 'profile'")
 
       warnSpy.mockRestore()
@@ -299,8 +290,8 @@ describe('编译场景集成测试', () => {
 
       // 验证路由
       expect(code).toContain("path: '/users'")
-      expect(code).toContain("redirect: '/users/index'")
-      expect(code).toContain("path: 'index'")
+      // index 的 path 为空字符串
+      expect(code).toContain("path: ''")
       expect(code).toContain("path: 'profile'")
     })
 
