@@ -26,3 +26,5 @@ package-lock.json
 *.sw?
 /pnpm-lock.yaml
 __screenshots__
+coverage
+.vitest-*
