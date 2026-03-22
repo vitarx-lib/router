@@ -216,13 +216,10 @@ export interface RouteRecord {
    */
   rawPattern?: Record<string, RegExp>
   /**
-   * 子路由列表
-   */
-  children?: RouteRecord[]
-  /**
    * 原始路由配置
    *
-   * @note 仅存在于开发环境，生产环境会移除！   */
+   * @note 仅存在于开发环境，生产环境会移除！
+   */
   rawRoute?: Route
 }
 
