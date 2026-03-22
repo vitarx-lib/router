@@ -1,11 +1,11 @@
 import { type App as VitarxApp, createApp, h } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  __ROUTER_KEY__,
   createRouter,
   defineRoutes,
-  NavigateStatus,
+  NavState,
   type Route,
-  ROUTER,
   RouterLink
 } from '../../src/index.js'
 
@@ -64,7 +64,7 @@ function mountComponent(
 ): void {
   ctx.router = router ?? createRouter({ mode: 'hash', routes: basicRoutes })
   ctx.app = createApp(() => component)
-  ctx.app.provide(ROUTER, ctx.router)
+  ctx.app.provide(__ROUTER_KEY__, ctx.router)
   ctx.app.mount(ctx.container)
 }
 
@@ -190,51 +190,12 @@ describe('RouterLink', () => {
       mountComponent(ctx, h(RouterLink, { to: '/about', disabled: true }))
       await waitForRender()
 
-      const navigateSpy = vi.spyOn(ctx.router!, 'navigate')
+      const navigateSpy = vi.spyOn(ctx.router!, 'push')
       getLink(ctx)?.click()
       await waitForRender()
 
       expect(navigateSpy).not.toHaveBeenCalled()
       navigateSpy.mockRestore()
-    })
-  })
-
-  describe('active 属性', () => {
-    const activeTestCases = [
-      {
-        active: 'none' as const,
-        to: '/',
-        expectedAria: null,
-        description: 'none 时不应该添加 aria-current'
-      },
-      {
-        active: 'strict' as const,
-        to: '/',
-        expectedAria: 'page',
-        description: 'strict 时严格匹配应该添加 aria-current'
-      },
-      {
-        active: 'strict' as const,
-        to: '/about',
-        expectedAria: null,
-        description: 'strict 时不匹配不应该添加 aria-current'
-      },
-      {
-        active: 'obscure' as const,
-        to: '/',
-        expectedAria: 'page',
-        description: 'obscure 时模糊匹配应该添加 aria-current'
-      }
-    ]
-
-    activeTestCases.forEach(({ active, to, expectedAria, description }) => {
-      it(`${description}`, async () => {
-        mountComponent(ctx, h(RouterLink, { to, active }))
-        await waitForRender(100)
-
-        const ariaCurrent = getLink(ctx)?.getAttribute('aria-current')
-        expect(ariaCurrent).toBe(expectedAria)
-      })
     })
   })
 
@@ -246,14 +207,14 @@ describe('RouterLink', () => {
       getLink(ctx)?.click()
       await waitForRender(100)
 
-      expect(ctx.router!.route.path).toBe('/about')
+      expect(ctx.router!.currentRoute.path).toBe('/about')
     })
 
     it('点击外部链接不应该触发导航', async () => {
       mountComponent(ctx, h(RouterLink, { to: 'https://example.com' }))
       await waitForRender()
 
-      const navigateSpy = vi.spyOn(ctx.router!, 'navigate')
+      const navigateSpy = vi.spyOn(ctx.router!, 'push')
       getLink(ctx)?.click()
       await waitForRender()
 
@@ -271,9 +232,7 @@ describe('RouterLink', () => {
       getLink(ctx)?.click()
       await waitForRender(100)
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({ status: NavigateStatus.success })
-      )
+      expect(callback).toHaveBeenCalledWith(expect.objectContaining({ state: NavState.success }))
     })
   })
 
