@@ -13,7 +13,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { babelTraverse } from './babelUtils.js'
 import { warn } from './logger.js'
-import type { PageOptions, ParsedPage, RedirectConfig } from './types.js'
+import { applyNamingStrategyToName, applyNamingStrategyToPath } from './namingStrategy.js'
+import type { NamingStrategy, PageOptions, ParsedPage, RedirectConfig } from './types.js'
 
 /** 动态参数匹配正则，如 [id]、[slug]、[param?] */
 const DYNAMIC_PARAM_REGEX = /^\[(.+?)(\?)?]$/
@@ -293,6 +294,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
  * @param filePath - 文件绝对路径
  * @param pagesDir - 页面目录绝对路径
  * @param parentPath - 父级路径（用于嵌套路由）
+ * @param namingStrategy - 命名策略，默认为 'kebab'
  * @returns 解析后的页面信息，解析失败或无有效导出返回 null
  *
  * @example
@@ -309,7 +311,8 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
 export function parsePageFile(
   filePath: string,
   pagesDir: string,
-  parentPath: string
+  parentPath: string,
+  namingStrategy: NamingStrategy = 'kebab'
 ): ParsedPage | null {
   const fileName = path.basename(filePath)
   const ext = path.extname(fileName)
@@ -375,10 +378,14 @@ export function parsePageFile(
   // 步骤7：解析 definePage 宏配置
   const pageOptions = parseDefinePage(filePath)
 
+  // 步骤8：应用命名策略转换 path 和 name
+  const finalPath = applyNamingStrategyToPath(routePath, namingStrategy)
+  const finalName = applyNamingStrategyToName(pageOptions?.name || name, namingStrategy)
+
   return {
-    path: routePath,
+    path: finalPath,
     filePath,
-    name: pageOptions?.name || name,
+    name: finalName,
     params,
     isIndex,
     isDynamic,

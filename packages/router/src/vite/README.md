@@ -56,17 +56,17 @@ const router = createRouter({
 
 ### VitePluginRouterOptions
 
-| 选项            | 类型                                       | 默认值                              | 说明              |
-|---------------|------------------------------------------|----------------------------------|-----------------|
-| `pagesDir`    | `string \| string[] \| PagesDirConfig[]` | `'src/pages'`                    | 页面目录配置          |
-| `extensions`  | `string[]`                               | `['.tsx', '.ts', '.jsx', '.js']` | 支持的文件扩展名        |
-| `include`     | `string[]`                               | `[]`                             | 要包含的 glob 模式    |
-| `exclude`     | `string[]`                               | `[]`                             | 要排除的 glob 模式    |
-| `dts`         | `string \| false`                        | `'types-router.d.ts'`            | 类型声明文件路径        |
-| `importMode`  | `'lazy' \| 'file'`                       | `'lazy'`                         | 组件导入模式          |
-| `extendRoute` | `ExtendRouteHook`                        | -                                | 路由扩展钩子          |
-| `imports`     | `string[]`                               | -                                | 自定义导入语句         |
-| `lowercase`   | `boolean`                                | `true`                           | 是否将路由名称和路径转换为小写 |
+| 选项              | 类型                                       | 默认值                              | 说明              |
+|-----------------|------------------------------------------|----------------------------------|-----------------|
+| `pagesDir`      | `string \| string[] \| PagesDirConfig[]` | `'src/pages'`                    | 页面目录配置          |
+| `extensions`    | `string[]`                               | `['.tsx', '.ts', '.jsx', '.js']` | 支持的文件扩展名        |
+| `include`       | `string[]`                               | `[]`                             | 要包含的 glob 模式    |
+| `exclude`       | `string[]`                               | `[]`                             | 要排除的 glob 模式    |
+| `dts`           | `string \| false`                        | `'types-router.d.ts'`            | 类型声明文件路径        |
+| `importMode`    | `'lazy' \| 'file'`                       | `'lazy'`                         | 组件导入模式          |
+| `extendRoute`   | `ExtendRouteHook`                        | -                                | 路由扩展钩子          |
+| `imports`       | `string[]`                               | -                                | 自定义导入语句         |
+| `namingStrategy`| `'kebab' \| 'lowercase' \| 'none'`       | `'kebab'`                        | 路由命名策略          |
 
 ### pagesDir 配置
 
@@ -153,6 +153,35 @@ VitarxRouter({
     return route
   }
 })
+```
+
+### namingStrategy 配置
+
+控制路由名称和路径的命名转换方式。注意：此选项只影响路径段名称，不影响动态参数变量名。
+
+- `kebab`（默认）：将驼峰命名转换为 kebab-case，如 `MainHome` → `main-home`
+- `lowercase`：简单转换为小写，如 `MainHome` → `mainhome`
+- `none`：保持原始命名，不进行转换
+
+```typescript
+// kebab 策略（默认）
+VitarxRouter({
+  namingStrategy: 'kebab'
+})
+// MainHome.tsx → { name: 'main-home', path: '/main-home' }
+// [userName].tsx → { name: 'user-name', path: '/{userName}' }
+
+// lowercase 策略
+VitarxRouter({
+  namingStrategy: 'lowercase'
+})
+// MainHome.tsx → { name: 'mainhome', path: '/mainhome' }
+
+// none 策略
+VitarxRouter({
+  namingStrategy: 'none'
+})
+// MainHome.tsx → { name: 'MainHome', path: '/MainHome' }
 ```
 
 ---

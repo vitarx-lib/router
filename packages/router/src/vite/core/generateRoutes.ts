@@ -4,9 +4,11 @@
  * 负责将解析后的页面信息转换为可执行的路由配置代码。
  * 生成的代码使用 vitarx 的 lazy 函数实现组件懒加载。
  */
+import { applyNamingStrategyToName } from './namingStrategy.js'
 import type {
   ExtendRouteHook,
   ImportMode,
+  NamingStrategy,
   ParsedPage,
   RedirectConfig,
   ResolvedRoute
@@ -33,10 +35,13 @@ export interface GenerateRoutesOptions {
    */
   imports?: string[]
   /**
-   * 是否将路由名称和路径转换为小写
-   * @default true
+   * 路由命名策略
+   * - `kebab`: 将驼峰命名转换为 kebab-case（默认）
+   * - `lowercase`: 简单转换为小写
+   * - `none`: 保持原始命名
+   * @default 'kebab'
    */
-  lowercase?: boolean
+  namingStrategy?: NamingStrategy
 }
 
 /**
@@ -67,13 +72,14 @@ async function buildResolvedRoute(
   page: ParsedPage,
   options: GenerateRoutesOptions
 ): Promise<ResolvedRoute> {
-  const { importMode = 'lazy', extendRoute, lowercase = true } = options
+  const { importMode = 'lazy', extendRoute, namingStrategy = 'kebab' } = options
 
   // 步骤1：创建基础路由对象
   // 注意：component 是可选的，目录路由没有布局文件时不会有 component
+  // path 和 name 已在 parsePageFile 中应用命名策略转换
   const route: ResolvedRoute = {
-    path: lowercase ? page.path.toLowerCase() : page.path,
-    name: lowercase ? page.name.toLowerCase() : page.name
+    path: page.path,
+    name: page.name
   }
 
   // 步骤2：处理组件导入
@@ -113,7 +119,7 @@ async function buildResolvedRoute(
     route.pattern = page.pattern
   }
   if (page.redirect !== undefined) {
-    route.redirect = formatRedirect(page.redirect, lowercase)
+    route.redirect = formatRedirect(page.redirect, namingStrategy)
   }
   if (page.children.length > 0) {
     route.children = await buildResolvedRoutes(page.children, options)
@@ -134,12 +140,13 @@ async function buildResolvedRoute(
  * 1. 字符串路径：'/dashboard'
  * 2. 对象形式：{ index: 'home', query: { from: 'old' }, params: { id: 1 } }
  */
-function formatRedirect(redirect: string | RedirectConfig, lowercase: boolean = true): string {
-  if (typeof redirect === 'string') {
-    return `'${lowercase ? redirect.toLowerCase() : redirect}'`
-  }
+function formatRedirect(
+  redirect: string | RedirectConfig,
+  namingStrategy: NamingStrategy = 'kebab'
+): string {
+  if (typeof redirect === 'string') return redirect
   // 对象形式：构建导航配置对象
-  const parts: string[] = [`index: '${lowercase ? redirect.index.toLowerCase() : redirect.index}'`]
+  const parts: string[] = [`index: '${applyNamingStrategyToName(redirect.index, namingStrategy)}'`]
   if (redirect.query) {
     parts.push(`query: ${JSON.stringify(redirect.query)}`)
   }

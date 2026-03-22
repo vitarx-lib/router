@@ -356,4 +356,67 @@ describe('generateRoutes', () => {
       expect(code).toContain("aux: '/src/pages/index@aux.tsx'")
     })
   })
+
+  describe('命名策略', () => {
+    it('kebab 策略应该在 parsePageFile 阶段已转换', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({ path: '/main-home', name: 'main-home', isIndex: false })
+      ]
+
+      const code = await generateRoutes(pages, { namingStrategy: 'kebab' })
+
+      expect(code).toContain("name: 'main-home'")
+      expect(code).toContain("path: '/main-home'")
+    })
+
+    it('kebab 策略不应该转换动态参数变量名', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/user/{userName}',
+          name: 'user-user-name',
+          isIndex: false,
+          isDynamic: true,
+          params: ['userName']
+        })
+      ]
+
+      const code = await generateRoutes(pages, { namingStrategy: 'kebab' })
+
+      expect(code).toContain("name: 'user-user-name'")
+      expect(code).toContain("path: '/user/{userName}'")
+    })
+
+    it('lowercase 策略应该在 parsePageFile 阶段已转换', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({ path: '/mainhome', name: 'mainhome', isIndex: false })
+      ]
+
+      const code = await generateRoutes(pages, { namingStrategy: 'lowercase' })
+
+      expect(code).toContain("name: 'mainhome'")
+      expect(code).toContain("path: '/mainhome'")
+    })
+
+    it('none 策略应该保持原始命名', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({ path: '/MainHome', name: 'MainHome', isIndex: false })
+      ]
+
+      const code = await generateRoutes(pages, { namingStrategy: 'none' })
+
+      expect(code).toContain("name: 'MainHome'")
+      expect(code).toContain("path: '/MainHome'")
+    })
+
+    it('默认策略应该是 kebab', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({ path: '/user-profile', name: 'user-profile', isIndex: false })
+      ]
+
+      const code = await generateRoutes(pages)
+
+      expect(code).toContain("name: 'user-profile'")
+      expect(code).toContain("path: '/user-profile'")
+    })
+  })
 })

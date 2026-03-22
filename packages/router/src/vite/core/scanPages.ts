@@ -23,7 +23,7 @@ const DEFAULT_INCLUDE = ['**/*']
  * 4. 聚合命名视图
  */
 export function scanPages(options: ScanOptions): ParsedPage[] {
-  const { pagesDir, extensions, include = DEFAULT_INCLUDE, exclude } = options
+  const { pagesDir, extensions, include = DEFAULT_INCLUDE, exclude, namingStrategy = 'kebab' } = options
 
   if (!fs.existsSync(pagesDir)) {
     return []
@@ -102,7 +102,7 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
       //   warn(`检测到同名文件+目录: "${baseName}"，` + `"${entry.name}" 将作为布局组件`)
       // }
 
-      const parsed = parsePageFile(filePath, pagesDir, parentPath)
+      const parsed = parsePageFile(filePath, pagesDir, parentPath, namingStrategy)
       if (parsed) {
         if (hasSameNameDir) {
           parsed.isLayoutFile = true
@@ -129,7 +129,7 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
  * 扫描多个页面目录
  */
 export function scanMultiplePages(options: MultiScanOptions): ParsedPage[] {
-  const { pagesDirs, extensions } = options
+  const { pagesDirs, extensions, namingStrategy = 'kebab' } = options
   const allPages: ParsedPage[] = []
 
   for (const dirConfig of pagesDirs) {
@@ -142,7 +142,8 @@ export function scanMultiplePages(options: MultiScanOptions): ParsedPage[] {
       pagesDir: dirPath,
       extensions,
       include,
-      exclude
+      exclude,
+      namingStrategy
     })
 
     allPages.push(...pages)

@@ -7,7 +7,13 @@ import micromatch from 'micromatch'
 import path from 'node:path'
 import type { ResolvedConfig } from 'vite'
 import { DEFAULT_DTS_FILE, DEFAULT_EXTENSIONS, DEFAULT_PAGES_DIR } from './constants.js'
-import type { ExtendRouteHook, ImportMode, PagesDirConfig, VitePluginRouterOptions } from './types.js'
+import type {
+  ExtendRouteHook,
+  ImportMode,
+  NamingStrategy,
+  PagesDirConfig,
+  VitePluginRouterOptions
+} from './types.js'
 
 /**
  * 规范化后的插件配置
@@ -25,8 +31,8 @@ export interface NormalizedConfig {
   extendRoute?: ExtendRouteHook
   /** 自定义导入语句 */
   imports?: string[]
-  /** 是否将路由名称和路径转换为小写 */
-  lowercase: boolean
+  /** 路由命名策略 */
+  namingStrategy: NamingStrategy
 }
 
 /**
@@ -47,7 +53,7 @@ export function normalizeConfig(options: VitePluginRouterOptions): NormalizedCon
     importMode = 'lazy',
     extendRoute,
     imports,
-    lowercase = true
+    namingStrategy = 'kebab'
   } = options
 
   const pagesDirs = normalizePagesDirs(pagesDir, include, exclude)
@@ -59,7 +65,7 @@ export function normalizeConfig(options: VitePluginRouterOptions): NormalizedCon
     importMode,
     extendRoute,
     imports,
-    lowercase
+    namingStrategy
   }
 }
 

@@ -74,7 +74,7 @@ export interface PageOptions {
 /**
  * 重定向配置对象
  *
- * 与 NavigateConfig 类似，但仅包含可序列化的属性。
+ * 与 NavigateOptions 类似，但仅包含可序列化的属性。
  */
 export interface RedirectConfig {
   /** 路由索引，/开头为路径，否则为名称 */
@@ -233,6 +233,14 @@ export interface ScanOptions {
   include: string[]
   /** 要排除的文件/目录 glob 模式列表 */
   exclude: string[]
+  /**
+   * 路由命名策略
+   * - `kebab`: 将驼峰命名转换为 kebab-case（默认）
+   * - `lowercase`: 简单转换为小写
+   * - `none`: 保持原始命名
+   * @default 'kebab'
+   */
+  namingStrategy?: NamingStrategy
 }
 
 /**
@@ -245,6 +253,14 @@ export interface MultiScanOptions {
   pagesDirs: PagesDirConfig[]
   /** 要处理的文件扩展名列表 */
   extensions: string[]
+  /**
+   * 路由命名策略
+   * - `kebab`: 将驼峰命名转换为 kebab-case（默认）
+   * - `lowercase`: 简单转换为小写
+   * - `none`: 保持原始命名
+   * @default 'kebab'
+   */
+  namingStrategy?: NamingStrategy
 }
 
 /**
@@ -254,6 +270,15 @@ export interface MultiScanOptions {
  * - `file`: 直接使用文件路径作为组件，由用户自行处理导入
  */
 export type ImportMode = 'lazy' | 'file'
+
+/**
+ * 路由命名策略
+ *
+ * - `kebab`: 将驼峰命名转换为 kebab-case（默认），如 MainHome → main-home
+ * - `lowercase`: 简单转换为小写，如 MainHome → mainhome
+ * - `none`: 保持原始命名，不进行转换
+ */
+export type NamingStrategy = 'kebab' | 'lowercase' | 'none'
 
 /**
  * Vite 插件配置选项
@@ -436,29 +461,40 @@ export interface VitePluginRouterOptions {
    */
   imports?: string[]
   /**
-   * 是否将路由名称和路径转换为小写
+   * 路由命名策略
    *
-   * - `true`: 自动转换为小写（默认）
-   * - `false`: 保持原始大小写
+   * 控制路由名称和路径的命名转换方式。
+   * 注意：此选项只影响路径段名称，不影响动态参数变量名。
    *
-   * @default true
+   * - `kebab`: 将驼峰命名转换为 kebab-case（默认），如 MainHome → main-home
+   * - `lowercase`: 简单转换为小写，如 MainHome → mainhome
+   * - `none`: 保持原始命名，不进行转换
+   *
+   * @default 'kebab'
    *
    * @example
    * ```typescript
-   * // 开启小写转换
+   * // kebab 策略（默认）
    * VitarxRouter({
-   *   lowercase: true
+   *   namingStrategy: 'kebab'
    * })
-   * // 生成: { name: 'about', path: '/about' }
+   * // MainHome.tsx → { name: 'main-home', path: '/main-home' }
+   * // [userName].tsx → { name: 'user-name', path: '/{userName}' }
    *
-   * // 关闭小写转换
+   * // lowercase 策略
    * VitarxRouter({
-   *   lowercase: false
+   *   namingStrategy: 'lowercase'
    * })
-   * // 生成: { name: 'About', path: '/About' }
+   * // MainHome.tsx → { name: 'mainhome', path: '/mainhome' }
+   *
+   * // none 策略
+   * VitarxRouter({
+   *   namingStrategy: 'none'
+   * })
+   * // MainHome.tsx → { name: 'MainHome', path: '/MainHome' }
    * ```
    */
-  lowercase?: boolean
+  namingStrategy?: NamingStrategy
 }
 
 /**

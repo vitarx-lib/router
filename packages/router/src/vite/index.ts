@@ -119,7 +119,7 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
 
   // 规范化配置
   const normalizedConfig = normalizeConfig(options)
-  const { pagesDirs, extensions, dts, importMode, extendRoute, imports, lowercase } =
+  const { pagesDirs, extensions, dts, importMode, extendRoute, imports, namingStrategy } =
     normalizedConfig
 
   // 插件内部状态
@@ -155,7 +155,7 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
         importMode,
         extendRoute,
         imports,
-        lowercase
+        namingStrategy
       })
     }
     return cachedRoutesPromise
@@ -174,7 +174,7 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
       fs.mkdirSync(dtsDir, { recursive: true })
     }
 
-    const content = generateFullDtsFile(routeTree, lowercase)
+    const content = generateFullDtsFile(routeTree)
     fs.writeFileSync(dtsPath, content, 'utf-8')
 
     info(`类型定义文件已生成: ${chalk.yellow(dtsPath)}`)

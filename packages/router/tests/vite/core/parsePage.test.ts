@@ -108,8 +108,6 @@ describe('parsePageFile', () => {
       expect(result!.name).toBe('articles-param')
       expect(result!.isIndex).toBe(false)
       expect(result!.isDynamic).toBe(true)
-      console.log(result!.params)
-
       expect(result!.params).toContain('param')
     })
 

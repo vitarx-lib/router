@@ -501,9 +501,10 @@ describe('scanMultiplePages', () => {
       expect(result.length).toBe(4)
       const paths = result.map(p => p.path)
       expect(paths).toContain('/')
-      expect(paths).toContain('/components/Button')
+      // 注意：命名策略默认为 kebab，Button -> button
+      expect(paths).toContain('/components/button')
       expect(paths).toContain('/admin')
-      expect(paths).toContain('/admin/components/Layout')
+      expect(paths).toContain('/admin/components/layout')
     })
 
     it('每个目录应该支持独立的 exclude 规则', () => {
