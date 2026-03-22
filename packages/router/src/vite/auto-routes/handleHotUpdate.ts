@@ -55,7 +55,7 @@ export function handleHotUpdate(
         // 强制重新导航到当前路由，跳过重复检查
         router
           .replace({
-            to: router.currentRoute.matched.at(-1)?.name || router.currentRoute.path,
+            index: router.currentRoute.matched.at(-1)?.name || router.currentRoute.path,
             params: { ...router.currentRoute.params },
             query: { ...router.currentRoute.query },
             hash: router.currentRoute.hash
