@@ -1,6 +1,7 @@
+import { logger } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryRouter, defineRoutes, type Route } from '../../../src/index.js'
 import * as helpers from '../../../src/core/router/helpers.js'
+import { createMemoryRouter, defineRoutes, type Route } from '../../../src/index.js'
 
 function createMockComponent() {
   return vi.fn()
@@ -101,9 +102,11 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: {} as any })
         expect(link.href.value).toBe('javascript:void(0)')
+        warnSpy.mockRestore()
       })
 
       it('应该对无效的 to 类型返回 javascript:void(0)', async () => {
@@ -111,9 +114,11 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: 123 as any })
         expect(link.href.value).toBe('javascript:void(0)')
+        warnSpy.mockRestore()
       })
 
       it('应该正确处理带路径的导航目标', async () => {
@@ -154,9 +159,11 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/nonexistent' })
         expect(link.route.value).toBeNull()
+        warnSpy.mockRestore()
       })
 
       it('应该正确处理 symbol 作为路由索引', async () => {
@@ -165,9 +172,11 @@ describe('shared/link', () => {
         mockUseRouter(router)
 
         const { useLink } = await import('../../../src/core/shared/link.js')
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const sym = Symbol('route')
         const link = useLink({ to: sym })
         expect(link.route.value).toBeNull()
+        warnSpy.mockRestore()
       })
 
       it('应该正确处理纯锚点链接', async () => {
@@ -226,10 +235,11 @@ describe('shared/link', () => {
         router = createMemoryRouter({ routes: basicRoutes })
         await router.replace({ index: '/' })
         mockUseRouter(router)
-
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/nonexistent' })
         expect(link.isActive.value).toBe(false)
+        warnSpy.mockRestore()
       })
     })
 
@@ -259,9 +269,11 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/nonexistent' })
         expect(link.isExactActive.value).toBe(false)
+        warnSpy.mockRestore()
       })
     })
 
@@ -315,7 +327,7 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/nonexistent' })
         const result = await link.navigate()
