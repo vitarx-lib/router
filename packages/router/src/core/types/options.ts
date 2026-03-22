@@ -72,6 +72,7 @@ export interface RouterOptions {
    * 允许用户在路由激活之后执行逻辑，例如页面初始化
    */
   afterEach?: AfterCallback | AfterCallback[]
+
   /**
    * 路由未匹配钩子
    *
