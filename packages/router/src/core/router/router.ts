@@ -85,6 +85,11 @@ interface Hooks {
  */
 export abstract class Router {
   /**
+   * 最大重定向次数限制
+   * @private
+   */
+  public static readonly MAX_REDIRECTS = 16
+  /**
    * 当前路由位置 - 仅内部使用
    * @private
    */
@@ -124,6 +129,11 @@ export abstract class Router {
    * @private
    */
   private _taskCounter = 0
+  /**
+   * 重定向计数器，用于检测无限重定向循环
+   * @private
+   */
+  private _redirectCount = 0
   /**
    * 等待滚动目标
    * @private
@@ -455,11 +465,23 @@ export abstract class Router {
     // 0. 生成任务ID并开始导航
     const taskId = ++this._taskCounter
     this._currentTaskId = taskId
+    // 如果是新的导航任务（非重定向），重置重定向计数器
+    if (!redirectFrom) {
+      this._redirectCount = 0
+    }
     const hasChanged = (): boolean => {
       if (this._currentTaskId === taskId) return false
       result.state = NavState.cancelled
       result.message = 'Navigation superseded by a newer navigation'
       return true
+    }
+    const checkRedirectLoop = (targetPath: string): void => {
+      this._redirectCount++
+      if (this._redirectCount > Router.MAX_REDIRECTS) {
+        throw new Error(
+          `[Router] Detected infinite redirect loop: exceeded maximum redirects (${Router.MAX_REDIRECTS}). Last redirect was to "${targetPath}". Check your route configuration or navigation guards.`
+        )
+      }
     }
     // 1. 解析目标路由
     const to = this.matchRoute(target, redirectFrom)
@@ -481,6 +503,8 @@ export abstract class Router {
       const notFoundResult = this.runNotFoundHook(target)
       // 如果钩子返回了新的目标，进行重定向
       if (notFoundResult) {
+        const redirectPath = String(notFoundResult.index)
+        checkRedirectLoop(redirectPath)
         return this.navigate(notFoundResult, from)
       }
       result.message = `No match found for target: ${JSON.stringify((target as NavTarget).index)}`
@@ -513,8 +537,10 @@ export abstract class Router {
       : matched.redirect
     if (redirect) {
       if (hasValidRouteIndex(redirect)) {
+        checkRedirectLoop(String(redirect))
         return this.navigate({ index: redirect }, from, redirectFrom ?? to)
       } else if (hasValidNavTarget(redirect)) {
+        checkRedirectLoop(String(redirect.index))
         return this.navigate(redirect, from, redirectFrom ?? to)
       } else if (!matched.component) {
         throw new Error(
@@ -545,6 +571,7 @@ export abstract class Router {
       }
       // 7.3 守卫重定向
       if (hasValidNavTarget(guardResult)) {
+        checkRedirectLoop(String(guardResult.index))
         // 直接返回递归结果，如果内部 Reject 会自动向上传播
         return this.navigate(guardResult, from, redirectFrom ?? to)
       }
