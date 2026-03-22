@@ -201,6 +201,12 @@ export abstract class Router {
     return readonly(this._routeLocation.value)
   }
   /**
+   * 获取解析后的路由记录数组
+   */
+  get routes(): RouteRecord[] {
+    return Array.from(this.manager.routes)
+  }
+  /**
    * 判断路由器是否已准备就绪
    *
    * 返回一个 Promise，它会在路由器完成初始导航之后被解析，
