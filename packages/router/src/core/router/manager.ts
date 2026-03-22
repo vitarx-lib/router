@@ -107,7 +107,7 @@ export class RouteManager {
   public readonly config: Required<RouteManagerOptions>
 
   /**
-   * 路由记录数组
+   * 所有被注册的路由记录集合
    *
    * 警告：⚠️ 请勿直接操作routes，以免造成路由状态不一致。
    */
@@ -157,6 +157,15 @@ export class RouteManager {
     })
     this.parseRoutes(routes)
   }
+  /**
+   * 根据配置规范化路径
+   * @param path - 原始路径
+   * @returns 规范化后的路径（根据 ignoreCase 配置转换为小写）
+   * @private
+   */
+  private normalizePath(path: RoutePath): RoutePath {
+    return this.config.ignoreCase ? (path.toLowerCase() as RoutePath) : path
+  }
 
   /**
    * 根据路径查找路由
@@ -165,16 +174,8 @@ export class RouteManager {
    * @returns 路由记录对象，如果未找到则返回 undefined
    */
   public findByPath(path: RoutePath): RouteRecord | null {
-    const normalizedPath = this.config.ignoreCase ? (path.toLowerCase() as RoutePath) : path
-    // 先查找静态路由和别名映射
-    const result = this.staticRoutes.get(normalizedPath) ?? this.aliasRoutes.get(normalizedPath)
-    if (result) return result
-    // 遍历所有路由查找（支持分组路由）
-    for (const route of this.routes) {
-      const routePath = this.config.ignoreCase ? route.path.toLowerCase() : route.path
-      if (routePath === normalizedPath) return route
-    }
-    return null
+    const normalizedPath = this.normalizePath(path)
+    return this.staticRoutes.get(normalizedPath) ?? this.aliasRoutes.get(normalizedPath) ?? null
   }
 
   /**
@@ -370,10 +371,12 @@ export class RouteManager {
     }
     this.registerRoute(routeRecord)
   }
+
   /**
    * 删除路由
    *
-   * 此方法会级联删除子路由。
+   * 此方法只删除指定的单条路由记录，不会级联删除子路由。
+   * 分组路由只有在有重定向时才会被注册到映射中，它不是一条常规记录。
    *
    * @param {string} index - path或name
    * @returns {void}
@@ -381,31 +384,8 @@ export class RouteManager {
   public removeRoute(index: RouteIndex): boolean {
     const route = this.find(index)
     if (!route) return false
-    this.removeRouteRecursive(route)
+    this.removeRouteRecord(route)
     return true
-  }
-
-  /**
-   * 递归删除路由及其子路由
-   */
-  private removeRouteRecursive(route: RouteRecord): void {
-    // 先递归删除子路由
-    if (route.children) {
-      for (const child of route.children) {
-        this.removeRouteRecursive(child)
-      }
-    }
-    // 删除当前路由
-    this.routes.delete(route)
-    this.staticRoutes.delete(route.path)
-    if (route.name) this.namedRoutes.delete(route.name)
-    if (route.aliases) {
-      for (const alias of route.aliases) {
-        const aliasPath = this.config.ignoreCase ? alias.toLowerCase() : alias
-        this.aliasRoutes.delete(aliasPath)
-      }
-    }
-    this.removeDynamicRoute(route)
   }
   /**
    * 清空所有路由映射
@@ -424,18 +404,40 @@ export class RouteManager {
     this.aliasRoutes.clear()
   }
   /**
-   * 删除动态路由映射
+   * 删除单条路由记录
    */
-  private removeDynamicRoute(route: RouteRecord): void {
-    if (!route.fullPattern) return
-    const path = route.path
+  private removeRouteRecord(route: RouteRecord): void {
+    // 删除当前路由
+    this.routes.delete(route)
+    // 删除静态路由映射
+    this.staticRoutes.delete(this.normalizePath(route.path))
+    // 删除命名路由映射
+    if (route.name) this.namedRoutes.delete(route.name)
+    // 删除别名映射
+    if (route.aliases) {
+      for (const alias of route.aliases) {
+        this.aliasRoutes.delete(this.normalizePath(alias))
+        // 如果别名是动态路由，也需要从 dynamicRoutes 中移除
+        if (isVariablePath(alias)) {
+          this.removeAliasDynamicRoute(alias, route)
+        }
+      }
+    }
+    // 删除动态路由映射
+    this.removeDynamicRoute(route)
+  }
+  /**
+   * 从动态路由映射中移除指定路由记录
+   * @param path - 路由路径
+   * @param route - 要移除的路由记录
+   */
+  private removeDynamicRouteRecord(path: RoutePath, route: RouteRecord): void {
     const segments = path.split('/').filter(Boolean)
     const length = segments.length
-
-    const removeRouteFromRecords = (key: number) => {
+    const removeFromRecords = (key: number) => {
       const records = this.dynamicRoutes.get(key)
       if (records) {
-        for (let i = 0; i < records.length; i++) {
+        for (let i = records.length - 1; i >= 0; i--) {
           if (records[i].route === route) {
             records.splice(i, 1)
             break
@@ -443,14 +445,26 @@ export class RouteManager {
         }
       }
     }
-
-    removeRouteFromRecords(length)
+    removeFromRecords(length)
     const count = optionalVariableCount(path)
     if (count > 0) {
       for (let i = 1; i <= count; i++) {
-        removeRouteFromRecords(length - i)
+        removeFromRecords(length - i)
       }
     }
+  }
+  /**
+   * 删除动态别名路由映射
+   */
+  private removeAliasDynamicRoute(aliasPath: RoutePath, route: RouteRecord): void {
+    this.removeDynamicRouteRecord(aliasPath, route)
+  }
+  /**
+   * 删除动态路由映射
+   */
+  private removeDynamicRoute(route: RouteRecord): void {
+    if (!route.fullPattern) return
+    this.removeDynamicRouteRecord(route.path, route)
   }
   /**
    * 解析路由配置数组，将每个路由规范化并注册到路由系统中
@@ -464,16 +478,9 @@ export class RouteManager {
       const routeRecord = this.parseRoute(route, parent)
       // 将规范化的路由记录注册到路由系统
       this.registerRoute(routeRecord)
-      // 如果当前路由包含子路由，先初始化 children 数组
+      // 如果当前路由包含子路由，递归处理
       if (route.children) {
-        routeRecord.children = []
-        // 递归处理子路由
         this.parseRoutes(route.children, routeRecord)
-      }
-      // 添加到父级的 children 数组（在处理完子路由后）
-      if (parent) {
-        if (!parent.children) parent.children = []
-        parent.children.push(routeRecord)
       }
     }
   }
@@ -541,6 +548,11 @@ export class RouteManager {
       record.beforeEnter = route.beforeEnter
     }
     const patternInput = mergePattern(parent?.rawPattern, route.pattern)
+    // 分组路由也需要设置 rawPattern，以便子路由可以继承
+    if (Object.keys(patternInput).length > 0) {
+      record.rawPattern = patternInput
+    }
+    // 只有非分组路由或有重定向的分组路由才需要生成动态匹配模式
     if ((!isGroup || route.redirect) && isVariablePath(record.path)) {
       const { pattern, ...rest } = resolvePattern(
         record.path,
@@ -551,9 +563,6 @@ export class RouteManager {
       )
       record.pattern = pattern
       record.fullPattern = rest.regex
-    }
-    if (Object.keys(patternInput).length > 0) {
-      record.rawPattern = patternInput
     }
     if (route.alias != null) {
       const aliases = isArray(route.alias) ? route.alias : [route.alias]
@@ -586,10 +595,7 @@ export class RouteManager {
    * @throws {Error} 当检测到重复的路由名称或路径时会抛出错误
    */
   private registerRoute(route: RouteRecord): void {
-    // 所有路由都注册到 routes
-    this.routes.add(route)
-
-    // 跳过无重定向的组路由的映射注册
+    // 跳过无重定向的分组路由的映射注册
     if (route.isGroup && !route.redirect) return
 
     // 如果路由名称存在
@@ -606,7 +612,7 @@ export class RouteManager {
     if (route.fullPattern) {
       this.registerDynamicRoute(route, route.fullPattern)
     } else {
-      const path = this.config.ignoreCase ? route.path.toLowerCase() : route.path
+      const path = this.normalizePath(route.path)
       // 检查是否已存在相同路径的路由
       if (this.staticRoutes.has(path)) {
         // 抛出错误：检测到重复的路由路径
@@ -619,7 +625,7 @@ export class RouteManager {
     // 注册别名
     if (route.aliases && route.aliases.length > 0) {
       for (const alias of route.aliases) {
-        const aliasPath = (this.config.ignoreCase ? alias.toLowerCase() : alias) as RoutePath
+        const aliasPath = this.normalizePath(alias)
         if (isVariablePath(alias)) {
           if (!validateAliasVariables(route.pattern, alias)) {
             throw new Error(
@@ -647,6 +653,9 @@ export class RouteManager {
         }
       }
     }
+
+    // 将被真实注册的路由记录到 routes
+    this.routes.add(route)
   }
   /**
    * 注册动态路由
