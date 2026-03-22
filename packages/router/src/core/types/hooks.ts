@@ -77,12 +77,12 @@ export type NavErrorListener = (
  *
  * @param to - 目标路由对象
  * @param from - 来源路由对象
- * @returns {false | void | Promise<false | void>} 返回 false 阻止导航，返回 Promise 则异步处理
+ * @returns {boolean | void | Promise<false | void>} 返回 false 阻止导航，返回 Promise 则异步处理
  */
 export type RouteLeaveGuard = (
   to: RouteLocation,
   from: RouteLocation
-) => false | void | Promise<false | void>
+) => boolean | void | Promise<boolean | void>
 
 /**
  * 路由更新前回调
