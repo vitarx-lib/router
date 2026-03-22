@@ -100,20 +100,10 @@ export abstract class Router {
    */
   private _readyPromise: Promise<void> | null = null
   /**
-   * resolve 函数引用
-   * @private
-   */
-  private _readyResolve: ((value: void) => void) | null = null
-  /**
-   * reject 函数引用
-   * @private
-   */
-  private _readyReject: ((reason: unknown) => void) | null = null
-  /**
    * 是否已完成初始导航
    * @private
    */
-  private _isReady: boolean = false
+  private _isInitialized: boolean = false
   /**
    * 钩子函数
    * @private
@@ -198,24 +188,15 @@ export abstract class Router {
    * 判断路由器是否已准备就绪
    *
    * 返回一个 Promise，它会在路由器完成初始导航之后被解析，
-   * 如果初始导航已经发生，则该 Promise 会被立刻解析。
+   * 如果初始导航已经完成，则该 Promise 会被立刻解析。
    *
    * @returns {Promise<void>} - 导航结果
    */
-  public isReady(): Promise<void> {
-    if (this._isReady) {
-      return Promise.resolve()
-    }
-    if (this._currentTaskId === null) {
+  public async isReady(): Promise<void> {
+    if (!this._isInitialized) {
       return Promise.reject(new Error('Router is not initialized.'))
     }
-    if (!this._readyPromise) {
-      this._readyPromise = new Promise<void>((resolve, reject) => {
-        this._readyResolve = resolve
-        this._readyReject = reject
-      })
-    }
-    return this._readyPromise
+    return this._readyPromise ?? void 0
   }
   /**
    * 安装路由器
@@ -247,13 +228,8 @@ export abstract class Router {
    * @returns {void}
    */
   public destroy(): void {
-    if (this._readyReject && !this._isReady) {
-      this._readyReject(new Error('Router was destroyed before initialization completed.'))
-    }
     this._readyPromise = null
-    this._readyResolve = null
-    this._readyReject = null
-    this._isReady = false
+    this._isInitialized = false
     this._currentTaskId = null
     this.manager.clearRoutes()
   }
@@ -306,7 +282,7 @@ export abstract class Router {
   ): Promise<NavigateResult> {
     const resolved = { ...resolveNavTarget(target), replace: true }
     // 如果是首次导航，走特殊处理通道
-    if (this._currentTaskId === null) {
+    if (!this._isInitialized) {
       return this.initialNavigation(resolved)
     }
     return this.navigate(resolved)
@@ -326,7 +302,7 @@ export abstract class Router {
   ): Promise<NavigateResult> {
     const resolved = { ...resolveNavTarget(target), replace: false }
     // 如果是首次导航，走特殊处理通道
-    if (this._currentTaskId === null) {
+    if (!this._isInitialized) {
       return this.initialNavigation(resolved)
     }
     return this.navigate(resolved)
@@ -447,6 +423,23 @@ export abstract class Router {
    * @param route - 路由
    */
   protected hashUpdate?(route: RouteLocation): void
+  /**
+   * 处理首次导航
+   * 它会拦截 navigate 的结果，仅在首次调用时生效，用于控制 isReady 状态
+   *
+   * @param target - 导航目标
+   * @returns 返回标准的导航结果 Promise
+   */
+  private initialNavigation(target: NavTarget): Promise<NavigateResult> {
+    this._isInitialized = true
+    const result = this.navigate(target)
+    this._readyPromise = result
+      .then(() => void 0)
+      .finally(() => {
+        this._readyPromise = null
+      })
+    return result
+  }
   /**
    * 导航到指定位置
    * @param target - 导航目标对象 | 路由位置对象
@@ -573,36 +566,6 @@ export abstract class Router {
     const scrollPosition = this[target.replace ? 'replaceHistory' : 'pushHistory'](to)
     this.completeNavigation(to, from, scrollPosition ?? null)
     return result
-  }
-  /**
-   * 处理首次导航
-   * 它会拦截 navigate 的结果，仅在首次调用时生效，用于控制 isReady 状态
-   *
-   * @param target - 导航目标
-   * @returns 返回标准的导航结果 Promise
-   */
-  private async initialNavigation(target: NavTarget): Promise<NavigateResult> {
-    try {
-      const result = await this.navigate(target)
-
-      if (result.state === NavState.success) {
-        await this.waitViewRender()
-        this._isReady = true
-        if (this._readyResolve) {
-          this._readyResolve()
-        }
-      } else {
-        if (this._readyReject) {
-          this._readyReject(result)
-        }
-      }
-      return result
-    } catch (error) {
-      if (this._readyReject) {
-        this._readyReject(error)
-      }
-      return Promise.reject(error)
-    }
   }
   /**
    * 完成导航过程
