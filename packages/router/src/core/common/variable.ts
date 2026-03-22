@@ -133,7 +133,7 @@ export function mergePattern(p1?: Route['pattern'], p2?: Route['pattern']): Reco
   // 2. 先处理 p1，直接复制所有 pattern
   if (isPlainObject(p1)) {
     for (const name in p1) {
-      if (p1[name]) result[name] = p1[name]
+      if (p1[name] instanceof RegExp) result[name] = p1[name]
     }
   }
 
@@ -141,7 +141,7 @@ export function mergePattern(p1?: Route['pattern'], p2?: Route['pattern']): Reco
   // 如果 p1 中没有某个 name，这相当于新增；如果有，则是覆盖
   if (isPlainObject(p2)) {
     for (const name in p2) {
-      if (p2[name]) result[name] = p2[name]
+      if (p2[name] instanceof RegExp) result[name] = p2[name]
     }
   }
 
