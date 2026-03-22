@@ -1,5 +1,6 @@
+import { isPlainObject } from 'vitarx'
 import { normalizePath } from '../shared/utils.js'
-import type { RoutePath } from '../types/index.js'
+import type { ResolvedPattern, Route, RoutePath } from '../types/index.js'
 
 /**
  * 判断path是否包含变量
@@ -12,6 +13,65 @@ import type { RoutePath } from '../types/index.js'
  */
 export function isVariablePath(path: string): boolean {
   return /\{[^}]+}/.test(path)
+}
+
+/**
+ * 提取路径中的所有变量定义
+ *
+ * @param path - 路径
+ * @returns 变量定义数组，包含名称和是否可选
+ */
+export function extractVariables(path: string): Array<{ name: string; optional: boolean }> {
+  const variables: Array<{ name: string; optional: boolean }> = []
+  const regex = /\{([^}?]+)(\?)?}/g
+  let match
+  while ((match = regex.exec(path)) !== null) {
+    variables.push({
+      name: match[1],
+      optional: !!match[2]
+    })
+  }
+  return variables
+}
+
+/**
+ * 验证别名路径的变量是否与主路径一致
+ *
+ * 规则：
+ * - 变量名称必须完全一致
+ * - 变量的可选性必须一致
+ * - 变量数量必须一致
+ *
+ * @param mainPattern - 主路径的 pattern
+ * @param aliasPath - 别名路径
+ * @returns 验证通过返回 true，否则返回 false
+ */
+export function validateAliasVariables(
+  mainPattern: ResolvedPattern[] | undefined,
+  aliasPath: string
+): boolean {
+  const aliasVariables = extractVariables(aliasPath)
+
+  if (!mainPattern || mainPattern.length === 0) {
+    return aliasVariables.length === 0
+  }
+
+  if (aliasVariables.length !== mainPattern.length) {
+    return false
+  }
+
+  const mainVarMap = new Map(mainPattern.map(p => [p.name, p.optional]))
+  for (const aliasVar of aliasVariables) {
+    const mainOptional = mainVarMap.get(aliasVar.name)
+    if (mainOptional === undefined) {
+      return false
+    }
+    if (mainOptional !== aliasVar.optional) {
+      return false
+    }
+  }
+
+  return true
 }
 
 /**
@@ -58,4 +118,32 @@ export function mergePathVariable(
 
   // 使用 formatPath 处理可能出现的双斜杠 (如 /user//) 或首尾斜杠问题
   return normalizePath(fullPath)
+}
+
+/**
+ * 合并两个路由模式对象
+ *
+ * @param p1 - 父级的pattern配置（Record格式）
+ * @param p2 - 要合并的路由pattern输入
+ * @returns {Record<string, RegExp>} - 合并后的路由模式对象
+ */
+export function mergePattern(p1?: Route['pattern'], p2?: Route['pattern']): Record<string, RegExp> {
+  // 1. 初始化结果对象
+  const result: Record<string, RegExp> = {}
+  // 2. 先处理 p1，直接复制所有 pattern
+  if (isPlainObject(p1)) {
+    for (const name in p1) {
+      if (p1[name]) result[name] = p1[name]
+    }
+  }
+
+  // 3. 处理 p2，直接覆盖 result 中对应的 regex
+  // 如果 p1 中没有某个 name，这相当于新增；如果有，则是覆盖
+  if (isPlainObject(p2)) {
+    for (const name in p2) {
+      if (p2[name]) result[name] = p2[name]
+    }
+  }
+
+  return result
 }
