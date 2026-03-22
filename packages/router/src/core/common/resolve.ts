@@ -113,15 +113,16 @@ export function resolvePattern(
       throwRouteConfigError(path, 'required variables cannot follow optional variables')
     }
     resolvedPattern.push({ regex, name, optional })
+    // 3. 移除正则表达式中的 ^ 和 $ 锚点，因为在路径参数中不需要这些锚点
+    let source = regex.source.replace(/^\^|\$$/g, '')
 
     if (optional) {
       optionalCount++
-      // 3. 使用局部变量 regex，且建议给捕获组一个默认匹配逻辑防止 undefined
-      // (?:(${regex.source}))? 是对的，但要注意 regex.source 不能包含全局标志 g
-      return `(?:(${regex.source}))?`
+      // 4. 使用局部变量 regex，且建议给捕获组一个默认匹配逻辑防止 undefined
+      return `(?:(${source}))?`
     }
 
-    return `(${regex.source})`
+    return `(${source})`
   }
 
   // 4. 路径处理
