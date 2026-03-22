@@ -86,6 +86,10 @@ export interface Route {
    */
   name?: RouteName
   /**
+   * 路由的别名，用于匹配多个路径到同一个路由
+   */
+  alias?: string | string[]
+  /**
    * 动态路由参数匹配模式
    */
   pattern?: Record<string, RegExp>
@@ -172,6 +176,10 @@ export interface RouteRecord {
    */
   path: RoutePath
   /**
+   * 路由别名路径列表
+   */
+  aliases?: RoutePath[]
+  /**
    * 路由名称
    */
   name?: RouteName
@@ -204,10 +212,17 @@ export interface RouteRecord {
    */
   fullPattern?: RegExp
   /**
+   * 原始的路由模式配置（用于子路由继承）
+   */
+  rawPattern?: Record<string, RegExp>
+  /**
+   * 子路由列表
+   */
+  children?: RouteRecord[]
+  /**
    * 原始路由配置
    *
-   * @note 仅存在于开发环境，生产环境会移除！
-   */
+   * @note 仅存在于开发环境，生产环境会移除！   */
   rawRoute?: Route
 }
 

@@ -1,7 +1,13 @@
 import { isArray, isFunction, isString, logger, markRaw } from 'vitarx'
 import { resolveComponent, resolvePattern, resolveProps } from '../common/resolve.js'
 import { hasValidNavTarget, hasValidPath, hasValidRouteIndex } from '../common/utils.js'
-import { isVariablePath, mergePathVariable, optionalVariableCount } from '../common/variable.js'
+import {
+  isVariablePath,
+  mergePathVariable,
+  mergePattern,
+  optionalVariableCount,
+  validateAliasVariables
+} from '../common/variable.js'
 import { normalizePath } from '../shared/utils.js'
 import type {
   DynamicRouteRecord,
@@ -129,6 +135,13 @@ export class RouteManager {
   public readonly dynamicRoutes = new Map<number, DynamicRouteRecord[]>()
 
   /**
+   * 别名 -> 路由 映射（静态别名）
+   *
+   * 警告：⚠️ 请勿直接操作aliasRoutes，以免造成路由状态不一致。
+   */
+  public readonly aliasRoutes = new Map<string, RouteRecord>()
+
+  /**
    * 构造函数
    *
    * @param routes 原始路由配置数组
@@ -153,7 +166,15 @@ export class RouteManager {
    */
   public findByPath(path: RoutePath): RouteRecord | null {
     const normalizedPath = this.config.ignoreCase ? (path.toLowerCase() as RoutePath) : path
-    return this.staticRoutes.get(normalizedPath) ?? null
+    // 先查找静态路由和别名映射
+    const result = this.staticRoutes.get(normalizedPath) ?? this.aliasRoutes.get(normalizedPath)
+    if (result) return result
+    // 遍历所有路由查找（支持分组路由）
+    for (const route of this.routes) {
+      const routePath = this.config.ignoreCase ? route.path.toLowerCase() : route.path
+      if (routePath === normalizedPath) return route
+    }
+    return null
   }
 
   /**
@@ -206,6 +227,12 @@ export class RouteManager {
     const staticRoute = this.staticRoutes.get(lookupPath)
     if (staticRoute) {
       return { path: formattedPath, route: staticRoute, params: {} }
+    }
+
+    // 2.5 别名路由精确匹配
+    const aliasRoute = this.aliasRoutes.get(lookupPath)
+    if (aliasRoute) {
+      return { path: formattedPath, route: aliasRoute, params: {} }
     }
 
     // 3. 动态路由匹配
@@ -346,17 +373,39 @@ export class RouteManager {
   /**
    * 删除路由
    *
+   * 此方法会级联删除子路由。
+   *
    * @param {string} index - path或name
    * @returns {void}
    */
   public removeRoute(index: RouteIndex): boolean {
     const route = this.find(index)
     if (!route) return false
+    this.removeRouteRecursive(route)
+    return true
+  }
+
+  /**
+   * 递归删除路由及其子路由
+   */
+  private removeRouteRecursive(route: RouteRecord): void {
+    // 先递归删除子路由
+    if (route.children) {
+      for (const child of route.children) {
+        this.removeRouteRecursive(child)
+      }
+    }
+    // 删除当前路由
     this.routes.delete(route)
     this.staticRoutes.delete(route.path)
     if (route.name) this.namedRoutes.delete(route.name)
+    if (route.aliases) {
+      for (const alias of route.aliases) {
+        const aliasPath = this.config.ignoreCase ? alias.toLowerCase() : alias
+        this.aliasRoutes.delete(aliasPath)
+      }
+    }
     this.removeDynamicRoute(route)
-    return true
   }
   /**
    * 清空所有路由映射
@@ -372,6 +421,7 @@ export class RouteManager {
     this.staticRoutes.clear()
     this.namedRoutes.clear()
     this.dynamicRoutes.clear()
+    this.aliasRoutes.clear()
   }
   /**
    * 删除动态路由映射
@@ -414,10 +464,16 @@ export class RouteManager {
       const routeRecord = this.parseRoute(route, parent)
       // 将规范化的路由记录注册到路由系统
       this.registerRoute(routeRecord)
-      // 如果当前路由包含子路由
+      // 如果当前路由包含子路由，先初始化 children 数组
       if (route.children) {
+        routeRecord.children = []
         // 递归处理子路由
         this.parseRoutes(route.children, routeRecord)
+      }
+      // 添加到父级的 children 数组（在处理完子路由后）
+      if (parent) {
+        if (!parent.children) parent.children = []
+        parent.children.push(routeRecord)
       }
     }
   }
@@ -484,16 +540,41 @@ export class RouteManager {
     if ((route.beforeEnter && isFunction(route.beforeEnter)) || isArray(route.beforeEnter)) {
       record.beforeEnter = route.beforeEnter
     }
+    const patternInput = mergePattern(parent?.rawPattern, route.pattern)
     if ((!isGroup || route.redirect) && isVariablePath(record.path)) {
       const { pattern, ...rest } = resolvePattern(
         record.path,
-        route.pattern || {},
+        patternInput,
         this.config.strict,
         this.config.ignoreCase,
         this.config.pattern
       )
       record.pattern = pattern
       record.fullPattern = rest.regex
+    }
+    if (Object.keys(patternInput).length > 0) {
+      record.rawPattern = patternInput
+    }
+    if (route.alias != null) {
+      const aliases = isArray(route.alias) ? route.alias : [route.alias]
+      record.aliases = []
+      for (const alias of aliases) {
+        const rawAlias = alias.trim()
+        let aliasPath: RoutePath
+        if (rawAlias === '') {
+          if (!parent) {
+            throw new Error(`[Router] Empty alias is not allowed for root route "${record.path}"`)
+          }
+          aliasPath = parent.path
+        } else if (rawAlias.startsWith('/')) {
+          aliasPath = normalizePath(rawAlias) as RoutePath
+        } else if (!parent) {
+          aliasPath = normalizePath(`/${rawAlias}`) as RoutePath
+        } else {
+          aliasPath = normalizePath(`${parent.path}/${rawAlias}`) as RoutePath
+        }
+        record.aliases.push(aliasPath)
+      }
     }
     // 保存原始路由配置，方便开发环境调试
     if (__VITARX_DEV__) record.rawRoute = route
@@ -505,7 +586,10 @@ export class RouteManager {
    * @throws {Error} 当检测到重复的路由名称或路径时会抛出错误
    */
   private registerRoute(route: RouteRecord): void {
-    // 跳过无重定向的组路由注册
+    // 所有路由都注册到 routes
+    this.routes.add(route)
+
+    // 跳过无重定向的组路由的映射注册
     if (route.isGroup && !route.redirect) return
 
     // 如果路由名称存在
@@ -531,25 +615,63 @@ export class RouteManager {
       // 将路由路径与路由记录关联存储
       this.staticRoutes.set(path, route)
     }
-    this.routes.add(route)
+
+    // 注册别名
+    if (route.aliases && route.aliases.length > 0) {
+      for (const alias of route.aliases) {
+        const aliasPath = (this.config.ignoreCase ? alias.toLowerCase() : alias) as RoutePath
+        if (isVariablePath(alias)) {
+          if (!validateAliasVariables(route.pattern, alias)) {
+            throw new Error(
+              `[Router] Alias "${alias}" variables do not match route "${route.path}" pattern`
+            )
+          }
+          const { regex } = resolvePattern(
+            alias,
+            route.rawPattern || {},
+            this.config.strict,
+            this.config.ignoreCase,
+            this.config.pattern
+          )
+          this.registerDynamicRoute(route, regex, alias)
+        } else {
+          if (route.pattern && route.pattern.length > 0) {
+            throw new Error(
+              `[Router] Alias "${alias}" for dynamic route "${route.path}" must contain variables`
+            )
+          }
+          if (this.staticRoutes.has(aliasPath) || this.aliasRoutes.has(aliasPath)) {
+            throw new Error(`[Router] Duplicate route alias detected: "${alias}"`)
+          }
+          this.aliasRoutes.set(aliasPath, route)
+        }
+      }
+    }
   }
   /**
-   * 记录动态路由
+   * 注册动态路由
    */
-  private registerDynamicRoute(route: RouteRecord, regex: RegExp): void {
-    const optional = optionalVariableCount(route.path)
-    const length = route.path.split('/').filter(Boolean).length
-    const addToLengthMap = (len: number) => {
-      if (!this.dynamicRoutes.has(len)) {
-        this.dynamicRoutes.set(len, [])
-      }
-      this.dynamicRoutes.get(len)!.push({ regex, route })
-    }
-    addToLengthMap(length)
+  private registerDynamicRoute(route: RouteRecord, regex: RegExp, alias?: string): void {
+    const path = alias || route.path
+    const optional = optionalVariableCount(path)
+    const length = path.split('/').filter(Boolean).length
+    const record = { route, regex }
+    this.addDynamicRecord(record, length)
     if (optional > 0) {
       for (let i = 1; i <= optional; i++) {
-        addToLengthMap(length - i)
+        this.addDynamicRecord(record, length - i)
       }
+    }
+  }
+  /**
+   * 追加动态记录到映射
+   */
+  private addDynamicRecord(record: DynamicRouteRecord, length: number): void {
+    const records = this.dynamicRoutes.get(length)
+    if (records) {
+      records.push(record)
+    } else {
+      this.dynamicRoutes.set(length, [record])
     }
   }
 }
