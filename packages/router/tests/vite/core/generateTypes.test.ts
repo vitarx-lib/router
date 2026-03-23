@@ -67,7 +67,7 @@ describe('generateFullDtsFile', () => {
       expect(dts).toContain("'/': {}")
     })
 
-    it('应该为动态路由生成参数类型', () => {
+    it('应该为动态路由生成参数类型（仅注册 name，不注册 path）', () => {
       const pages: ParsedPage[] = [
         createMockParsedPage({
           path: '/user/{id}',
@@ -81,7 +81,7 @@ describe('generateFullDtsFile', () => {
       const dts = generateFullDtsFile(pages)
 
       expect(dts).toContain("'user-id': { params: { id: string | number } }")
-      expect(dts).toContain("'/user/{id}': { params: { id: string | number } }")
+      expect(dts).not.toContain("'/user/{id}'")
     })
 
     it('应该正确处理多个动态参数', () => {
@@ -125,7 +125,7 @@ describe('generateFullDtsFile', () => {
   })
 
   describe('嵌套路由类型生成', () => {
-    it('应该为嵌套路由生成类型', () => {
+    it('应该为嵌套路由生成类型（父路由有 children 不注册）', () => {
       const pages: ParsedPage[] = [
         createMockParsedPage({
           path: '/user',
@@ -144,8 +144,56 @@ describe('generateFullDtsFile', () => {
 
       const dts = generateFullDtsFile(pages)
 
-      expect(dts).toContain("'user': {}")
+      expect(dts).not.toContain("'user': {}")
       expect(dts).toContain("'user-id': { params: { id: string | number } }")
+    })
+
+    it('应该为有 redirect 的父路由生成类型', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/user',
+          name: 'user',
+          redirect: '/user/list',
+          children: [
+            createMockParsedPage({
+              path: '/user/list',
+              name: 'user-list',
+              isIndex: false
+            })
+          ]
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      expect(dts).toContain("'user': {}")
+      expect(dts).toContain("'/user': {}")
+      expect(dts).toContain("'user-list': {}")
+      expect(dts).toContain("'/user/list': {}")
+    })
+
+    it('应该正确处理空路径子路由（使用父路径）', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/admin',
+          name: 'admin',
+          children: [
+            createMockParsedPage({
+              path: '',
+              name: 'admin-index',
+              isIndex: true,
+              parentPath: '/admin'
+            })
+          ]
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      expect(dts).not.toContain("'admin': {}")
+      expect(dts).toContain("'admin-index': {}")
+      expect(dts).toContain("'/admin': {}")
+      expect(dts).not.toContain("'': {}")
     })
   })
 

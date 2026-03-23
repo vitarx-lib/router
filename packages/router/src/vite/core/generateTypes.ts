@@ -7,43 +7,81 @@ import { extractParamsFromPath } from './parsePage.js'
 import type { ParsedPage, RouteIndexMap } from './types.js'
 
 /**
- * 构建路由索引映射表
- *
- * 将页面列表转换为 RouteIndexMap 对象，包含每个路由的名称和路径作为键，以及对应的参数类型信息作为值。
- *
- * @param pages - 解析后的页面列表
- * @returns 路由索引映射表
+ * 检查路径是否包含动态参数
+ * @param path - 路由路径
+ * @returns 是否包含动态参数
  */
-function buildRouteIndexMap(pages: ParsedPage[]): RouteIndexMap {
-  const map: RouteIndexMap = {}
+function hasDynamicParams(path: string): boolean {
+  return /\{[^}]+}/.test(path)
+}
 
-  /**
-   * 递归处理单个页面及其子页面
-   *
-   * @param page - 要处理的页面
-   */
-  function processPage(page: ParsedPage): void {
+/**
+ * 判断路由是否需要注册
+ * 规则：有 component 且没有 children，或者有 redirect
+ * @param page - 页面信息
+ * @returns 是否需要注册
+ */
+function shouldRegisterRoute(page: ParsedPage): boolean {
+  const hasComponent = page.filePath && page.filePath.trim() !== ''
+  const hasChildren = page.children.length > 0
+  const hasRedirect = page.redirect !== undefined
+  return (hasComponent && !hasChildren) || hasRedirect
+}
+
+/**
+ * 递归处理单个页面及其子页面
+ *
+ * @param map - 路由索引映射表
+ * @param page - 要处理的页面
+ * @param parentFullPath - 父级完整路径（用于计算空路径子路由的完整路径）
+ */
+function processPage(map: RouteIndexMap, page: ParsedPage, parentFullPath: string = ''): void {
+  if (shouldRegisterRoute(page)) {
     const params = extractParamsFromPath(page.path)
     const entry =
       params.length > 0
         ? { params: params.reduce((acc, p) => ({ ...acc, [p]: 'string | number' }), {}) }
         : {}
 
-    // 同时使用 name 和 path 作为键，支持两种导航方式
-    // path 和 name 已在 parsePageFile 中应用命名策略转换
     map[page.name] = entry
-    map[page.path] = entry
 
-    // 递归处理子路由
-    for (const child of page.children) {
-      processPage(child)
+    if (!hasDynamicParams(page.path)) {
+      let fullPath = page.path
+      if (page.path === '' && parentFullPath) {
+        fullPath = parentFullPath
+      }
+      if (fullPath) {
+        map[fullPath] = entry
+      }
     }
   }
 
-  for (const page of pages) {
-    processPage(page)
-  }
+  const currentFullPath = page.path === '' ? parentFullPath : page.path || parentFullPath
 
+  for (const child of page.children) {
+    processPage(map, child, currentFullPath)
+  }
+}
+
+/**
+ * 构建路由索引映射表
+ *
+ * 将页面列表转换为 RouteIndexMap 对象，包含每个路由的名称和路径作为键，以及对应的参数类型信息作为值。
+ *
+ * 注册规则：
+ * 1. 有 component 且没有 children 的路由需要注册
+ * 2. 有 redirect 的路由需要注册
+ * 3. 如果 path 包含动态参数（如 {id}），只注册 name 映射，不注册 path 映射
+ * 4. 空路径的子路由使用完整路径
+ *
+ * @param pages - 解析后的页面列表
+ * @returns 路由索引映射表
+ */
+function buildRouteIndexMap(pages: ParsedPage[]): RouteIndexMap {
+  const map: RouteIndexMap = {}
+  for (const page of pages) {
+    processPage(map, page)
+  }
   return map
 }
 
