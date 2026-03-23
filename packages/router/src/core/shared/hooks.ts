@@ -1,4 +1,4 @@
-import { onScopeDispose } from 'vitarx'
+import { markRaw, onScopeDispose } from 'vitarx'
 import { useRouter } from '../router/helpers.js'
 import type { RouteLeaveGuard, RouteUpdateCallback } from '../types/index.js'
 
@@ -33,7 +33,7 @@ export function onBeforeRouteLeave(guard: RouteLeaveGuard): void {
   if (route.leaveGuards) {
     route.leaveGuards.add(guard)
   } else {
-    route.leaveGuards = new Set([guard])
+    route.leaveGuards = markRaw(new Set([guard]))
   }
   onScopeDispose(() => route.leaveGuards?.delete(guard))
 }
@@ -66,7 +66,7 @@ export function onBeforeRouteUpdate(cb: RouteUpdateCallback): void {
   if (route.beforeUpdateHooks) {
     route.beforeUpdateHooks.add(cb)
   } else {
-    route.beforeUpdateHooks = new Set([cb])
+    route.beforeUpdateHooks = markRaw(new Set([cb]))
   }
   onScopeDispose(() => route.beforeUpdateHooks?.delete(cb))
 }
