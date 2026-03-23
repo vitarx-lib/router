@@ -262,11 +262,11 @@ describe('编译场景集成测试', () => {
       expect(code).toContain("import { lazy } from 'vitarx'")
 
       // 验证布局路由
-      expect(code).toContain("path: '/users'")
+      expect(code).toContain('path: "/users"')
 
       // 验证子路由（index 的 path 为空字符串）
-      expect(code).toContain("path: ''")
-      expect(code).toContain("path: 'profile'")
+      expect(code).toContain('path: ""')
+      expect(code).toContain('path: "profile"')
 
       warnSpy.mockRestore()
     })
@@ -289,10 +289,10 @@ describe('编译场景集成测试', () => {
       expect(code).toContain("import { lazy } from 'vitarx'")
 
       // 验证路由
-      expect(code).toContain("path: '/users'")
+      expect(code).toContain('path: "/users"')
       // index 的 path 为空字符串
-      expect(code).toContain("path: ''")
-      expect(code).toContain("path: 'profile'")
+      expect(code).toContain('path: ""')
+      expect(code).toContain('path: "profile"')
     })
 
     it('应正确生成 file 模式代码', async () => {
@@ -311,8 +311,8 @@ describe('编译场景集成测试', () => {
       // 不应包含 lazy 导入
       expect(code).not.toContain("import { lazy } from 'vitarx'")
 
-      // component 应该是字符串路径
-      expect(code).toContain("component: '")
+      // component 应该是字符串路径（使用双引号）
+      expect(code).toContain('component: "')
     })
   })
 

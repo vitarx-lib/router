@@ -88,19 +88,19 @@ async function buildResolvedRoute(
   // 注意：这里只存储文件路径，在代码生成阶段才根据 importMode 生成代码
   if (page.filePath && page.filePath.trim() !== '') {
     // 步骤2.1：处理命名视图（如 index@sidebar.tsx）
-    // 命名视图存储为对象：{ default: '/src/pages/index.tsx', sidebar: '/src/pages/index@sidebar.tsx' }
+    // 命名视图存储为对象：{ default: '"/src/pages/index.tsx"', sidebar: '"/src/pages/index@sidebar.tsx"' }
     if (page.namedViews) {
       const components: Record<string, string> = {
-        default: page.filePath
+        default: JSON.stringify(page.filePath)
       }
       // 添加其他命名视图
       for (const [viewName, viewPath] of Object.entries(page.namedViews)) {
-        components[viewName] = viewPath
+        components[viewName] = JSON.stringify(viewPath)
       }
       route.component = components
     } else {
       // 步骤2.2：单一组件
-      route.component = page.filePath
+      route.component = JSON.stringify(page.filePath)
     }
   }
 
@@ -143,9 +143,11 @@ function formatRedirect(
   redirect: string | RedirectConfig,
   namingStrategy: NamingStrategy = 'kebab'
 ): string {
-  if (typeof redirect === 'string') return `'${redirect}'`
+  if (typeof redirect === 'string') return JSON.stringify(redirect)
   // 对象形式：构建导航配置对象
-  const parts: string[] = [`index: '${applyNamingStrategyToName(redirect.index, namingStrategy)}'`]
+  const parts: string[] = [
+    `index: ${JSON.stringify(applyNamingStrategyToName(redirect.index, namingStrategy))}`
+  ]
   if (redirect.query) {
     parts.push(`query: ${JSON.stringify(redirect.query)}`)
   }
@@ -223,9 +225,9 @@ function generateRouteCode(
 
   // name 属性：分组路由（有 children 且无 redirect）不生成 name
   if (route.name !== undefined) {
-    lines.push(`${indent}  name: '${route.name}',`)
+    lines.push(`${indent}  name: ${JSON.stringify(route.name)},`)
   }
-  lines.push(`${indent}  path: '${route.path}'`)
+  lines.push(`${indent}  path: ${JSON.stringify(route.path)}`)
 
   // 关键：动态添加逗号
   // 每个可选属性生成前，先检查上一行是否需要逗号
@@ -265,7 +267,7 @@ function generateRouteCode(
 /**
  * 格式化组件表达式
  *
- * @param component - 组件文件路径（字符串或对象）
+ * @param component - 组件文件路径或代码表达式（字符串或对象）
  * @param importMode - 导入模式
  * @returns 格式化后的代码字符串
  */
@@ -274,11 +276,12 @@ function formatComponent(
   importMode: ImportMode
 ): string {
   if (typeof component === 'string') {
-    return importMode === 'file' ? `'${component}'` : `lazy(() => import('${component}'))`
+    return importMode === 'file' ? component : `lazy(() => import(${component}))`
   }
   // 命名视图：生成 { default: lazy(...), sidebar: lazy(...) }
-  const entries = Object.entries(component).map(([name, path]) => {
-    const expr = importMode === 'file' ? `'${path}'` : `lazy(() => import('${path}'))`
+  const entries = Object.entries(component).map(([name, value]) => {
+    // 检测是否已经是代码表达式
+    const expr = importMode === 'file' ? value : `lazy(() => import(${value}))`
     return `${name}: ${expr}`
   })
   return `{ ${entries.join(', ')} }`

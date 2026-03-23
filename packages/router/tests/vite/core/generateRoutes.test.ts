@@ -49,7 +49,7 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages)
 
-      expect(code).toContain("name: 'home'")
+      expect(code).toContain('name: "home"')
     })
 
     it('应该生成正确的路由路径', async () => {
@@ -60,8 +60,8 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages)
 
-      expect(code).toContain("path: '/'")
-      expect(code).toContain("path: '/about'")
+      expect(code).toContain('path: "/"')
+      expect(code).toContain('path: "/about"')
     })
   })
 
@@ -79,8 +79,8 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages)
 
-      expect(code).toContain("name: 'user-id'")
-      expect(code).toContain("path: '/user/{id}'")
+      expect(code).toContain('name: "user-id"')
+      expect(code).toContain('path: "/user/{id}"')
     })
   })
 
@@ -102,9 +102,9 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages)
 
-      expect(code).not.toContain("name: 'user'")
-      expect(code).toContain("path: '/user'")
-      expect(code).toContain("name: 'user-profile'")
+      expect(code).not.toContain('name: "user"')
+      expect(code).toContain('path: "/user"')
+      expect(code).toContain('name: "user-profile"')
       expect(code).toContain('children: [')
     })
 
@@ -134,9 +134,9 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages)
 
-      expect(code).not.toContain("name: 'admin'")
-      expect(code).not.toContain("name: 'admin-users'")
-      expect(code).toContain("name: 'admin-users-id'")
+      expect(code).not.toContain('name: "admin"')
+      expect(code).not.toContain('name: "admin-users"')
+      expect(code).toContain('name: "admin-users-id"')
     })
 
     it('有 redirect 的分组路由应该有 name', async () => {
@@ -157,9 +157,9 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages)
 
-      expect(code).toContain("name: 'admin'")
-      expect(code).toContain("redirect: '/admin/dashboard'")
-      expect(code).toContain("name: 'admin-dashboard'")
+      expect(code).toContain('name: "admin"')
+      expect(code).toContain('redirect: "/admin/dashboard"')
+      expect(code).toContain('name: "admin-dashboard"')
     })
   })
 
@@ -259,7 +259,7 @@ describe('generateRoutes', () => {
       const code = await generateRoutes(pages, { importMode: 'file' })
 
       expect(code).not.toContain("import { lazy } from 'vitarx'")
-      expect(code).toContain("component: '/src/pages/index.tsx'")
+      expect(code).toContain('component: "/src/pages/index.tsx"')
     })
   })
 
@@ -307,7 +307,7 @@ describe('generateRoutes', () => {
         extendRoute: () => undefined
       })
 
-      expect(code).toContain("name: 'home'")
+      expect(code).toContain('name: "home"')
     })
 
     it('extendRoute 支持异步', async () => {
@@ -376,8 +376,8 @@ describe('generateRoutes', () => {
       const code = await generateRoutes(pages, { importMode: 'file' })
 
       expect(code).toContain('component: {')
-      expect(code).toContain("default: '/src/pages/index.tsx'")
-      expect(code).toContain("aux: '/src/pages/index@aux.tsx'")
+      expect(code).toContain('default: "/src/pages/index.tsx"')
+      expect(code).toContain('aux: "/src/pages/index@aux.tsx"')
     })
   })
 
@@ -389,8 +389,8 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages, { namingStrategy: 'kebab' })
 
-      expect(code).toContain("name: 'main-home'")
-      expect(code).toContain("path: '/main-home'")
+      expect(code).toContain('name: "main-home"')
+      expect(code).toContain('path: "/main-home"')
     })
 
     it('kebab 策略不应该转换动态参数变量名', async () => {
@@ -406,8 +406,8 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages, { namingStrategy: 'kebab' })
 
-      expect(code).toContain("name: 'user-user-name'")
-      expect(code).toContain("path: '/user/{userName}'")
+      expect(code).toContain('name: "user-user-name"')
+      expect(code).toContain('path: "/user/{userName}"')
     })
 
     it('lowercase 策略应该在 parsePageFile 阶段已转换', async () => {
@@ -417,8 +417,8 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages, { namingStrategy: 'lowercase' })
 
-      expect(code).toContain("name: 'mainhome'")
-      expect(code).toContain("path: '/mainhome'")
+      expect(code).toContain('name: "mainhome"')
+      expect(code).toContain('path: "/mainhome"')
     })
 
     it('none 策略应该保持原始命名', async () => {
@@ -428,8 +428,8 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages, { namingStrategy: 'none' })
 
-      expect(code).toContain("name: 'MainHome'")
-      expect(code).toContain("path: '/MainHome'")
+      expect(code).toContain('name: "MainHome"')
+      expect(code).toContain('path: "/MainHome"')
     })
 
     it('默认策略应该是 kebab', async () => {
@@ -439,8 +439,8 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages)
 
-      expect(code).toContain("name: 'user-profile'")
-      expect(code).toContain("path: '/user-profile'")
+      expect(code).toContain('name: "user-profile"')
+      expect(code).toContain('path: "/user-profile"')
     })
   })
 })

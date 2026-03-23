@@ -12,9 +12,8 @@ declare module 'vitarx-router' {
     '/users/settings': {},
     'about': {},
     '/about': {},
-    'admin': {},
-    '/admin': {},
     'admin-index': {},
+    '/admin': {},
     'admin-posts': {},
     'posts': {},
     'admin-users': {},
@@ -25,14 +24,12 @@ declare module 'vitarx-router' {
     '/custom-route': {},
     'multi-view': {},
     '/multi-view': {},
-    '/users': {},
     'users-index': {},
+    '/users': {},
     'users-profile': {},
     'profile': {},
     'post-slug': { params: { slug: string | number } },
-    '/post/{slug}': { params: { slug: string | number } },
-    'user-id': { params: { id: string | number } },
-    '/user/{id}': { params: { id: string | number } }
+    'user-id': { params: { id: string | number } }
   }
 }
 
