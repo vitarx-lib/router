@@ -148,10 +148,15 @@ export interface ParsedPage {
 export interface ResolvedRoute {
   /** 路由路径 */
   path: string
-  /** 路由名称 */
-  name: string
-  /** 组件导入表达式（目录路由无布局文件时可能为空） */
-  component?: string
+  /** 路由名称（分组路由无此属性） */
+  name?: string
+  /**
+   * 组件文件路径
+   * - 单一组件：字符串形式，如 `/src/pages/index.tsx`
+   * - 命名视图：对象形式，如 `{ default: '/src/pages/index.tsx', sidebar: '/src/pages/index@sidebar.tsx' }`
+   * 注意：这里存储的是文件路径，在代码生成阶段才根据 importMode 转换为代码
+   */
+  component?: string | Record<string, string>
   /** 路由元数据 */
   meta?: RouteMetaData
   /** 动态参数匹配模式 */

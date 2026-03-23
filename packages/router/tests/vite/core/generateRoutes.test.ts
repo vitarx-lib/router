@@ -85,7 +85,7 @@ describe('generateRoutes', () => {
   })
 
   describe('嵌套路由生成', () => {
-    it('应该正确生成嵌套路由', async () => {
+    it('应该正确生成嵌套路由（分组路由无 name）', async () => {
       const pages: ParsedPage[] = [
         createMockParsedPage({
           path: '/user',
@@ -102,12 +102,13 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages)
 
-      expect(code).toContain("name: 'user'")
+      expect(code).not.toContain("name: 'user'")
+      expect(code).toContain("path: '/user'")
       expect(code).toContain("name: 'user-profile'")
       expect(code).toContain('children: [')
     })
 
-    it('应该正确处理多层嵌套', async () => {
+    it('应该正确处理多层嵌套（分组路由无 name）', async () => {
       const pages: ParsedPage[] = [
         createMockParsedPage({
           path: '/admin',
@@ -133,9 +134,32 @@ describe('generateRoutes', () => {
 
       const code = await generateRoutes(pages)
 
-      expect(code).toContain("name: 'admin'")
-      expect(code).toContain("name: 'admin-users'")
+      expect(code).not.toContain("name: 'admin'")
+      expect(code).not.toContain("name: 'admin-users'")
       expect(code).toContain("name: 'admin-users-id'")
+    })
+
+    it('有 redirect 的分组路由应该有 name', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/admin',
+          name: 'admin',
+          redirect: '/admin/dashboard',
+          children: [
+            createMockParsedPage({
+              path: '/admin/dashboard',
+              name: 'admin-dashboard',
+              isIndex: false
+            })
+          ]
+        })
+      ]
+
+      const code = await generateRoutes(pages)
+
+      expect(code).toContain("name: 'admin'")
+      expect(code).toContain("redirect: '/admin/dashboard'")
+      expect(code).toContain("name: 'admin-dashboard'")
     })
   })
 

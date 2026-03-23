@@ -63,52 +63,45 @@ async function buildResolvedRoutes(
  * 构建单个路由配置
  *
  * 核心逻辑：
- * 1. 创建基础路由对象（path、name）
+ * 1. 创建基础路由对象（path）
  * 2. 如果有文件路径，生成组件导入表达式
  * 3. 处理命名视图（多个组件的情况）
  * 4. 添加可选的 meta、pattern、redirect、children
+ * 5. 分组路由（有 children）不设置 name 属性
  */
 async function buildResolvedRoute(
   page: ParsedPage,
   options: GenerateRoutesOptions
 ): Promise<ResolvedRoute> {
-  const { importMode = 'lazy', extendRoute, namingStrategy = 'kebab' } = options
+  const { extendRoute, namingStrategy = 'kebab' } = options
 
   // 步骤1：创建基础路由对象
   // 注意：component 是可选的，目录路由没有布局文件时不会有 component
-  // path 和 name 已在 parsePageFile 中应用命名策略转换
+  // path 已在 parsePageFile 中应用命名策略转换
   const route: ResolvedRoute = {
-    path: page.path,
-    name: page.name
+    path: page.path
   }
 
   // 步骤2：处理组件导入
   // 只有当 filePath 非空时才生成 component 属性
   // 目录路由（无布局文件）的 filePath 为空字符串
+  // 注意：这里只存储文件路径，在代码生成阶段才根据 importMode 生成代码
   if (page.filePath && page.filePath.trim() !== '') {
-    let component: string
-
     // 步骤2.1：处理命名视图（如 index@sidebar.tsx）
-    // 命名视图会生成组件对象：{ default: lazy(...), sidebar: lazy(...) }
+    // 命名视图存储为对象：{ default: '/src/pages/index.tsx', sidebar: '/src/pages/index@sidebar.tsx' }
     if (page.namedViews) {
-      const components: string[] = []
-      // 默认视图始终存在
-      components.push(
-        `default: ${importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`}`
-      )
+      const components: Record<string, string> = {
+        default: page.filePath
+      }
       // 添加其他命名视图
       for (const [viewName, viewPath] of Object.entries(page.namedViews)) {
-        components.push(
-          `${viewName}: ${importMode === 'file' ? `'${viewPath}'` : `lazy(() => import('${viewPath}'))`}`
-        )
+        components[viewName] = viewPath
       }
-      component = `{ ${components.join(', ')} }`
+      route.component = components
     } else {
       // 步骤2.2：单一组件
-      component =
-        importMode === 'file' ? `'${page.filePath}'` : `lazy(() => import('${page.filePath}'))`
+      route.component = page.filePath
     }
-    route.component = component
   }
 
   // 步骤3：添加可选属性
@@ -125,7 +118,13 @@ async function buildResolvedRoute(
     route.children = await buildResolvedRoutes(page.children, options)
   }
 
-  // 步骤4：调用扩展钩子（允许用户自定义修改路由）
+  // 步骤4：设置 name 属性
+  // 分组路由（有 children）不设置 name，除非有 redirect
+  if (page.children.length === 0 || page.redirect !== undefined) {
+    route.name = page.name
+  }
+
+  // 步骤5：调用扩展钩子（允许用户自定义修改路由）
   if (extendRoute) {
     const result = await extendRoute(route)
     if (result) return result
@@ -144,7 +143,7 @@ function formatRedirect(
   redirect: string | RedirectConfig,
   namingStrategy: NamingStrategy = 'kebab'
 ): string {
-  if (typeof redirect === 'string') return redirect
+  if (typeof redirect === 'string') return `'${redirect}'`
   // 对象形式：构建导航配置对象
   const parts: string[] = [`index: '${applyNamingStrategyToName(redirect.index, namingStrategy)}'`]
   if (redirect.query) {
@@ -201,10 +200,10 @@ function generateRoutesCode(
  * 1. 按固定顺序生成属性：name → path → component → meta → pattern → redirect → children
  * 2. 动态处理逗号分隔：每个属性生成后，为上一行添加逗号（如果还有后续属性）
  * 3. 递归处理子路由
+ * 4. 分组路由（有 children）不生成 name 属性
  *
  * 示例输出：
  * {
- *   name: 'admin',
  *   path: '/admin',
  *   component: lazy(() => import('/src/pages/admin.tsx')),
  *   redirect: '/admin/index',
@@ -221,7 +220,11 @@ function generateRouteCode(
   const comma = isLast ? '' : ','
 
   lines.push(`${indent}{`)
-  lines.push(`${indent}  name: '${route.name}',`)
+
+  // name 属性：分组路由（有 children 且无 redirect）不生成 name
+  if (route.name !== undefined) {
+    lines.push(`${indent}  name: '${route.name}',`)
+  }
   lines.push(`${indent}  path: '${route.path}'`)
 
   // 关键：动态添加逗号
@@ -229,7 +232,7 @@ function generateRouteCode(
   // 这样可以确保只有存在后续属性时才添加逗号
   if (route.component) {
     lines[lines.length - 1] += ','
-    lines.push(`${indent}  component: ${route.component}`)
+    lines.push(`${indent}  component: ${formatComponent(route.component, importMode)}`)
   }
   if (route.meta) {
     lines[lines.length - 1] += ','
@@ -257,6 +260,28 @@ function generateRouteCode(
   }
   lines.push(`${indent}}${comma}`)
   return lines
+}
+
+/**
+ * 格式化组件表达式
+ *
+ * @param component - 组件文件路径（字符串或对象）
+ * @param importMode - 导入模式
+ * @returns 格式化后的代码字符串
+ */
+function formatComponent(
+  component: string | Record<string, string>,
+  importMode: ImportMode
+): string {
+  if (typeof component === 'string') {
+    return importMode === 'file' ? `'${component}'` : `lazy(() => import('${component}'))`
+  }
+  // 命名视图：生成 { default: lazy(...), sidebar: lazy(...) }
+  const entries = Object.entries(component).map(([name, path]) => {
+    const expr = importMode === 'file' ? `'${path}'` : `lazy(() => import('${path}'))`
+    return `${name}: ${expr}`
+  })
+  return `{ ${entries.join(', ')} }`
 }
 
 /**
