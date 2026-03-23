@@ -26,9 +26,9 @@ export type URLHash = `#${string}`
 export type URLMode = 'hash' | 'path'
 
 /**
- * 路由位置 (可变内部状态)
+ * 路由位置
  */
-export interface RouteLocationRaw {
+export interface BaseRouteLocation {
   /**
    * 完整的href
    */
@@ -66,9 +66,16 @@ export interface RouteLocationRaw {
    */
   matched: RouteRecord[]
   /**
-   * 如果在守卫过程中被重定向，则为最初需要导航的路由位置
+   * 如果在守卫过程中被重定向，
+   * 则为最初需要导航的路由位置
    */
   redirectFrom?: RouteLocation
+}
+
+/**
+ * 路由位置 (可变内部状态)
+ */
+export interface RouteLocationRaw extends BaseRouteLocation {
   /**
    * @internal 离开守卫
    */
