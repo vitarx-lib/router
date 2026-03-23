@@ -5,6 +5,7 @@ import type {
   NavTarget,
   RouteIndex,
   RouteLocation,
+  RouteLocationRaw,
   RoutePath,
   URLHash,
   URLQuery
@@ -166,6 +167,7 @@ export function registerHookTool<T extends { [key: string]: any }>(
  * @internal
  * @param to - 目标路由位置对象
  * @param from - 当前路由位置对象
+ * @param raw - 原始的路由位置对象
  * @returns Promise<boolean> 返回一个布尔值，表示是否允许离开当前路由
  * @description 该函数会依次执行当前路由的所有离开守卫，如果任一守卫返回 false，则阻止路由跳转
  * @example
@@ -175,9 +177,13 @@ export function registerHookTool<T extends { [key: string]: any }>(
  *   console.log('路由跳转被阻止')
  * }
  */
-export async function runLeaveGuards(to: RouteLocation, from: RouteLocation): Promise<boolean> {
-  if (!from.leaveGuards) return true
-  for (const guard of from.leaveGuards) {
+export async function runLeaveGuards(
+  to: RouteLocation,
+  from: RouteLocation,
+  raw: RouteLocationRaw
+): Promise<boolean> {
+  if (!raw.leaveGuards) return true
+  for (const guard of raw.leaveGuards) {
     const result = await guard(to, from)
     if (result === false) return false
   }
@@ -193,11 +199,16 @@ export async function runLeaveGuards(to: RouteLocation, from: RouteLocation): Pr
  * @internal
  * @param to - 目标路由位置对象
  * @param from - 当前路由位置对象
+ * @param raw - 原始的路由位置对象
  * @returns void
  */
-export function runRouteUpdateHooks(to: RouteLocation, from: RouteLocation): void {
-  if (!from.beforeUpdateHooks) return
-  for (const hook of from.beforeUpdateHooks) {
+export function runRouteUpdateHooks(
+  to: RouteLocation,
+  from: RouteLocation,
+  raw: RouteLocationRaw
+): void {
+  if (!raw.beforeUpdateHooks) return
+  for (const hook of raw.beforeUpdateHooks) {
     hook(to, from)
   }
 }

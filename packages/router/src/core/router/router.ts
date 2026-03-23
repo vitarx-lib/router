@@ -576,7 +576,7 @@ export abstract class Router {
         return this.navigate(guardResult, from, redirectFrom ?? to)
       }
       // 7.4 离开守卫
-      const leaveGuardResult = await runLeaveGuards(to, from)
+      const leaveGuardResult = await runLeaveGuards(to, from, this._routeLocation.value)
 
       if (hasChanged()) return result
 
@@ -734,7 +734,7 @@ export abstract class Router {
     // 如果是相同路由，则执行路由更新钩子
     if (isSameRouteLocation(to, from)) {
       try {
-        runRouteUpdateHooks(to, from)
+        runRouteUpdateHooks(to, from, this._routeLocation.value)
       } catch (e) {
         this.reportError(e, to, from)
       }
