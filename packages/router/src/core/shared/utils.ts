@@ -1,5 +1,4 @@
-import { toRaw } from 'vitarx'
-import type { RouteLocation, RouteLocationRaw } from '../types/index.js'
+import type { BaseRouteLocation, RouteLocation } from '../types/index.js'
 
 /**
  * 将 query 字符串转为对象
@@ -61,16 +60,15 @@ export function normalizePath(path: string, hashMode: boolean = false): `/${stri
  * @param {RouteLocation} route - 要克隆的路由位置对象
  * @return {RouteLocationRaw} - 克隆过后的对象
  */
-export function cloneRouteLocation(route: RouteLocation): RouteLocationRaw {
-  const { matched, ...other } = toRaw(route)
-  return Object.assign(
-    {
-      href: other.href,
-      path: other.path,
-      hash: other.hash,
-      params: other.params,
-      query: other.query
-    },
-    { matched: Array.from(matched) }
-  ) as RouteLocationRaw
+export function cloneRouteLocation(route: RouteLocation): BaseRouteLocation {
+  return {
+    href: route.href,
+    path: route.path,
+    hash: route.hash,
+    params: route.params,
+    query: route.query,
+    meta: route.meta,
+    matched: Array.from(route.matched),
+    redirectFrom: route.redirectFrom
+  }
 }
