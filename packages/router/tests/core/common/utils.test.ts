@@ -12,7 +12,12 @@ import {
   runLeaveGuards,
   runRouteUpdateHooks
 } from '../../../src/core/common/utils.js'
-import type { NavTarget, RouteLocation, RouteRecord } from '../../../src/core/types/index.js'
+import type {
+  NavTarget,
+  RouteLocation,
+  RouteLocationRaw,
+  RouteRecord
+} from '../../../src/core/types/index.js'
 
 describe('common/utils', () => {
   describe('hasValidRouteIndex', () => {
@@ -445,16 +450,16 @@ describe('common/utils', () => {
 
   describe('runLeaveGuards', () => {
     it('应该在没有守卫时返回 true', async () => {
-      const from = {} as RouteLocation
+      const from = {} as RouteLocation as RouteLocationRaw
       const to = {} as RouteLocation
-      const result = await runLeaveGuards(to, from)
+      const result = await runLeaveGuards(to, from, from)
       expect(result).toBe(true)
     })
 
     it('应该在没有 leaveGuards 属性时返回 true', async () => {
-      const from = { leaveGuards: undefined } as RouteLocation
+      const from = { leaveGuards: undefined } as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      const result = await runLeaveGuards(to, from)
+      const result = await runLeaveGuards(to, from, from)
       expect(result).toBe(true)
     })
 
@@ -462,9 +467,9 @@ describe('common/utils', () => {
       const guard1 = vi.fn().mockResolvedValue(true)
       const guard2 = vi.fn().mockResolvedValue(undefined)
       const guard3 = vi.fn().mockResolvedValue(null as any)
-      const from = { leaveGuards: [guard1, guard2, guard3] } as unknown as RouteLocation
+      const from = { leaveGuards: [guard1, guard2, guard3] } as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      const result = await runLeaveGuards(to, from)
+      const result = await runLeaveGuards(to, from, from)
       expect(result).toBe(true)
       expect(guard1).toHaveBeenCalledWith(to, from)
       expect(guard2).toHaveBeenCalledWith(to, from)
@@ -475,9 +480,9 @@ describe('common/utils', () => {
       const guard1 = vi.fn().mockResolvedValue(true)
       const guard2 = vi.fn().mockResolvedValue(false)
       const guard3 = vi.fn().mockResolvedValue(true)
-      const from = { leaveGuards: [guard1, guard2, guard3] } as unknown as RouteLocation
+      const from = { leaveGuards: [guard1, guard2, guard3] } as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      const result = await runLeaveGuards(to, from)
+      const result = await runLeaveGuards(to, from, from)
       expect(result).toBe(false)
       expect(guard1).toHaveBeenCalled()
       expect(guard2).toHaveBeenCalled()
@@ -485,25 +490,25 @@ describe('common/utils', () => {
     })
 
     it('应该正确处理空守卫数组', async () => {
-      const from = { leaveGuards: [] } as unknown as RouteLocation
+      const from = { leaveGuards: [] } as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      const result = await runLeaveGuards(to, from)
+      const result = await runLeaveGuards(to, from, from)
       expect(result).toBe(true)
     })
 
     it('应该正确处理同步守卫', async () => {
       const guard = vi.fn().mockReturnValue(true)
-      const from = { leaveGuards: [guard] } as unknown as RouteLocation
+      const from = { leaveGuards: [guard] } as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      const result = await runLeaveGuards(to, from)
+      const result = await runLeaveGuards(to, from, from)
       expect(result).toBe(true)
     })
 
     it('应该正确处理守卫返回非 false 值', async () => {
       const guard = vi.fn().mockResolvedValue('some string')
-      const from = { leaveGuards: [guard] } as unknown as RouteLocation
+      const from = { leaveGuards: [guard] } as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      const result = await runLeaveGuards(to, from)
+      const result = await runLeaveGuards(to, from, from)
       expect(result).toBe(true)
     })
   })
@@ -512,29 +517,29 @@ describe('common/utils', () => {
     it('应该调用所有更新钩子', () => {
       const hook1 = vi.fn()
       const hook2 = vi.fn()
-      const from = { beforeUpdateHooks: [hook1, hook2] } as unknown as RouteLocation
+      const from = { beforeUpdateHooks: [hook1, hook2] } as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      runRouteUpdateHooks(to, from)
+      runRouteUpdateHooks(to, from, from)
       expect(hook1).toHaveBeenCalledWith(to, from)
       expect(hook2).toHaveBeenCalledWith(to, from)
     })
 
     it('应该在没有钩子时不报错', () => {
-      const from = {} as RouteLocation
+      const from = {} as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      expect(() => runRouteUpdateHooks(to, from)).not.toThrow()
+      expect(() => runRouteUpdateHooks(to, from, from)).not.toThrow()
     })
 
     it('应该在没有 beforeUpdateHooks 属性时不报错', () => {
-      const from = { beforeUpdateHooks: undefined } as RouteLocation
+      const from = { beforeUpdateHooks: undefined } as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      expect(() => runRouteUpdateHooks(to, from)).not.toThrow()
+      expect(() => runRouteUpdateHooks(to, from, from)).not.toThrow()
     })
 
     it('应该正确处理空钩子数组', () => {
-      const from = { beforeUpdateHooks: [] } as unknown as RouteLocation
+      const from = { beforeUpdateHooks: [] } as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      expect(() => runRouteUpdateHooks(to, from)).not.toThrow()
+      expect(() => runRouteUpdateHooks(to, from, from)).not.toThrow()
     })
 
     it('应该按顺序执行钩子', () => {
@@ -542,9 +547,9 @@ describe('common/utils', () => {
       const hook1 = vi.fn(() => order.push(1))
       const hook2 = vi.fn(() => order.push(2))
       const hook3 = vi.fn(() => order.push(3))
-      const from = { beforeUpdateHooks: [hook1, hook2, hook3] } as unknown as RouteLocation
+      const from = { beforeUpdateHooks: [hook1, hook2, hook3] } as unknown as RouteLocationRaw
       const to = {} as RouteLocation
-      runRouteUpdateHooks(to, from)
+      runRouteUpdateHooks(to, from, from)
       expect(order).toEqual([1, 2, 3])
     })
   })
