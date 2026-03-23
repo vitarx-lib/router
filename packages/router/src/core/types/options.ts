@@ -21,6 +21,8 @@ export interface RouterOptions {
 
   /**
    * 路径模式
+   *
+   * @default 'hash'
    */
   mode?: 'hash' | 'path'
 
@@ -48,9 +50,9 @@ export interface RouterOptions {
   suffix?: `.${string}`
 
   /**
-   * 全局启用 props 注入功能
+   * 全局 props 注入配置
    *
-   * @default false
+   * 优先级低于 route 的 props 配置
    */
   props?: boolean | InjectPropsHandler
 

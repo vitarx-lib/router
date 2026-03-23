@@ -154,7 +154,7 @@ export abstract class Router {
     const { routes, beforeEach, afterEach, onError, onNotFound, ...userConfig } = options
     this.config = {
       base: '/',
-      mode: 'path',
+      mode: 'hash',
       ...userConfig
     }
     if (beforeEach) {
