@@ -80,7 +80,7 @@ export function updateRouteLocation(
     return cachedRoute
   }
   // 如果缓存中不存在该路由对象，则创建一个新的路由对象
-  const location = {
+  const location = shallowReactive({
     href: newLocation.href,
     path: newLocation.path,
     hash: newLocation.hash,
@@ -89,7 +89,7 @@ export function updateRouteLocation(
     matched: shallowReactive(Array.from(newLocation.matched)),
     meta: markRaw({ ...newLocation.meta }),
     redirectFrom: newLocation.redirectFrom ? markRaw(newLocation.redirectFrom) : undefined
-  }
+  })
   cache.set(cacheKey, location)
   return location
 }
