@@ -48,7 +48,7 @@ describe('shared/link', () => {
   describe('useLink', () => {
     describe('href 计算', () => {
       it('应该正确计算路径的 href', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -58,7 +58,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确计算带查询参数的 href', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -68,7 +68,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确计算带 hash 的 href', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -78,7 +78,7 @@ describe('shared/link', () => {
       })
 
       it('应该对 HTTP 链接返回原始链接', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -88,7 +88,7 @@ describe('shared/link', () => {
       })
 
       it('应该对 HTTP 链接返回原始链接 (http)', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -98,7 +98,7 @@ describe('shared/link', () => {
       })
 
       it('应该对无效目标返回 javascript:void(0)', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -110,7 +110,7 @@ describe('shared/link', () => {
       })
 
       it('应该对无效的 to 类型返回 javascript:void(0)', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -122,7 +122,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理带路径的导航目标', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -134,7 +134,7 @@ describe('shared/link', () => {
 
     describe('route 计算', () => {
       it('应该正确匹配路由', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -144,7 +144,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确匹配命名路由', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -155,7 +155,7 @@ describe('shared/link', () => {
       })
 
       it('应该对不存在的路由返回 null', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -167,7 +167,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理 symbol 作为路由索引', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -180,7 +180,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理纯锚点链接', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -190,7 +190,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理带查询参数的路由目标', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -200,7 +200,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理带 hash 的路由目标', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -212,7 +212,7 @@ describe('shared/link', () => {
 
     describe('isActive 计算', () => {
       it('当前路由匹配时应该返回 true', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/about' })
         mockUseRouter(router)
 
@@ -222,7 +222,7 @@ describe('shared/link', () => {
       })
 
       it('当前路由不匹配时应该返回 false', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -232,7 +232,7 @@ describe('shared/link', () => {
       })
 
       it('没有匹配路由时应该返回 false', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
         const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
@@ -245,7 +245,7 @@ describe('shared/link', () => {
 
     describe('isExactActive 计算', () => {
       it('当前路由完全匹配时应该返回 true', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/about' })
         mockUseRouter(router)
 
@@ -255,7 +255,7 @@ describe('shared/link', () => {
       })
 
       it('当前路由部分匹配时应该返回 false', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/about' })
         mockUseRouter(router)
 
@@ -265,7 +265,7 @@ describe('shared/link', () => {
       })
 
       it('没有匹配路由时应该返回 false', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -279,7 +279,7 @@ describe('shared/link', () => {
 
     describe('navigate 方法', () => {
       it('应该导航到目标路由', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -290,7 +290,7 @@ describe('shared/link', () => {
       })
 
       it('应该使用 push 默认导航', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -301,7 +301,7 @@ describe('shared/link', () => {
       })
 
       it('应该使用 replace 导航', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -312,7 +312,7 @@ describe('shared/link', () => {
       })
 
       it('应该优先使用 to.replace 而不是 props.replace', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -323,7 +323,7 @@ describe('shared/link', () => {
       })
 
       it('没有匹配路由时应该不导航', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -336,7 +336,7 @@ describe('shared/link', () => {
       })
 
       it('应该阻止默认事件行为', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -348,7 +348,7 @@ describe('shared/link', () => {
       })
 
       it('HTTP 链接应该不导航', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -361,7 +361,7 @@ describe('shared/link', () => {
 
     describe('边界情况', () => {
       it('应该正确处理空路径', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -371,7 +371,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理带参数的路由', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -381,7 +381,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理带查询参数和 hash 的路径', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -392,7 +392,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理只有查询参数的路径', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -402,7 +402,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理只有 hash 的路径', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -412,7 +412,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理路径中带 # 但没有 hash 内容', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
@@ -422,7 +422,7 @@ describe('shared/link', () => {
       })
 
       it('应该正确处理路径中带 ? 但没有查询参数', async () => {
-        router = createMemoryRouter({ routes: basicRoutes })
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 

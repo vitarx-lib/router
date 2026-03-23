@@ -18,6 +18,7 @@ function createTestRouter(options?: Partial<RouterOptions>): MemoryRouter {
   ]
   const router = createMemoryRouter({
     routes: options?.routes || defaultRoutes,
+    mode: 'path',
     ...options
   })
   router.replace({ index: '/' }).then()
