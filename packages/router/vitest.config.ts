@@ -1,5 +1,4 @@
 import Vitarx from '@vitarx/plugin-vite'
-import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -10,23 +9,9 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'jsdom',
-          include: ['tests/core/**/*.{test,spec}.ts'],
+          include: ['tests/{core,components}/**/*.{test,spec}.ts'],
           environment: 'jsdom',
           testTimeout: 30000
-        }
-      },
-      {
-        extends: true,
-        test: {
-          name: 'browser',
-          include: ['tests/components/**/*.{test,spec}.ts'],
-          browser: {
-            enabled: true,
-            provider: playwright(),
-            headless: true,
-            instances: [{ browser: 'chromium' }]
-          },
-          testTimeout: 10000
         }
       },
       {
