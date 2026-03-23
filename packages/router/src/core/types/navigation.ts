@@ -89,7 +89,7 @@ export interface RouteLocationRaw extends BaseRouteLocation {
 /**
  * 当前路由位置 (对外只读)
  */
-export type RouteLocation = DeepReadonly<RouteLocationRaw>
+export type RouteLocation = DeepReadonly<BaseRouteLocation>
 
 /**
  * 路由索引类型
