@@ -4,7 +4,7 @@
  * 定义文件路由功能所需的所有 TypeScript 类型接口。
  * 这些类型用于描述页面配置、解析结果、路由生成等各个环节的数据结构。
  */
-import type { RouteMetaData } from '../../core/index.js'
+import type { NavTarget, RouteMetaData } from '../../core/index.js'
 
 /**
  * 页面配置选项
@@ -69,6 +69,10 @@ export interface PageOptions {
    * ```
    */
   redirect?: string | RedirectConfig
+  /**
+   * 路由的别名，用于匹配多个路径到同一个路由
+   */
+  alias?: string | string[]
 }
 
 /**
@@ -82,7 +86,7 @@ export interface RedirectConfig {
   /** URL 查询参数 */
   query?: Record<string, string>
   /** 路由参数 */
-  params?: Record<string, string | number>
+  params?: Record<string, string>
 }
 
 /**
@@ -116,6 +120,8 @@ export interface ParsedPage {
   parentPath: string
   /** 路由重定向目标 */
   redirect?: string | RedirectConfig
+  /** 路由别名 */
+  alias?: string | string[]
   /**
    * 是否为布局文件
    * 当同名文件和目录同时存在时，文件作为布局组件
@@ -163,9 +169,13 @@ export interface ResolvedRoute {
   /** 子路由列表 */
   children?: ResolvedRoute[]
   /**
-   * 路由重定向目标（代码字符串形式）
+   * 路由重定向目标
    */
-  redirect?: string
+  redirect?: string | NavTarget
+  /**
+   * 路由别名
+   */
+  alias?: string | string[]
 }
 
 /**
