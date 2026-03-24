@@ -325,6 +325,36 @@ describe('generateRoutes', () => {
     })
   })
 
+  describe('alias 别名', () => {
+    it('应该正确生成字符串别名', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/',
+          name: 'home',
+          alias: '/index'
+        })
+      ]
+
+      const code = await generateRoutes(pages)
+
+      expect(code).toContain('alias: "/index"')
+    })
+
+    it('应该正确生成数组别名', async () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/',
+          name: 'home',
+          alias: ['/index', '/main']
+        })
+      ]
+
+      const code = await generateRoutes(pages)
+
+      expect(code).toContain('alias: ["/index","/main"]')
+    })
+  })
+
   describe('命名视图代码生成', () => {
     it('应该生成命名视图组件对象', async () => {
       const pages: ParsedPage[] = [
