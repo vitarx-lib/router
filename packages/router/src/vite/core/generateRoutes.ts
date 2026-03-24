@@ -4,13 +4,11 @@
  * 负责将解析后的页面信息转换为可执行的路由配置代码。
  * 生成的代码使用 vitarx 的 lazy 函数实现组件懒加载。
  */
-import { applyNamingStrategyToName } from './namingStrategy.js'
 import type {
   ExtendRouteHook,
   ImportMode,
   NamingStrategy,
   ParsedPage,
-  RedirectConfig,
   ResolvedRoute
 } from './types.js'
 
@@ -73,7 +71,7 @@ async function buildResolvedRoute(
   page: ParsedPage,
   options: GenerateRoutesOptions
 ): Promise<ResolvedRoute> {
-  const { extendRoute, namingStrategy = 'kebab' } = options
+  const { extendRoute } = options
 
   // 步骤1：创建基础路由对象
   // 注意：component 是可选的，目录路由没有布局文件时不会有 component
@@ -112,7 +110,10 @@ async function buildResolvedRoute(
     route.pattern = page.pattern
   }
   if (page.redirect !== undefined) {
-    route.redirect = formatRedirect(page.redirect, namingStrategy)
+    route.redirect = page.redirect
+  }
+  if (page.alias !== undefined) {
+    route.alias = page.alias
   }
   if (page.children.length > 0) {
     route.children = await buildResolvedRoutes(page.children, options)
@@ -130,31 +131,6 @@ async function buildResolvedRoute(
     if (result) return result
   }
   return route
-}
-
-/**
- * 格式化重定向配置为代码字符串
- *
- * 支持两种格式：
- * 1. 字符串路径：'/dashboard'
- * 2. 对象形式：{ index: 'home', query: { from: 'old' }, params: { id: 1 } }
- */
-function formatRedirect(
-  redirect: string | RedirectConfig,
-  namingStrategy: NamingStrategy = 'kebab'
-): string {
-  if (typeof redirect === 'string') return JSON.stringify(redirect)
-  // 对象形式：构建导航配置对象
-  const parts: string[] = [
-    `index: ${JSON.stringify(applyNamingStrategyToName(redirect.index, namingStrategy))}`
-  ]
-  if (redirect.query) {
-    parts.push(`query: ${JSON.stringify(redirect.query)}`)
-  }
-  if (redirect.params) {
-    parts.push(`params: ${JSON.stringify(redirect.params)}`)
-  }
-  return `{ ${parts.join(', ')} }`
 }
 
 /**
@@ -246,7 +222,11 @@ function generateRouteCode(
   }
   if (route.redirect !== undefined) {
     lines[lines.length - 1] += ','
-    lines.push(`${indent}  redirect: ${route.redirect}`)
+    lines.push(`${indent}  redirect: ${JSON.stringify(route.redirect)}`)
+  }
+  if (route.alias !== undefined) {
+    lines[lines.length - 1] += ','
+    lines.push(`${indent}  alias: ${JSON.stringify(route.alias)}`)
   }
   if (route.children && route.children.length > 0) {
     lines[lines.length - 1] += ','
