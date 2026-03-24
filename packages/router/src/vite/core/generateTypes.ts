@@ -54,6 +54,17 @@ function processPage(map: RouteIndexMap, page: ParsedPage, parentFullPath: strin
         map[fullPath] = entry
       }
     }
+
+    // 处理 alias 映射
+    if (page.alias) {
+      const aliases = Array.isArray(page.alias) ? page.alias : [page.alias]
+      for (const alias of aliases) {
+        const aliasPath = resolveAliasPath(alias, parentFullPath)
+        if (aliasPath && !hasDynamicParams(aliasPath)) {
+          map[aliasPath] = entry
+        }
+      }
+    }
   }
 
   const currentFullPath = page.path === '' ? parentFullPath : page.path || parentFullPath
@@ -61,6 +72,33 @@ function processPage(map: RouteIndexMap, page: ParsedPage, parentFullPath: strin
   for (const child of page.children) {
     processPage(map, child, currentFullPath)
   }
+}
+
+/**
+ * 解析 alias 路径
+ *
+ * 规则：
+ * 1. 空字符串：使用父路径
+ * 2. 以 / 开头：直接使用（规范化）
+ * 3. 否则：父路径 + / + alias
+ *
+ * @param alias - 别名字符串
+ * @param parentFullPath - 父级完整路径
+ * @returns 解析后的完整路径
+ */
+function resolveAliasPath(alias: string, parentFullPath: string): string {
+  const trimmedAlias = alias.trim()
+  if (trimmedAlias === '') {
+    return parentFullPath || '/'
+  }
+  if (trimmedAlias.startsWith('/')) {
+    // 规范化路径：去除多余的斜杠
+    return trimmedAlias.replace(/\/+/g, '/').replace(/\/+$/, '') || '/'
+  }
+  if (!parentFullPath || parentFullPath === '/') {
+    return '/' + trimmedAlias
+  }
+  return parentFullPath + '/' + trimmedAlias
 }
 
 /**
