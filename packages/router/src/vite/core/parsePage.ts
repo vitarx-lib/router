@@ -823,7 +823,7 @@ function extractRedirectConfig(node: BabelTypes.ObjectExpression): RedirectConfi
       }
     } else if (keyName === 'params') {
       if (property.value.type === 'ObjectExpression') {
-        config.params = extractParamsRecord(property.value)
+        config.params = extractParamsRecord(property.value) as Record<string, string>
       }
     }
   }
