@@ -4,7 +4,7 @@
  * 定义文件路由功能所需的所有 TypeScript 类型接口。
  * 这些类型用于描述页面配置、解析结果、路由生成等各个环节的数据结构。
  */
-import type { NavTarget, RouteMetaData } from '../../core/index.js'
+import type { NavOptions, RouteMetaData } from '../../core/index.js'
 
 /**
  * 页面配置选项
@@ -171,7 +171,7 @@ export interface ResolvedRoute {
   /**
    * 路由重定向目标
    */
-  redirect?: string | NavTarget
+  redirect?: string | NavOptions
   /**
    * 路由别名
    */
