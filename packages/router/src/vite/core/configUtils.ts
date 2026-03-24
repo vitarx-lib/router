@@ -41,7 +41,7 @@ export interface NormalizedConfig {
  * 将用户提供的配置转换为内部统一格式。
  *
  * @param options - 用户提供的配置选项
- * @returns 规范化后的配置对象
+ * @returns - 规范化后的配置对象
  */
 export function normalizeConfig(options: VitePluginRouterOptions): NormalizedConfig {
   const {
@@ -53,10 +53,11 @@ export function normalizeConfig(options: VitePluginRouterOptions): NormalizedCon
     importMode = 'lazy',
     extendRoute,
     imports,
-    namingStrategy = 'kebab'
+    namingStrategy = 'kebab',
+    prefix = ''
   } = options
 
-  const pagesDirs = normalizePagesDirs(pagesDir, include, exclude)
+  const pagesDirs = normalizePagesDirs(pagesDir, include, exclude, prefix)
 
   return {
     pagesDirs,
@@ -80,32 +81,35 @@ export function normalizeConfig(options: VitePluginRouterOptions): NormalizedCon
  * @param pagesDir - 用户配置的 pagesDir
  * @param include - 全局 include 规则
  * @param exclude - 全局 exclude 规则
- * @returns 规范化后的目录配置数组
+ * @param prefix - 全局 prefix 配置
+ * @returns - 规范化后的目录配置数组
  */
 export function normalizePagesDirs(
-  pagesDir: string | string[] | PagesDirConfig[],
+  pagesDir: string | (PagesDirConfig | string)[],
   include: string[],
-  exclude: string[]
+  exclude: string[],
+  prefix: string
 ): PagesDirConfig[] {
   // 字符串：单个目录
   if (typeof pagesDir === 'string') {
-    return [{ dir: pagesDir, include, exclude }]
+    return [{ dir: pagesDir, include, exclude, prefix }]
   }
 
   // 数组类型
   if (Array.isArray(pagesDir)) {
-    // 检查是否为字符串数组
-    if (pagesDir.length === 0 || typeof pagesDir[0] === 'string') {
-      // 字符串数组：多个目录，使用全局 include/exclude
-      return (pagesDir as string[]).map(dir => ({ dir, include, exclude }))
-    }
-
     // 对象数组：每个目录独立配置
-    return (pagesDir as PagesDirConfig[]).map(item => ({
-      dir: item.dir,
-      include: item.include || include,
-      exclude: item.exclude || exclude
-    }))
+    return (pagesDir as (PagesDirConfig | string)[]).map(item => {
+      if (typeof item === 'string') {
+        return { dir: item, include, exclude, prefix }
+      } else {
+        return {
+          dir: item.dir,
+          include: item.include || include,
+          exclude: item.exclude || exclude,
+          prefix: item.prefix || prefix
+        }
+      }
+    })
   }
 
   return [{ dir: DEFAULT_PAGES_DIR, include, exclude }]
@@ -116,7 +120,7 @@ export function normalizePagesDirs(
  *
  * @param pagesDirs - 规范化后的目录配置
  * @param viteConfig - Vite 配置对象
- * @returns 包含绝对路径的目录配置数组
+ * @returns - 包含绝对路径的目录配置数组
  */
 export function getAbsolutePagesDirs(
   pagesDirs: PagesDirConfig[],
@@ -125,11 +129,10 @@ export function getAbsolutePagesDirs(
   if (!viteConfig) return pagesDirs
 
   return pagesDirs.map(dirConfig => ({
+    ...dirConfig,
     dir: path.isAbsolute(dirConfig.dir)
       ? dirConfig.dir
-      : path.resolve(viteConfig.root, dirConfig.dir),
-    include: dirConfig.include,
-    exclude: dirConfig.exclude
+      : path.resolve(viteConfig.root, dirConfig.dir)
   }))
 }
 

@@ -23,11 +23,21 @@ const DEFAULT_INCLUDE = ['**/*']
  * 4. 聚合命名视图
  */
 export function scanPages(options: ScanOptions): ParsedPage[] {
-  const { pagesDir, extensions, include = DEFAULT_INCLUDE, exclude, namingStrategy = 'kebab' } = options
+  const {
+    pagesDir,
+    extensions,
+    include = DEFAULT_INCLUDE,
+    exclude,
+    namingStrategy = 'kebab',
+    pathPrefix = ''
+  } = options
 
   if (!fs.existsSync(pagesDir)) {
     return []
   }
+
+  // 处理 pathPrefix：去除两头空格
+  const normalizedPathPrefix = pathPrefix.trim()
 
   const pages: ParsedPage[] = []
 
@@ -56,7 +66,7 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
         continue
       }
 
-      if (isExcluded(fullPath, pagesDir, exclude, isDir)) {
+      if (isExcluded(fullPath, pagesDir, exclude || [], isDir)) {
         continue
       }
 
@@ -102,7 +112,13 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
       //   warn(`检测到同名文件+目录: "${baseName}"，` + `"${entry.name}" 将作为布局组件`)
       // }
 
-      const parsed = parsePageFile(filePath, pagesDir, parentPath, namingStrategy)
+      const parsed = parsePageFile(
+        filePath,
+        pagesDir,
+        parentPath,
+        namingStrategy,
+        normalizedPathPrefix
+      )
       if (parsed) {
         if (hasSameNameDir) {
           parsed.isLayoutFile = true
@@ -133,17 +149,18 @@ export function scanMultiplePages(options: MultiScanOptions): ParsedPage[] {
   const allPages: ParsedPage[] = []
 
   for (const dirConfig of pagesDirs) {
-    const dirPath = typeof dirConfig === 'string' ? dirConfig : dirConfig.dir
-    const include =
-      typeof dirConfig === 'object' && dirConfig.include ? dirConfig.include : DEFAULT_INCLUDE
-    const exclude = typeof dirConfig === 'object' && dirConfig.exclude ? dirConfig.exclude : []
+    const dirPath = dirConfig.dir
+    const include = dirConfig.include || DEFAULT_INCLUDE
+    const exclude = dirConfig.exclude || []
+    const pathPrefix = dirConfig.prefix
 
     const pages = scanPages({
       pagesDir: dirPath,
       extensions,
       include,
       exclude,
-      namingStrategy
+      namingStrategy,
+      pathPrefix
     })
 
     allPages.push(...pages)

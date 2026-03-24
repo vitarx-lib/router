@@ -143,7 +143,6 @@ export interface ParsedPage {
  * 解析后的路由配置
  *
  * 用于代码生成阶段的中间数据结构，表示一个完整的路由记录。
- * 所有属性值都是字符串形式，因为需要生成可执行的代码。
  */
 export interface ResolvedRoute {
   /** 路由路径 */
@@ -203,7 +202,7 @@ export type ExtendRouteHook = (
  * ```typescript
  * const pagesDirs: PagesDirConfig[] = [
  *   { dir: 'src/pages', exclude: ['components'] },
- *   { dir: 'src/admin', include: ['**\/*.tsx'] }
+ *   { dir: 'src/admin', include: ['**\/*.tsx'], path: '/admin' }
  * ]
  * ```
  */
@@ -218,6 +217,30 @@ export interface PagesDirConfig {
   include?: string[]
   /** 要排除的文件/目录 glob 模式列表 */
   exclude?: string[]
+  /**
+   * 路由路径前缀
+   *
+   * 用于为该目录下的所有路由添加统一的前缀。
+   *
+   * 拼接规则：
+   * 1. 前缀不以 / 开头时，自动添加 / 前缀
+   * 2. 直接拼接前缀和路径（去掉路径开头的 /）
+   *
+   * @default ''
+   *
+   * @example
+   * ```typescript
+   * // src/admin/home.tsx -> /admin/home（需要指定结尾的 /）
+   * { dir: 'src/admin', path: '/admin/' }
+   *
+   * // src/admin/home.tsx -> /adminhome（不指定结尾的 / 会直接拼接）
+   * { dir: 'src/admin', path: '/admin' }
+   *
+   * // src/promos/black-friday.vue -> /promos-black-friday
+   * { dir: 'src/promos', path: 'promos-' }
+   * ```
+   */
+  prefix?: string
 }
 
 /**
@@ -235,9 +258,9 @@ export interface ScanOptions {
    *
    * 默认匹配所有文件。只有匹配 include 模式的文件才会被扫描。
    */
-  include: string[]
+  include?: string[]
   /** 要排除的文件/目录 glob 模式列表 */
-  exclude: string[]
+  exclude?: string[]
   /**
    * 路由命名策略
    * - `kebab`: 将驼峰命名转换为 kebab-case（默认）
@@ -246,6 +269,24 @@ export interface ScanOptions {
    * @default 'kebab'
    */
   namingStrategy?: NamingStrategy
+  /**
+   * 路由路径前缀
+   *
+   * 用于为该目录下的所有路由添加统一的前缀。
+   * 去除两头空格后原样拼接到扫描后生成的路径前面。
+   *
+   * @default ''
+   *
+   * @example
+   * ```typescript
+   * // src/admin/home.tsx -> /admin/home
+   * { pagesDir: 'src/admin', pathPrefix: '/admin' }
+   *
+   * // src/promos/black-friday.vue -> /promos-black-friday
+   * { pagesDir: 'src/promos', pathPrefix: 'promos-' }
+   * ```
+   */
+  pathPrefix?: string
 }
 
 /**
@@ -352,7 +393,11 @@ export interface VitePluginRouterOptions {
    * ]
    * ```
    */
-  pagesDir?: string | string[] | PagesDirConfig[]
+  pagesDir?: string | (PagesDirConfig | string)[]
+  /**
+   * 路由前缀
+   */
+  prefix?: string
   /** 支持的文件扩展名，默认为 ['.tsx', '.ts', '.jsx', '.js'] */
   extensions?: string[]
   /**

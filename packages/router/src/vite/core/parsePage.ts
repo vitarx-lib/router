@@ -295,6 +295,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
  * @param pagesDir - 页面目录绝对路径
  * @param parentPath - 父级路径（用于嵌套路由）
  * @param namingStrategy - 命名策略，默认为 'kebab'
+ * @param pathPrefix - 路由路径前缀，默认为 ''
  * @returns 解析后的页面信息，解析失败或无有效导出返回 null
  *
  * @example
@@ -306,13 +307,18 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
  * // 解析动态路由文件
  * parsePageFile('/src/pages/user/[id].tsx', '/src/pages', 'user')
  * // => { path: '/user/{id}', name: 'user-id', params: ['id'], ... }
+ *
+ * // 使用路径前缀
+ * parsePageFile('/src/admin/home.tsx', '/src/admin', '', 'kebab', '/admin')
+ * // => { path: '/admin/home', name: 'admin-home', ... }
  * ```
  */
 export function parsePageFile(
   filePath: string,
   pagesDir: string,
   parentPath: string,
-  namingStrategy: NamingStrategy = 'kebab'
+  namingStrategy: NamingStrategy = 'kebab',
+  pathPrefix: string = ''
 ): ParsedPage | null {
   const fileName = path.basename(filePath)
   const ext = path.extname(fileName)
@@ -369,6 +375,25 @@ export function parsePageFile(
       routePath = '/' + routeName
     } else {
       routePath = '/' + dirPath.replace(/\\/g, '/') + '/' + routeName
+    }
+  }
+
+  // 步骤5.1：应用路径前缀
+
+  // 规则：
+  //
+  // 错误示例：pathPrefix='/admin', routePath='/home' → '/adminhome'
+  // 正确示例：pathPrefix='/admin/', routePath='/home' → '/admin/home'
+  // 自定义拼接符示例：pathPrefix='promos-', routePath='/black-friday' → '/promos-black-friday'
+  // 正确示例：pathPrefix='/admin', routePath='/' → '/admin'
+  pathPrefix = pathPrefix.trim()
+  if (pathPrefix && pathPrefix !== '/') {
+    const normalizedPrefix = pathPrefix.startsWith('/') ? pathPrefix : `/${pathPrefix}`
+    if (routePath === '/') {
+      routePath = normalizedPrefix.replace(/\/+$/, '')
+    } else {
+      // 去掉 routePath 开头的 /，然后直接拼接
+      routePath = normalizedPrefix + routePath.slice(1)
     }
   }
 
