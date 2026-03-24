@@ -231,12 +231,13 @@ describe('parsePageFile', () => {
   })
 
   describe('pathPrefix 路径前缀', () => {
-    it('应该正确应用 /admin 前缀到根索引文件', () => {
+    it('应该正确应用 /admin/ 前缀到根索引文件', () => {
       const content = `export default function Page() { return <div>Page</div> }`
       createPageFile('index.tsx', content)
-      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '', 'kebab', '/admin')
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '', 'kebab', '/admin/')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/admin')
+      expect(result!.name).toBe('admin')
     })
 
     it('应该正确应用 /admin/ 前缀到子路径（带分隔符）', () => {
@@ -245,6 +246,7 @@ describe('parsePageFile', () => {
       const result = parsePageFile(path.join(testDir, 'home.tsx'), testDir, '', 'kebab', '/admin/')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/admin/home')
+      expect(result!.name).toBe('admin-home')
     })
 
     it('应该正确应用 /admin 前缀到子路径（无分隔符）', () => {
@@ -253,6 +255,7 @@ describe('parsePageFile', () => {
       const result = parsePageFile(path.join(testDir, 'home.tsx'), testDir, '', 'kebab', '/admin')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/adminhome')
+      expect(result!.name).toBe('admin-home')
     })
 
     it('应该正确应用 /admin/ 前缀到嵌套路径', () => {
@@ -267,6 +270,7 @@ describe('parsePageFile', () => {
       )
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/admin/users/profile')
+      expect(result!.name).toBe('admin-users-profile')
     })
 
     it('应该正确应用 promos- 前缀（不以 / 开头）', () => {
@@ -281,6 +285,7 @@ describe('parsePageFile', () => {
       )
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/promos-black-friday')
+      expect(result!.name).toBe('promos-black-friday')
     })
 
     it('应该正确处理空字符串前缀', () => {
@@ -289,6 +294,7 @@ describe('parsePageFile', () => {
       const result = parsePageFile(path.join(testDir, 'home.tsx'), testDir, '', 'kebab', '')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/home')
+      expect(result!.name).toBe('home')
     })
 
     it('应该正确处理带空格的前缀（去除空格）', () => {
@@ -303,6 +309,7 @@ describe('parsePageFile', () => {
       )
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/admin/home')
+      expect(result!.name).toBe('admin-home')
     })
 
     it('应该正确应用前缀到动态路由', () => {
@@ -311,6 +318,7 @@ describe('parsePageFile', () => {
       const result = parsePageFile(path.join(testDir, '[id].tsx'), testDir, '', 'kebab', '/admin/')
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/admin/{id}')
+      expect(result!.name).toBe('admin-id')
     })
 
     it('应该正确应用前缀到嵌套索引文件', () => {
@@ -325,6 +333,31 @@ describe('parsePageFile', () => {
       )
       expect(result).not.toBeNull()
       expect(result!.path).toBe('/admin/users')
+      expect(result!.name).toBe('admin-users')
+    })
+
+    it('无前缀时根目录 index 文件名称应为 index', () => {
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('index.tsx', content)
+      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '', 'kebab', '')
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/')
+      expect(result!.name).toBe('index')
+    })
+
+    it('无前缀时子目录 index 文件名称应为目录名', () => {
+      const content = `export default function Page() { return <div>Page</div> }`
+      createPageFile('user/index.tsx', content)
+      const result = parsePageFile(
+        path.join(testDir, 'user/index.tsx'),
+        testDir,
+        'user',
+        'kebab',
+        ''
+      )
+      expect(result).not.toBeNull()
+      expect(result!.path).toBe('/user')
+      expect(result!.name).toBe('user')
     })
   })
 })
