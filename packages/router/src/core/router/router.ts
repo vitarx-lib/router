@@ -645,7 +645,7 @@ export abstract class Router {
         logger.error('[Router] Error in scrollBehavior callback:', e)
       }
     }
-    const id = this._scrollTaskID++
+    const id = ++this._scrollTaskID
     // 等待路由组件解析完成后滚动
     this.waitViewRender().then(async () => {
       // 确保滚动目标未改变
