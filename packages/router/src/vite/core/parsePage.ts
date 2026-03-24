@@ -420,6 +420,7 @@ export function parsePageFile(
     customName: pageOptions?.name,
     parentPath,
     redirect: pageOptions?.redirect,
+    alias: pageOptions?.alias,
     viewName
   }
 }
@@ -769,6 +770,22 @@ function extractOptionsFromObject(node: BabelTypes.ObjectExpression): PageOption
         result.redirect = property.value.value
       } else if (property.value.type === 'ObjectExpression') {
         result.redirect = extractRedirectConfig(property.value)
+      }
+    }
+    // 提取 alias 属性
+    else if (keyName === 'alias') {
+      if (property.value.type === 'StringLiteral') {
+        result.alias = property.value.value
+      } else if (property.value.type === 'ArrayExpression') {
+        const aliases: string[] = []
+        for (const element of property.value.elements) {
+          if (element?.type === 'StringLiteral') {
+            aliases.push(element.value)
+          }
+        }
+        if (aliases.length > 0) {
+          result.alias = aliases
+        }
       }
     }
   }
