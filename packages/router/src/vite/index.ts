@@ -177,7 +177,7 @@ export default function VitarxRouter(options: VitePluginRouterOptions = {}): Plu
     const content = generateFullDtsFile(routeTree)
     fs.writeFileSync(dtsPath, content, 'utf-8')
 
-    info(`类型定义文件已生成: ${chalk.yellow(dtsPath)}`)
+    info(`✨ generate type definitions: ${chalk.yellow(dtsPath)}`, 'server')
   }
 
   return {

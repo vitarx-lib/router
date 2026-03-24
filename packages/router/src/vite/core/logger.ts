@@ -12,15 +12,16 @@ import chalk from 'chalk'
 type LogLevel = 'info' | 'warn' | 'error'
 
 /**
- * 格式化时间戳
- * @returns 格式化的时间戳字符串
- */
+ * 格式化时间戳（与 Vite 格式一致）
+ * @returns 格式化的时间戳字符串， */
 function formatTimestamp(): string {
   const now = new Date()
-  const hours = now.getHours().toString().padStart(2, '0')
+  let hours = now.getHours()
   const minutes = now.getMinutes().toString().padStart(2, '0')
   const seconds = now.getSeconds().toString().padStart(2, '0')
-  return `${hours}:${minutes}:${seconds}`
+  const period = hours >= 12 ? 'PM' : 'AM'
+  hours = hours % 12 || 12
+  return `${hours}:${minutes}:${seconds} ${period}`
 }
 
 /**
@@ -35,7 +36,7 @@ function log(level: LogLevel, message: string, context?: string): void {
 
   switch (level) {
     case 'info':
-      levelColor = chalk.blue
+      levelColor = chalk.green
       break
     case 'warn':
       levelColor = chalk.yellow
@@ -47,10 +48,10 @@ function log(level: LogLevel, message: string, context?: string): void {
       levelColor = chalk.white
   }
 
-  const prefix = `${chalk.gray(timestamp)} ${levelColor(`[vitarx-router]`)}`
+  const prefix = `${chalk.gray(timestamp)} ${chalk.cyan(`[router]`)}`
   const contextPart = context ? ` ${chalk.gray(`(${context})`)}` : ''
 
-  console.log(`${prefix}${contextPart} ${message}`)
+  console.log(`${prefix}${contextPart} ${levelColor(message)}`)
 }
 
 /**
