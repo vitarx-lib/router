@@ -386,8 +386,8 @@ export function parsePageFile(
   // 正确示例：pathPrefix='/admin/', routePath='/home' → '/admin/home'
   // 自定义拼接符示例：pathPrefix='promos-', routePath='/black-friday' → '/promos-black-friday'
   // 正确示例：pathPrefix='/admin', routePath='/' → '/admin'
-  pathPrefix = pathPrefix.trim()
-  if (pathPrefix && pathPrefix !== '/') {
+  pathPrefix = pathPrefix.trim() === '/' ? '' : pathPrefix.trim()
+  if (pathPrefix) {
     const normalizedPrefix = pathPrefix.startsWith('/') ? pathPrefix : `/${pathPrefix}`
     if (routePath === '/') {
       routePath = normalizedPrefix.replace(/\/+$/, '')
@@ -397,15 +397,15 @@ export function parsePageFile(
     }
   }
 
-  // 步骤6：生成路由名称（用于编程式导航）
-  const name = generateRouteName(relativePath, baseWithoutView)
-
-  // 步骤7：解析 definePage 宏配置
+  // 步骤6：解析 definePage 宏配置
   const pageOptions = parseDefinePage(filePath)
+
+  // 步骤7：生成路由名称（用于编程式导航）
+  const name = pageOptions?.name || generateRouteName(relativePath, baseWithoutView, pathPrefix)
 
   // 步骤8：应用命名策略转换 path 和 name
   const finalPath = applyNamingStrategyToPath(routePath, namingStrategy)
-  const finalName = applyNamingStrategyToName(pageOptions?.name || name, namingStrategy)
+  const finalName = applyNamingStrategyToName(name, namingStrategy)
 
   return {
     path: finalPath,
@@ -461,49 +461,76 @@ function parseFileName(fileName: string): {
  * 生成路由名称
  *
  * 核心逻辑：
- * 1. 从相对路径中提取目录段
- * 2. 添加文件名段（动态参数使用参数名）
- * 3. 用 '-' 连接所有段
+ * 1. 从前缀中提取名称段（去掉开头的 / 和结尾的 / 或 -）
+ * 2. 从相对路径中提取目录段
+ * 3. 添加文件名段（动态参数使用参数名）
+ * 4. 用 '-' 连接所有段
  *
  * 特殊处理：
- * - 根目录的 index 文件名称为空字符串
- * - 子目录的 index 文件名称为目录名
+ * - 根目录的 index 文件：如果有前缀则使用前缀，否则使用 'index'
+ * - 子目录的 index 文件：名称为前缀 + 目录路径
  * - 动态参数使用参数名而非完整格式
  *
  * @param relativePath - 相对于 pages 目录的路径
  * @param baseName - 文件名（不含扩展名）
+ * @param pathPrefix - 路由路径前缀
  * @returns 路由名称
  *
  * @example
  * ```typescript
- * generateRouteName('index.tsx', 'index')        // => ''
- * generateRouteName('user/index.tsx', 'index')   // => 'user'
- * generateRouteName('user/[id].tsx', '[id]')     // => 'user-id'
- * generateRouteName('user/settings.tsx', 'settings') // => 'user-settings'
+ * // 无前缀
+ * generateRouteName('index.tsx', 'index', '')           // => 'index'
+ * generateRouteName('user/index.tsx', 'index', '')      // => 'user'
+ * generateRouteName('user/[id].tsx', '[id]', '')        // => 'user-id'
+ *
+ * // 有前缀
+ * generateRouteName('index.tsx', 'index', '/admin/')    // => 'admin'
+ * generateRouteName('user/index.tsx', 'index', '/admin/') // => 'admin-user'
+ * generateRouteName('[id].tsx', '[id]', '/admin/')      // => 'admin-id'
+ *
+ * // 自定义前缀
+ * generateRouteName('black-friday.tsx', 'black-friday', 'promos-') // => 'promos-black-friday'
  * ```
  */
-function generateRouteName(relativePath: string, baseName: string): string {
+function generateRouteName(
+  relativePath: string,
+  baseName: string,
+  pathPrefix: string = ''
+): string {
   const dirPath = path.dirname(relativePath)
   const segments: string[] = []
 
-  // 步骤1：添加目录路径段
+  // 步骤1：从前缀中提取名称段
+  // 去掉开头的 / 和结尾的 / 或 -
+  if (pathPrefix) {
+    const prefixName = pathPrefix.replace(/^\/+/, '').replace(/[-\/]+$/, '')
+    if (prefixName) {
+      segments.push(prefixName)
+    }
+  }
+
+  // 步骤2：添加目录路径段
   if (dirPath !== '.') {
     segments.push(...dirPath.replace(/\\/g, '/').split('/'))
   }
 
-  // 步骤2：添加文件名段
-  // 特殊处理：根目录的 index 文件添加为 'index'
+  // 步骤3：添加文件名段
+  // 特殊处理：根目录的 index 文件
   if (baseName !== 'index' || dirPath === '.') {
-    const dynamicMatch = baseName.match(DYNAMIC_PARAM_REGEX)
-    if (dynamicMatch) {
-      // 动态参数使用参数名（去掉方括号）
-      segments.push(dynamicMatch[1])
-    } else {
-      segments.push(baseName)
+    // 根目录的 index 文件：如果没有前缀，添加 'index'
+    if (baseName === 'index' && dirPath === '.' && !pathPrefix) {
+      segments.push('index')
+    } else if (baseName !== 'index') {
+      const dynamicMatch = baseName.match(DYNAMIC_PARAM_REGEX)
+      if (dynamicMatch) {
+        segments.push(dynamicMatch[1])
+      } else {
+        segments.push(baseName)
+      }
     }
   }
 
-  // 步骤3：用 '-' 连接所有段
+  // 步骤4：用 '-' 连接所有段
   return segments.join('-')
 }
 

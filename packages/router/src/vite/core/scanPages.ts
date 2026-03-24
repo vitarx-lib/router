@@ -36,9 +36,6 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
     return []
   }
 
-  // 处理 pathPrefix：去除两头空格
-  const normalizedPathPrefix = pathPrefix.trim() === '/' ? '' : pathPrefix.trim()
-
   const pages: ParsedPage[] = []
 
   /**
@@ -112,13 +109,7 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
       //   warn(`检测到同名文件+目录: "${baseName}"，` + `"${entry.name}" 将作为布局组件`)
       // }
 
-      const parsed = parsePageFile(
-        filePath,
-        pagesDir,
-        parentPath,
-        namingStrategy,
-        normalizedPathPrefix
-      )
+      const parsed = parsePageFile(filePath, pagesDir, parentPath, namingStrategy, pathPrefix)
       if (parsed) {
         if (hasSameNameDir) {
           parsed.isLayoutFile = true
