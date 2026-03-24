@@ -224,4 +224,136 @@ describe('generateFullDtsFile', () => {
       expect(dts).toContain("'user-id': { params: { id: string | number } }")
     })
   })
+
+  describe('alias 别名类型映射', () => {
+    it('应该为字符串 alias 生成类型映射', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/home',
+          name: 'home',
+          isIndex: false,
+          alias: '/index'
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      // name 映射
+      expect(dts).toContain("'home': {}")
+      // path 映射
+      expect(dts).toContain("'/home': {}")
+      // alias 映射
+      expect(dts).toContain("'/index': {}")
+    })
+
+    it('应该为数组 alias 生成类型映射', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/home',
+          name: 'home',
+          isIndex: false,
+          alias: ['/index', '/main']
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      // name 映射
+      expect(dts).toContain("'home': {}")
+      // path 映射
+      expect(dts).toContain("'/home': {}")
+      // alias 映射
+      expect(dts).toContain("'/index': {}")
+      expect(dts).toContain("'/main': {}")
+    })
+
+    it('应该正确处理相对路径 alias', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/home',
+          name: 'home',
+          isIndex: false,
+          alias: 'index'  // 相对路径
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      // name 映射
+      expect(dts).toContain("'home': {}")
+      // path 映射
+      expect(dts).toContain("'/home': {}")
+      // alias 映射（相对路径解析为 /index）
+      expect(dts).toContain("'/index': {}")
+    })
+
+    it('应该正确处理空字符串 alias', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/home',
+          name: 'home',
+          isIndex: false,
+          parentPath: '',
+          alias: ''  // 空字符串
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      // 空字符串 alias 使用父路径（根路径 /）
+      expect(dts).toContain("'home': {}")
+      expect(dts).toContain("'/home': {}")
+    })
+
+    it('应该正确处理嵌套路由的 alias', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/admin',
+          name: 'admin',
+          children: [
+            createMockParsedPage({
+              path: '/admin/users',
+              name: 'admin-users',
+              isIndex: false,
+              parentPath: '/admin',
+              alias: ['list', '/manage']
+            })
+          ]
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      // 子路由 name 映射
+      expect(dts).toContain("'admin-users': {}")
+      // 子路由 path 映射
+      expect(dts).toContain("'/admin/users': {}")
+      // alias 映射：相对路径 'list' 解析为 '/admin/list'
+      expect(dts).toContain("'/admin/list': {}")
+      // alias 映射：绝对路径 '/manage'
+      expect(dts).toContain("'/manage': {}")
+    })
+
+    it('动态参数 alias 不应该生成 path 映射', () => {
+      const pages: ParsedPage[] = [
+        createMockParsedPage({
+          path: '/user/{id}',
+          name: 'user-id',
+          isIndex: false,
+          isDynamic: true,
+          params: ['id'],
+          alias: '/member/{id}'
+        })
+      ]
+
+      const dts = generateFullDtsFile(pages)
+
+      // name 映射应该存在
+      expect(dts).toContain("'user-id': { params: { id: string | number } }")
+      // 动态参数的 path 不应该生成映射
+      expect(dts).not.toContain("'/user/{id}'")
+      // 动态参数的 alias 也不应该生成映射
+      expect(dts).not.toContain("'/member/{id}'")
+    })
+  })
 })
