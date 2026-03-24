@@ -37,7 +37,7 @@ export function scanPages(options: ScanOptions): ParsedPage[] {
   }
 
   // 处理 pathPrefix：去除两头空格
-  const normalizedPathPrefix = pathPrefix.trim()
+  const normalizedPathPrefix = pathPrefix.trim() === '/' ? '' : pathPrefix.trim()
 
   const pages: ParsedPage[] = []
 
