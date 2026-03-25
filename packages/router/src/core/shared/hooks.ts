@@ -1,5 +1,5 @@
 import { inject, onScopeDispose, toRaw } from 'vitarx'
-import { __ROUTER_VIEW_INDEX_KEY__ } from '../common/constant.js'
+import { __ROUTER_VIEW_DEPTH_KEY__ } from '../common/constant.js'
 import { useRouter } from '../router/helpers.js'
 import type { RouteLeaveGuard, RouteRecord, RouteUpdateCallback } from '../types/index.js'
 
@@ -30,7 +30,7 @@ export function onBeforeRouteLeave(guard: RouteLeaveGuard): void {
     console.warn('[Router]: onBeforeRouteLeave is called but there is no active router.')
     return void 0
   }
-  const index = inject<number>(__ROUTER_VIEW_INDEX_KEY__, 0)
+  const index = inject<number>(__ROUTER_VIEW_DEPTH_KEY__, 0)
   const route = toRaw(router.currentRoute)
   const record: RouteRecord | undefined = route.matched[index]
   if (!record) {
@@ -67,7 +67,7 @@ export function onBeforeRouteUpdate(cb: RouteUpdateCallback): void {
     console.warn('[Router]: onBeforeRouteUpdate is called but there is no active router.')
     return void 0
   }
-  const index = inject<number>(__ROUTER_VIEW_INDEX_KEY__, 0)
+  const index = inject<number>(__ROUTER_VIEW_DEPTH_KEY__, 0)
   const route = toRaw(router.currentRoute)
   const record: RouteRecord | undefined = route.matched[index]
   if (!record) {

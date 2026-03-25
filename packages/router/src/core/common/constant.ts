@@ -40,4 +40,4 @@ export const __ROUTER_KEY__ = Symbol.for('__v_router_inject_key')
 /**
  * 路由器视图层级注入键
  */
-export const __ROUTER_VIEW_INDEX_KEY__ = Symbol.for('__v_router_view_index_inject_key')
+export const __ROUTER_VIEW_DEPTH_KEY__ = Symbol.for('__v_router_view_depth_inject_key')
