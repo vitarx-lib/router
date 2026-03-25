@@ -1,4 +1,4 @@
-import { createApp, h } from 'vitarx'
+import { createApp, h, toRaw } from 'vitarx'
 import { describe, expect, it, vi } from 'vitest'
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from '../../../src/core/shared/index.js'
 import { createMemoryRouter, defineRoutes, type Route } from '../../../src/index.js'
@@ -91,7 +91,9 @@ describe('shared/hooks', () => {
       const router = createMemoryRouter({ routes: basicRoutes })
       await router.replace({ index: '/' })
       app.use(router).mount(container)
-      expect(router['_routeLocation'].value.leaveGuards!.size).toBe(2)
+      const rawRoute = toRaw(router.currentRoute)
+      const guardSet = rawRoute.matched[0]?.leaveGuards
+      expect(guardSet?.size).toBe(2)
       router.destroy()
     })
   })
@@ -127,8 +129,9 @@ describe('shared/hooks', () => {
       await router.replace({ index: '/' })
       app.use(router).mount(container)
       expect(container.innerHTML).toBe('<div>Mock Page</div>')
-      expect(router['_routeLocation'].value.beforeUpdateHooks).toBeDefined()
-      expect(router['_routeLocation'].value.beforeUpdateHooks!.has(callback)).toBe(true)
+      const rawRoute = toRaw(router.currentRoute)
+      const hookSet = rawRoute.matched[0]?.beforeUpdateHooks
+      expect(hookSet?.has(callback)).toBe(true)
       router.destroy()
     })
 
@@ -159,7 +162,9 @@ describe('shared/hooks', () => {
       const router = createMemoryRouter({ routes: basicRoutes })
       await router.replace({ index: '/' })
       app.use(router).mount(container)
-      expect(router['_routeLocation'].value.beforeUpdateHooks!.size).toBe(2)
+      const rawRoute = toRaw(router.currentRoute)
+      const hookSet = rawRoute.matched[0]?.beforeUpdateHooks
+      expect(hookSet?.size).toBe(2)
       router.destroy()
     })
   })

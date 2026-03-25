@@ -733,12 +733,9 @@ export abstract class Router {
    * 如果任一守卫返回 false，则阻止路由跳转。
    */
   private async runRouteLeaveGuards(to: RouteLocation, from: RouteLocation): Promise<boolean> {
-    const raw = this._routeLocation
-    if (!raw.leaveGuards?.size) return true
-
     for (let i = from.matched.length - 1; i >= 0; i--) {
       if (i >= to.matched.length || from.matched[i] !== to.matched[i]) {
-        const guardSet = raw.leaveGuards.get(i)
+        const guardSet = from.matched[i].leaveGuards
         if (guardSet) {
           for (const guard of guardSet) {
             const result = await guard(to, from)
@@ -762,13 +759,10 @@ export abstract class Router {
    * 识别出所有同时存在于两个路由中的相同路由层级，并按从外到内的顺序执行相应的更新钩子。
    */
   private runRouteUpdateHooks(to: RouteLocation, from: RouteLocation): void {
-    const raw = this._routeLocation
-    if (!raw.beforeUpdateHooks?.size) return
-
     const minLength = Math.min(to.matched.length, from.matched.length)
     for (let i = 0; i < minLength; i++) {
       if (from.matched[i] === to.matched[i]) {
-        const hookSet = raw.beforeUpdateHooks.get(i)
+        const hookSet = from.matched[i].beforeUpdateHooks
         if (hookSet) {
           for (const hook of hookSet) {
             hook(to, from)

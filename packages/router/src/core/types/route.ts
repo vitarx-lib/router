@@ -1,5 +1,11 @@
 import type { Component } from 'vitarx'
-import { type AfterCallback, type NavigationGuard, type NavOptions } from '../index.js'
+import {
+  RouteLeaveGuard,
+  RouteUpdateCallback,
+  type AfterCallback,
+  type NavigationGuard,
+  type NavOptions
+} from '../index.js'
 import { Router } from '../router/index.js'
 import type { NavTarget, RouteLocation } from './navigation.js'
 
@@ -221,6 +227,14 @@ export interface RouteRecord {
    * @note 仅存在于开发环境，生产环境会移除！
    */
   rawRoute?: Route
+  /**
+   * @internal 离开守卫
+   */
+  leaveGuards?: Set<RouteLeaveGuard>
+  /**
+   * @internal 更新钩子
+   */
+  beforeUpdateHooks?: Set<RouteUpdateCallback>
 }
 
 /**

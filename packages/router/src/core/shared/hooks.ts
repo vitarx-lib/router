@@ -1,7 +1,7 @@
 import { inject, onScopeDispose, toRaw } from 'vitarx'
 import { __ROUTER_VIEW_INDEX_KEY__ } from '../common/constant.js'
 import { useRouter } from '../router/helpers.js'
-import type { RouteLeaveGuard, RouteUpdateCallback } from '../types/index.js'
+import type { RouteLeaveGuard, RouteRecord, RouteUpdateCallback } from '../types/index.js'
 
 /**
  * 注册一个路由离开守卫（Route Leave Guard），在当前路由即将离开时触发。
@@ -32,16 +32,16 @@ export function onBeforeRouteLeave(guard: RouteLeaveGuard): void {
   }
   const index = inject<number>(__ROUTER_VIEW_INDEX_KEY__, 0)
   const route = toRaw(router.currentRoute)
-  if (!route.leaveGuards) {
-    route.leaveGuards = new Map()
+  const record: RouteRecord | undefined = route.matched[index]
+  if (!record) {
+    console.warn('[Router]: onBeforeRouteLeave is called but no matched route record found.')
+    return void 0
   }
-  let guardSet = route.leaveGuards.get(index)
-  if (!guardSet) {
-    guardSet = new Set()
-    route.leaveGuards.set(index, guardSet)
+  if (!record.leaveGuards) {
+    record.leaveGuards = new Set()
   }
-  guardSet.add(guard)
-  onScopeDispose(() => guardSet!.delete(guard))
+  record.leaveGuards.add(guard)
+  onScopeDispose(() => record!.leaveGuards?.delete(guard))
 }
 
 /**
@@ -69,14 +69,14 @@ export function onBeforeRouteUpdate(cb: RouteUpdateCallback): void {
   }
   const index = inject<number>(__ROUTER_VIEW_INDEX_KEY__, 0)
   const route = toRaw(router.currentRoute)
-  if (!route.beforeUpdateHooks) {
-    route.beforeUpdateHooks = new Map()
+  const record: RouteRecord | undefined = route.matched[index]
+  if (!record) {
+    console.warn('[Router]: onBeforeRouteUpdate is called but no matched route record found.')
+    return void 0
   }
-  let hookSet = route.beforeUpdateHooks.get(index)
-  if (!hookSet) {
-    hookSet = new Set()
-    route.beforeUpdateHooks.set(index, hookSet)
+  if (!record.beforeUpdateHooks) {
+    record.beforeUpdateHooks = new Set()
   }
-  hookSet.add(cb)
-  onScopeDispose(() => hookSet!.delete(cb))
+  record.beforeUpdateHooks.add(cb)
+  onScopeDispose(() => record!.beforeUpdateHooks?.delete(cb))
 }

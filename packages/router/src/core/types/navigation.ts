@@ -1,6 +1,5 @@
 import type { DeepReadonly } from 'vitarx'
 import { type NavState } from '../common/constant.js'
-import type { RouteLeaveGuard, RouteUpdateCallback } from './hooks.js'
 import type { RouteIndex, RouteIndexMap, RouteMetaData, RoutePath, RouteRecord } from './route.js'
 
 /**
@@ -75,18 +74,7 @@ export interface BaseRouteLocation {
 /**
  * 路由位置 (可变内部状态)
  */
-export interface RouteLocationRaw extends BaseRouteLocation {
-  /**
-   * @internal 离开守卫
-   * 键为视图层级索引，值为该层级的守卫集合
-   */
-  leaveGuards?: Map<number, Set<RouteLeaveGuard>>
-  /**
-   * @internal 更新钩子
-   * 键为视图层级索引，值为该层级的钩子集合
-   */
-  beforeUpdateHooks?: Map<number, Set<RouteUpdateCallback>>
-}
+export interface RouteLocationRaw extends BaseRouteLocation {}
 
 /**
  * 当前路由位置 (对外只读)
