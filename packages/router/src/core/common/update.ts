@@ -1,5 +1,5 @@
 // 字符串值的key
-import { markRaw, shallowReactive } from 'vitarx'
+import { markRaw } from 'vitarx'
 import type { RouteLocation, RouteLocationRaw } from '../types/index.js'
 
 /**
@@ -57,39 +57,17 @@ export function isSameRouteLocation(to: RouteLocation, from: RouteLocation): boo
 /**
  * 补丁更新路由对象
  *
- * @param cache
- * @param newLocation
+ * @param current - 当前路由对象
+ * @param newLocation - 新的路由对象
  */
-export function updateRouteLocation(
-  cache: Map<string, RouteLocationRaw>,
-  newLocation: RouteLocation
-): RouteLocationRaw {
-  const cacheKey = newLocation.matched[0].path
-  const cachedRoute = cache.get(cacheKey)
+export function updateRouteLocation(current: RouteLocationRaw, newLocation: RouteLocation): void {
   // 如果缓存中存在该路由对象，则进行差异化更新
-  if (cachedRoute) {
-    cachedRoute.href = newLocation.href
-    cachedRoute.path = newLocation.path
-    cachedRoute.hash = newLocation.hash
-    patchArray(cachedRoute.matched, newLocation.matched)
-    patchObject(cachedRoute.params, newLocation.params)
-    patchObject(cachedRoute.query, newLocation.query)
-    cachedRoute.redirectFrom = newLocation.redirectFrom
-      ? markRaw(newLocation.redirectFrom)
-      : undefined
-    return cachedRoute
-  }
-  // 如果缓存中不存在该路由对象，则创建一个新的路由对象
-  const location = shallowReactive({
-    href: newLocation.href,
-    path: newLocation.path,
-    hash: newLocation.hash,
-    params: shallowReactive({ ...newLocation.params }),
-    query: shallowReactive({ ...newLocation.query }),
-    matched: shallowReactive(Array.from(newLocation.matched)),
-    meta: markRaw({ ...newLocation.meta }),
-    redirectFrom: newLocation.redirectFrom ? markRaw(newLocation.redirectFrom) : undefined
-  })
-  cache.set(cacheKey, location)
-  return location
+  current.href = newLocation.href
+  current.path = newLocation.path
+  current.hash = newLocation.hash
+  patchArray(current.matched, newLocation.matched)
+  patchObject(current.params, newLocation.params)
+  patchObject(current.query, newLocation.query)
+  patchObject(current.meta, newLocation.meta)
+  current.redirectFrom = newLocation.redirectFrom ? markRaw(newLocation.redirectFrom) : undefined
 }
