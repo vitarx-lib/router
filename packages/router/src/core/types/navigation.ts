@@ -25,9 +25,9 @@ export type URLHash = `#${string}`
 export type URLMode = 'hash' | 'path'
 
 /**
- * 路由位置
+ * 路由位置 (原始对象)
  */
-export interface BaseRouteLocation {
+export interface RouteLocationRaw {
   /**
    * 完整的href
    */
@@ -72,14 +72,9 @@ export interface BaseRouteLocation {
 }
 
 /**
- * 路由位置 (可变内部状态)
- */
-export interface RouteLocationRaw extends BaseRouteLocation {}
-
-/**
  * 当前路由位置 (对外只读)
  */
-export type RouteLocation = DeepReadonly<BaseRouteLocation>
+export type RouteLocation = DeepReadonly<RouteLocationRaw>
 
 /**
  * 路由索引类型
