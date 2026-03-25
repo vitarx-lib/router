@@ -14,7 +14,7 @@ import {
   provide,
   View
 } from 'vitarx'
-import { __ROUTER_VIEW_INDEX_KEY__, useRouter } from '../core/index.js'
+import { __ROUTER_VIEW_INDEX_KEY__, type RouteRecord, useRouter } from '../core/index.js'
 
 export interface RouterViewOptions {
   /**
@@ -60,7 +60,11 @@ export interface RouterViewOptions {
    *  </RouterView>
    *  ```
    */
-  children?: (component: Computed<Component | null>, props: Computed<AnyProps | null>) => View
+  children?: (
+    component: Computed<Component | null>,
+    props: Computed<AnyProps | null>,
+    route: Computed<RouteRecord | null>
+  ) => View
 }
 
 /**
@@ -73,25 +77,41 @@ export interface RouterViewOptions {
  */
 export function RouterView(props: RouterViewOptions): View {
   const { children, name = 'default' } = props
-  const router = useRouter() // 获取路由实例
-
+  // 获取路由实例
+  const router = useRouter()
+  // 路由位置
+  const currentRoute = router.currentRoute
   // 获取父级 index
   const parentIndex = inject(__ROUTER_VIEW_INDEX_KEY__, -1) // 从依赖注入中获取父级索引，默认为 -1
   const index = parentIndex + 1 // 计算当前视图的索引
   provide(__ROUTER_VIEW_INDEX_KEY__, index) // 向子组件提供当前索引
-
+  // 路由计算
+  const viewRoute = computed((): RouteRecord => {
+    return router.currentRoute.matched[index] ?? null
+  })
   // 视图属性计算
   const routeProps = computed((): AnyProps | null => {
-    const route = router.currentRoute // 获取当前路由信息
     const name = props.name || 'default' // 获取视图名称，默认为 'default'
-    let injectProps = route.matched[index]?.props?.[name] ?? router.config.props ?? false
+    const myRoute = viewRoute.value
+    let injectProps = myRoute?.props?.[name] ?? router.config.props ?? false
 
     if (injectProps === false) return null // 如果属性为 false，返回null
-    if (injectProps === true) return route.params // 如果属性为 true，返回路由参数
+    if (injectProps === true && myRoute.pattern) {
+      const params: AnyProps = {}
+      for (const { name } of myRoute.pattern) {
+        params[name] = currentRoute.params[name]
+        Object.defineProperty(params, name, {
+          enumerable: true,
+          configurable: true,
+          get: () => currentRoute.params[name]
+        })
+      }
+      return params
+    }
     if (typeof injectProps === 'function') {
       // 如果属性是函数
       try {
-        injectProps = injectProps(route)
+        injectProps = injectProps(currentRoute)
       } catch (e) {
         logger.error('[RouterView] Error occurred while executing props function', e)
       }
@@ -109,7 +129,7 @@ export function RouterView(props: RouterViewOptions): View {
   // 如果传入了 children 函数，则调用并返回其结果
   if (isFunction(children)) {
     try {
-      return children(component, routeProps)
+      return children(component, routeProps, viewRoute)
     } catch (e) {
       logger.error('[RouterView] Error occurred while executing children function', e)
     }
