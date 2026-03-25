@@ -5,7 +5,6 @@ import type {
   NavTarget,
   RouteIndex,
   RouteLocation,
-  RouteLocationRaw,
   RoutePath,
   URLHash,
   URLQuery
@@ -158,57 +157,5 @@ export function registerHookTool<T extends { [key: string]: any }>(
     hooks[type] = new Set([hook]) as any as T[keyof T]
   } else {
     set.add(hook)
-  }
-}
-
-/**
- * 执行路由离开守卫（leave guards）的异步函数
- *
- * @internal
- * @param to - 目标路由位置对象
- * @param from - 当前路由位置对象
- * @param raw - 原始的路由位置对象
- * @returns Promise<boolean> 返回一个布尔值，表示是否允许离开当前路由
- * @description 该函数会依次执行当前路由的所有离开守卫，如果任一守卫返回 false，则阻止路由跳转
- * @example
- * // 示例用法
- * const canLeave = await runLeaveGuards(toRoute, fromRoute)
- * if (!canLeave) {
- *   console.log('路由跳转被阻止')
- * }
- */
-export async function runLeaveGuards(
-  to: RouteLocation,
-  from: RouteLocation,
-  raw: RouteLocationRaw
-): Promise<boolean> {
-  if (!raw.leaveGuards) return true
-  for (const guard of raw.leaveGuards) {
-    const result = await guard(to, from)
-    if (result === false) return false
-  }
-  return true
-}
-
-/**
- * 执行路由更新前的钩子函数
- *
- * 该函数会遍历当前路由(from)的 beforeUpdateHooks 数组，并依次执行其中的钩子函数。
- * 每个钩子函数都会接收目标路由(to)和当前路由(from)作为参数。
- *
- * @internal
- * @param to - 目标路由位置对象
- * @param from - 当前路由位置对象
- * @param raw - 原始的路由位置对象
- * @returns void
- */
-export function runRouteUpdateHooks(
-  to: RouteLocation,
-  from: RouteLocation,
-  raw: RouteLocationRaw
-): void {
-  if (!raw.beforeUpdateHooks) return
-  for (const hook of raw.beforeUpdateHooks) {
-    hook(to, from)
   }
 }
