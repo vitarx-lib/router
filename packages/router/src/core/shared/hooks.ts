@@ -1,4 +1,5 @@
-import { markRaw, onScopeDispose } from 'vitarx'
+import { inject, onScopeDispose, toRaw } from 'vitarx'
+import { __ROUTER_VIEW_INDEX_KEY__ } from '../common/constant.js'
 import { useRouter } from '../router/helpers.js'
 import type { RouteLeaveGuard, RouteUpdateCallback } from '../types/index.js'
 
@@ -29,19 +30,23 @@ export function onBeforeRouteLeave(guard: RouteLeaveGuard): void {
     console.warn('[Router]: onBeforeRouteLeave is called but there is no active router.')
     return void 0
   }
-  const route = router['_routeLocation'].value
-  if (route.leaveGuards) {
-    route.leaveGuards.add(guard)
-  } else {
-    route.leaveGuards = markRaw(new Set([guard]))
+  const index = inject<number>(__ROUTER_VIEW_INDEX_KEY__, 0)
+  const route = toRaw(router.currentRoute)
+  if (!route.leaveGuards) {
+    route.leaveGuards = new Map()
   }
-  onScopeDispose(() => route.leaveGuards?.delete(guard))
+  let guardSet = route.leaveGuards.get(index)
+  if (!guardSet) {
+    guardSet = new Set()
+    route.leaveGuards.set(index, guardSet)
+  }
+  guardSet.add(guard)
+  onScopeDispose(() => guardSet!.delete(guard))
 }
 
 /**
  * 注册一个在路由更新之前执行的回调函数
  *
- * @internal
  * @param cb - 路由更新前执行的回调函数
  * @returns void
  *
@@ -62,11 +67,16 @@ export function onBeforeRouteUpdate(cb: RouteUpdateCallback): void {
     console.warn('[Router]: onBeforeRouteUpdate is called but there is no active router.')
     return void 0
   }
-  const route = router['_routeLocation'].value
-  if (route.beforeUpdateHooks) {
-    route.beforeUpdateHooks.add(cb)
-  } else {
-    route.beforeUpdateHooks = markRaw(new Set([cb]))
+  const index = inject<number>(__ROUTER_VIEW_INDEX_KEY__, 0)
+  const route = toRaw(router.currentRoute)
+  if (!route.beforeUpdateHooks) {
+    route.beforeUpdateHooks = new Map()
   }
-  onScopeDispose(() => route.beforeUpdateHooks?.delete(cb))
+  let hookSet = route.beforeUpdateHooks.get(index)
+  if (!hookSet) {
+    hookSet = new Set()
+    route.beforeUpdateHooks.set(index, hookSet)
+  }
+  hookSet.add(cb)
+  onScopeDispose(() => hookSet!.delete(cb))
 }
