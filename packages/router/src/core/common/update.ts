@@ -42,19 +42,6 @@ function patchObject<T extends Record<string, any>>(target: T, source: Partial<T
 }
 
 /**
- * 判断两个路由对象是否相同
- *
- * @param to - 要导航到的路由对象
- * @param from - 当前路由对象
- */
-export function isSameRouteLocation(to: RouteLocation, from: RouteLocation): boolean {
-  return (
-    to.path === from.path &&
-    to.matched.length === from.matched.length &&
-    to.matched.at(-1) === from.matched.at(-1)
-  )
-}
-/**
  * 补丁更新路由对象
  *
  * @param current - 当前路由对象
