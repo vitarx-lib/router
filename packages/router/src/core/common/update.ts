@@ -64,7 +64,7 @@ export function updateRouteLocation(
   cache: Map<string, RouteLocationRaw>,
   newLocation: RouteLocation
 ): RouteLocationRaw {
-  const cacheKey = newLocation.matched.at(-1)!.path
+  const cacheKey = newLocation.matched[0].path
   const cachedRoute = cache.get(cacheKey)
   // 如果缓存中存在该路由对象，则进行差异化更新
   if (cachedRoute) {
