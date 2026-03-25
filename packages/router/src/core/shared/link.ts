@@ -1,4 +1,4 @@
-import { type Computed, computed, isPlainObject, isString, logger } from 'vitarx'
+import { type Computed, computed, isPlainObject, isString, logger, toRaw } from 'vitarx'
 import { hasValidNavTarget, hasValidPath } from '../common/utils.js'
 import { useRouter } from '../router/index.js'
 import type {
@@ -127,7 +127,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
     if (isString(target.index)) {
       // 兼容纯锚点连接跳转
       if (target.index.startsWith('#')) {
-        const route = cloneRouteLocation(router.currentRoute)
+        const route = cloneRouteLocation(toRaw(router.currentRoute))
         route.hash = target.index as URLHash
         route.href = router.buildUrl(route.path, route.query, route.hash)
         return route
