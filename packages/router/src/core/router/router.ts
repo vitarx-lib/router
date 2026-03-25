@@ -10,15 +10,14 @@ import {
   isPromise,
   isString,
   logger,
-  markRaw,
   nextTick,
   preloadComponent,
   readonly,
-  shallowRef,
-  type ShallowRef
+  type ReadonlyObject,
+  shallowReactive
 } from 'vitarx'
 import { __ROUTER_KEY__, NavState } from '../common/constant.js'
-import { isSameRouteLocation, updateRouteLocation } from '../common/update.js'
+import { updateRouteLocation } from '../common/update.js'
 import {
   hasOnlyChangeHash,
   hasValidNavTarget,
@@ -27,9 +26,7 @@ import {
   processGuardResult,
   registerHookTool,
   removePathSuffix,
-  resolveNavTarget,
-  runLeaveGuards,
-  runRouteUpdateHooks
+  resolveNavTarget
 } from '../common/utils.js'
 import { cloneRouteLocation, normalizePath, stringifyQuery } from '../shared/utils.js'
 import type {
@@ -65,7 +62,6 @@ interface Hooks {
   onError: Set<NavErrorListener> | null
   onNotFound: Set<NotFoundHandler> | null
 }
-
 /**
  * 路由器抽象基类
  *
@@ -93,12 +89,7 @@ export abstract class Router {
    * 当前路由位置 - 仅内部使用
    * @private
    */
-  private readonly _routeLocation: ShallowRef<RouteLocationRaw>
-  /**
-   * 缓存路由位置对象
-   * @private
-   */
-  private readonly _cache: Map<string, RouteLocationRaw> = new Map()
+  private readonly _routeLocation: RouteLocationRaw
   /**
    * 存储就绪状态的 Promise（延迟创建）
    * @private
@@ -170,23 +161,21 @@ export abstract class Router {
       this._hooks.onNotFound = new Set(isArray(onNotFound) ? onNotFound : [onNotFound])
     }
     this.manager = isArray(routes) ? new RouteManager(routes) : routes
-    this._routeLocation = shallowRef(
-      markRaw({
-        path: '/',
-        hash: '',
-        href: '/',
-        params: {},
-        query: {},
-        matched: [],
-        meta: {}
-      })
-    )
+    this._routeLocation = shallowReactive({
+      path: '/',
+      hash: '',
+      href: '/',
+      params: shallowReactive({}),
+      query: shallowReactive({}),
+      matched: shallowReactive([]),
+      meta: shallowReactive({})
+    })
   }
   /**
    * 获取当前路由位置对象
    */
-  get currentRoute(): RouteLocation {
-    return readonly(this._routeLocation.value)
+  get currentRoute(): ReadonlyObject<RouteLocationRaw, true> {
+    return readonly(this._routeLocation)
   }
   /**
    * 获取解析后的路由记录数组
@@ -360,7 +349,7 @@ export abstract class Router {
     // 创建一个空数组来存储加载任务
     const loadTask: Promise<Component>[] = []
     // 获取路由匹配项，如果传入route则使用其matched属性，否则使用当前路由的matched属性
-    const matched = route?.matched || this._routeLocation.value.matched
+    const matched = route?.matched || this._routeLocation.matched
     // 遍历目标路由的所有匹配项
     for (const route of matched) {
       // 遍历路由中的所有组件
@@ -486,7 +475,7 @@ export abstract class Router {
     // 1. 解析目标路由
     const to = this.matchRoute(target, redirectFrom)
     // 2. 确保 from 对象存在
-    const from = fromRoute ?? cloneRouteLocation(this._routeLocation.value)
+    const from = fromRoute ?? cloneRouteLocation(this._routeLocation)
     // 3. 构建 NavigationResult 基础对象
     const result: NavigateResult = {
       state: NavState.success, // 初始状态
@@ -515,15 +504,15 @@ export abstract class Router {
     // 5. 场景 B: 仅hash变化 / 重复路由
     // ----------------------------------------------------------------
     // 5.1 重复路由
-    if (to.href === from.href && to.matched.length === from.matched.length) {
+    if (to.href === from.href && to.matched.at(-1) === from.matched.at(-1)) {
       result.state = NavState.duplicated
       result.message = 'Navigation aborted due to the same route'
       return result
     }
     // 5.2 仅hash变化
     if (hasOnlyChangeHash(to, from)) {
+      this._routeLocation.href = to.href
       this.hashUpdate?.(to)
-      this._routeLocation.value.href = to.href
       result.state = NavState.success
       result.message = 'Navigation succeeded: only hash changed'
       return result
@@ -552,17 +541,23 @@ export abstract class Router {
     // 7. 场景 D: 路由匹配成功，执行守卫流程
     // ----------------------------------------------------------------
     try {
+      // 7.0 离开守卫
+      const leaveGuardResult = await this.runRouteLeaveGuards(to, from)
+
+      if (hasChanged()) return result
+
+      if (!leaveGuardResult) {
+        result.state = NavState.aborted
+        result.message = 'Navigation aborted by leave guard'
+        return result
+      }
+
       // 执行全局前置守卫
       const guardResult = await this.runBeforeGuards(to, from)
 
       // 7.1 并发竞争检查
       if (hasChanged()) return result
 
-      if (guardResult === 'same') {
-        result.state = NavState.success
-        result.message = 'Navigation succeeded: params or query changed'
-        return result
-      }
       // 7.2 守卫拦截
       if (guardResult === false) {
         result.state = NavState.aborted
@@ -574,16 +569,6 @@ export abstract class Router {
         checkRedirectLoop(String(guardResult.index))
         // 直接返回递归结果，如果内部 Reject 会自动向上传播
         return this.navigate(guardResult, from, redirectFrom ?? to)
-      }
-      // 7.4 离开守卫
-      const leaveGuardResult = await runLeaveGuards(to, from, this._routeLocation.value)
-
-      if (hasChanged()) return result
-
-      if (!leaveGuardResult) {
-        result.state = NavState.aborted
-        result.message = 'Navigation aborted by leave guard'
-        return result
       }
     } catch (error: unknown) {
       // 捕获守卫内部的同步/异步错误
@@ -609,7 +594,7 @@ export abstract class Router {
     savedPosition: ScrollPosition | null = null
   ): void {
     // 1. 确认导航：更新路由状态
-    this._routeLocation.value = updateRouteLocation(this._cache, to)
+    updateRouteLocation(this._routeLocation, to)
     // 2. 触发全局后置钩子
     this.runAfterHooks(to, from)
     // 3. 处理滚动行为
@@ -692,6 +677,107 @@ export abstract class Router {
     }
   }
   /**
+   * 执行前置守卫 (异步执行)
+   * 顺序：全局 -> 父 -> 子
+   * 注意：守卫内的异常会直接向上抛出，由 navigate 方法捕获
+   */
+  private async runBeforeGuards(
+    to: RouteLocation,
+    from: RouteLocation
+  ): Promise<boolean | NavTarget | void> {
+    // 执行全局前置守卫
+    if (this._hooks.beforeEach) {
+      for (const guard of this._hooks.beforeEach) {
+        const result = await guard.call(this, to, from)
+        const processedResult = processGuardResult(result)
+        if (processedResult !== true) return processedResult
+      }
+      return true
+    }
+
+    try {
+      this.runRouteUpdateHooks(to, from)
+    } catch (e) {
+      this.reportError(e, to, from)
+    }
+
+    // 执行路由独享守卫 (顺序：父 -> 子)
+    for (const record of to.matched) {
+      if (from.matched.includes(record)) continue
+      if (isFunction(record.beforeEnter)) {
+        const result = await record.beforeEnter.call(this, to, from)
+        const processedResult = processGuardResult(result)
+        if (processedResult !== true) return processedResult
+      } else if (Array.isArray(record.beforeEnter)) {
+        for (const guard of record.beforeEnter) {
+          const result = await guard.call(this, to, from)
+          const processedResult = processGuardResult(result)
+          if (processedResult !== true) return processedResult
+        }
+      }
+    }
+    // 全部通过，放行
+    return true
+  }
+
+  /**
+   * 执行路由离开守卫（leave guards）的异步函数
+   *
+   * @internal
+   * @param to - 目标路由位置对象
+   * @param from - 当前路由位置对象
+   * @returns Promise<boolean> 返回一个布尔值，表示是否允许离开当前路由
+   * @description
+   * 该方法通过对比 to.matched 和 from.matched 路由匹配数组的差异，
+   * 识别出所有需要离开的路由层级，并按从内到外的顺序执行相应的离场钩子。
+   * 如果任一守卫返回 false，则阻止路由跳转。
+   */
+  private async runRouteLeaveGuards(to: RouteLocation, from: RouteLocation): Promise<boolean> {
+    const raw = this._routeLocation
+    if (!raw.leaveGuards?.size) return true
+
+    for (let i = from.matched.length - 1; i >= 0; i--) {
+      if (i >= to.matched.length || from.matched[i] !== to.matched[i]) {
+        const guardSet = raw.leaveGuards.get(i)
+        if (guardSet) {
+          for (const guard of guardSet) {
+            const result = await guard(to, from)
+            if (result === false) return false
+          }
+        }
+      }
+    }
+
+    return true
+  }
+  /**
+   * 执行路由更新前的钩子函数
+   *
+   * @internal
+   * @param to - 目标路由位置对象
+   * @param from - 当前路由位置对象
+   * @returns void
+   * @description
+   * 该方法通过对比 to.matched 和 from.matched 路由匹配数组的差异，
+   * 识别出所有同时存在于两个路由中的相同路由层级，并按从外到内的顺序执行相应的更新钩子。
+   */
+  private runRouteUpdateHooks(to: RouteLocation, from: RouteLocation): void {
+    const raw = this._routeLocation
+    if (!raw.beforeUpdateHooks?.size) return
+
+    const minLength = Math.min(to.matched.length, from.matched.length)
+    for (let i = 0; i < minLength; i++) {
+      if (from.matched[i] === to.matched[i]) {
+        const hookSet = raw.beforeUpdateHooks.get(i)
+        if (hookSet) {
+          for (const hook of hookSet) {
+            hook(to, from)
+          }
+        }
+      }
+    }
+  }
+  /**
    * 报告错误
    *
    * @param error - 错误对象
@@ -711,52 +797,6 @@ export abstract class Router {
         }
       }
     }
-  }
-  /**
-   * 执行前置守卫 (异步执行)
-   * 顺序：全局 -> 父 -> 子
-   * 注意：守卫内的异常会直接向上抛出，由 navigate 方法捕获
-   */
-  private async runBeforeGuards(
-    to: RouteLocation,
-    from: RouteLocation
-  ): Promise<boolean | NavTarget | void | 'same'> {
-    // 执行全局前置守卫
-    if (this._hooks.beforeEach) {
-      for (const guard of this._hooks.beforeEach) {
-        const result = await guard.call(this, to, from)
-        const processedResult = processGuardResult(result)
-        if (processedResult !== true) return processedResult
-      }
-      return true
-    }
-
-    // 如果是相同路由，则执行路由更新钩子
-    if (isSameRouteLocation(to, from)) {
-      try {
-        runRouteUpdateHooks(to, from, this._routeLocation.value)
-      } catch (e) {
-        this.reportError(e, to, from)
-      }
-      return 'same'
-    }
-
-    // 执行路由独享守卫 (顺序：父 -> 子)
-    for (const record of to.matched) {
-      if (isFunction(record.beforeEnter)) {
-        const result = await record.beforeEnter.call(this, to, from)
-        const processedResult = processGuardResult(result)
-        if (processedResult !== true) return processedResult
-      } else if (Array.isArray(record.beforeEnter)) {
-        for (const guard of record.beforeEnter) {
-          const result = await guard.call(this, to, from)
-          const processedResult = processGuardResult(result)
-          if (processedResult !== true) return processedResult
-        }
-      }
-    }
-    // 全部通过，放行
-    return true
   }
   /**
    * 创建缺失的路由
