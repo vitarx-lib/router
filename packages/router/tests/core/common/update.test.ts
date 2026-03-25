@@ -1,273 +1,199 @@
 import { describe, expect, it } from 'vitest'
-import {
-  isSameRouteLocation,
-  updateRouteLocation
-} from '../../../src/core/common/update.js'
+import { updateRouteLocation } from '../../../src/core/common/update.js'
 import type { RouteLocation, RouteLocationRaw, RouteRecord } from '../../../src/core/types/index.js'
 
 describe('common/update', () => {
-  describe('isSameRouteLocation', () => {
-    const createRouteLocation = (
-      path: string,
-      matched: RouteRecord[] = []
-    ): RouteLocation => {
-      return {
-        path,
-        matched,
-        href: path,
-        hash: '',
-        params: {},
-        query: {},
-        meta: {}
-      } as RouteLocation
-    }
+  const createRouteRecord = (path: string): RouteRecord =>
+    ({ path, isGroup: false }) as unknown as RouteRecord
 
-    it('应该对相同路径和匹配记录返回 true', () => {
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
-      const route1 = createRouteLocation('/home', [matchedItem])
-      const route2 = createRouteLocation('/home', [matchedItem])
-      expect(isSameRouteLocation(route1, route2)).toBe(true)
-    })
+  const createRouteLocation = (overrides: Partial<RouteLocation> = {}): RouteLocation =>
+    ({
+      path: '/home',
+      href: '/home',
+      hash: '' as const,
+      params: {},
+      query: {},
+      meta: {},
+      matched: [createRouteRecord('/home')],
+      ...overrides
+    }) as RouteLocation
 
-    it('应该对不同路径返回 false', () => {
-      const route1 = createRouteLocation('/home')
-      const route2 = createRouteLocation('/about')
-      expect(isSameRouteLocation(route1, route2)).toBe(false)
-    })
-
-    it('应该对不同长度的 matched 返回 false', () => {
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
-      const route1 = createRouteLocation('/home', [matchedItem])
-      const route2 = createRouteLocation('/home', [matchedItem, matchedItem])
-      expect(isSameRouteLocation(route1, route2)).toBe(false)
-    })
-
-    it('应该对不同的 matched 最后一个元素返回 false', () => {
-      const matchedItem1 = { path: '/home' } as unknown as RouteRecord
-      const matchedItem2 = { path: '/about' } as unknown as RouteRecord
-      const route1 = createRouteLocation('/home', [matchedItem1])
-      const route2 = createRouteLocation('/home', [matchedItem2])
-      expect(isSameRouteLocation(route1, route2)).toBe(false)
-    })
-
-    it('应该对空 matched 数组返回 true', () => {
-      const route1 = createRouteLocation('/home', [])
-      const route2 = createRouteLocation('/home', [])
-      expect(isSameRouteLocation(route1, route2)).toBe(true)
-    })
-  })
+  const createRouteLocationRaw = (overrides: Partial<RouteLocationRaw> = {}): RouteLocationRaw =>
+    ({
+      path: '/home',
+      href: '/home',
+      hash: '' as const,
+      params: {},
+      query: {},
+      meta: {},
+      matched: [createRouteRecord('/home')],
+      ...overrides
+    }) as RouteLocationRaw
 
   describe('updateRouteLocation', () => {
-    const createRouteLocation = (overrides: Partial<RouteLocation> = {}): RouteLocation => {
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
-      return {
-        path: '/home',
-        href: '/home',
-        hash: '',
-        params: { id: '123' },
-        query: { search: 'test' },
-        matched: [matchedItem],
-        meta: { title: 'Home' },
-        ...overrides
-      } as RouteLocation
-    }
+    it('应该更新 href', () => {
+      const current = createRouteLocationRaw({ href: '/home' })
+      const newLocation = createRouteLocation({ href: '/home?id=123' })
 
-    it('应该创建新的路由位置对象', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const newLocation = createRouteLocation()
-      const result = updateRouteLocation(cache, newLocation)
+      updateRouteLocation(current, newLocation)
 
-      expect(result.path).toBe('/home')
-      expect(result.params).toEqual({ id: '123' })
-      expect(result.query).toEqual({ search: 'test' })
-      expect(cache.has('/home')).toBe(true)
+      expect(current.href).toBe('/home?id=123')
     })
 
-    it('应该对相同路径使用缓存进行差异化更新', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
+    it('应该更新 path', () => {
+      const current = createRouteLocationRaw({ path: '/home' })
+      const newLocation = createRouteLocation({ path: '/about' })
 
-      const firstLocation = createRouteLocation({
-        params: { id: '123' },
-        query: { search: 'test' },
-        matched: [matchedItem]
-      })
-      const firstResult = updateRouteLocation(cache, firstLocation)
+      updateRouteLocation(current, newLocation)
 
-      const secondLocation = createRouteLocation({
-        params: { id: '456' },
-        query: { search: 'new' },
-        matched: [matchedItem]
-      })
-      const secondResult = updateRouteLocation(cache, secondLocation)
-
-      expect(secondResult).toBe(firstResult)
-      expect(secondResult.params).toEqual({ id: '456' })
-      expect(secondResult.query).toEqual({ search: 'new' })
+      expect(current.path).toBe('/about')
     })
 
-    it('应该正确更新 href', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
+    it('应该更新 hash', () => {
+      const current = createRouteLocationRaw({ hash: '' })
+      const newLocation = createRouteLocation({ hash: '#section' })
 
-      const firstLocation = createRouteLocation({
-        href: '/home',
-        matched: [matchedItem]
-      })
-      updateRouteLocation(cache, firstLocation)
+      updateRouteLocation(current, newLocation)
 
-      const secondLocation = createRouteLocation({
-        href: '/home?id=456',
-        matched: [matchedItem]
-      })
-      const result = updateRouteLocation(cache, secondLocation)
-
-      expect(result.href).toBe('/home?id=456')
+      expect(current.hash).toBe('#section')
     })
 
-    it('应该正确更新 hash', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
+    it('应该更新 matched 数组', () => {
+      const matched1 = createRouteRecord('/home')
+      const matched2 = createRouteRecord('/home/detail')
+      const current = createRouteLocationRaw({ matched: [matched1] })
+      const newLocation = createRouteLocation({ matched: [matched1, matched2] })
 
-      const firstLocation = createRouteLocation({
-        hash: '',
-        matched: [matchedItem]
-      })
-      updateRouteLocation(cache, firstLocation)
+      updateRouteLocation(current, newLocation)
 
-      const secondLocation = createRouteLocation({
-        hash: '#section',
-        matched: [matchedItem]
-      })
-      const result = updateRouteLocation(cache, secondLocation)
-
-      expect(result.hash).toBe('#section')
+      expect(current.matched).toHaveLength(2)
+      expect(current.matched[0]).toBe(matched1)
+      expect(current.matched[1]).toBe(matched2)
     })
 
-    it('应该正确更新 matched 数组', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const matchedItem1 = { path: '/home' } as unknown as RouteRecord
-      const matchedItem2 = { path: '/home/detail' } as unknown as RouteRecord
+    it('应该截断过长的 matched 数组', () => {
+      const matched1 = createRouteRecord('/home')
+      const matched2 = createRouteRecord('/home/detail')
+      const current = createRouteLocationRaw({ matched: [matched1, matched2] })
+      const newLocation = createRouteLocation({ matched: [matched1] })
 
-      const firstLocation = createRouteLocation({
-        matched: [matchedItem1]
-      })
-      const firstResult = updateRouteLocation(cache, firstLocation)
-      expect(firstResult.matched).toEqual([matchedItem1])
+      updateRouteLocation(current, newLocation)
 
-      const secondLocation = createRouteLocation({
-        matched: [matchedItem1, matchedItem2]
-      })
-      const secondResult = updateRouteLocation(cache, secondLocation)
-      expect(secondResult.matched).toEqual([matchedItem1, matchedItem2])
+      expect(current.matched).toHaveLength(1)
+      expect(current.matched[0]).toBe(matched1)
     })
 
-    it('应该正确更新 params 对象', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
+    it('应该更新 params 对象', () => {
+      const current = createRouteLocationRaw({ params: { id: '123', name: 'old' } })
+      const newLocation = createRouteLocation({ params: { id: '456' } })
 
-      const firstLocation = createRouteLocation({
-        params: { id: '123', name: 'test' },
-        matched: [matchedItem]
-      })
-      updateRouteLocation(cache, firstLocation)
+      updateRouteLocation(current, newLocation)
 
-      const secondLocation = createRouteLocation({
-        params: { id: '456' },
-        matched: [matchedItem]
-      })
-      const result = updateRouteLocation(cache, secondLocation)
-
-      expect(result.params).toEqual({ id: '456' })
+      expect(current.params).toEqual({ id: '456' })
     })
 
-    it('应该正确更新 query 对象', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
+    it('应该删除被清空的 params', () => {
+      const current = createRouteLocationRaw({ params: { id: '123' } })
+      const newLocation = createRouteLocation({ params: {} })
 
-      const firstLocation = createRouteLocation({
-        query: { search: 'test', page: '1' },
-        matched: [matchedItem]
-      })
-      updateRouteLocation(cache, firstLocation)
+      updateRouteLocation(current, newLocation)
 
-      const secondLocation = createRouteLocation({
-        query: { search: 'new' },
-        matched: [matchedItem]
-      })
-      const result = updateRouteLocation(cache, secondLocation)
-
-      expect(result.query).toEqual({ search: 'new' })
+      expect(current.params).toEqual({})
+      expect('id' in current.params).toBe(false)
     })
 
-    it('应该正确处理 redirectFrom', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
-      const redirectFrom = { path: '/old' } as unknown as RouteLocation
+    it('应该更新 query 对象', () => {
+      const current = createRouteLocationRaw({ query: { search: 'old', page: '1' } })
+      const newLocation = createRouteLocation({ query: { search: 'new' } })
 
-      const location = createRouteLocation({
-        redirectFrom,
-        matched: [matchedItem]
-      })
-      const result = updateRouteLocation(cache, location)
+      updateRouteLocation(current, newLocation)
 
-      expect(result.redirectFrom).toBeDefined()
-      expect(result.redirectFrom?.path).toBe('/old')
+      expect(current.query).toEqual({ search: 'new' })
     })
 
-    it('应该正确处理没有 redirectFrom 的情况', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
+    it('应该删除被清空的 query', () => {
+      const current = createRouteLocationRaw({ query: { search: 'test' } })
+      const newLocation = createRouteLocation({ query: {} })
 
-      const firstLocation = createRouteLocation({
-        redirectFrom: { path: '/old' } as unknown as RouteLocation,
-        matched: [matchedItem]
-      })
-      updateRouteLocation(cache, firstLocation)
+      updateRouteLocation(current, newLocation)
 
-      const secondLocation = createRouteLocation({
-        redirectFrom: undefined,
-        matched: [matchedItem]
-      })
-      const result = updateRouteLocation(cache, secondLocation)
-
-      expect(result.redirectFrom).toBeUndefined()
+      expect(current.query).toEqual({})
+      expect('search' in current.query).toBe(false)
     })
 
-    it('应该正确处理 meta 数据', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const matchedItem = { path: '/home' } as unknown as RouteRecord
+    it('应该更新 meta 对象', () => {
+      const current = createRouteLocationRaw({ meta: { title: 'Old', auth: true } })
+      const newLocation = createRouteLocation({ meta: { title: 'New' } })
 
-      const location = createRouteLocation({
-        meta: { title: 'Home', auth: true },
-        matched: [matchedItem]
-      })
-      const result = updateRouteLocation(cache, location)
+      updateRouteLocation(current, newLocation)
 
-      expect(result.meta).toEqual({ title: 'Home', auth: true })
+      expect(current.meta).toEqual({ title: 'New' })
     })
 
-    it('应该正确处理不同路径的缓存', () => {
-      const cache = new Map<string, RouteLocationRaw>()
-      const homeMatched = { path: '/home' } as unknown as RouteRecord
-      const aboutMatched = { path: '/about' } as unknown as RouteRecord
+    it('应该删除被清空的 meta', () => {
+      const current = createRouteLocationRaw({ meta: { title: 'Home' } })
+      const newLocation = createRouteLocation({ meta: {} })
 
-      const homeLocation = createRouteLocation({
-        path: '/home',
-        matched: [homeMatched]
+      updateRouteLocation(current, newLocation)
+
+      expect(current.meta).toEqual({})
+      expect('title' in current.meta).toBe(false)
+    })
+
+    it('应该设置 redirectFrom', () => {
+      const redirectFrom = createRouteLocation({ path: '/old' })
+      const current = createRouteLocationRaw({ redirectFrom: undefined })
+      const newLocation = createRouteLocation({ redirectFrom })
+
+      updateRouteLocation(current, newLocation)
+
+      expect(current.redirectFrom).toBeDefined()
+      expect(current.redirectFrom?.path).toBe('/old')
+    })
+
+    it('应该清除 redirectFrom', () => {
+      const current = createRouteLocationRaw({
+        redirectFrom: createRouteLocation({ path: '/old' })
       })
-      const homeResult = updateRouteLocation(cache, homeLocation)
+      const newLocation = createRouteLocation({ redirectFrom: undefined })
 
-      const aboutLocation = createRouteLocation({
-        path: '/about',
-        matched: [aboutMatched]
-      })
-      const aboutResult = updateRouteLocation(cache, aboutLocation)
+      updateRouteLocation(current, newLocation)
 
-      expect(homeResult.path).toBe('/home')
-      expect(aboutResult.path).toBe('/about')
-      expect(homeResult).not.toBe(aboutResult)
-      expect(cache.size).toBe(2)
+      expect(current.redirectFrom).toBeUndefined()
+    })
+
+    it('应该保持未变化的 matched 项引用不变', () => {
+      const matched1 = createRouteRecord('/home')
+      const matched2 = createRouteRecord('/home/detail')
+      const matched3 = createRouteRecord('/home/detail/edit')
+      const current = createRouteLocationRaw({ matched: [matched1, matched2] })
+      const newLocation = createRouteLocation({ matched: [matched1, matched3] })
+
+      updateRouteLocation(current, newLocation)
+
+      expect(current.matched[0]).toBe(matched1)
+      expect(current.matched[1]).toBe(matched3)
+    })
+
+    it('应该处理从空 matched 到有 matched', () => {
+      const matched1 = createRouteRecord('/home')
+      const current = createRouteLocationRaw({ matched: [] })
+      const newLocation = createRouteLocation({ matched: [matched1] })
+
+      updateRouteLocation(current, newLocation)
+
+      expect(current.matched).toHaveLength(1)
+      expect(current.matched[0]).toBe(matched1)
+    })
+
+    it('应该处理从有 matched 到空 matched', () => {
+      const matched1 = createRouteRecord('/home')
+      const current = createRouteLocationRaw({ matched: [matched1] })
+      const newLocation = createRouteLocation({ matched: [] })
+
+      updateRouteLocation(current, newLocation)
+
+      expect(current.matched).toHaveLength(0)
     })
   })
 })
