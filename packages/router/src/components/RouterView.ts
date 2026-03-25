@@ -1,6 +1,7 @@
 import {
   AnyProps,
   Component,
+  type ComponentView,
   type Computed,
   computed,
   createCommentView,
@@ -13,7 +14,7 @@ import {
   provide,
   View
 } from 'vitarx'
-import { useRouter } from '../core/index.js'
+import { __ROUTER_VIEW_INDEX_KEY__, useRouter } from '../core/index.js'
 
 export interface RouterViewOptions {
   /**
@@ -27,13 +28,13 @@ export interface RouterViewOptions {
    *
    * 接收两个参数：
    *  - `component: Computed<Component | null>`：当前要渲染的组件，
-   *  - `props: AnyProps | null`：要注入给组件的属性对象
+   *  - `props: Computed<AnyProps | null>`：要注入给组件的属性对象
    *
    *  @example
    *  ```jsx
    *  // 搭配 Freeze 使用
    *  <RouterView>
-   *    {(component, props) => <Freeze component={component} props={props} />}
+   *    {(component, props, path) => <Freeze component={component} props={props}/>}
    *  </RouterView>
    *  ```
    *
@@ -59,11 +60,8 @@ export interface RouterViewOptions {
    *  </RouterView>
    *  ```
    */
-  children?: (component: Computed<Component | null>, props: AnyProps | null) => View
+  children?: (component: Computed<Component | null>, props: Computed<AnyProps | null>) => View
 }
-
-// 路由视图层级索引
-const INDEX_SYMBOL = Symbol.for('__v_router_view_index')
 
 /**
  * 路由视图
@@ -78,9 +76,9 @@ export function RouterView(props: RouterViewOptions): View {
   const router = useRouter() // 获取路由实例
 
   // 获取父级 index
-  const parentIndex = inject(INDEX_SYMBOL, -1) // 从依赖注入中获取父级索引，默认为 -1
+  const parentIndex = inject(__ROUTER_VIEW_INDEX_KEY__, -1) // 从依赖注入中获取父级索引，默认为 -1
   const index = parentIndex + 1 // 计算当前视图的索引
-  provide(INDEX_SYMBOL, index) // 向子组件提供当前索引
+  provide(__ROUTER_VIEW_INDEX_KEY__, index) // 向子组件提供当前索引
 
   // 视图属性计算
   const routeProps = computed((): AnyProps | null => {
@@ -108,6 +106,7 @@ export function RouterView(props: RouterViewOptions): View {
     return route.component?.[name] ?? null // 返回匹配的组件或 null
   })
 
+  // 如果传入了 children 函数，则调用并返回其结果
   if (isFunction(children)) {
     try {
       return children(component, routeProps)
@@ -116,10 +115,19 @@ export function RouterView(props: RouterViewOptions): View {
     }
   }
 
+  let lastView: ComponentView | null = null
+  let lastComponent: Component | null = null
   return dynamic(() => {
-    if (component.value) {
-      return createView(component.value, routeProps.value)
+    const renderComponent = component.value
+    if (renderComponent) {
+      if (lastComponent === renderComponent) {
+        return lastView
+      }
+      lastComponent = renderComponent
+      return (lastView = createView(renderComponent, routeProps.value))
     }
+    lastView = null
+    lastComponent = null
     return createCommentView('router-view:empty')
   })
 }
