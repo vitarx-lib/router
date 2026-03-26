@@ -286,7 +286,7 @@ describe('shared/link', () => {
         const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about' })
         await link.navigate()
-        expect(router.currentRoute.path).toBe('/about')
+        expect(router.route.path).toBe('/about')
       })
 
       it('应该使用 push 默认导航', async () => {
@@ -297,7 +297,7 @@ describe('shared/link', () => {
         const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about' })
         await link.navigate()
-        expect(router.currentRoute.path).toBe('/about')
+        expect(router.route.path).toBe('/about')
       })
 
       it('应该使用 replace 导航', async () => {
@@ -308,7 +308,7 @@ describe('shared/link', () => {
         const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about', replace: true })
         await link.navigate()
-        expect(router.currentRoute.path).toBe('/about')
+        expect(router.route.path).toBe('/about')
       })
 
       it('应该优先使用 to.replace 而不是 props.replace', async () => {
@@ -319,7 +319,7 @@ describe('shared/link', () => {
         const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: { index: '/about', replace: true }, replace: false })
         await link.navigate()
-        expect(router.currentRoute.path).toBe('/about')
+        expect(router.route.path).toBe('/about')
       })
 
       it('没有匹配路由时应该不导航', async () => {

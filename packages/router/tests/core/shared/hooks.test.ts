@@ -91,7 +91,7 @@ describe('shared/hooks', () => {
       const router = createMemoryRouter({ routes: basicRoutes })
       await router.replace({ index: '/' })
       app.use(router).mount(container)
-      const rawRoute = toRaw(router.currentRoute)
+      const rawRoute = toRaw(router.route)
       const guardSet = rawRoute.matched[0]?.leaveGuards
       expect(guardSet?.size).toBe(2)
       router.destroy()
@@ -129,7 +129,7 @@ describe('shared/hooks', () => {
       await router.replace({ index: '/' })
       app.use(router).mount(container)
       expect(container.innerHTML).toBe('<div>Mock Page</div>')
-      const rawRoute = toRaw(router.currentRoute)
+      const rawRoute = toRaw(router.route)
       const hookSet = rawRoute.matched[0]?.beforeUpdateHooks
       expect(hookSet?.has(callback)).toBe(true)
       router.destroy()
@@ -162,7 +162,7 @@ describe('shared/hooks', () => {
       const router = createMemoryRouter({ routes: basicRoutes })
       await router.replace({ index: '/' })
       app.use(router).mount(container)
-      const rawRoute = toRaw(router.currentRoute)
+      const rawRoute = toRaw(router.route)
       const hookSet = rawRoute.matched[0]?.beforeUpdateHooks
       expect(hookSet?.size).toBe(2)
       router.destroy()

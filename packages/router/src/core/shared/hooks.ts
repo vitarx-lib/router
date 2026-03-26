@@ -31,7 +31,7 @@ export function onBeforeRouteLeave(guard: RouteLeaveGuard): void {
     return void 0
   }
   const index = inject<number>(__ROUTER_VIEW_DEPTH_KEY__, 0)
-  const route = toRaw(router.currentRoute)
+  const route = toRaw(router.route)
   const record: RouteRecord | undefined = route.matched[index]
   if (!record) {
     console.warn('[Router]: onBeforeRouteLeave is called but no matched route record found.')
@@ -68,7 +68,7 @@ export function onBeforeRouteUpdate(cb: RouteUpdateCallback): void {
     return void 0
   }
   const index = inject<number>(__ROUTER_VIEW_DEPTH_KEY__, 0)
-  const route = toRaw(router.currentRoute)
+  const route = toRaw(router.route)
   const record: RouteRecord | undefined = route.matched[index]
   if (!record) {
     console.warn('[Router]: onBeforeRouteUpdate is called but no matched route record found.')

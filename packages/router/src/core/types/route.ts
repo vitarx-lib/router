@@ -1,26 +1,26 @@
-import type { Component } from 'vitarx'
+import type { AnyProps, Component, DeepReadonly } from 'vitarx'
 import {
-  RouteLeaveGuard,
-  RouteUpdateCallback,
   type AfterCallback,
   type NavigationGuard,
-  type NavOptions
+  type NavOptions,
+  RouteLeaveGuard,
+  RouteUpdateCallback
 } from '../index.js'
 import { Router } from '../router/index.js'
-import type { NavTarget, RouteLocation } from './navigation.js'
+import type { NavTarget, RouteLocation, URLParams } from './navigation.js'
 
 /**
  * 注入参数处理函数
  *
  * @param {RouteLocation} location 路由匹配的位置信息
- * @return {Record<string, any>} 注入的参数，必须是可JSON序列化的对象
+ * @return {AnyProps} 注入的参数
  */
-export type InjectPropsHandler = (location: RouteLocation) => Record<string, any>
+export type InjectPropsHandler = (route: DeepReadonly<RouteLocation>) => AnyProps
 
 /**
  * 路由参数注入
  */
-export type InjectProps = boolean | Record<string, any> | InjectPropsHandler
+export type InjectProps = boolean | AnyProps | InjectPropsHandler
 /**
  * 命名的路由参数注入
  */
@@ -52,6 +52,7 @@ export type NamedRouteComponent = {
   default: RouteViewComponent
   [key: string]: RouteViewComponent
 }
+
 /**
  * 此类型用于，扩展路由元数据类型，完善路由元数据提示，提升开发体验。
  *
@@ -227,6 +228,14 @@ export interface RouteRecord {
    * @note 仅存在于开发环境，生产环境会移除！
    */
   rawRoute?: Route
+  /**
+   * 路由参数
+   *
+   * 具有响应性，可持续监听
+   *
+   * 仅在导航确认过后存在 params 对象。
+   */
+  params?: URLParams
   /**
    * @internal 离开守卫
    */

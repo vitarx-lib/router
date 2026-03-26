@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vitarx'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { __ROUTER_KEY__, NavState } from '../../../src/core/common/constant.js'
 import { createMemoryRouter } from '../../../src/core/router/helpers.js'
 import { MemoryRouter } from '../../../src/core/router/memory.js'
@@ -44,7 +44,7 @@ describe('router/router', () => {
     it('应该正确初始化路由状态', async () => {
       router = createTestRouter()
       await router.isReady()
-      expect(router.currentRoute.path).toBe('/')
+      expect(router.route.path).toBe('/')
     })
   })
 
@@ -52,17 +52,17 @@ describe('router/router', () => {
     it('应该返回只读的路由位置对象', async () => {
       router = createTestRouter()
       await router.isReady()
-      expect(router.currentRoute).toBeDefined()
-      expect(router.currentRoute.path).toBe('/')
+      expect(router.route).toBeDefined()
+      expect(router.route.path).toBe('/')
     })
 
     it('路由位置对象应该是响应式的', async () => {
       router = createTestRouter()
       await router.isReady()
-      const initialPath = router.currentRoute.path
+      const initialPath = router.route.path
       await router.push({ index: '/home' })
-      expect(router.currentRoute.path).not.toBe(initialPath)
-      expect(router.currentRoute.path).toBe('/home')
+      expect(router.route.path).not.toBe(initialPath)
+      expect(router.route.path).toBe('/home')
     })
   })
 
@@ -93,19 +93,19 @@ describe('router/router', () => {
     it('应该正确处理动态路由参数', async () => {
       const result = await router!.push({ index: '/user/123' })
       expect(result.state).toBe(NavState.success)
-      expect(router!.currentRoute.params.id).toBe('123')
+      expect(router!.route.params.id).toBe('123')
     })
 
     it('应该正确处理查询参数', async () => {
       const result = await router!.push({ index: '/home', query: { search: 'test' } })
       expect(result.state).toBe(NavState.success)
-      expect(router!.currentRoute.query.search).toBe('test')
+      expect(router!.route.query.search).toBe('test')
     })
 
     it('应该正确处理 hash', async () => {
       const result = await router!.push({ index: '/home', hash: '#section' })
       expect(result.state).toBe(NavState.success)
-      expect(router!.currentRoute.hash).toBe('#section')
+      expect(router!.route.hash).toBe('#section')
     })
   })
 
@@ -118,7 +118,7 @@ describe('router/router', () => {
     it('应该正确替换当前路由', async () => {
       const result = await router!.replace({ index: '/home' })
       expect(result.state).toBe(NavState.success)
-      expect(router!.currentRoute.path).toBe('/home')
+      expect(router!.route.path).toBe('/home')
     })
   })
 
@@ -133,7 +133,7 @@ describe('router/router', () => {
       await router!.push({ index: '/about' })
       router!.go(-1)
       await new Promise(resolve => setTimeout(resolve, 10))
-      expect(router!.currentRoute.path).toBe('/home')
+      expect(router!.route.path).toBe('/home')
     })
 
     it('应该正确前进导航', async () => {
@@ -143,7 +143,7 @@ describe('router/router', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
       router!.go(1)
       await new Promise(resolve => setTimeout(resolve, 10))
-      expect(router!.currentRoute.path).toBe('/about')
+      expect(router!.route.path).toBe('/about')
     })
 
     it('back 方法应该等同于 go(-1)', async () => {
@@ -151,7 +151,7 @@ describe('router/router', () => {
       await router!.push({ index: '/about' })
       router!.back()
       await new Promise(resolve => setTimeout(resolve, 10))
-      expect(router!.currentRoute.path).toBe('/home')
+      expect(router!.route.path).toBe('/home')
     })
 
     it('forward 方法应该等同于 go(1)', async () => {
@@ -161,7 +161,7 @@ describe('router/router', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
       router!.forward()
       await new Promise(resolve => setTimeout(resolve, 10))
-      expect(router!.currentRoute.path).toBe('/about')
+      expect(router!.route.path).toBe('/about')
     })
   })
 
@@ -197,7 +197,7 @@ describe('router/router', () => {
       await router.isReady()
       const result = await router.push({ index: '/home' })
       expect(result.state).toBe(NavState.success)
-      expect(router.currentRoute.path).toBe('/about')
+      expect(router.route.path).toBe('/about')
     })
 
     it('应该正确调用 afterEach 守卫', async () => {
@@ -226,7 +226,7 @@ describe('router/router', () => {
       await router.isReady()
       const result = await router.push({ index: '/old' })
       expect(result.state).toBe(NavState.success)
-      expect(router.currentRoute.path).toBe('/new')
+      expect(router.route.path).toBe('/new')
     })
 
     it('应该检测到无限重定向循环并抛出错误', async () => {
@@ -400,7 +400,12 @@ describe('router/router', () => {
     it('应该返回 true 对于存在的命名路由', () => {
       const routes: Route[] = [
         { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
-        { path: '/home', name: 'home', component: { default: createMockComponent() }, props: { default: {} } }
+        {
+          path: '/home',
+          name: 'home',
+          component: { default: createMockComponent() },
+          props: { default: {} }
+        }
       ]
       router = createTestRouter({ routes })
       expect(router.hasRoute('home')).toBe(true)
@@ -529,7 +534,12 @@ describe('router/router', () => {
       router!.destroy()
       const routes: Route[] = [
         { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
-        { path: '/user/{id}', name: 'user', component: { default: createMockComponent() }, props: { default: true } }
+        {
+          path: '/user/{id}',
+          name: 'user',
+          component: { default: createMockComponent() },
+          props: { default: true }
+        }
       ]
       router = createTestRouter({ routes })
       const location = router!.matchRoute({ index: 'user', params: { id: '123' } })
@@ -597,7 +607,7 @@ describe('router/router', () => {
     it('应该等待导航结果', async () => {
       const navPromise = router!.push({ index: '/home' })
       await router!.waitViewRender(navPromise)
-      expect(router!.currentRoute.path).toBe('/home')
+      expect(router!.route.path).toBe('/home')
     })
   })
 
@@ -616,7 +626,7 @@ describe('router/router', () => {
       await router.isReady()
       const result = await router.push({ index: '/nonexistent' })
       expect(result.state).toBe(NavState.success)
-      expect(router.currentRoute.path).toBe('/home')
+      expect(router.route.path).toBe('/home')
     })
 
     it('onNotFound 返回字符串应该正确导航', async () => {
@@ -625,7 +635,7 @@ describe('router/router', () => {
       await router.isReady()
       const result = await router.push({ index: '/nonexistent' })
       expect(result.state).toBe(NavState.success)
-      expect(router.currentRoute.path).toBe('/home')
+      expect(router.route.path).toBe('/home')
     })
   })
 
@@ -635,7 +645,12 @@ describe('router/router', () => {
       router = createTestRouter({
         routes: [
           { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
-          { path: '/home', component: { default: createMockComponent() }, props: { default: {} }, beforeEnter }
+          {
+            path: '/home',
+            component: { default: createMockComponent() },
+            props: { default: {} },
+            beforeEnter
+          }
         ]
       })
       await router.isReady()
@@ -649,7 +664,12 @@ describe('router/router', () => {
       router = createTestRouter({
         routes: [
           { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
-          { path: '/home', component: { default: createMockComponent() }, props: { default: {} }, beforeEnter: [guard1, guard2] as any }
+          {
+            path: '/home',
+            component: { default: createMockComponent() },
+            props: { default: {} },
+            beforeEnter: [guard1, guard2] as any
+          }
         ]
       })
       await router.isReady()
@@ -663,7 +683,12 @@ describe('router/router', () => {
       router = createTestRouter({
         routes: [
           { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
-          { path: '/home', component: { default: createMockComponent() }, props: { default: {} }, beforeEnter }
+          {
+            path: '/home',
+            component: { default: createMockComponent() },
+            props: { default: {} },
+            beforeEnter
+          }
         ]
       })
       await router.isReady()
@@ -676,14 +701,19 @@ describe('router/router', () => {
       router = createTestRouter({
         routes: [
           { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
-          { path: '/home', component: { default: createMockComponent() }, props: { default: {} }, beforeEnter },
+          {
+            path: '/home',
+            component: { default: createMockComponent() },
+            props: { default: {} },
+            beforeEnter
+          },
           { path: '/about', component: { default: createMockComponent() }, props: { default: {} } }
         ]
       })
       await router.isReady()
       const result = await router.push({ index: '/home' })
       expect(result.state).toBe(NavState.success)
-      expect(router.currentRoute.path).toBe('/about')
+      expect(router.route.path).toBe('/about')
     })
   })
 
@@ -693,14 +723,19 @@ describe('router/router', () => {
       router = createTestRouter({
         routes: [
           { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
-          { path: '/old', redirect: redirectFn, component: { default: createMockComponent() }, props: { default: {} } },
+          {
+            path: '/old',
+            redirect: redirectFn,
+            component: { default: createMockComponent() },
+            props: { default: {} }
+          },
           { path: '/new', component: { default: createMockComponent() }, props: { default: {} } }
         ]
       })
       await router.isReady()
       const result = await router.push({ index: '/old' })
       expect(result.state).toBe(NavState.success)
-      expect(router.currentRoute.path).toBe('/new')
+      expect(router.route.path).toBe('/new')
       expect(redirectFn).toHaveBeenCalled()
     })
 
@@ -708,14 +743,19 @@ describe('router/router', () => {
       router = createTestRouter({
         routes: [
           { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
-          { path: '/old', redirect: '/new', component: { default: createMockComponent() }, props: { default: {} } },
+          {
+            path: '/old',
+            redirect: '/new',
+            component: { default: createMockComponent() },
+            props: { default: {} }
+          },
           { path: '/new', component: { default: createMockComponent() }, props: { default: {} } }
         ]
       })
       await router.isReady()
       const result = await router.push({ index: '/old' })
       expect(result.state).toBe(NavState.success)
-      expect(router.currentRoute.path).toBe('/new')
+      expect(router.route.path).toBe('/new')
     })
   })
 
@@ -728,7 +768,11 @@ describe('router/router', () => {
             component: { default: createMockComponent() },
             props: { default: {} },
             children: [
-              { path: 'child', component: { default: createMockComponent() }, props: { default: {} } }
+              {
+                path: 'child',
+                component: { default: createMockComponent() },
+                props: { default: {} }
+              }
             ]
           }
         ]
@@ -736,7 +780,7 @@ describe('router/router', () => {
       await router.isReady()
       const result = await router.push({ index: '/parent/child' })
       expect(result.state).toBe(NavState.success)
-      expect(router.currentRoute.matched.length).toBe(2)
+      expect(router.route.matched.length).toBe(2)
     })
 
     it('应该正确合并 meta', async () => {
@@ -748,15 +792,20 @@ describe('router/router', () => {
             props: { default: {} },
             meta: { auth: true },
             children: [
-              { path: 'child', component: { default: createMockComponent() }, props: { default: {} }, meta: { title: 'Child' } }
+              {
+                path: 'child',
+                component: { default: createMockComponent() },
+                props: { default: {} },
+                meta: { title: 'Child' }
+              }
             ]
           }
         ]
       })
       await router.isReady()
       await router.push({ index: '/parent/child' })
-      expect(router.currentRoute.meta).toHaveProperty('auth')
-      expect(router.currentRoute.meta).toHaveProperty('title')
+      expect(router.route.meta).toHaveProperty('auth')
+      expect(router.route.meta).toHaveProperty('title')
     })
   })
 
@@ -962,12 +1011,10 @@ describe('router/router', () => {
   describe('RouteManager 作为 routes 参数', () => {
     it('应该接受 RouteManager 实例', async () => {
       const { RouteManager } = await import('../../../src/core/router/manager.js')
-      const manager = new RouteManager([
-        { path: '/', component: createMockComponent() }
-      ])
+      const manager = new RouteManager([{ path: '/', component: createMockComponent() }])
       router = new MemoryRouter({ routes: manager })
       await router.replace({ index: '/' })
-      expect(router.currentRoute.path).toBe('/')
+      expect(router.route.path).toBe('/')
     })
   })
 })

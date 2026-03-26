@@ -1,4 +1,3 @@
-import type { DeepReadonly } from 'vitarx'
 import { type NavState } from '../common/constant.js'
 import type { RouteIndex, RouteIndexMap, RouteMetaData, RoutePath, RouteRecord } from './route.js'
 
@@ -27,7 +26,7 @@ export type URLMode = 'hash' | 'path'
 /**
  * 路由位置 (原始对象)
  */
-export interface RouteLocationRaw {
+export interface RouteLocation {
   /**
    * 完整的href
    */
@@ -70,11 +69,6 @@ export interface RouteLocationRaw {
    */
   redirectFrom?: RouteLocation
 }
-
-/**
- * 当前路由位置 (对外只读)
- */
-export type RouteLocation = DeepReadonly<RouteLocationRaw>
 
 /**
  * 路由索引类型

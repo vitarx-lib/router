@@ -5,7 +5,7 @@ import {
   parseQuery,
   stringifyQuery
 } from '../../../src/core/shared/utils.js'
-import type { RouteLocationRaw, RouteRecord } from '../../../src/core/types/index.js'
+import type { RouteLocation, RouteRecord } from '../../../src/core/types/index.js'
 
 describe('shared/utils', () => {
   describe('normalizePath', () => {
@@ -82,7 +82,7 @@ describe('shared/utils', () => {
 
   describe('cloneRouteLocation', () => {
     it('应该正确克隆路由位置对象', () => {
-      const route: RouteLocationRaw = {
+      const route: RouteLocation = {
         path: '/user',
         href: '/user?id=123',
         hash: '',
@@ -101,7 +101,7 @@ describe('shared/utils', () => {
 
     it('应该正确克隆matched数组', () => {
       const matchedItem = { path: '/user' } as unknown as RouteRecord
-      const route: RouteLocationRaw = {
+      const route: RouteLocation = {
         path: '/user',
         href: '/user',
         hash: '',

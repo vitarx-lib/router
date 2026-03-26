@@ -10,11 +10,7 @@ import {
   removePathSuffix,
   resolveNavTarget
 } from '../../../src/core/common/utils.js'
-import type {
-  NavTarget,
-  RouteLocation,
-  RouteRecord
-} from '../../../src/core/types/index.js'
+import type { NavTarget, RouteLocation, RouteRecord } from '../../../src/core/types/index.js'
 
 describe('common/utils', () => {
   describe('hasValidRouteIndex', () => {
@@ -444,6 +440,4 @@ describe('common/utils', () => {
       expect(hooks.beforeEach!.size).toBe(1)
     })
   })
-
 })
-

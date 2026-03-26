@@ -1,6 +1,6 @@
 // 字符串值的key
-import { markRaw } from 'vitarx'
-import type { RouteLocation, RouteLocationRaw } from '../types/index.js'
+import { markRaw, shallowReactive } from 'vitarx'
+import type { RouteLocation } from '../types/index.js'
 
 /**
  * 差异化更新数组
@@ -47,11 +47,50 @@ function patchObject<T extends Record<string, any>>(target: T, source: Partial<T
  * @param current - 当前路由对象
  * @param newLocation - 新的路由对象
  */
-export function updateRouteLocation(current: RouteLocationRaw, newLocation: RouteLocation): void {
+export function updateRouteLocation(current: RouteLocation, newLocation: RouteLocation): void {
   // 如果缓存中存在该路由对象，则进行差异化更新
   current.href = newLocation.href
   current.path = newLocation.path
   current.hash = newLocation.hash
+
+  // 处理路由记录的 params 初始化和更新
+  for (const route of newLocation.matched) {
+    // 使用类型断言，因为 newLocation 是只读的，但我们需要在运行时修改它
+    const mutableRoute = route
+
+    // 为没有 params 的路由记录创建响应式 params 对象
+    if (!mutableRoute.params) {
+      mutableRoute.params = shallowReactive({})
+    }
+
+    // 根据路由的 pattern 从 newLocation.params 中提取对应参数
+    if (mutableRoute.pattern) {
+      // 记录当前已有的参数键
+      const existingKeys = new Set(Object.keys(mutableRoute.params))
+
+      // 更新或添加参数
+      for (const { name } of mutableRoute.pattern) {
+        existingKeys.delete(name)
+        if (name in newLocation.params) {
+          mutableRoute.params[name] = newLocation.params[name]
+        } else {
+          // 移除不存在的参数
+          delete mutableRoute.params[name]
+        }
+      }
+
+      // 移除不在 pattern 中的参数
+      for (const key of existingKeys) {
+        delete mutableRoute.params[key]
+      }
+    } else {
+      // 没有 pattern 的路由，清空 params
+      for (const key in mutableRoute.params) {
+        delete mutableRoute.params[key]
+      }
+    }
+  }
+
   patchArray(current.matched, newLocation.matched)
   patchObject(current.params, newLocation.params)
   patchObject(current.query, newLocation.query)

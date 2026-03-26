@@ -1,4 +1,4 @@
-import { type Computed, computed, isPlainObject, isString, logger, toRaw } from 'vitarx'
+import { type Computed, computed, isPlainObject, isString, logger } from 'vitarx'
 import { hasValidNavTarget, hasValidPath } from '../common/utils.js'
 import { useRouter } from '../router/index.js'
 import type {
@@ -127,7 +127,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
     if (isString(target.index)) {
       // 兼容纯锚点连接跳转
       if (target.index.startsWith('#')) {
-        const route = cloneRouteLocation(toRaw(router.currentRoute))
+        const route = cloneRouteLocation(router.route)
         route.hash = target.index as URLHash
         route.href = router.buildUrl(route.path, route.query, route.hash)
         return route
@@ -186,7 +186,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
   const isActive = computed(() => {
     const matchedRoute = route.value
     if (!matchedRoute) return false
-    return router.currentRoute.href.startsWith(matchedRoute.path)
+    return router.route.href.startsWith(matchedRoute.path)
   })
 
   /**
@@ -196,7 +196,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
   const isExactActive = computed(() => {
     const matchedRoute = route.value
     if (!matchedRoute) return false
-    return router.currentRoute.href === matchedRoute.href
+    return router.route.href === matchedRoute.href
   })
 
   /**

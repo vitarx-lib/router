@@ -128,7 +128,7 @@ describe('router/helpers', () => {
       }
       const router = createMemoryRouter(options)
       await router.replace({ index: '/' })
-      expect(router.currentRoute.path).toBe('/')
+      expect(router.route.path).toBe('/')
       router.destroy()
     })
   })

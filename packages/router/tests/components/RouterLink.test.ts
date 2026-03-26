@@ -207,7 +207,7 @@ describe('RouterLink', () => {
       getLink(ctx)?.click()
       await waitForRender(100)
 
-      expect(ctx.router!.currentRoute.path).toBe('/about')
+      expect(ctx.router!.route.path).toBe('/about')
     })
 
     it('点击外部链接不应该触发导航', async () => {

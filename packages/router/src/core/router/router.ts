@@ -41,7 +41,6 @@ import type {
   Route,
   RouteIndex,
   RouteLocation,
-  RouteLocationRaw,
   RouteMetaData,
   RouteName,
   RoutePath,
@@ -89,7 +88,7 @@ export abstract class Router {
    * 当前路由位置 - 仅内部使用
    * @private
    */
-  private readonly _routeLocation: RouteLocationRaw
+  private readonly _routeLocation: RouteLocation
   /**
    * 存储就绪状态的 Promise（延迟创建）
    * @private
@@ -174,7 +173,7 @@ export abstract class Router {
   /**
    * 获取当前路由位置对象
    */
-  get currentRoute(): ReadonlyObject<RouteLocationRaw, true> {
+  get route(): ReadonlyObject<RouteLocation, true> {
     return readonly(this._routeLocation)
   }
   /**
@@ -798,14 +797,14 @@ export abstract class Router {
    * @param path - 路径
    * @param query - 查询参数
    * @param hash - 哈希值
-   * @returns {RouteLocationRaw} - 返回创建的路由位置对象
+   * @returns {RouteLocation} - 返回创建的路由位置对象
    */
   private createMissingRoute(
     component: RouteViewComponent,
-    path: RouteLocationRaw['path'],
-    query: RouteLocationRaw['query'] = {},
-    hash: RouteLocationRaw['hash'] = ''
-  ): RouteLocationRaw {
+    path: RouteLocation['path'],
+    query: RouteLocation['query'] = {},
+    hash: RouteLocation['hash'] = ''
+  ): RouteLocation {
     return {
       href: this.buildUrl(path, query, hash),
       path,
@@ -842,7 +841,7 @@ export abstract class Router {
    *
    * @param target 导航目标对象，包含目标路径、参数、查询和哈希信息
    * @param [redirectFrom] - 重定向来源对象
-   * @returns {RouteLocationRaw | null} 返回路由位置对象，如果无法匹配则返回null
+   * @returns {RouteLocation | null} 返回路由位置对象，如果无法匹配则返回null
    */
   public matchRoute(target: NavTarget, redirectFrom?: RouteLocation): RouteLocation | null {
     let matchTarget = target.index

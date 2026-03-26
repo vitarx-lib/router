@@ -1,4 +1,4 @@
-import { inject, logger } from 'vitarx'
+import { type DeepReadonly, inject, logger } from 'vitarx'
 import { __ROUTER_KEY__, NavState } from '../common/constant.js'
 import type { NavigateResult, Route, RouteLocation, RouterOptions } from '../types/index.js'
 import { RouteManager, type RouteManagerOptions } from './manager.js'
@@ -160,8 +160,8 @@ export function useRouter(allowEmpty: boolean = false): Router | null {
  * @return {RouteLocation} - 只读的`RouteLocation`对象
  * @throws {Error} - 如果未获取到路由器实例或路由没有就绪，则会抛出异常
  */
-export function useRoute(): RouteLocation {
-  return useRouter().currentRoute
+export function useRoute(): DeepReadonly<RouteLocation> {
+  return useRouter().route
 }
 
 /**

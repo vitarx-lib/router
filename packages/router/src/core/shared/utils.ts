@@ -1,4 +1,5 @@
-import type { RouteLocation, RouteLocationRaw } from '../types/index.js'
+import { deepClone, type DeepReadonly, toRaw } from 'vitarx'
+import type { RouteLocation } from '../types/index.js'
 
 /**
  * 将 query 字符串转为对象
@@ -58,17 +59,11 @@ export function normalizePath(path: string, hashMode: boolean = false): `/${stri
  * 克隆路由位置对象
  *
  * @param {RouteLocation} route - 要克隆的路由位置对象
- * @return {RouteLocationRaw} - 克隆过后的对象
+ * @return {RouteLocation} - 克隆过后的对象
  */
-export function cloneRouteLocation(route: RouteLocation): RouteLocationRaw {
-  return {
-    href: route.href,
-    path: route.path,
-    hash: route.hash,
-    params: route.params,
-    query: route.query,
-    meta: route.meta,
-    matched: Array.from(route.matched),
-    redirectFrom: route.redirectFrom
-  }
+export function cloneRouteLocation(
+  route: RouteLocation | DeepReadonly<RouteLocation>
+): RouteLocation {
+  const { matched, ...rest } = toRaw(route)
+  return Object.assign(deepClone(rest), { matched: Array.from(matched) })
 }

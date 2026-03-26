@@ -39,13 +39,13 @@ describe('router/web', () => {
     it('应该正确处理 path 模式', async () => {
       router = createTestWebRouter({ mode: 'path' })
       await router.replace({ index: '/' })
-      expect(router.currentRoute.path).toBe('/')
+      expect(router.route.path).toBe('/')
     })
 
     it('应该正确处理 hash 模式', async () => {
       router = createTestWebRouter({ mode: 'hash' })
       await router.replace({ index: '/' })
-      expect(router.currentRoute.path).toBe('/')
+      expect(router.route.path).toBe('/')
     })
 
     it('应该正确处理 base 配置', async () => {
@@ -67,12 +67,12 @@ describe('router/web', () => {
 
       it('push 带查询参数应该正确工作', async () => {
         await router!.push({ index: '/home', query: { a: '1' } })
-        expect(router!.currentRoute.query.a).toBe('1')
+        expect(router!.route.query.a).toBe('1')
       })
 
       it('push 带 hash 应该正确工作', async () => {
         await router!.push({ index: '/home', hash: '#section' })
-        expect(router!.currentRoute.path).toBe('/home')
+        expect(router!.route.path).toBe('/home')
       })
     })
 
@@ -98,14 +98,14 @@ describe('router/web', () => {
         await router!.push({ index: '/home' })
         router!.go(-1)
         await new Promise(resolve => setTimeout(resolve, 50))
-        expect(router!.currentRoute.path).toBe('/')
+        expect(router!.route.path).toBe('/')
       })
 
       it('back 应该正确工作', async () => {
         await router!.push({ index: '/home' })
         router!.back()
         await new Promise(resolve => setTimeout(resolve, 50))
-        expect(router!.currentRoute.path).toBe('/')
+        expect(router!.route.path).toBe('/')
       })
 
       it('forward 应该正确工作', async () => {
@@ -114,7 +114,7 @@ describe('router/web', () => {
         await new Promise(resolve => setTimeout(resolve, 50))
         router!.forward()
         await new Promise(resolve => setTimeout(resolve, 50))
-        expect(router!.currentRoute.path).toBe('/home')
+        expect(router!.route.path).toBe('/home')
       })
     })
 

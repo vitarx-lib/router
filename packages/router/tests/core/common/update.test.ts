@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { updateRouteLocation } from '../../../src/core/common/update.js'
-import type { RouteLocation, RouteLocationRaw, RouteRecord } from '../../../src/core/types/index.js'
+import type { RouteLocation, RouteRecord } from '../../../src/core/types/index.js'
 
 describe('common/update', () => {
   const createRouteRecord = (path: string): RouteRecord =>
@@ -18,7 +18,7 @@ describe('common/update', () => {
       ...overrides
     }) as RouteLocation
 
-  const createRouteLocationRaw = (overrides: Partial<RouteLocationRaw> = {}): RouteLocationRaw =>
+  const createRouteLocationRaw = (overrides: Partial<RouteLocation> = {}): RouteLocation =>
     ({
       path: '/home',
       href: '/home',
@@ -28,7 +28,7 @@ describe('common/update', () => {
       meta: {},
       matched: [createRouteRecord('/home')],
       ...overrides
-    }) as RouteLocationRaw
+    }) as RouteLocation
 
   describe('updateRouteLocation', () => {
     it('应该更新 href', () => {
