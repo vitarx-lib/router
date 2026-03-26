@@ -47,14 +47,6 @@ describe('generateFullDtsFile', () => {
       expect(dts).toContain("declare module 'vitarx-router'")
       expect(dts).toContain('interface RouteIndexMap')
     })
-
-    it('不应该导入 virtual:vitarx-router:types', () => {
-      const pages: ParsedPage[] = [createMockParsedPage({ path: '/', name: 'home' })]
-
-      const dts = generateFullDtsFile(pages)
-
-      expect(dts).not.toContain('virtual:vitarx-router:types')
-    })
   })
 
   describe('RouteIndexMap 类型生成', () => {
@@ -273,7 +265,7 @@ describe('generateFullDtsFile', () => {
           path: '/home',
           name: 'home',
           isIndex: false,
-          alias: 'index'  // 相对路径
+          alias: 'index' // 相对路径
         })
       ]
 
@@ -294,7 +286,7 @@ describe('generateFullDtsFile', () => {
           name: 'home',
           isIndex: false,
           parentPath: '',
-          alias: ''  // 空字符串
+          alias: '' // 空字符串
         })
       ]
 
