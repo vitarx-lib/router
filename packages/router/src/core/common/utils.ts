@@ -130,7 +130,7 @@ export function resolveNavTarget(index: NavTarget | RouteIndex | RouteLocation):
   if (hasValidNavTarget(index)) {
     return index
   }
-  if (isPlainObject(index) && index.path) {
+  if (isPlainObject(index) && index.path && index.matched) {
     return {
       index: index.matched.at(-1)?.name || index.path, // 使用最后一个匹配的路由名称，如果没有则使用路径
       params: index.params, // 路由参数
