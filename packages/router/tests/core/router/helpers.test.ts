@@ -10,7 +10,7 @@ import {
   hasSuccess,
   useRoute,
   useRouter
-} from '../../../src/core/router/helpers.js'
+} from '../../../src/core/shared/index.js'
 import { MemoryRouter } from '../../../src/core/router/memory.js'
 import { WebRouter } from '../../../src/core/router/web.js'
 import type { NavigateResult, Route, RouterOptions } from '../../../src/core/types/index.js'

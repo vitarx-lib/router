@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createWebRouter } from '../../../src/core/router/helpers.js'
+import { createWebRouter } from '../../../src/core/shared/index.js'
 import { WebRouter } from '../../../src/core/router/web.js'
 import type { Route, RouterOptions } from '../../../src/core/types/index.js'
 

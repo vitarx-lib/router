@@ -1,6 +1,6 @@
 import { type Computed, computed, isPlainObject, isString, logger } from 'vitarx'
 import { hasValidNavTarget, hasValidPath } from '../common/utils.js'
-import { useRouter } from '../router/index.js'
+import { useRouter } from './inject.js'
 import type {
   NavigateResult,
   NavTarget,

@@ -1,6 +1,6 @@
 import { inject, onScopeDispose, toRaw } from 'vitarx'
 import { __ROUTER_VIEW_DEPTH_KEY__ } from '../common/constant.js'
-import { useRouter } from '../router/helpers.js'
+import { useRouter } from './inject.js'
 import type { RouteLeaveGuard, RouteRecord, RouteUpdateCallback } from '../types/index.js'
 
 /**

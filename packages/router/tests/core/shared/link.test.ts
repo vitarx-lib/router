@@ -1,6 +1,6 @@
 import { logger } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as helpers from '../../../src/core/router/helpers.js'
+import * as inject from '../../../src/core/shared/inject.js'
 import { createMemoryRouter, defineRoutes, type Route } from '../../../src/index.js'
 
 function createMockComponent() {
@@ -14,7 +14,7 @@ const basicRoutes: Route[] = defineRoutes(
 )
 
 function mockUseRouter(router: any) {
-  Object.defineProperty(helpers, 'useRouter', {
+  Object.defineProperty(inject, 'useRouter', {
     value: vi.fn().mockReturnValue(router),
     writable: true,
     configurable: true
@@ -22,7 +22,7 @@ function mockUseRouter(router: any) {
 }
 
 function restoreUseRouter(originalFn: any) {
-  Object.defineProperty(helpers, 'useRouter', {
+  Object.defineProperty(inject, 'useRouter', {
     value: originalFn,
     writable: true,
     configurable: true
@@ -34,7 +34,7 @@ describe('shared/link', () => {
   let router: ReturnType<typeof createMemoryRouter> | null = null
 
   beforeEach(() => {
-    originalUseRouter = helpers.useRouter
+    originalUseRouter = inject.useRouter
   })
 
   afterEach(() => {

@@ -1,7 +1,7 @@
 import type { App } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { __ROUTER_KEY__, NavState } from '../../../src/core/common/constant.js'
-import { createMemoryRouter } from '../../../src/core/router/helpers.js'
+import { createMemoryRouter } from '../../../src/core/shared/index.js'
 import { MemoryRouter } from '../../../src/core/router/memory.js'
 import type { Route, RouterOptions } from '../../../src/core/types/index.js'
 
