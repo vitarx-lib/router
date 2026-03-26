@@ -2,6 +2,17 @@
 
 基于文件系统的路由自动生成插件，支持 Vite 5.x/6.x/7.x/8.x。
 
+## 目录
+
+- [安装](#安装)
+- [快速开始](#快速开始)
+- [插件配置选项](#插件配置选项)
+- [definePage 宏](#definepage-宏)
+- [文件路由转换规则](#文件路由转换规则)
+- [示例](#示例)
+- [虚拟模块](#虚拟模块)
+- [注意事项](#注意事项)
+
 ## 安装
 
 ```bash
@@ -62,7 +73,7 @@ const router = createRouter({
 | `extensions`     | `string[]`                               | `['.tsx', '.ts', '.jsx', '.js']` | 支持的文件扩展名     |
 | `include`        | `string[]`                               | `[]`                             | 要包含的 glob 模式 |
 | `exclude`        | `string[]`                               | `[]`                             | 要排除的 glob 模式 |
-| `dts`            | `string \| false`                        | `'types-router.d.ts'`            | 类型声明文件路径     |
+| `dts`            | `string \| false`                        | `'typed-router.d.ts'`            | 类型声明文件路径     |
 | `importMode`     | `'lazy' \| 'file'`                       | `'lazy'`                         | 组件导入模式       |
 | `extendRoute`    | `ExtendRouteHook`                        | -                                | 路由扩展钩子       |
 | `imports`        | `string[]`                               | -                                | 自定义导入语句      |
@@ -87,20 +98,31 @@ VitarxRouter({
 VitarxRouter({
   pagesDir: [
     { dir: 'src/pages', exclude: ['components'] },
-    { dir: 'src/admin', include: ['**\/*.tsx'], path: '/admin/' }
+    { dir: 'src/admin', include: ['**\/*.tsx'], prefix: '/admin/' }
   ]
 })
 
-// 使用 path 前缀
+// 使用路径前缀
 // src/admin/home.tsx -> /admin/home
-// src/promos/black-friday.vue -> /promos-black-friday
+// src/promos/black-friday.tsx -> /promos-black-friday
 VitarxRouter({
   pagesDir: [
     { dir: 'src/pages' },
-    { dir: 'src/admin', path: '/admin/' },
-    { dir: 'src/promos', path: 'promos-' }
+    { dir: 'src/admin', prefix: '/admin/' },
+    { dir: 'src/promos', prefix: 'promos-' }
   ]
 })
+```
+
+**PagesDirConfig 接口：**
+
+```typescript
+interface PagesDirConfig {
+  dir: string              // 页面目录路径
+  include?: string[]       // 要包含的 glob 模式
+  exclude?: string[]       // 要排除的 glob 模式
+  prefix?: string          // 路由路径前缀
+}
 ```
 
 ### importMode 配置
@@ -151,6 +173,29 @@ VitarxRouter({
 })
 ```
 
+**ExtendRouteHook 类型：**
+
+```typescript
+type ExtendRouteHook = (
+  route: ResolvedRoute
+) => ResolvedRoute | void | Promise<ResolvedRoute | void>
+```
+
+**ResolvedRoute 接口：**
+
+```typescript
+interface ResolvedRoute {
+  path: string
+  name?: string
+  component?: string | Record<string, string>
+  meta?: RouteMetaData
+  pattern?: Record<string, RegExp>
+  children?: ResolvedRoute[]
+  redirect?: string | NavOptions
+  alias?: string | string[]
+}
+```
+
 ### imports 配置
 
 向虚拟模块注入自定义导入语句：
@@ -160,7 +205,9 @@ VitarxRouter({
   importMode: 'file',
   imports: ["import { lazy } from 'vitarx'"],
   extendRoute(route) {
-    route.component = `lazy(() => import(${route.component}))`
+    if (route.component && typeof route.component === 'string') {
+      route.component = `lazy(() => import(${route.component}))`
+    }
     return route
   }
 })
@@ -210,7 +257,8 @@ definePage({
   name: 'user-detail',
   meta: { title: '用户详情', requiresAuth: true },
   redirect: '/login',
-  pattern: { id: /^\d+$/ }
+  pattern: { id: /^\d+$/ },
+  alias: '/member/{id}'
 })
 
 export default function UserDetail() {
@@ -226,6 +274,7 @@ export default function UserDetail() {
 | `meta`     | `RouteMetaData`            | 路由元数据（必须可序列化） |
 | `redirect` | `string \| RedirectConfig` | 路由重定向目标       |
 | `pattern`  | `Record<string, RegExp>`   | 动态参数匹配模式      |
+| `alias`    | `string \| string[]`       | 路由别名          |
 
 ### meta 配置
 
@@ -261,6 +310,16 @@ definePage({
 })
 ```
 
+**RedirectConfig 接口：**
+
+```typescript
+interface RedirectConfig {
+  index: string
+  query?: Record<string, string>
+  params?: Record<string, string>
+}
+```
+
 ### pattern 配置
 
 为动态路由参数定义更精确的匹配规则：
@@ -279,6 +338,18 @@ definePage({
     slug: /^[a-z0-9-]+$/  // 只匹配小写字母、数字和横线
   }
 })
+```
+
+### alias 配置
+
+定义路由别名：
+
+```tsx
+// 单个别名
+definePage({ alias: '/member/{id}' })
+
+// 多个别名
+definePage({ alias: ['/member/{id}', '/profile/{id}'] })
 ```
 
 ---
@@ -315,6 +386,33 @@ definePage({
 6. **组件导入路径**
    - 导入路径是基于系统的绝对路径
    - 根据插件配置生成 `lazy(()=>import('路径'))` | `'路径'`
+
+### 动态路由
+
+使用 `[param]` 语法定义动态参数：
+
+```
+src/pages/
+├── user/
+│   └── [id].tsx     → /user/{id}
+└── post/
+    └── [slug].tsx   → /post/{slug}
+```
+
+生成：
+
+```typescript
+[
+  {
+    path: '/user/{id}',
+    component: lazy(() => import('src/pages/user/[id].tsx'))
+  },
+  {
+    path: '/post/{slug}',
+    component: lazy(() => import('src/pages/post/[slug].tsx'))
+  }
+]
+```
 
 ### 命名视图
 
@@ -604,12 +702,12 @@ src/pages/
 | 模块 ID                          | 说明            |
 |--------------------------------|---------------|
 | `virtual:vitarx-router:routes` | 自动生成的路由配置     |
-| `virtual:vitarx-router:types`  | 类型声明（仅用于类型推断） |
 
 ### 使用路由模块
 
 ```typescript
 import routes from 'virtual:vitarx-router:routes'
+// 等同于 import { routes } from 'vitarx-router/auto-routes' 
 
 const router = createRouter({ routes })
 ```
@@ -644,3 +742,80 @@ router.push({ index: 'user-id', params: { id: '123' } })
 4. **构建优化**：构建模式下会自动移除 `definePage` 调用和导入语句。
 
 5. **HMR 支持**：开发模式下修改页面文件会触发热更新。
+
+6. **分组路由命名**：有 `children` 的路由（分组路由）默认不会生成 `name` 属性，除非设置了 `redirect`。
+
+7. **路径前缀**：使用 `prefix` 配置时，注意结尾的 `/` 会影响拼接结果。
+
+---
+
+## API 参考
+
+### 导出
+
+```typescript
+// 默认导出
+export default VitarxRouter
+
+// 类型导出
+export type { VitePluginRouterOptions } from './core/types.js'
+```
+
+### 类型定义
+
+```typescript
+// 插件选项
+interface VitePluginRouterOptions {
+  pagesDir?: string | (PagesDirConfig | string)[]
+  prefix?: string
+  extensions?: string[]
+  include?: string[]
+  exclude?: string[]
+  dts?: string | false
+  importMode?: 'lazy' | 'file'
+  extendRoute?: ExtendRouteHook
+  imports?: string[]
+  namingStrategy?: 'kebab' | 'lowercase' | 'none'
+}
+
+// 页面目录配置
+interface PagesDirConfig {
+  dir: string
+  include?: string[]
+  exclude?: string[]
+  prefix?: string
+}
+
+// 路由扩展钩子
+type ExtendRouteHook = (
+  route: ResolvedRoute
+) => ResolvedRoute | void | Promise<ResolvedRoute | void>
+
+// 解析后的路由
+interface ResolvedRoute {
+  path: string
+  name?: string
+  component?: string | Record<string, string>
+  meta?: RouteMetaData
+  pattern?: Record<string, RegExp>
+  children?: ResolvedRoute[]
+  redirect?: string | NavOptions
+  alias?: string | string[]
+}
+
+// 页面配置（definePage）
+interface PageOptions {
+  name?: string
+  meta?: RouteMetaData
+  pattern?: Record<string, RegExp>
+  redirect?: string | RedirectConfig
+  alias?: string | string[]
+}
+
+// 重定向配置
+interface RedirectConfig {
+  index: string
+  query?: Record<string, string>
+  params?: Record<string, string>
+}
+```

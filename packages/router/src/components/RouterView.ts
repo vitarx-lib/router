@@ -69,12 +69,14 @@ export interface RouterViewOptions {
 }
 
 /**
- * 路由视图
+ * RouterView 组件
  *
- * @param props - 路由视图配置
- * @param [props.name] - 命名视图
- * @param [props.render] - 渲染组件
- * @return - 动态视图
+ * @description 用于渲染当前路由匹配到的组件视图
+ *
+ * @param {RouterViewOptions} props - 组件属性
+ * @param {Function} [props.children] - 可选的子组件渲染函数
+ * @param {string} [props.name='default'] - 视图名称，默认为 'default'
+ * @returns {View} 返回渲染的视图
  */
 export function RouterView(props: RouterViewOptions): View {
   const { children, name = 'default' } = props
