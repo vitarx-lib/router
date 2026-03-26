@@ -117,9 +117,10 @@ location / {
 不修改 URL，适用于非浏览器环境或测试场景。
 
 ```typescript
-createRouter({
-  routes,
-  mode: 'memory'
+import { createMemoryRouter } from 'vitarx-router'
+
+createMemoryRouter({
+  routes
 })
 ```
 
@@ -473,24 +474,24 @@ export default function UserDetail() {
 |------------|--------------------------|-------------------|
 | `path`     | `string`                 | 路由路径              |
 | `fullPath` | `string`                 | 完整路径（含查询参数和 hash） |
-| `params`   | `Record<string, any>`    | 路由参数              |
+| `params`   | `Record<string, string>` | 路由参数              |
 | `query`    | `Record<string, string>` | 查询参数              |
 | `hash`     | `string`                 | URL hash          |
 | `name`     | `string`                 | 路由名称              |
 | `meta`     | `RouteMetaData`          | 路由元数据             |
-| `matched`  | `RouteNormalized[]`      | 匹配的路由记录           |
+| `matched`  | `RouteRecord[]`          | 匹配的路由记录           |
 
 ### NavigateResult
 
 导航结果对象。
 
-| 属性             | 类型                      | 说明    |
-|----------------|-------------------------|-------|
-| `status`       | `NavigateStatus`        | 导航状态  |
-| `message`      | `string`                | 状态描述  |
-| `to`           | `ReadonlyRouteLocation` | 目标路由  |
-| `from`         | `ReadonlyRouteLocation` | 来源路由  |
-| `redirectFrom` | `NavigateTarget`        | 重定向来源 |
+| 属性             | 类型              | 说明    |
+|----------------|-----------------|-------|
+| `state`        | `NavState`      | 导航状态  |
+| `message`      | `string`        | 状态描述  |
+| `to`           | `RouteLocation` | 目标路由  |
+| `from`         | `RouteLocation` | 来源路由  |
+| `redirectFrom` | `NavTarget`     | 重定向来源 |
 
 ---
 

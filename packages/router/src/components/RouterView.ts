@@ -14,6 +14,7 @@ import {
   provide,
   View
 } from 'vitarx'
+import { createRouteProxy } from '../core/common/proxy.js'
 import { __ROUTER_VIEW_DEPTH_KEY__, type RouteRecord, useRouter } from '../core/index.js'
 
 export interface RouterViewOptions {
@@ -91,9 +92,10 @@ export function RouterView(props: RouterViewOptions): View {
 
   // 视图属性计算
   const routeProps = computed((): AnyProps | null => {
-    const name = props.name || 'default' // 获取视图名称，默认为 'default'
     const currentRoute = matchedRoute.value
-    let injectProps = currentRoute?.props?.[name] ?? router.config.props ?? false
+    if (!currentRoute) return null
+    const name = props.name || 'default' // 获取视图名称，默认为 'default'
+    let injectProps = currentRoute.props?.[name] ?? router.config.props ?? false
 
     if (injectProps === false) return null // 如果属性为 false，返回null
     if (injectProps === true && currentRoute.pattern) {
@@ -101,9 +103,9 @@ export function RouterView(props: RouterViewOptions): View {
       return currentRoute.params || {}
     }
     if (typeof injectProps === 'function') {
-      // 如果属性是函数
       try {
-        injectProps = injectProps(router.route)
+        const proxiedRoute = createRouteProxy(router.route, currentRoute)
+        injectProps = injectProps(proxiedRoute)
       } catch (e) {
         logger.error('[RouterView] Error occurred while executing props function', e)
       }
