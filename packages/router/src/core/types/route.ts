@@ -4,10 +4,12 @@ import {
   type NavigationGuard,
   type NavOptions,
   RouteLeaveGuard,
-  RouteUpdateCallback
+  RouteUpdateCallback,
+  type URLParams,
+  type URLQuery
 } from '../index.js'
 import { Router } from '../router/index.js'
-import type { NavTarget, RouteLocation, URLParams } from './navigation.js'
+import type { NavTarget, RouteLocation } from './navigation.js'
 
 /**
  * 注入参数处理函数
@@ -223,12 +225,6 @@ export interface RouteRecord {
    */
   rawPattern?: Record<string, RegExp>
   /**
-   * 原始路由配置
-   *
-   * @note 仅存在于开发环境，生产环境会移除！
-   */
-  rawRoute?: Route
-  /**
    * 路由参数
    *
    * 具有响应性，可持续监听
@@ -236,6 +232,20 @@ export interface RouteRecord {
    * 仅在导航确认过后存在 params 对象。
    */
   params?: URLParams
+  /**
+   * 路由查询参数
+   *
+   * 具有响应性，可持续监听
+   *
+   * 仅在导航确认过后存在 query 对象。
+   */
+  query?: URLQuery
+  /**
+   * 原始路由配置
+   *
+   * @note 仅存在于开发环境，生产环境会移除！
+   */
+  rawRoute?: Route
   /**
    * @internal 离开守卫
    */
