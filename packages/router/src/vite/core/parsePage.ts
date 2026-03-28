@@ -53,7 +53,6 @@ interface DefaultExportCheckResult {
  * - `export default function Component() {}` - 命名函数声明
  * - `export default function() {}` - 匿名函数声明
  * - `export default () => {}` - 箭头函数
- * - `export default class Component {}` - 类声明（类组件）
  * - `const Component = () => {}; export default Component` - 先声明再导出
  * - `export { Component as default }` - 命名导出为 default
  *
@@ -105,7 +104,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
 
     // 默认导出检测结果
     let hasDefaultExport = false
-    let isFunctionOrClass = false
+    let isFunction = false
     let exportName: string | null = null
 
     // 步骤4：遍历 AST 收集信息
@@ -129,7 +128,6 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
           }
         }
       },
-
       // 收集函数声明：function Component() {}
       FunctionDeclaration(nodePath) {
         const { node } = nodePath
@@ -137,7 +135,6 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
           variableDeclarations.set(node.id.name, 'function')
         }
       },
-
       // 收集类声明：class Component {}
       ClassDeclaration(nodePath) {
         const { node } = nodePath
@@ -145,7 +142,6 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
           variableDeclarations.set(node.id.name, 'class')
         }
       },
-
       // 处理 export default 声明
       ExportDefaultDeclaration(nodePath) {
         const { node } = nodePath
@@ -158,20 +154,13 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
           case 'FunctionDeclaration':
           case 'FunctionExpression':
             // export default function Component() {}
-            isFunctionOrClass = true
+            isFunction = true
             exportName = declaration.id?.name || null
             break
 
           case 'ArrowFunctionExpression':
             // export default () => {}
-            isFunctionOrClass = true
-            break
-
-          case 'ClassDeclaration':
-          case 'ClassExpression':
-            // export default class Component {}
-            isFunctionOrClass = true
-            exportName = declaration.id?.name || null
+            isFunction = true
             break
 
           case 'Identifier':
@@ -180,7 +169,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
             exportName = declaration.name
             const varType = variableDeclarations.get(declaration.name)
             if (varType === 'function' || varType === 'arrow' || varType === 'class') {
-              isFunctionOrClass = true
+              isFunction = true
             }
             break
 
@@ -189,7 +178,6 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
             break
         }
       },
-
       // 处理命名导出：export { Component as default }
       ExportNamedDeclaration(nodePath) {
         const { node } = nodePath
@@ -242,7 +230,7 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
                 // 检查导出的变量是否为函数或类
                 const varType = variableDeclarations.get(specifier.local.name)
                 if (varType === 'function' || varType === 'arrow' || varType === 'class') {
-                  isFunctionOrClass = true
+                  isFunction = true
                 }
               }
             }
@@ -255,13 +243,13 @@ function checkDefaultExport(filePath: string): DefaultExportCheckResult {
     let warning: string | null = null
     if (!hasDefaultExport) {
       warning = `未检测到默认导出 (default export)，该文件将被跳过。请确保导出一个函数组件。`
-    } else if (!isFunctionOrClass) {
+    } else if (!isFunction) {
       warning = `默认导出不是函数或类，该文件将被跳过。请确保导出一个有效的 React 组件。`
     }
 
     return {
       hasDefaultExport,
-      isFunctionOrClass,
+      isFunctionOrClass: isFunction,
       exportName,
       warning
     }
@@ -335,19 +323,27 @@ export function parsePageFile(
     viewName = baseName.slice(viewSeparatorIndex + 1)
   }
 
-  // 步骤2：检测默认导出函数组件
+  // 步骤 2：检测默认导出函数组件
   // 只对 js/ts/jsx/tsx 文件进行检测
   // 其他文件类型（如 .md）可能需要第三方插件转换，跳过检测
   if (CHECK_EXPORT_EXTENSIONS.includes(ext)) {
     const exportCheck = checkDefaultExport(filePath)
 
     if (exportCheck.warning) {
-      warn(`警告: ${filePath}\n  ${exportCheck.warning}`)
-      return null
+      // 先解析 definePage，检查是否有 redirect 配置
+      const pageOptions = parseDefinePage(filePath)
+      // 如果没有有效导出但有 redirect 配置，允许该文件存在（用于重定向路由）
+      if (!exportCheck.hasDefaultExport || !exportCheck.isFunctionOrClass) {
+        if (!pageOptions?.redirect) {
+          // 没有 redirect 配置，才报警告
+          warn(`警告：${filePath}\n  ${exportCheck.warning}`)
+          return null
+        }
+      }
     }
   }
 
-  // 步骤3：计算相对路径和目录路径
+  // 步骤 3：计算相对路径和目录路径
   const relativePath = path.relative(pagesDir, filePath)
   const dirPath = path.dirname(relativePath)
 

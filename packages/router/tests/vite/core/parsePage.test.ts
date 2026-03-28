@@ -693,25 +693,6 @@ describe('默认导出检测', () => {
       warnSpy.mockRestore()
     })
 
-    it('应该识别 export default 类组件', () => {
-      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-
-      const content = `
-        export default class Page extends React.Component {
-          render() {
-            return <div>Page</div>
-          }
-        }
-      `
-      createPageFile('index.tsx', content)
-      const result = parsePageFile(path.join(testDir, 'index.tsx'), testDir, '')
-
-      expect(result).not.toBeNull()
-      expect(warnSpy).not.toHaveBeenCalled()
-
-      warnSpy.mockRestore()
-    })
-
     it('应该识别先声明再导出的函数', () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
