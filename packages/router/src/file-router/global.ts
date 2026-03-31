@@ -23,10 +23,17 @@ import type { PageOptions } from './types.js'
 
 declare global {
   /**
-   * 定义页面配置的函数
+   * 文件路由全局宏函数
    *
-   * 此函数在运行时无任何作用，仅用于自动化路由识别页面配置。
-   * 在构建时会被 Vite 插件移除。
+   * 此函数专门用于文件路由的配置，运行时会自动移除。
+   *
+   * 支持的配置项包括：
+   * - `name`：页面名称
+   * - `meta`：页面元信息
+   * - `pattern`：页面参数模式
+   * - `redirect`：页面重定向
+   * - `alias`：页面别名
+   *
    *
    * @param options - 页面配置选项
    *
@@ -48,6 +55,5 @@ declare global {
 
 /**
  * 导出空对象以保持模块结构
- * 实际类型声明通过 declare global 提供
  */
 export {}
