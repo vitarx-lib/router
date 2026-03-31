@@ -2,7 +2,7 @@
   "name": "vitarx-router",
   "version": "4.0.0-beta.1",
   "description": "Vitarx 前端框架官方路由解决方案，提供声明式路由配置、导航守卫、动态路由匹配、文件系统路由等企业级功能。",
-  "author": "ZhuChongLin <8210856@qq.com>",
+  "author": "ZhuChonglin <8210856@qq.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -26,20 +26,31 @@
     },
     "./vite": {
       "import": {
-        "types": "./dist/vite/index.d.ts",
-        "default": "./dist/vite/index.js"
+        "types": "./dist/plugin-vite/index.d.ts",
+        "default": "./dist/plugin-vite/index.js"
+      }
+    },
+    "./file-router": {
+      "import": {
+        "types": "./dist/file-router/index.d.ts",
+        "default": "./dist/file-router/index.js"
       }
     },
     "./auto-routes": {
       "import": {
-        "types": "./dist/vite/auto-routes/index.d.ts",
-        "default": "./dist/vite/auto-routes/index.js"
+        "types": "./dist/plugin-vite/auto-routes/index.d.ts",
+        "default": "./dist/plugin-vite/auto-routes/index.js"
+      }
+    },
+    "./global": {
+      "import": {
+        "types": "./dist/file-router/global.d.ts"
       }
     }
   },
   "scripts": {
     "build": "rimraf dist && vitest run && tsc && pnpm check:circular",
-    "check:circular": "madge --extensions js --circular dist --warning --exclude '.*\\\\.d\\\\.ts$'",
+    "check:circular": "madge --extensions js --circular dist --warning --exclude '.*\\.d\\.ts$'",
     "test": "vitest run",
     "test:core": "vitest run --project browser",
     "test:vite": "vitest run --project vite",
