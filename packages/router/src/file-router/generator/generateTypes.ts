@@ -2,12 +2,58 @@
  * @fileoverview 类型生成模块
  *
  * 负责生成路由的 TypeScript 类型定义，用于提供 IDE 类型提示和编译时类型检查。
+ * 与构建工具无关，可在任何 Node.js 环境中使用。
  */
-import { extractParamsFromPath } from './parsePage.js'
-import type { ParsedPage, RouteIndexMap } from './types.js'
+import type { ParsedPage } from '../types.js'
+
+/**
+ * 路由索引映射表
+ *
+ * 将路由名称和路径映射到对应的类型信息。
+ * 支持通过名称或路径两种方式进行类型安全的导航。
+ *
+ * @example
+ * ```typescript
+ * // 生成的类型示例
+ * interface RouteIndexMap {
+ *   'home': {},
+ *   '/': {},
+ *   'user-id': { params: { id: string } },
+ *   '/user/{id}': { params: { id: string } }
+ * }
+ *
+ * // 使用示例
+ * router.push({ index: 'user-id', params: { id: '123' } })
+ * ```
+ */
+export interface ParsedRouteIndexMap {
+  [key: string]: {
+    /** 动态参数类型映射 */
+    params?: Record<string, string | number>
+  }
+}
+
+/**
+ * 从路径中提取动态参数
+ *
+ * @param path - 路由路径
+ * @returns 参数名称列表
+ */
+function extractParamsFromPath(path: string): string[] {
+  const params: string[] = []
+  const regex = /\{([^}?]+)(\?)?}/g
+  let match
+
+  while ((match = regex.exec(path)) !== null) {
+    params.push(match[1])
+  }
+
+  return params
+}
 
 /**
  * 检查路径是否包含动态参数
+ *
  * @param path - 路由路径
  * @returns 是否包含动态参数
  */
@@ -17,7 +63,7 @@ function hasDynamicParams(path: string): boolean {
 
 /**
  * 判断路由是否需要注册
- * 规则：有 component 且没有 children，或者有 redirect
+ *
  * @param page - 页面信息
  * @returns 是否需要注册
  */
@@ -29,13 +75,58 @@ function shouldRegisterRoute(page: ParsedPage): boolean {
 }
 
 /**
+ * 解析 alias 路径
+ *
+ * @param alias - 别名路径
+ * @param parentFullPath - 父级完整路径
+ * @returns 解析后的完整路径
+ */
+function resolveAliasPath(alias: string, parentFullPath: string): string {
+  const trimmedAlias = alias.trim()
+  if (trimmedAlias === '') {
+    return parentFullPath || '/'
+  }
+  if (trimmedAlias.startsWith('/')) {
+    return trimmedAlias.replace(/\/+/g, '/').replace(/\/+$/, '') || '/'
+  }
+  if (!parentFullPath || parentFullPath === '/') {
+    return '/' + trimmedAlias
+  }
+  return parentFullPath + '/' + trimmedAlias
+}
+
+/**
+ * 格式化单个路由索引条目
+ *
+ * @param key - 路由键名
+ * @param value - 路由条目值
+ * @returns 格式化后的代码字符串
+ */
+function formatRouteIndexEntry(
+  key: string,
+  value: { params?: Record<string, string | number> }
+): string {
+  if (value.params && Object.keys(value.params).length > 0) {
+    const paramsStr = Object.entries(value.params)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(', ')
+    return `'${key}': { params: { ${paramsStr} } }`
+  }
+  return `'${key}': {}`
+}
+
+/**
  * 递归处理单个页面及其子页面
  *
  * @param map - 路由索引映射表
- * @param page - 要处理的页面
- * @param parentFullPath - 父级完整路径（用于计算空路径子路由的完整路径）
+ * @param page - 页面信息
+ * @param parentFullPath - 父级完整路径
  */
-function processPage(map: RouteIndexMap, page: ParsedPage, parentFullPath: string = ''): void {
+function processPage(
+  map: ParsedRouteIndexMap,
+  page: ParsedPage,
+  parentFullPath: string = ''
+): void {
   if (shouldRegisterRoute(page)) {
     const params = extractParamsFromPath(page.path)
     const entry =
@@ -55,7 +146,6 @@ function processPage(map: RouteIndexMap, page: ParsedPage, parentFullPath: strin
       }
     }
 
-    // 处理 alias 映射
     if (page.alias) {
       const aliases = Array.isArray(page.alias) ? page.alias : [page.alias]
       for (const alias of aliases) {
@@ -75,48 +165,13 @@ function processPage(map: RouteIndexMap, page: ParsedPage, parentFullPath: strin
 }
 
 /**
- * 解析 alias 路径
- *
- * 规则：
- * 1. 空字符串：使用父路径
- * 2. 以 / 开头：直接使用（规范化）
- * 3. 否则：父路径 + / + alias
- *
- * @param alias - 别名字符串
- * @param parentFullPath - 父级完整路径
- * @returns 解析后的完整路径
- */
-function resolveAliasPath(alias: string, parentFullPath: string): string {
-  const trimmedAlias = alias.trim()
-  if (trimmedAlias === '') {
-    return parentFullPath || '/'
-  }
-  if (trimmedAlias.startsWith('/')) {
-    // 规范化路径：去除多余的斜杠
-    return trimmedAlias.replace(/\/+/g, '/').replace(/\/+$/, '') || '/'
-  }
-  if (!parentFullPath || parentFullPath === '/') {
-    return '/' + trimmedAlias
-  }
-  return parentFullPath + '/' + trimmedAlias
-}
-
-/**
  * 构建路由索引映射表
  *
- * 将页面列表转换为 RouteIndexMap 对象，包含每个路由的名称和路径作为键，以及对应的参数类型信息作为值。
- *
- * 注册规则：
- * 1. 有 component 且没有 children 的路由需要注册
- * 2. 有 redirect 的路由需要注册
- * 3. 如果 path 包含动态参数（如 {id}），只注册 name 映射，不注册 path 映射
- * 4. 空路径的子路由使用完整路径
- *
- * @param pages - 解析后的页面列表
+ * @param pages - 页面列表
  * @returns 路由索引映射表
  */
-function buildRouteIndexMap(pages: ParsedPage[]): RouteIndexMap {
-  const map: RouteIndexMap = {}
+function buildRouteIndexMap(pages: ParsedPage[]): ParsedRouteIndexMap {
+  const map: ParsedRouteIndexMap = {}
   for (const page of pages) {
     processPage(map, page)
   }
@@ -124,48 +179,24 @@ function buildRouteIndexMap(pages: ParsedPage[]): RouteIndexMap {
 }
 
 /**
- * 格式化单个路由索引条目
- *
- * @param key - 路由名称或路径
- * @param value - 路由索引条目值
- * @returns 格式化后的条目字符串
- */
-function formatRouteIndexEntry(
-  key: string,
-  value: { params?: Record<string, string | number> }
-): string {
-  if (value.params && Object.keys(value.params).length > 0) {
-    const paramsStr = Object.entries(value.params)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ')
-    return `'${key}': { params: { ${paramsStr} } }`
-  }
-  return `'${key}': {}`
-}
-
-/**
  * 生成完整的 .d.ts 声明文件内容
- *
- * 包含文件头注释、模块扩展声明和具体的 RouteIndexMap 类型定义。
- * 生成的文件应该被用户项目的 TypeScript 配置引用。
  *
  * @param pages - 解析后的页面列表
  * @returns 完整的 .d.ts 文件内容
  */
 export function generateFullDtsFile(pages: ParsedPage[]): string {
+  const moduleName = 'vitarx-router'
   const indexMap = buildRouteIndexMap(pages)
 
   const lines: string[] = []
 
-  // 文件头注释
   lines.push('/* eslint-disable */')
   lines.push('/* prettier-ignore */')
   lines.push('// @ts-nocheck')
-  lines.push('// Generated by vitarx-router. Do not modify this file.')
+  lines.push(`// Generated by FileRouter. Do not modify this file.`)
   lines.push('')
 
-  // 模块扩展声明 - 扩展 vitarx-router 中的 RouteIndexMap 接口
-  lines.push("declare module 'vitarx-router' {")
+  lines.push(`declare module '${moduleName}' {`)
   lines.push('  // 自动生成的路由索引映射类型')
   lines.push('  interface RouteIndexMap {')
 

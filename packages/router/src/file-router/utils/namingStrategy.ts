@@ -8,7 +8,7 @@
  *
  * 注意：只处理路径段名称，不处理动态参数变量名。
  */
-import type { NamingStrategy } from './types.js'
+import type { NamingStrategy } from '../types.js'
 
 /**
  * 将驼峰命名转换为 kebab-case
