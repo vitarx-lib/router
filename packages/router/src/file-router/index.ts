@@ -221,10 +221,10 @@ export class FileRouter {
    * @param filePath - 文件路径
    * @returns 转换后的代码，无需转换返回 null
    */
-  removeDefinePage(code: string, filePath: string): string | null {
+  removeDefinePage(code: string, filePath: string) {
     if (!this.isPageFile(filePath)) {
       return null
     }
-    return removeDefinePage(code)
+    return removeDefinePage(code, filePath)
   }
 }

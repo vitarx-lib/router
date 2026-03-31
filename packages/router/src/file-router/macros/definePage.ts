@@ -7,6 +7,7 @@
  * definePage 作为全局宏使用，无需导入，因此只需移除调用语句。
  */
 
+import type { GeneratorResult } from '@babel/generator'
 import fs from 'node:fs'
 import type { PageOptions } from '../types.js'
 import { babelGenerate, babelTraverse, parseCode, warn } from '../utils/index.js'
@@ -87,10 +88,7 @@ export function parseDefinePage(filePath: string): PageOptions | null {
     }
 
     if (pageOptionsList.length > 1) {
-      warn(
-        '检测到多个 definePage 调用，将合并所有配置',
-        '建议每个文件只调用一次 definePage'
-      )
+      warn('检测到多个 definePage 调用，将合并所有配置', '建议每个文件只调用一次 definePage')
     }
 
     return mergePageOptions(pageOptionsList)
@@ -107,9 +105,10 @@ export function parseDefinePage(filePath: string): PageOptions | null {
  * 此函数仅移除 definePage 调用语句。
  *
  * @param code - 源代码
+ * @param filename - 文件路径
  * @returns 转换后的代码，无需转换返回 null
  */
-export function removeDefinePage(code: string): string | null {
+export function removeDefinePage(code: string, filename: string): GeneratorResult | null {
   if (!code.includes('definePage')) {
     return null
   }
@@ -131,10 +130,11 @@ export function removeDefinePage(code: string): string | null {
 
   if (!hasDefinePage) return null
 
-  const output = babelGenerate(ast, {
+  return babelGenerate(ast, {
     retainLines: false,
-    compact: false
+    compact: false,
+    sourceMaps: true,
+    filename,
+    sourceFileName: filename
   })
-
-  return output.code
 }
