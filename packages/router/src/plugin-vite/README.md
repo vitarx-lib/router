@@ -54,7 +54,7 @@ src/pages/
 ```typescript
 // main.tsx
 import { createRouter } from 'vitarx-router'
-import routes from 'virtual:vitarx-router:routes'
+import { routes } from 'vitarx-router/auto-routes'
 
 const router = createRouter({
   routes

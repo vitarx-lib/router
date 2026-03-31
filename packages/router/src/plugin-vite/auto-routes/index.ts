@@ -17,4 +17,3 @@
  */
 export { default as routes } from 'virtual:vitarx-router:routes'
 export { handleHotUpdate } from './handleHotUpdate.js'
-export { definePage } from './definePage.js'
