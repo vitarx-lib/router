@@ -1,12 +1,12 @@
 import { toRef, type View } from 'vitarx'
 import { RouterLink, useRoute } from 'vitarx-router'
-import { definePage } from 'vitarx-router/auto-routes'
 
 definePage({
   pattern: {
     slug: /[^/]+/
   }
 })
+
 export default function PostDetail(): View {
   const route = useRoute()
   const slug = toRef(route.params, 'slug')

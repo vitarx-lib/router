@@ -1,6 +1,5 @@
 import type { View } from 'vitarx'
 import { RouterLink } from 'vitarx-router'
-import { definePage } from 'vitarx-router/auto-routes'
 
 definePage({
   name: 'custom-route-demo',
@@ -79,9 +78,7 @@ export default function CustomRoute(): View {
               fontFamily: 'monospace',
               overflow: 'auto'
             }}
-          >{`import { definePage } from 'vitarx-router/auto-routes'
-
-definePage({
+          >{`definePage({
   name: 'custom-route-demo',
   meta: {
     title: '自定义路由配置示例',
@@ -119,7 +116,9 @@ definePage({
               >
                 name
               </div>
-              <div style={{ fontSize: '13px', color: '#666' }}>自定义路由名称，用于编程式导航</div>
+              <div style={{ fontSize: '13px', color: '#666' }}>
+                自定义路由名称，用于编程式导航（优先级高于path自动生成的名称）
+              </div>
             </div>
             <div>
               <div
@@ -128,7 +127,7 @@ definePage({
                 meta
               </div>
               <div style={{ fontSize: '13px', color: '#666' }}>
-                路由元数据，必须是可序列化的对象
+                路由元数据，必须是可JSON序列化的对象
               </div>
             </div>
             <div>
@@ -146,6 +145,14 @@ definePage({
                 pattern
               </div>
               <div style={{ fontSize: '13px', color: '#666' }}>动态参数匹配模式（正则表达式）</div>
+            </div>
+            <div>
+              <div
+                style={{ fontSize: '13px', fontWeight: '600', color: '#333', marginBottom: '4px' }}
+              >
+                alias
+              </div>
+              <div style={{ fontSize: '13px', color: '#666' }}>别名（字符串或字符串数组）</div>
             </div>
           </div>
         </div>
@@ -172,14 +179,7 @@ definePage({
               lineHeight: '1.8'
             }}
           >
-            <li>
-              必须从{' '}
-              <code style={{ backgroundColor: '#f0f0f5', padding: '2px 6px', borderRadius: '4px' }}>
-                vitarx-router/auto-routes
-              </code>{' '}
-              导入
-            </li>
-            <li>必须是可序列化的对象，不支持函数</li>
+            <li>必须是可JSON序列化的对象，不支持函数</li>
             <li>构建时会自动移除 definePage 调用</li>
           </ul>
         </div>

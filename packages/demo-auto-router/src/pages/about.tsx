@@ -1,4 +1,4 @@
-import type { View } from 'vitarx'
+import { type View } from 'vitarx'
 import { RouterLink } from 'vitarx-router'
 
 export default function About(): View {
@@ -74,7 +74,11 @@ export default function About(): View {
         </div>
 
         <p style={{ fontSize: '15px', color: '#666', lineHeight: '1.8', marginBottom: '20px' }}>
-          这是最基本的文件路由约定。在 <code style={{ backgroundColor: '#f0f0f5', padding: '2px 6px', borderRadius: '4px' }}>pages</code> 目录下创建一个文件，文件名会自动映射为路由路径。
+          这是最基本的文件路由约定。在{' '}
+          <code style={{ backgroundColor: '#f0f0f5', padding: '2px 6px', borderRadius: '4px' }}>
+            pages
+          </code>{' '}
+          目录下创建一个文件，文件名会自动映射为路由路径。
         </p>
 
         <div
@@ -85,10 +89,20 @@ export default function About(): View {
             marginBottom: '30px'
           }}
         >
-          <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#e65100', marginBottom: '10px' }}>
+          <h4
+            style={{ fontSize: '14px', fontWeight: '600', color: '#e65100', marginBottom: '10px' }}
+          >
             💡 规则说明
           </h4>
-          <ul style={{ margin: 0, paddingLeft: '20px', color: '#666', fontSize: '14px', lineHeight: '1.8' }}>
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: '20px',
+              color: '#666',
+              fontSize: '14px',
+              lineHeight: '1.8'
+            }}
+          >
             <li>文件名直接映射为路由路径</li>
             <li>支持 .tsx, .ts, .jsx, .js 扩展名</li>
             <li>路径自动转换为小写（可配置）</li>

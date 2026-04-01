@@ -28,7 +28,7 @@
     "forceConsistentCasingInFileNames": true,
     /* TSX类型校验 */
     "jsx": "preserve",
-    "types": ["vite/client", "vitarx", "@vitarx/plugin-vite"],
+    "types": ["vite/client", "vitarx", "@vitarx/plugin-vite", "vitarx-router/global"],
     /* 别名路径配置 */
     "paths": {
       "@/*": ["./src/*"]
