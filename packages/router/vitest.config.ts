@@ -22,6 +22,24 @@ export default defineConfig({
           environment: 'node',
           testTimeout: 30000
         }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'file-router',
+          include: ['tests/file-router/**/*.{test,spec}.ts'],
+          environment: 'node',
+          testTimeout: 30000
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'plugin-vite',
+          include: ['tests/plugin-vite/**/*.{test,spec}.ts'],
+          environment: 'node',
+          testTimeout: 30000
+        }
       }
     ],
     coverage: {
