@@ -35,7 +35,7 @@ export interface RouterViewOptions {
    *  ```jsx
    *  // 搭配 Freeze 使用
    *  <RouterView>
-   *    {(component, props, path) => <Freeze component={component} props={props}/>}
+   *    {(component, props, path) => <Freeze is={component} props={props}/>}
    *  </RouterView>
    *  ```
    *
@@ -51,13 +51,13 @@ export interface RouterViewOptions {
    *  // Freeze & Transition 组合使用
    *  <Transition>
    *    <RouterView>
-   *      {(component, props) => <Freeze component={component} props={props} />}
+   *      {(component, props) => <Freeze is={component} props={props} />}
    *    </RouterView>
    *  </Transition>
    *
    *  // 等效的另类写法
    *  <RouterView>
-   *     {(component, props) => (<Transition><Freeze component={component} props={props} /></Transition>)}
+   *     {(component, props) => (<Transition><Freeze is={component} props={props} /></Transition>)}
    *  </RouterView>
    *  ```
    */
