@@ -612,8 +612,6 @@ export abstract class Router {
   ): void {
     // 如果在 SSR 环境下，或者没有配置 scrollTo 函数，则直接返回
     if (__VITARX_SSR__) return
-    // 没有滚动行为函数，则直接返回
-    if (!this.scrollTo) return
     const defaultTarget = to.hash ? { el: to.hash } : { top: 0, left: 0 }
     // 初始化目标滚动位置为保存的位置
     let target: ScrollTarget = savedPosition || defaultTarget
@@ -629,6 +627,8 @@ export abstract class Router {
         logger.error('[Router] Error in scrollBehavior callback:', e)
       }
     }
+    // 没有滚动行为函数，则直接返回
+    if (!this.scrollTo) return
     const id = ++this._scrollTaskID
     // 等待路由组件解析完成后滚动
     this.waitViewRender().then(async () => {
