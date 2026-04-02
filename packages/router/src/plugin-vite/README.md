@@ -2,17 +2,6 @@
 
 基于文件系统的路由自动生成插件，支持 Vite 5.x/6.x/7.x/8.x。
 
-## 目录
-
-- [安装](#安装)
-- [快速开始](#快速开始)
-- [插件配置选项](#插件配置选项)
-- [definePage 宏](#definepage-宏)
-- [文件路由转换规则](#文件路由转换规则)
-- [示例](#示例)
-- [虚拟模块](#虚拟模块)
-- [注意事项](#注意事项)
-
 ## 安装
 
 ```bash
@@ -24,14 +13,13 @@ npm install vitarx-router
 ### 1. 配置 Vite 插件
 
 ```typescript
-// vite.config.ts
 import { defineConfig } from 'vite'
 import VitarxRouter from 'vitarx-router/vite'
 
 export default defineConfig({
   plugins: [
     VitarxRouter({
-      pagesDir: 'src/pages',
+      pages: 'src/pages',
       extensions: ['.tsx', '.ts', '.jsx', '.js']
     })
   ]
@@ -52,61 +40,78 @@ src/pages/
 ### 3. 使用自动生成的路由
 
 ```typescript
-// main.tsx
 import { createRouter } from 'vitarx-router'
-import { routes } from 'vitarx-router/auto-routes'
+import routes from 'virtual:vitarx-router:routes'
 
-const router = createRouter({
-  routes
-})
+const router = createRouter({ routes })
 ```
-
----
 
 ## 插件配置选项
 
-### VitePluginRouterOptions
+### RouterPluginOptions
 
-| 选项               | 类型                                       | 默认值                              | 说明           |
-|------------------|------------------------------------------|----------------------------------|--------------|
-| `pagesDir`       | `string \| string[] \| PagesDirConfig[]` | `'src/pages'`                    | 页面目录配置       |
-| `extensions`     | `string[]`                               | `['.tsx', '.ts', '.jsx', '.js']` | 支持的文件扩展名     |
-| `include`        | `string[]`                               | `[]`                             | 要包含的 glob 模式 |
-| `exclude`        | `string[]`                               | `[]`                             | 要排除的 glob 模式 |
-| `dts`            | `string \| false`                        | `'typed-router.d.ts'`            | 类型声明文件路径     |
-| `importMode`     | `'lazy' \| 'file'`                       | `'lazy'`                         | 组件导入模式       |
-| `extendRoute`    | `ExtendRouteHook`                        | -                                | 路由扩展钩子       |
-| `imports`        | `string[]`                               | -                                | 自定义导入语句      |
-| `namingStrategy` | `'kebab' \| 'lowercase' \| 'none'`       | `'kebab'`                        | 路由命名策略       |
+```typescript
+interface RouterPluginOptions extends FileRouterOptions {
+  dts?: string | false
+}
+```
 
-### pagesDir 配置
+| 选项               | 类型                                                 | 默认值                              | 说明           |
+|------------------|----------------------------------------------------|----------------------------------|--------------|
+| `pages`          | `string \| PageConfig \| (PageConfig \| string)[]` | `'src/pages'`                    | 页面目录配置       |
+| `extensions`     | `string[]`                                         | `['.tsx', '.ts', '.jsx', '.js']` | 支持的文件扩展名     |
+| `include`        | `string[]`                                         | `[]`                             | 要包含的 glob 模式 |
+| `exclude`        | `string[]`                                         | `[]`                             | 要排除的 glob 模式 |
+| `dts`            | `string \| false`                                  | `'typed-router.d.ts'`            | 类型声明文件路径     |
+| `importMode`     | `'lazy' \| 'file'`                                 | `'lazy'`                         | 组件导入模式       |
+| `extendRoute`    | `ExtendRouteHook`                                  | -                                | 路由扩展钩子       |
+| `injectImports`  | `string[]`                                         | -                                | 自定义导入语句      |
+| `namingStrategy` | `'kebab' \| 'lowercase' \| 'none'`                 | `'kebab'`                        | 路由命名策略       |
+
+### pages 配置
 
 支持三种配置方式：
 
 ```typescript
-// 单个目录
 VitarxRouter({
-  pagesDir: 'src/pages'
+  pages: 'src/pages'
 })
 
-// 多个目录（共享全局规则）
 VitarxRouter({
-  pagesDir: ['src/pages', 'src/admin']
+  pages: ['src/pages', 'src/admin']
 })
 
-// 多个目录（独立规则）
 VitarxRouter({
-  pagesDir: [
+  pages: [
     { dir: 'src/pages', exclude: ['components'] },
     { dir: 'src/admin', include: ['**\/*.tsx'], prefix: '/admin/' }
   ]
 })
+```
 
-// 使用路径前缀
-// src/admin/home.tsx -> /admin/home
-// src/promos/black-friday.tsx -> /promos-black-friday
+### PageConfig
+
+```typescript
+interface PageConfig {
+  dir: string
+  include?: string[]
+  exclude?: string[]
+  prefix?: string
+}
+```
+
+| 选项        | 类型         | 说明           |
+|-----------|------------|--------------|
+| `dir`     | `string`   | 页面目录路径       |
+| `include` | `string[]` | 要包含的 glob 模式 |
+| `exclude` | `string[]` | 要排除的 glob 模式 |
+| `prefix`  | `string`   | 路由路径前缀       |
+
+### 路径前缀示例
+
+```typescript
 VitarxRouter({
-  pagesDir: [
+  pages: [
     { dir: 'src/pages' },
     { dir: 'src/admin', prefix: '/admin/' },
     { dir: 'src/promos', prefix: 'promos-' }
@@ -114,16 +119,8 @@ VitarxRouter({
 })
 ```
 
-**PagesDirConfig 接口：**
-
-```typescript
-interface PagesDirConfig {
-  dir: string              // 页面目录路径
-  include?: string[]       // 要包含的 glob 模式
-  exclude?: string[]       // 要排除的 glob 模式
-  prefix?: string          // 路由路径前缀
-}
-```
+- `src/admin/home.tsx` → `/admin/home`
+- `src/promos/black-friday.tsx` → `/promos-black-friday`
 
 ### importMode 配置
 
@@ -131,17 +128,20 @@ interface PagesDirConfig {
 - `file`：直接使用文件路径作为组件，由用户自行处理导入
 
 ```typescript
-// lazy 模式（默认）
 VitarxRouter({
   importMode: 'lazy'
 })
-// 生成：{ path: '/', component: lazy(() => import('/src/pages/index.tsx')) }
 
-// file 模式
 VitarxRouter({
-  importMode: 'file'
+  importMode: 'file',
+  injectImports: ["import { lazy } from 'vitarx'"],
+  extendRoute(route) {
+    if (route.component && typeof route.component === 'string') {
+      route.component = `lazy(() => import(${route.component}))`
+    }
+    return route
+  }
 })
-// 生成：{ path: '/', component: '/src/pages/index.tsx' }
 ```
 
 ### extendRoute 钩子
@@ -151,7 +151,6 @@ VitarxRouter({
 ```typescript
 VitarxRouter({
   extendRoute(route) {
-    // 添加自定义 meta
     route.meta = {
       ...route.meta,
       layout: 'default'
@@ -173,76 +172,19 @@ VitarxRouter({
 })
 ```
 
-**ExtendRouteHook 类型：**
-
-```typescript
-type ExtendRouteHook = (
-  route: ResolvedRoute
-) => ResolvedRoute | void | Promise<ResolvedRoute | void>
-```
-
-**ResolvedRoute 接口：**
-
-```typescript
-interface ResolvedRoute {
-  path: string
-  name?: string
-  component?: string | Record<string, string>
-  meta?: RouteMetaData
-  pattern?: Record<string, RegExp>
-  children?: ResolvedRoute[]
-  redirect?: string | NavOptions
-  alias?: string | string[]
-}
-```
-
-### imports 配置
-
-向虚拟模块注入自定义导入语句：
-
-```typescript
-VitarxRouter({
-  importMode: 'file',
-  imports: ["import { lazy } from 'vitarx'"],
-  extendRoute(route) {
-    if (route.component && typeof route.component === 'string') {
-      route.component = `lazy(() => import(${route.component}))`
-    }
-    return route
-  }
-})
-```
-
 ### namingStrategy 配置
 
-控制路由名称和路径的命名转换方式。注意：此选项只影响路径段名称，不影响动态参数变量名。
+控制路由名称和路径的命名转换方式：
 
 - `kebab`（默认）：将驼峰命名转换为 kebab-case，如 `MainHome` → `main-home`
 - `lowercase`：简单转换为小写，如 `MainHome` → `mainhome`
 - `none`：保持原始命名，不进行转换
 
 ```typescript
-// kebab 策略（默认）
 VitarxRouter({
   namingStrategy: 'kebab'
 })
-// MainHome.tsx → { name: 'main-home', path: '/main-home' }
-// [userName].tsx → { name: 'user-name', path: '/{userName}' }
-
-// lowercase 策略
-VitarxRouter({
-  namingStrategy: 'lowercase'
-})
-// MainHome.tsx → { name: 'mainhome', path: '/mainhome' }
-
-// none 策略
-VitarxRouter({
-  namingStrategy: 'none'
-})
-// MainHome.tsx → { name: 'MainHome', path: '/MainHome' }
 ```
-
----
 
 ## definePage 宏
 
@@ -250,9 +192,7 @@ VitarxRouter({
 
 ### 基本用法
 
-```tsx
-import { definePage } from 'vitarx-router/auto-routes'
-
+```jsx
 definePage({
   name: 'user-detail',
   meta: { title: '用户详情', requiresAuth: true },
@@ -278,29 +218,24 @@ export default function UserDetail() {
 
 ### meta 配置
 
-meta 必须是可序列化的对象，不支持函数或复杂对象：
+meta 必须是可序列化的对象：
 
-```tsx
+```jsx
 definePage({
   meta: {
-    title: '用户详情',      // ✅ 字符串
-    requiresAuth: true,    // ✅ 布尔值
-    order: 1,              // ✅ 数字
-    roles: ['admin'],      // ✅ 数组
-    config: { a: 1 }       // ✅ 简单对象
+    title: '用户详情',
+    requiresAuth: true,
+    order: 1,
+    roles: ['admin']
   }
 })
 ```
 
 ### redirect 配置
 
-支持字符串路径或导航配置对象：
-
-```tsx
-// 字符串路径
+```jsx
 definePage({ redirect: '/dashboard' })
 
-// 导航配置对象
 definePage({
   redirect: {
     index: 'home',
@@ -310,49 +245,26 @@ definePage({
 })
 ```
 
-**RedirectConfig 接口：**
-
-```typescript
-interface RedirectConfig {
-  index: string
-  query?: Record<string, string>
-  params?: Record<string, string>
-}
-```
-
 ### pattern 配置
 
-为动态路由参数定义更精确的匹配规则：
+为动态路由参数定义匹配规则：
 
-```tsx
-// src/pages/user/[id].tsx
+```jsx
 definePage({
   pattern: {
-    id: /^\d+$/        // 只匹配数字
-  }
-})
-
-// src/pages/post/[slug].tsx
-definePage({
-  pattern: {
-    slug: /^[a-z0-9-]+$/  // 只匹配小写字母、数字和横线
+    id: /^\d+$/,
+    slug: /^[a-z0-9-]+$/
   }
 })
 ```
 
 ### alias 配置
 
-定义路由别名：
-
-```tsx
-// 单个别名
+```jsx
 definePage({ alias: '/member/{id}' })
 
-// 多个别名
 definePage({ alias: ['/member/{id}', '/profile/{id}'] })
 ```
-
----
 
 ## 文件路由转换规则
 
@@ -362,30 +274,18 @@ definePage({ alias: ['/member/{id}', '/profile/{id}'] })
    - 当 `xxx.jsx` 和 `xxx/` 目录同时存在时
    - `xxx.jsx` 作为布局组件（父路由的 component）
    - `xxx/` 目录内的页面文件作为子路由
-   - `xxx/index.jsx` 的 path 为空字符串 `''`（与 vue-router 一致）
 
 2. **纯目录**
    - 当只有 `xxx/` 目录存在时
    - 目录内有多个文件时，创建目录路由
    - 目录内只有 `index.jsx` 时，直接作为独立路由
-   - 目录内的其他页面文件作为子路由
-   - `index.jsx` 作为子路由时 path 为空字符串 `''`
 
-3. **无效目录**
-   - 目录既没有同名文件，也没有任何页面文件
-   - 该目录被忽略
-
-4. **纯文件**
+3. **纯文件**
    - 当只有 `xxx.jsx` 文件存在时
    - 直接作为一个 Route
 
-5. **同级文件名冲突**
-   - 当 `users.jsx` 和 `users/` 目录同时存在时，`users.jsx` 作为布局组件
+4. **同级文件名冲突**
    - 当 `users.jsx` 和 `users.tsx` 同时存在时，抛出警告日志，忽略后者
-
-6. **组件导入路径**
-   - 导入路径是基于系统的绝对路径
-   - 根据插件配置生成 `lazy(()=>import('路径'))` | `'路径'`
 
 ### 动态路由
 
@@ -399,42 +299,9 @@ src/pages/
     └── [slug].tsx   → /post/{slug}
 ```
 
-生成：
-
-```typescript
-[
-  {
-    path: '/user/{id}',
-    component: lazy(() => import('src/pages/user/[id].tsx'))
-  },
-  {
-    path: '/post/{slug}',
-    component: lazy(() => import('src/pages/post/[slug].tsx'))
-  }
-]
-```
-
 ### 命名视图
 
-支持通过文件名后缀 `@view` 语法定义命名视图，规则与 vue-router 一致：
-
-1. **默认视图**：
-   - `index.tsx` 或 `index@default.tsx` 作为默认视图
-   - 生成 `component: { default: lazy(() => import('...')) }`
-
-2. **命名视图**：
-   - `index@aux.tsx` 作为 `aux` 命名视图
-   - 与默认视图文件组合，生成组件对象
-
-3. **组合规则**：
-   - `index.tsx` + `index@aux.tsx` → 生成包含 default 和 aux 视图的组件对象
-   - `index@default.tsx` + `index@aux.tsx` → 与上面等价
-
-4. **验证规则**：
-   - 每个命名视图组必须包含默认视图（index.tsx 或 index@default.tsx）
-   - 如果只有命名视图文件（如 index@aux.tsx）而没有默认视图文件，会抛出错误
-
-#### 示例：命名视图
+支持通过文件名后缀 `@view` 语法定义命名视图：
 
 ```
 src/pages/
@@ -445,31 +312,14 @@ src/pages/
 生成：
 
 ```typescript
-[
-  {
-    path: '/',
-    component: {
-      default: lazy(() => import('src/pages/index.tsx')),
-      aux: lazy(() => import('src/pages/index@aux.tsx'))
-    }
+{
+  path: '/',
+  component: {
+    default: lazy(() => import('src/pages/index.tsx')),
+    aux: lazy(() => import('src/pages/index@aux.tsx'))
   }
-]
+}
 ```
-
-#### 错误示例：缺少默认视图
-
-```
-src/pages/
-└── index@aux.tsx    ← 只有命名视图，缺少默认视图
-```
-
-错误信息：
-```
-[vitarx-router] 命名视图错误: 路径 "/" 只有命名视图文件 (/src/pages/index@aux.tsx)，缺少默认视图文件 (index.tsx 或 index@default.tsx)。
-修复方案: 添加 index.tsx 或 index@default.tsx 文件。
-```
-
----
 
 ## 示例
 
@@ -494,118 +344,7 @@ src/pages/
 }]
 ```
 
-### 示例2：目录 + 子页面（无index）
-
-```
-src/pages/
-├── users/
-    ├── profile1.jsx
-    └── profile2.jsx
-```
-
-生成：
-
-```typescript
-[{
-  path: '/users',
-  children: [
-    { path: 'profile1', component: lazy(() => import('src/pages/users/profile1.jsx')) },
-    { path: 'profile2', component: lazy(() => import('src/pages/users/profile2.jsx')) }
-  ]
-}]
-```
-
-### 示例3：目录 + index
-
-```
-src/pages/
-├── users/
-│   └── index.jsx
-```
-
-生成：
-
-```typescript
-[{
-  path: '/users',
-  component: lazy(() => import('src/pages/users/index.jsx'))
-}]
-```
-
-### 示例4：嵌套目录
-
-```
-src/pages/
-└── users/
-    ├── index.jsx
-    ├── profile.jsx
-    └── settings/
-        ├── index.jsx
-        └── security.jsx
-```
-
-生成：
-
-```typescript
-[{
-  path: '/users',
-  children: [
-    {
-      path: '',
-      component: lazy(() => import('src/pages/users/index.jsx'))
-    },
-    {
-      path: 'profile',
-      component: lazy(() => import('src/pages/users/profile.jsx'))
-    },
-    {
-      path: 'settings',
-      children: [
-        {
-          path: '',
-          component: lazy(() => import('src/pages/users/settings/index.jsx'))
-        },
-        {
-          path: 'security',
-          component: lazy(() => import('src/pages/users/settings/security.jsx'))
-        }
-      ]
-    }
-  ]
-}]
-```
-
-### 示例5：纯文件
-
-```
-src/pages/
-└── users.jsx
-```
-
-生成：
-
-```typescript
-[{
-  path: '/users',
-  component: lazy(() => import('src/pages/users.jsx'))
-}]
-```
-
-### 示例6：无效目录
-
-```
-src/pages/
-├── users/
-│   └── (空或无有效页面文件)
-```
-
-生成：
-
-```typescript
-[]
-```
-
-### 示例7：同名文件 + 目录（布局路由）
+### 示例2：同名文件 + 目录（布局路由）
 
 ```
 src/pages/
@@ -628,96 +367,45 @@ src/pages/
 }]
 ```
 
-### 示例8：同名文件 + 目录（无 index）
-
-```
-src/pages/
-├── users.jsx        ← 布局组件
-└── users/
-    └── profile.jsx  ← 子路由
-```
-
-生成：
-
-```typescript
-[{
-  path: '/users',
-  component: lazy(() => import('src/pages/users.jsx')),
-  children: [
-    { path: 'profile', component: lazy(() => import('src/pages/users/profile.jsx')) }
-  ]
-}]
-```
-
-### 示例9：同级文件名冲突（抛出警告）
-
-```
-src/pages/
-├── users.jsx
-└── users.tsx
-```
-
-处理：抛出警告日志，忽略后者（users.tsx）
-
-生成：
-
-```typescript
-[{
-  path: '/users',
-  component: lazy(() => import('src/pages/users.jsx'))
-}]
-```
-
-### 示例10：动态路由
+### 示例3：动态路由
 
 ```
 src/pages/
 ├── user/
 │   └── [id].jsx     → /user/{id}
-└── post/
-    └── [slug].jsx   → /post/{slug}
 ```
 
 生成：
 
 ```typescript
-[
-  {
-    path: '/user/{id}',
-    component: lazy(() => import('src/pages/user/[id].jsx'))
-  },
-  {
-    path: '/post/{slug}',
-    component: lazy(() => import('src/pages/post/[slug].jsx'))
-  }
-]
+[{
+  path: '/user/{id}',
+  component: lazy(() => import('src/pages/user/[id].jsx'))
+}]
 ```
-
----
 
 ## 虚拟模块
 
-插件提供以下虚拟模块：
-
-| 模块 ID                          | 说明            |
-|--------------------------------|---------------|
-| `virtual:vitarx-router:routes` | 自动生成的路由配置     |
+| 模块 ID                          | 说明        |
+|--------------------------------|-----------|
+| `virtual:vitarx-router:routes` | 自动生成的路由配置 |
 
 ### 使用路由模块
 
 ```typescript
-import routes from 'virtual:vitarx-router:routes'
-// 等同于 import { routes } from 'vitarx-router/auto-routes' 
+import { createRouter } from 'vitarx-router'
+import { routes } from 'vitarx-router/auto-routes'
+// import routes from 'virtual:vitarx-router:routes' 
+// 从虚拟模块导入ts类型校验会失败，建议从'vitarx-router/auto-routes'导入
 
 const router = createRouter({ routes })
 ```
 
-### TypeScript 支持
+## TypeScript 支持
 
 插件会自动生成类型声明文件，提供完整的类型支持：
 
 ```typescript
-// 生成的类型示例
 interface RouteIndexMap {
   'home': {},
   '/': {},
@@ -725,97 +413,23 @@ interface RouteIndexMap {
   '/user/{id}': { params: { id: string } }
 }
 
-// 使用示例 - 完全类型安全
 router.push({ index: 'user-id', params: { id: '123' } })
 ```
-
----
 
 ## 注意事项
 
 1. **默认导出检测**：插件会检测页面文件是否有有效的默认导出函数组件，没有则跳过该文件并发出警告。
 
-2. **definePage 导入**：使用 `definePage` 时必须从 `vitarx-router/auto-routes` 导入。
+2. **meta 序列化**：`definePage` 的 `meta` 必须是可序列化的对象。
 
-3. **meta 序列化**：`definePage` 的 `meta` 必须是可序列化的对象。
+3. **构建优化**：构建模式下会自动移除 `definePage` 调用和导入语句。
 
-4. **构建优化**：构建模式下会自动移除 `definePage` 调用和导入语句。
+4. **HMR 支持**：开发模式下修改页面文件会触发热更新。
 
-5. **HMR 支持**：开发模式下修改页面文件会触发热更新。
+5. **分组路由命名**：有 `children` 的路由（分组路由）默认不会生成 `name` 属性，除非设置了 `redirect`。
 
-6. **分组路由命名**：有 `children` 的路由（分组路由）默认不会生成 `name` 属性，除非设置了 `redirect`。
+6. **路径前缀**：使用 `prefix` 配置时，注意结尾的 `/` 会影响拼接结果。
 
-7. **路径前缀**：使用 `prefix` 配置时，注意结尾的 `/` 会影响拼接结果。
+## License
 
----
-
-## API 参考
-
-### 导出
-
-```typescript
-// 默认导出
-export default VitarxRouter
-
-// 类型导出
-export type { VitePluginRouterOptions } from './core/types.js'
-```
-
-### 类型定义
-
-```typescript
-// 插件选项
-interface VitePluginRouterOptions {
-  pagesDir?: string | (PagesDirConfig | string)[]
-  prefix?: string
-  extensions?: string[]
-  include?: string[]
-  exclude?: string[]
-  dts?: string | false
-  importMode?: 'lazy' | 'file'
-  extendRoute?: ExtendRouteHook
-  imports?: string[]
-  namingStrategy?: 'kebab' | 'lowercase' | 'none'
-}
-
-// 页面目录配置
-interface PagesDirConfig {
-  dir: string
-  include?: string[]
-  exclude?: string[]
-  prefix?: string
-}
-
-// 路由扩展钩子
-type ExtendRouteHook = (
-  route: ResolvedRoute
-) => ResolvedRoute | void | Promise<ResolvedRoute | void>
-
-// 解析后的路由
-interface ResolvedRoute {
-  path: string
-  name?: string
-  component?: string | Record<string, string>
-  meta?: RouteMetaData
-  pattern?: Record<string, RegExp>
-  children?: ResolvedRoute[]
-  redirect?: string | NavOptions
-  alias?: string | string[]
-}
-
-// 页面配置（definePage）
-interface PageOptions {
-  name?: string
-  meta?: RouteMetaData
-  pattern?: Record<string, RegExp>
-  redirect?: string | RedirectConfig
-  alias?: string | string[]
-}
-
-// 重定向配置
-interface RedirectConfig {
-  index: string
-  query?: Record<string, string>
-  params?: Record<string, string>
-}
-```
+MIT
