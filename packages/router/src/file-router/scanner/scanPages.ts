@@ -63,6 +63,7 @@ export interface MultiScanOptions {
  * @returns 聚合后的页面列表
  */
 function aggregateNamedViews(pages: ParsedPage[]): ParsedPage[] {
+  // 按路径分组页面
   const pagesByPath = new Map<string, ParsedPage[]>()
 
   for (const page of pages) {
@@ -75,14 +76,15 @@ function aggregateNamedViews(pages: ParsedPage[]): ParsedPage[] {
   const aggregatedPages: ParsedPage[] = []
 
   for (const [path, pathPages] of pagesByPath) {
+    // 分离默认视图和命名视图
     const defaultPages = pathPages.filter(p => p.viewName === null || p.viewName === 'default')
     const namedViews = pathPages.filter(p => p.viewName !== null && p.viewName !== 'default')
 
+    // 检查是否只有命名视图而没有默认视图
     if (defaultPages.length === 0 && namedViews.length > 0) {
       const namedViewFiles = namedViews.map(p => p.filePath).join(', ')
       const firstNamedView = namedViews[0]
-      const baseName =
-        firstNamedView.filePath.split('/').pop()?.split('@')[0].split('.')[0] || 'index'
+      const baseName = firstNamedView.filePath.split('/').pop()?.split('@')[0].split('.')[0] || 'index'
       throw new Error(
         `[file-router] 命名视图错误: 路径 "${path}" 只有命名视图文件 (${namedViewFiles})，` +
           `缺少默认视图文件 (${baseName}.tsx 或 ${baseName}@default.tsx)。\n` +
@@ -90,11 +92,13 @@ function aggregateNamedViews(pages: ParsedPage[]): ParsedPage[] {
       )
     }
 
+    // 如果没有命名视图，直接添加所有页面
     if (namedViews.length === 0) {
       aggregatedPages.push(...pathPages)
       continue
     }
 
+    // 以第一个默认视图为基础，添加命名视图
     const basePage = { ...defaultPages[0], children: defaultPages[0].children || [] }
 
     basePage.namedViews = {}
@@ -132,15 +136,18 @@ function scanDirectory(
   pathPrefix: string,
   pages: ParsedPage[]
 ): void {
+  // 读取目录内容
   const entries = fs.readdirSync(dir, { withFileTypes: true })
 
   const directories: fs.Dirent[] = []
   const files: fs.Dirent[] = []
 
+  // 分类目录和文件
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name)
     const isDir = entry.isDirectory()
 
+    // 检查是否应该处理该文件/目录
     if (!shouldProcessFile(fullPath, pageDir, include, exclude, isDir)) {
       continue
     }
@@ -152,9 +159,11 @@ function scanDirectory(
     }
   }
 
+  // 收集目录名和文件名（用于检测布局路由）
   const dirNames = new Set(directories.map(d => d.name))
   const fileBaseNames = new Map<string, { entry: fs.Dirent; ext: string }>()
 
+  // 处理文件，检查扩展名和同名冲突
   for (const file of files) {
     const ext = path.extname(file.name)
     if (!extensions.includes(ext)) continue
@@ -162,6 +171,7 @@ function scanDirectory(
     const baseName = path.basename(file.name, ext)
     const existing = fileBaseNames.get(baseName)
 
+    // 处理同名文件冲突（不同扩展名）
     if (existing) {
       warn(
         `同名文件冲突: "${baseName}"`,
@@ -173,12 +183,16 @@ function scanDirectory(
     fileBaseNames.set(baseName, { entry: file, ext })
   }
 
+  // 解析文件并检查布局路由
   for (const [baseName, { entry }] of fileBaseNames) {
     const filePath = path.join(dir, entry.name)
+    // 检查是否存在同名目录（布局路由）
     const hasSameNameDir = dirNames.has(baseName)
 
+    // 解析页面文件
     const parsed = parsePageFile(filePath, pageDir, parentPath, namingStrategy, pathPrefix)
     if (parsed) {
+      // 如果存在同名目录，标记为布局文件
       if (hasSameNameDir) {
         parsed.isLayoutFile = true
       }
@@ -186,6 +200,7 @@ function scanDirectory(
     }
   }
 
+  // 递归扫描子目录
   for (const directory of directories) {
     const dirPath = path.join(dir, directory.name)
     const newParentPath = parentPath ? `${parentPath}/${directory.name}` : directory.name
@@ -216,14 +231,17 @@ function scanDirectory(
  * @returns - 解析后的页面列表
  */
 function scanPages(options: ScanOptions): ParsedPage[] {
+  // 检查目录是否存在
   if (!fs.existsSync(options.page.dir)) return []
   const { extensions, namingStrategy, page } = options
   const { include, exclude, prefix, dir } = page
 
   const pages: ParsedPage[] = []
 
+  // 扫描目录并收集页面
   scanDirectory(dir, dir, '', extensions, include, exclude || [], namingStrategy, prefix, pages)
 
+  // 聚合命名视图
   return aggregateNamedViews(pages)
 }
 
@@ -237,6 +255,7 @@ export function scanMultiplePages(options: MultiScanOptions): ParsedPage[] {
   const { pages, extensions, namingStrategy = 'kebab' } = options
   const allPages: ParsedPage[] = []
 
+  // 扫描每个页面目录
   for (const dirConfig of pages) {
     const pages = scanPages({
       page: dirConfig,

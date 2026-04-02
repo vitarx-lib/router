@@ -36,6 +36,7 @@ function groupPagesByType(pages: ParsedPage[]): GroupedPages {
   const layoutFiles = new Map<string, ParsedPage>()
   const normalPages: ParsedPage[] = []
 
+  // 遍历所有页面，根据 isLayoutFile 标记进行分组
   for (const page of pages) {
     if (page.isLayoutFile) {
       layoutFiles.set(page.path, { ...page, children: [] })
@@ -60,6 +61,7 @@ function groupPagesByDirectory(
 ): PagesByDirectory {
   const pagesByDir = new Map<string, ParsedPage[]>()
 
+  // 为每个页面确定其所属的目录路径
   for (const page of normalPages) {
     const dirPath = determineDirectoryPath(page)
     if (!pagesByDir.has(dirPath)) {
@@ -68,6 +70,7 @@ function groupPagesByDirectory(
     pagesByDir.get(dirPath)!.push(page)
   }
 
+  // 确定需要创建的目录路由
   const routesToCreate = determineDirectoryRoutes(pagesByDir, layoutFiles)
 
   return { map: pagesByDir, routesToCreate }
@@ -82,18 +85,22 @@ function groupPagesByDirectory(
 function determineDirectoryPath(page: ParsedPage): string {
   const pathParts = page.path.split('/').filter(Boolean)
 
+  // 索引页面的目录路径就是其自身路径
   if (page.isIndex) {
     return page.path
   }
 
+  // 根目录下的页面，目录路径为 /
   if (page.parentPath === '' || page.parentPath === '/') {
     return '/'
   }
 
+  // 只有一级路径的页面，目录路径为 /
   if (pathParts.length <= 1) {
     return '/'
   }
 
+  // 多级路径的页面，目录路径为去掉最后一级的路径
   return '/' + pathParts.slice(0, -1).join('/')
 }
 
@@ -111,11 +118,15 @@ function determineDirectoryRoutes(
   const routesToCreate = new Set<string>()
 
   for (const [dirPath, dirPages] of pagesByDir) {
+    // 跳过根目录
     if (dirPath === '/') continue
 
+    // 目录下有多个页面，需要创建目录路由
     if (dirPages.length > 1) {
       routesToCreate.add(dirPath)
-    } else if (dirPages.length === 1 && layoutFiles.has(dirPath)) {
+    }
+    // 目录下只有一个页面但存在布局文件，也需要创建目录路由
+    else if (dirPages.length === 1 && layoutFiles.has(dirPath)) {
       routesToCreate.add(dirPath)
     }
   }
@@ -136,6 +147,7 @@ function collectAllDirectoryPaths(routesToCreate: Set<string>): Set<string> {
     allDirPaths.add(dirPath)
     const pathParts = dirPath.split('/').filter(Boolean)
 
+    // 收集所有父级目录路径
     for (let i = 1; i < pathParts.length; i++) {
       const parentPath = '/' + pathParts.slice(0, i).join('/')
       if (routesToCreate.has(parentPath)) {
@@ -166,9 +178,11 @@ function buildDirectoryRoutes(
     const pathParts = dirPath.split('/').filter(Boolean)
     const dirName = pathParts[pathParts.length - 1] || ''
 
+    // 检查是否存在对应的布局文件
     const layoutFile = layoutFiles.get(dirPath)
     const dirPages = pagesByDir.get(dirPath) || []
 
+    // 创建目录路由配置
     const dirRoute: ParsedPage = layoutFile
       ? { ...layoutFile, children: [] }
       : {
@@ -182,6 +196,7 @@ function buildDirectoryRoutes(
           parentPath: pathParts.length > 1 ? '/' + pathParts.slice(0, -1).join('/') : ''
         }
 
+    // 添加子路由
     for (const page of dirPages) {
       dirRoute.children.push(createChildRoute(page))
     }
@@ -202,12 +217,14 @@ function createChildRoute(page: ParsedPage): ParsedPage {
   const pathParts = page.path.split('/').filter(Boolean)
   const relativePath = pathParts[pathParts.length - 1] || ''
 
+  // 创建子路由配置，使用相对路径
   const childRoute: ParsedPage = {
     ...page,
     path: page.isIndex ? '' : relativePath,
     children: []
   }
 
+  // 为索引路由添加特殊的名称后缀
   if (page.isIndex && page.name) {
     childRoute.name = `${page.name}-index`
   }
@@ -232,11 +249,13 @@ function assembleRouteTree(
 ): ParsedPage[] {
   const root: ParsedPage[] = []
 
+  // 添加根目录下的页面
   const rootPages = pagesByDir.get('/') || []
   for (const page of rootPages) {
     root.push({ ...page, children: [] })
   }
 
+  // 添加不需要创建目录路由的页面
   for (const [dirPath, dirPages] of pagesByDir) {
     if (dirPath === '/') continue
     if (routesToCreate.has(dirPath)) continue
@@ -247,12 +266,15 @@ function assembleRouteTree(
     }
   }
 
+  // 组装目录路由
   for (const [dirPath, dirRoute] of dirRoutes) {
     const pathParts = dirPath.split('/').filter(Boolean)
 
+    // 一级目录路由直接添加到根
     if (pathParts.length === 1) {
       root.push(dirRoute)
     } else {
+      // 多级目录路由添加到父级路由
       const parentDirPath = '/' + pathParts.slice(0, -1).join('/')
       const parentRoute = dirRoutes.get(parentDirPath)
 
@@ -263,11 +285,13 @@ function assembleRouteTree(
           path: relativePath
         })
       } else {
+        // 如果父级路由不存在，直接添加到根
         root.push(dirRoute)
       }
     }
   }
 
+  // 添加未被处理的布局文件
   for (const layoutFile of layoutFiles.values()) {
     if (!dirRoutes.has(layoutFile.path)) {
       root.push(layoutFile)
@@ -284,6 +308,7 @@ function assembleRouteTree(
  * @returns 处理后的路由列表
  */
 function processRouteChildren(routes: ParsedPage[]): ParsedPage[] {
+  // 先排序路由，然后处理子路由
   return sortRoutes(routes).map(route => {
     const processed: ParsedPage = { ...route, children: [] }
 
@@ -293,6 +318,7 @@ function processRouteChildren(routes: ParsedPage[]): ParsedPage[] {
           ...child,
           children: []
         }
+        // 递归处理子路由
         if (child.children.length > 0) {
           newChild.children = processRouteChildren(child.children)
         }
@@ -318,16 +344,20 @@ function processRouteChildren(routes: ParsedPage[]): ParsedPage[] {
 function sortRoutes(routes: ParsedPage[]): ParsedPage[] {
   return routes
     .sort((a, b) => {
+      // 索引路由优先
       if (a.isIndex && !b.isIndex) return -1
       if (!a.isIndex && b.isIndex) return 1
 
+      // 静态路由优先于动态路由
       if (a.isDynamic && !b.isDynamic) return 1
       if (!a.isDynamic && b.isDynamic) return -1
 
+      // 按路径字母顺序排序
       return a.path.localeCompare(b.path)
     })
     .map(route => ({
       ...route,
+      // 递归排序子路由
       children: sortRoutes(route.children)
     }))
 }
@@ -346,11 +376,21 @@ function sortRoutes(routes: ParsedPage[]): ParsedPage[] {
  * @returns 路由树根节点列表
  */
 export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
+  // 1. 分组布局文件和普通页面
   const { layoutFiles, normalPages } = groupPagesByType(pages)
+  
+  // 2. 按目录分组页面并确定需要创建的目录路由
   const { map: pagesByDir, routesToCreate } = groupPagesByDirectory(normalPages, layoutFiles)
+  
+  // 3. 收集所有需要处理的目录路径
   const allDirPaths = collectAllDirectoryPaths(routesToCreate)
+  
+  // 4. 构建目录路由
   const dirRoutes = buildDirectoryRoutes(allDirPaths, pagesByDir, layoutFiles)
+  
+  // 5. 组装最终路由树
   const root = assembleRouteTree(pagesByDir, dirRoutes, routesToCreate, layoutFiles)
-
+  
+  // 6. 处理子路由并排序
   return processRouteChildren(root)
 }

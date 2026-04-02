@@ -11,6 +11,7 @@ import { generateFullDtsFile, generateRoutes } from './generator/index.js'
 import { removeDefinePage } from './macros/index.js'
 import { buildRouteTree, isPageFileInDirs, scanMultiplePages } from './scanner/index.js'
 import type { FileRouterOptions, ParsedPage } from './types.js'
+import { validateOptions } from './utils/index.js'
 
 export * from './utils/logger.js'
 export * from './types.js'
@@ -90,6 +91,7 @@ export class FileRouter {
    * @param options - 配置选项
    */
   constructor(options: FileRouterOptions = {}) {
+    validateOptions(options)
     this.config = resolveConfig(options)
   }
 

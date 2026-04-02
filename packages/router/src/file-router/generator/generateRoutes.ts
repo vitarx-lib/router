@@ -41,6 +41,7 @@ export interface GenerateRoutesOptions {
    */
   namingStrategy?: NamingStrategy
 }
+
 /**
  * 构建单个路由配置
  *
@@ -54,12 +55,15 @@ async function buildResolvedRoute(
 ): Promise<ResolvedRoute> {
   const { extendRoute } = options
 
+  // 创建基础路由配置
   const route: ResolvedRoute = {
     path: page.path
   }
 
+  // 处理组件配置
   if (page.filePath && page.filePath.trim() !== '') {
     if (page.namedViews) {
+      // 处理命名视图
       const components: Record<string, string> = {
         default: JSON.stringify(page.filePath)
       }
@@ -68,10 +72,12 @@ async function buildResolvedRoute(
       }
       route.component = components
     } else {
+      // 处理普通组件
       route.component = JSON.stringify(page.filePath)
     }
   }
 
+  // 处理其他路由配置
   if (page.meta && Object.keys(page.meta).length > 0) {
     route.meta = page.meta
   }
@@ -85,13 +91,16 @@ async function buildResolvedRoute(
     route.alias = page.alias
   }
   if (page.children.length > 0) {
+    // 递归处理子路由
     route.children = await buildResolvedRoutes(page.children, options)
   }
 
+  // 为叶子路由或重定向路由添加名称
   if (page.children.length === 0 || page.redirect !== undefined) {
     route.name = page.name
   }
 
+  // 应用路由扩展钩子
   if (extendRoute) {
     const result = await extendRoute(route)
     if (result) return result
@@ -130,8 +139,10 @@ function formatComponent(
   importMode: ImportMode
 ): string {
   if (typeof component === 'string') {
+    // 处理单个组件
     return importMode === 'file' ? component : `lazy(() => import(${component}))`
   }
+  // 处理命名视图
   const entries = Object.entries(component).map(([name, value]) => {
     const expr = importMode === 'file' ? value : `lazy(() => import(${value}))`
     return `${name}: ${expr}`
@@ -170,44 +181,55 @@ function generateRouteCode(
   const lines: string[] = []
   const comma = isLast ? '' : ','
 
+  // 开始路由对象
   lines.push(`${indent}{`)
 
+  // 添加路由名称
   if (route.name !== undefined) {
     lines.push(`${indent}  name: ${JSON.stringify(route.name)},`)
   }
+  // 添加路由路径
   lines.push(`${indent}  path: ${JSON.stringify(route.path)}`)
 
+  // 添加组件配置
   if (route.component) {
     lines[lines.length - 1] += ','
     lines.push(`${indent}  component: ${formatComponent(route.component, importMode)}`)
   }
+  // 添加 meta 配置
   if (route.meta) {
     lines[lines.length - 1] += ','
     lines.push(`${indent}  meta: ${JSON.stringify(route.meta)}`)
   }
+  // 添加 pattern 配置
   if (route.pattern && Object.keys(route.pattern).length > 0) {
     lines[lines.length - 1] += ','
     lines.push(`${indent}  pattern: ${generatePatternCode(route.pattern)}`)
   }
+  // 添加重定向配置
   if (route.redirect !== undefined) {
     lines[lines.length - 1] += ','
     lines.push(`${indent}  redirect: ${JSON.stringify(route.redirect)}`)
   }
+  // 添加别名配置
   if (route.alias !== undefined) {
     lines[lines.length - 1] += ','
     lines.push(`${indent}  alias: ${JSON.stringify(route.alias)}`)
   }
+  // 添加子路由
   if (route.children && route.children.length > 0) {
     lines[lines.length - 1] += ','
     lines.push(`${indent}  children: [`)
     for (let i = 0; i < route.children.length; i++) {
       const child = route.children[i]
+      // 递归生成子路由代码
       lines.push(
         ...generateRouteCode(child, indent + '    ', i === route.children!.length - 1, importMode)
       )
     }
     lines.push(`${indent}  ]`)
   }
+  // 结束路由对象
   lines.push(`${indent}}${comma}`)
   return lines
 }
@@ -229,20 +251,24 @@ function generateRoutesCode(
 ): string {
   const lines: string[] = []
 
+  // 添加 lazy 导入（如果需要）
   if (importMode === 'lazy') {
     lines.push(`import { lazy } from 'vitarx'`)
   }
 
+  // 添加自定义导入语句
   if (customImports && customImports.length > 0) {
     for (const imp of customImports) {
       lines.push(imp)
     }
   }
 
+  // 添加空行
   if (importMode === 'lazy' || (customImports && customImports.length > 0)) {
     lines.push('')
   }
 
+  // 生成路由数组
   lines.push('export default [')
   for (let i = 0; i < routes.length; i++) {
     const route = routes[i]
@@ -265,6 +291,8 @@ export async function generateRoutes(
   pages: ParsedPage[],
   options: GenerateRoutesOptions = {}
 ): Promise<string> {
+  // 构建解析后的路由配置
   const routes = await buildResolvedRoutes(pages, options)
+  // 生成最终的路由代码
   return generateRoutesCode(routes, options.importMode, options.imports)
 }
