@@ -53,8 +53,9 @@
     "check:circular": "madge --extensions js --circular dist --warning --exclude '.*\\.d\\.ts$'",
     "test": "vitest run",
     "test:core": "vitest run --project browser",
-    "test:vite": "vitest run --project vite",
-    "test:watch": "vitest watch"
+    "test:plugin-vite": "vitest run --project plugin-vite",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage"
   },
   "peerDependencies": {
     "vitarx": "^4.0.0-0",
