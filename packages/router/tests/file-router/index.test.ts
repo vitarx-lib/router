@@ -30,7 +30,7 @@ describe('file-router/index (FileRouter)', () => {
     it('应该使用默认配置创建 FileRouter', () => {
       const router = new FileRouter()
       expect(router.config).toBeDefined()
-      expect(router.config.extensions).toEqual(['.tsx', '.ts', '.jsx', '.js'])
+      expect(router.config.extensions).toEqual(['.tsx', '.jsx'])
       expect(router.config.importMode).toBe('lazy')
       expect(router.config.namingStrategy).toBe('kebab')
     })
