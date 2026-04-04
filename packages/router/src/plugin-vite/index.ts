@@ -104,7 +104,6 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
 
       const handlePageFileChange = (file: string, server: ViteDevServer): void => {
         if (router.isPageFile(file)) {
-          router.invalidate()
           router.scan()
           if (dts) {
             router.writeDts(dts)
