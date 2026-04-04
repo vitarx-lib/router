@@ -5,7 +5,7 @@
  */
 
 /** 支持的页面文件扩展名列表 */
-export const DEFAULT_EXTENSIONS: string[] = ['.tsx', '.ts', '.jsx', '.js']
+export const DEFAULT_EXTENSIONS: string[] = ['.tsx', '.jsx']
 
 /** 默认的页面目录路径 */
 export const DEFAULT_PAGES_DIR = 'src/pages'

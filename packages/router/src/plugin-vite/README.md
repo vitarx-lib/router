@@ -56,17 +56,17 @@ interface RouterPluginOptions extends FileRouterOptions {
 }
 ```
 
-| 选项               | 类型                                                 | 默认值                              | 说明           |
-|------------------|----------------------------------------------------|----------------------------------|--------------|
-| `pages`          | `string \| PageConfig \| (PageConfig \| string)[]` | `'src/pages'`                    | 页面目录配置       |
-| `extensions`     | `string[]`                                         | `['.tsx', '.ts', '.jsx', '.js']` | 支持的文件扩展名     |
-| `include`        | `string[]`                                         | `[]`                             | 要包含的 glob 模式 |
-| `exclude`        | `string[]`                                         | `[]`                             | 要排除的 glob 模式 |
-| `dts`            | `string \| false`                                  | `'typed-router.d.ts'`            | 类型声明文件路径     |
-| `importMode`     | `'lazy' \| 'file'`                                 | `'lazy'`                         | 组件导入模式       |
-| `extendRoute`    | `ExtendRouteHook`                                  | -                                | 路由扩展钩子       |
-| `injectImports`  | `string[]`                                         | -                                | 自定义导入语句      |
-| `namingStrategy` | `'kebab' \| 'lowercase' \| 'none'`                 | `'kebab'`                        | 路由命名策略       |
+| 选项               | 类型                                                 | 默认值                   | 说明           |
+|------------------|----------------------------------------------------|-----------------------|--------------|
+| `pages`          | `string \| PageConfig \| (PageConfig \| string)[]` | `'src/pages'`         | 页面目录配置       |
+| `extensions`     | `string[]`                                         | `['.tsx', '.jsx']`    | 支持的文件扩展名     |
+| `include`        | `string[]`                                         | `[]`                  | 要包含的 glob 模式 |
+| `exclude`        | `string[]`                                         | `[]`                  | 要排除的 glob 模式 |
+| `dts`            | `string \| false`                                  | `'typed-router.d.ts'` | 类型声明文件路径     |
+| `importMode`     | `'lazy' \| 'file'`                                 | `'lazy'`              | 组件导入模式       |
+| `extendRoute`    | `ExtendRouteHook`                                  | -                     | 路由扩展钩子       |
+| `injectImports`  | `string[]`                                         | -                     | 自定义导入语句      |
+| `namingStrategy` | `'kebab' \| 'lowercase' \| 'none'`                 | `'kebab'`             | 路由命名策略       |
 
 ### pages 配置
 

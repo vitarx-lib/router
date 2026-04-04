@@ -319,7 +319,7 @@ export interface FileRouterOptions {
    * 路由前缀
    */
   prefix?: string
-  /** 支持的文件扩展名，默认为 ['.tsx', '.ts', '.jsx', '.js'] */
+  /** 支持的文件扩展名，默认为 ['.tsx', '.jsx'] */
   extensions?: string[]
   /**
    * 要包含的文件/目录 glob 模式列表，默认匹配所有文件
