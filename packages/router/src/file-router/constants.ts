@@ -12,3 +12,8 @@ export const DEFAULT_PAGES_DIR = 'src/pages'
 
 /** 默认的包含模式 */
 export const DEFAULT_INCLUDE = ['**/*']
+
+/**
+ * 布局文件名前缀
+ */
+export const LAYOUT_FILE_PREFIX = '_layout'

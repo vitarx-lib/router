@@ -57,8 +57,10 @@ export default function AdminLayout(): View {
                   padding: '12px 20px',
                   color: route.path === item.path ? '#fff' : 'rgba(255,255,255,0.7)',
                   textDecoration: 'none',
-                  backgroundColor: route.path === item.path ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  borderLeft: route.path === item.path ? '3px solid #667eea' : '3px solid transparent',
+                  backgroundColor:
+                    route.path === item.path ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  borderLeft:
+                    route.path === item.path ? '3px solid #667eea' : '3px solid transparent',
                   transition: 'all 0.2s'
                 }}
               >
@@ -116,8 +118,8 @@ export default function AdminLayout(): View {
             <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
               <code style={{ backgroundColor: '#f0f0f5', padding: '2px 6px', borderRadius: '4px' }}>
                 admin.tsx + admin/ 目录
-              </code>
-              {' '}→ admin.tsx 作为布局组件，admin/ 目录内的文件作为子路由
+              </code>{' '}
+              → admin.tsx 作为布局组件，admin/ 目录内的文件作为子路由
             </div>
           </div>
 

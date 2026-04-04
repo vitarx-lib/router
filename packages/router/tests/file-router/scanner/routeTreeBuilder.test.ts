@@ -47,7 +47,10 @@ describe('scanner/routeTreeBuilder', () => {
     })
 
     it('应该正确处理布局路由', () => {
-      createFile('src/pages/users.tsx', 'export default function UsersLayout() { return null }')
+      createFile(
+        'src/pages/users/_layout.tsx',
+        'export default function UsersLayout() { return null }'
+      )
       createFile('src/pages/users/index.tsx', 'export default function Users() { return null }')
       createFile('src/pages/users/profile.tsx', 'export default function Profile() { return null }')
 
@@ -72,9 +75,18 @@ describe('scanner/routeTreeBuilder', () => {
     })
 
     it('应该正确处理嵌套路由', () => {
-      createFile('src/pages/settings/index.tsx', 'export default function Settings() { return null }')
-      createFile('src/pages/settings/profile.tsx', 'export default function Profile() { return null }')
-      createFile('src/pages/settings/account.tsx', 'export default function Account() { return null }')
+      createFile(
+        'src/pages/settings/index.tsx',
+        'export default function Settings() { return null }'
+      )
+      createFile(
+        'src/pages/settings/profile.tsx',
+        'export default function Profile() { return null }'
+      )
+      createFile(
+        'src/pages/settings/account.tsx',
+        'export default function Account() { return null }'
+      )
 
       const pageConfig: ResolvedPageConfig = {
         dir: resolvePath('src/pages'),

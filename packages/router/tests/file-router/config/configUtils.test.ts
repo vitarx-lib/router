@@ -16,7 +16,7 @@ describe('config/configUtils', () => {
       const config = resolveConfig({})
 
       expect(config.root).toBe(process.cwd())
-      expect(config.extensions).toEqual(['.tsx', '.ts', '.jsx', '.js'])
+      expect(config.extensions).toEqual(['.tsx', '.jsx'])
       expect(config.importMode).toBe('lazy')
       expect(config.namingStrategy).toBe('kebab')
       expect(config.injectImports).toEqual([])

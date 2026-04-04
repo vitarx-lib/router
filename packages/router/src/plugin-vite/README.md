@@ -270,21 +270,25 @@ definePage({ alias: ['/member/{id}', '/profile/{id}'] })
 
 ### 基本规则
 
-1. **同名文件+目录组合（布局路由）**
-   - 当 `xxx.jsx` 和 `xxx/` 目录同时存在时
-   - `xxx.jsx` 作为布局组件（父路由的 component）
-   - `xxx/` 目录内的页面文件作为子路由
+1. **同名文件+目录冲突**
+   - 当 `xxx.jsx` 和 `xxx/` 目录同时存在时，抛出异常
+   - 如需定义布局路由，请在目录下创建 `_layout.jsx` 文件
 
-2. **纯目录**
+2. **布局路由**
+   - 在目录下创建 `_layout.jsx` 文件作为布局组件
+   - 支持 `_layout.jsx`（默认布局）和 `_layout.name.jsx`（命名布局）
+   - 目录内的其他页面文件作为子路由
+
+3. **纯目录**
    - 当只有 `xxx/` 目录存在时
    - 目录内有多个文件时，创建目录路由
    - 目录内只有 `index.jsx` 时，直接作为独立路由
 
-3. **纯文件**
+4. **纯文件**
    - 当只有 `xxx.jsx` 文件存在时
    - 直接作为一个 Route
 
-4. **同级文件名冲突**
+5. **同级文件名冲突**
    - 当 `users.jsx` 和 `users.tsx` 同时存在时，抛出警告日志，忽略后者
 
 ### 动态路由
@@ -344,14 +348,14 @@ src/pages/
 }]
 ```
 
-### 示例2：同名文件 + 目录（布局路由）
+### 示例2：布局路由（_layout.jsx）
 
 ```
 src/pages/
-├── users.jsx        ← 布局组件
 └── users/
-    ├── index.jsx    ← 默认子路由
-    └── profile.jsx  ← 其他子路由
+    ├── _layout.jsx    ← 布局组件
+    ├── index.jsx      ← 默认子路由
+    └── profile.jsx    ← 其他子路由
 ```
 
 生成：
@@ -359,7 +363,7 @@ src/pages/
 ```typescript
 [{
   path: '/users',
-  component: lazy(() => import('src/pages/users.jsx')),
+  component: lazy(() => import('src/pages/users/_layout.jsx')),
   children: [
     { path: '', component: lazy(() => import('src/pages/users/index.jsx')) },
     { path: 'profile', component: lazy(() => import('src/pages/users/profile.jsx')) }

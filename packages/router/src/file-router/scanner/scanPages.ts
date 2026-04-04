@@ -2,12 +2,13 @@
  * @fileoverview 页面扫描模块
  *
  * 负责扫描指定目录下的页面文件，并构建路由树结构。
- * 支持同名文件+目录组合（布局路由）、嵌套路由、glob 包含/排除规则。
+ * 支持 _layout.jsx 布局文件、嵌套路由、glob 包含/排除规则。
  * 与构建工具无关，可在任何 Node.js 环境中使用。
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import type { ResolvedPageConfig } from '../config/index.js'
+import { LAYOUT_FILE_PREFIX } from '../constants.js'
 import { parsePageFile } from '../parser/index.js'
 import type { NamingStrategy, ParsedPage } from '../types.js'
 import { warn } from '../utils/logger.js'
@@ -84,7 +85,8 @@ function aggregateNamedViews(pages: ParsedPage[]): ParsedPage[] {
     if (defaultPages.length === 0 && namedViews.length > 0) {
       const namedViewFiles = namedViews.map(p => p.filePath).join(', ')
       const firstNamedView = namedViews[0]
-      const baseName = firstNamedView.filePath.split('/').pop()?.split('@')[0].split('.')[0] || 'index'
+      const baseName =
+        firstNamedView.filePath.split('/').pop()?.split('@')[0].split('.')[0] || 'index'
       throw new Error(
         `[file-router] 命名视图错误: 路径 "${path}" 只有命名视图文件 (${namedViewFiles})，` +
           `缺少默认视图文件 (${baseName}.tsx 或 ${baseName}@default.tsx)。\n` +
@@ -110,6 +112,21 @@ function aggregateNamedViews(pages: ParsedPage[]): ParsedPage[] {
   }
 
   return aggregatedPages
+}
+
+/**
+ * 解析布局文件名
+ *
+ * 支持两种格式：
+ * - `_layout.jsx` - 默认布局
+ * - `_layout.name.jsx` - 命名布局
+ *
+ * @param baseName - 文件名
+ * @returns 布局名称，null 表示不是布局文件
+ */
+function isLayoutFile(baseName: string): boolean {
+  if (baseName === LAYOUT_FILE_PREFIX) return true
+  return baseName.startsWith(LAYOUT_FILE_PREFIX + '.')
 }
 
 /**
@@ -159,7 +176,7 @@ function scanDirectory(
     }
   }
 
-  // 收集目录名和文件名（用于检测布局路由）
+  // 收集目录名和文件名（用于检测同名冲突）
   const dirNames = new Set(directories.map(d => d.name))
   const fileBaseNames = new Map<string, { entry: fs.Dirent; ext: string }>()
 
@@ -183,19 +200,39 @@ function scanDirectory(
     fileBaseNames.set(baseName, { entry: file, ext })
   }
 
-  // 解析文件并检查布局路由
+  // 检查同名文件+目录冲突
+  for (const [baseName] of fileBaseNames) {
+    // 跳过布局文件
+    if (baseName.startsWith(LAYOUT_FILE_PREFIX)) continue
+
+    if (dirNames.has(baseName)) {
+      const filePath = path.join(dir, baseName)
+      throw new Error(
+        `[file-router] 不允许同名文件和目录同时存在: "${filePath}" 和 "${filePath}/" 目录。\n` +
+          `如需定义布局路由，请在 "${filePath}/" 目录下创建 "_layout.jsx" 文件。`
+      )
+    }
+  }
+
+  // 解析文件并处理布局文件
   for (const [baseName, { entry }] of fileBaseNames) {
     const filePath = path.join(dir, entry.name)
-    // 检查是否存在同名目录（布局路由）
-    const hasSameNameDir = dirNames.has(baseName)
 
-    // 解析页面文件
+    // 检查是否为布局文件
+    if (isLayoutFile(baseName)) {
+      // 布局文件：路径为当前目录路径
+      const parsed = parsePageFile(filePath, pageDir, parentPath, namingStrategy, pathPrefix, true)
+      if (parsed) {
+        parsed.isLayoutFile = true
+        parsed.path = parentPath ? `/${parentPath}` : '/'
+        pages.push(parsed)
+      }
+      continue
+    }
+
+    // 解析普通页面文件
     const parsed = parsePageFile(filePath, pageDir, parentPath, namingStrategy, pathPrefix)
     if (parsed) {
-      // 如果存在同名目录，标记为布局文件
-      if (hasSameNameDir) {
-        parsed.isLayoutFile = true
-      }
       pages.push(parsed)
     }
   }

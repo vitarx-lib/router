@@ -176,6 +176,7 @@ function parseViewName(baseName: string): { viewName: string | null; baseWithout
  * @param parentPath - 父级路径（用于嵌套路由）
  * @param namingStrategy - 命名策略，默认为 'kebab'
  * @param pathPrefix - 路由路径前缀，默认为 ''
+ * @param isLayout - 是否为布局文件，默认为 false
  * @returns 解析后的页面信息，解析失败或无有效导出返回 null
  */
 export function parsePageFile(
@@ -183,7 +184,8 @@ export function parsePageFile(
   pagesDir: string,
   parentPath: string,
   namingStrategy: NamingStrategy = 'kebab',
-  pathPrefix: string = ''
+  pathPrefix: string = '',
+  isLayout: boolean = false
 ): ParsedPage | null {
   // 提取文件名和扩展名
   const fileName = path.basename(filePath)
@@ -214,7 +216,7 @@ export function parsePageFile(
   const dirPath = path.dirname(relativePath)
 
   // 检查是否为索引页面
-  const isIndex = baseWithoutView === 'index'
+  const isIndex = isLayout ? false : baseWithoutView === 'index'
 
   // 解析文件名，提取动态参数
   const { name: routeName, params, isDynamic } = parseFileName(baseWithoutView)
@@ -231,7 +233,7 @@ export function parsePageFile(
   const finalName =
     pageOptions?.name ||
     applyNamingStrategyToName(
-      generateRouteName(relativePath, baseWithoutView, pathPrefix),
+      generateRouteName(relativePath, isLayout ? 'layout' : baseWithoutView, pathPrefix),
       namingStrategy
     )
 

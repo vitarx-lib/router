@@ -366,7 +366,7 @@ function sortRoutes(routes: ParsedPage[]): ParsedPage[] {
  * 构建路由树
  *
  * 核心规则：
- * 1. 同名文件+目录组合：文件作为布局组件，目录内文件作为子路由
+ * 1. 布局文件：目录下的 _layout.jsx 文件作为布局组件
  * 2. 目录下的所有文件（包括 index）都作为子路由
  * 3. 子路由使用相对路径
  * 4. 有 index 子路由时自动添加 redirect
@@ -378,19 +378,19 @@ function sortRoutes(routes: ParsedPage[]): ParsedPage[] {
 export function buildRouteTree(pages: ParsedPage[]): ParsedPage[] {
   // 1. 分组布局文件和普通页面
   const { layoutFiles, normalPages } = groupPagesByType(pages)
-  
+
   // 2. 按目录分组页面并确定需要创建的目录路由
   const { map: pagesByDir, routesToCreate } = groupPagesByDirectory(normalPages, layoutFiles)
-  
+
   // 3. 收集所有需要处理的目录路径
   const allDirPaths = collectAllDirectoryPaths(routesToCreate)
-  
+
   // 4. 构建目录路由
   const dirRoutes = buildDirectoryRoutes(allDirPaths, pagesByDir, layoutFiles)
-  
+
   // 5. 组装最终路由树
   const root = assembleRouteTree(pagesByDir, dirRoutes, routesToCreate, layoutFiles)
-  
+
   // 6. 处理子路由并排序
   return processRouteChildren(root)
 }

@@ -136,7 +136,10 @@ describe('scanner/scanPages', () => {
     })
 
     it('应该正确处理布局文件', () => {
-      createFile('src/pages/users.tsx', 'export default function UsersLayout() { return null }')
+      createFile(
+        'src/pages/users/_layout.tsx',
+        'export default function UsersLayout() { return null }'
+      )
       createFile('src/pages/users/index.tsx', 'export default function Users() { return null }')
 
       const pageConfig: ResolvedPageConfig = {
@@ -156,6 +159,56 @@ describe('scanner/scanPages', () => {
 
       const layoutPage = pages.find(p => p.path === '/users')
       expect(layoutPage?.isLayoutFile).toBe(true)
+    })
+
+    it('应该正确处理命名布局文件', () => {
+      createFile(
+        'src/pages/users/_layout.admin.tsx',
+        'export default function AdminLayout() { return null }'
+      )
+      createFile('src/pages/users/index.tsx', 'export default function Users() { return null }')
+
+      const pageConfig: ResolvedPageConfig = {
+        dir: resolvePath('src/pages'),
+        include: [],
+        exclude: [],
+        prefix: ''
+      }
+
+      const options: MultiScanOptions = {
+        pages: [pageConfig],
+        extensions: ['.tsx', '.ts'],
+        namingStrategy: 'kebab'
+      }
+
+      const pages = scanMultiplePages(options)
+
+      const layoutPage = pages.find(p => p.path === '/users' && p.isLayoutFile)
+      expect(layoutPage).toBeDefined()
+      expect(layoutPage?.filePath).toContain('_layout.admin.tsx')
+    })
+
+    it('应该在同名文件和目录同时存在时抛出异常', () => {
+      createFile('src/pages/users.tsx', 'export default function Users() { return null }')
+      createFile(
+        'src/pages/users/index.tsx',
+        'export default function UsersIndex() { return null }'
+      )
+
+      const pageConfig: ResolvedPageConfig = {
+        dir: resolvePath('src/pages'),
+        include: [],
+        exclude: [],
+        prefix: ''
+      }
+
+      const options: MultiScanOptions = {
+        pages: [pageConfig],
+        extensions: ['.tsx', '.ts'],
+        namingStrategy: 'kebab'
+      }
+
+      expect(() => scanMultiplePages(options)).toThrow(/不允许同名文件和目录同时存在/)
     })
 
     it('应该正确处理不存在的目录', () => {
