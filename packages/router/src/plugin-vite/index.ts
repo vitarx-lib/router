@@ -62,14 +62,17 @@ export interface RouterPluginOptions extends FileRouterOptions {
  */
 export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin {
   const dts = options.dts ?? DEFAULT_DTS_FILE
-
   const router = new FileRouter(options)
-
+  let isPreview: boolean = false
   return {
     name: 'vite-plugin-vitarx-router',
     enforce: 'pre',
 
+    config(_, env) {
+      isPreview = !!env.isPreview
+    },
     configResolved() {
+      if (isPreview) return
       router.scan()
       if (dts) {
         const result = router.writeDts(dts)
@@ -78,6 +81,7 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
     },
 
     resolveId(id) {
+      if (isPreview) return null
       if (id === VIRTUAL_ROUTES_ID) {
         return RESOLVED_ROUTES_ID
       }
@@ -85,6 +89,7 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
     },
 
     async load(id) {
+      if (isPreview) return null
       if (id === RESOLVED_ROUTES_ID) {
         const { code } = await router.generateRoutes()
         return code
@@ -93,10 +98,12 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
     },
 
     transform(code, id) {
+      if (isPreview) return null
       return router.removeDefinePage(code, id)
     },
 
     configureServer(server) {
+      if (isPreview) return
       const absolutePagesDirs = router.config.pages
       for (const dirConfig of absolutePagesDirs) {
         server.watcher.add(dirConfig.dir)
