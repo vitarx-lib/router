@@ -105,10 +105,12 @@ export class FileRouter {
   /**
    * 扫描页面目录
    *
+   * 扫描前会清除缓存，确保每次扫描后调用 `generateRoutes()` 会重新生成路由代码。
    * 扫描所有配置的页面目录，解析页面文件并构建路由树。
    * 扫描后会清除路由代码缓存。
    */
   scan(): void {
+    this._cachedRoutesPromise = null
     this._pages = scanMultiplePages({
       pages: this.config.pages,
       extensions: this.config.extensions,
@@ -116,13 +118,12 @@ export class FileRouter {
     })
 
     this._routeTree = buildRouteTree(this._pages)
-    this._cachedRoutesPromise = null
   }
 
   /**
    * 清除缓存
    *
-   * 清除路由代码缓存，下次调用 generateRoutes() 会重新生成。
+   * 清除路由代码缓存，下次调用 `generateRoutes()` 会重新生成。
    */
   invalidate(): void {
     this._cachedRoutesPromise = null
