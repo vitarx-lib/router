@@ -25,10 +25,10 @@ let debugEnabled: boolean = false
 /**
  * 设置日志上下文
  *
- * @param context - 上下文名称
+ * @param prefix - 前缀字符串
  */
-export function setLogPrefix(context: string): void {
-  globalLogPrefix = context
+export function setLogPrefix(prefix: string): void {
+  globalLogPrefix = prefix
 }
 
 /**
