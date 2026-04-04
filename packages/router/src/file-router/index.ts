@@ -13,8 +13,8 @@ import { buildRouteTree, isPageFileInDirs, scanMultiplePages } from './scanner/i
 import type { FileRouterOptions, ParsedPage } from './types.js'
 import { validateOptions } from './utils/index.js'
 
-export * from './utils/logger.js'
 export * from './types.js'
+export * from './utils/logger.js'
 
 /**
  * 路由生成结果
@@ -142,7 +142,12 @@ export class FileRouter {
   /**
    * 获取页面列表
    *
-   * @returns - 解析后的页面列表
+   * 返回扫描后的扁平页面列表，包含所有页面文件的原始信息。
+   * 与 getRouteTree() 的区别：
+   * - 本方法返回扁平数组，每个页面独立存在，无父子关系
+   * - getRouteTree() 返回层级树结构，具有嵌套的父子关系
+   *
+   * @returns - 解析后的扁平页面列表
    */
   getPages(): ParsedPage[] {
     return this._pages
@@ -151,7 +156,12 @@ export class FileRouter {
   /**
    * 获取路由树
    *
-   * @returns - 路由树结构
+   * 返回构建后的层级路由树结构，支持布局路由和嵌套路由。
+   * 与 getPages() 的区别：
+   * - 本方法返回层级树结构，子路由使用相对路径
+   * - getPages() 返回扁平数组，每个页面使用完整路径
+   *
+   * @returns - 层级路由树结构
    */
   getRouteTree(): ParsedPage[] {
     return this._routeTree
