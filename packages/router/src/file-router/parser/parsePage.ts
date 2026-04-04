@@ -225,12 +225,15 @@ export function parsePageFile(
   // 解析 definePage 配置
   const pageOptions = parseDefinePage(filePath)
 
-  // 生成路由名称
-  const name = pageOptions?.name || generateRouteName(relativePath, baseWithoutView, pathPrefix)
-
   // 应用命名策略
   const finalPath = applyNamingStrategyToPath(routePath, namingStrategy)
-  const finalName = applyNamingStrategyToName(name, namingStrategy)
+  // 应用路由名称
+  const finalName =
+    pageOptions?.name ||
+    applyNamingStrategyToName(
+      generateRouteName(relativePath, baseWithoutView, pathPrefix),
+      namingStrategy
+    )
 
   // 返回解析结果
   return {
