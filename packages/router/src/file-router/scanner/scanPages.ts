@@ -203,7 +203,7 @@ function scanDirectory(
   // 检查同名文件+目录冲突
   for (const [baseName] of fileBaseNames) {
     // 跳过布局文件
-    if (baseName.startsWith(LAYOUT_FILE_PREFIX)) continue
+    if (isLayoutFile(baseName)) continue
 
     if (dirNames.has(baseName)) {
       const filePath = path.join(dir, baseName)
