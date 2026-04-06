@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { parseDefinePage, removeDefinePage } from '../../../src/file-router/macros/definePage.js'
 import { createTestHelpers } from '../testUtils.js'
 
-const { createTestDir, cleanupTestDir, createFile } = createTestHelpers('define-page')
+const { createTestDir, cleanupTestDir, createFile, resolvePath } = createTestHelpers('define-page')
 
 describe('macros/definePage', () => {
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('macros/definePage', () => {
   })
 
   describe('parseDefinePage', () => {
-    it('应该解析 definePage 配置', () => {
+    it('应该解析 definePage 配置', async () => {
       const filePath = createFile(
         'page.tsx',
         `
@@ -33,14 +33,14 @@ describe('macros/definePage', () => {
       `
       )
 
-      const options = parseDefinePage(filePath)
+      const options = await parseDefinePage(filePath, resolvePath(''))
 
       expect(options).toBeDefined()
       expect(options?.name).toBe('home')
       expect(options?.meta).toEqual({ title: 'Home' })
     })
 
-    it('应该解析 redirect 配置', () => {
+    it('应该解析 redirect 配置', async () => {
       const filePath = createFile(
         'page.tsx',
         `
@@ -51,13 +51,13 @@ describe('macros/definePage', () => {
       `
       )
 
-      const options = parseDefinePage(filePath)
+      const options = await parseDefinePage(filePath, resolvePath(''))
 
       expect(options).toBeDefined()
       expect(options?.redirect).toBe('/dashboard')
     })
 
-    it('应该解析 pattern 配置', () => {
+    it('应该解析 pattern 配置', async () => {
       const filePath = createFile(
         'page.tsx',
         `
@@ -68,22 +68,22 @@ describe('macros/definePage', () => {
       `
       )
 
-      const options = parseDefinePage(filePath)
+      const options = await parseDefinePage(filePath, resolvePath(''))
 
       expect(options).toBeDefined()
       expect(options?.pattern).toBeDefined()
     })
 
-    it('没有 definePage 时应该返回 null', () => {
+    it('没有 definePage 时应该返回 null', async () => {
       const filePath = createFile('page.tsx', 'export default function Home() { return null }')
 
-      const options = parseDefinePage(filePath)
+      const options = await parseDefinePage(filePath, resolvePath(''))
 
       expect(options).toBeNull()
     })
 
-    it('文件不存在时应该返回 null', () => {
-      const options = parseDefinePage('/non/existent/file.tsx')
+    it('文件不存在时应该返回 null', async () => {
+      const options = await parseDefinePage('/non/existent/file.tsx', '/non/existent')
       expect(options).toBeNull()
     })
   })

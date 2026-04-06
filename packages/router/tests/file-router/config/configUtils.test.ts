@@ -16,7 +16,7 @@ describe('config/configUtils', () => {
       const config = resolveConfig({})
 
       expect(config.root).toBe(process.cwd())
-      expect(config.extensions).toEqual(['.tsx', '.jsx'])
+      expect(config.pages[0].extensions).toEqual(['.tsx', '.jsx'])
       expect(config.importMode).toBe('lazy')
       expect(config.namingStrategy).toBe('kebab')
       expect(config.injectImports).toEqual([])
@@ -34,7 +34,7 @@ describe('config/configUtils', () => {
       })
 
       expect(config.root).toBe(customRoot)
-      expect(config.extensions).toEqual(['.tsx'])
+      expect(config.pages[0].extensions).toEqual(['.tsx'])
       expect(config.importMode).toBe('file')
       expect(config.namingStrategy).toBe('lowercase')
       expect(config.injectImports).toEqual(["import { helper } from './helper'"])
@@ -48,7 +48,7 @@ describe('config/configUtils', () => {
 
       expect(config.pages).toHaveLength(1)
       expect(config.pages[0].dir).toBe(path.resolve('/project', 'src/pages'))
-      expect(config.pages[0].prefix).toBe('')
+      expect(config.pages[0].prefix).toBe('/')
     })
 
     it('应该正确解析对象形式的页面目录', () => {
@@ -63,7 +63,7 @@ describe('config/configUtils', () => {
       })
 
       expect(config.pages).toHaveLength(1)
-      expect(config.pages[0].prefix).toBe('/app/')
+      expect(config.pages[0].prefix).toBe('/app')
       expect(config.pages[0].include).toEqual(['**/*.tsx'])
       expect(config.pages[0].exclude).toEqual(['**/components/**'])
     })
@@ -79,7 +79,7 @@ describe('config/configUtils', () => {
 
       expect(config.pages).toHaveLength(2)
       expect(config.pages[0].prefix).toBe('/')
-      expect(config.pages[1].prefix).toBe('/admin/')
+      expect(config.pages[1].prefix).toBe('/admin')
     })
 
     it('应该正确解析字符串数组的页面目录', () => {

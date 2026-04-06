@@ -14,6 +14,18 @@ import { createTestHelpers } from '../testUtils.js'
 
 const { createTestDir, cleanupTestDir, createFile, resolvePath } = createTestHelpers('route-tree')
 
+const DEFAULT_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js']
+
+function createPageConfig(dir: string, prefix: string = ''): ResolvedPageConfig {
+  return {
+    dir: resolvePath(dir),
+    include: [],
+    exclude: [],
+    prefix,
+    extensions: DEFAULT_EXTENSIONS
+  }
+}
+
 describe('scanner/routeTreeBuilder', () => {
   beforeEach(() => {
     createTestDir()
@@ -24,20 +36,12 @@ describe('scanner/routeTreeBuilder', () => {
   })
 
   describe('buildRouteTree', () => {
-    it('应该构建正确的路由树结构', () => {
+    it('应该构建正确的路由树结构', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
       createFile('src/pages/about.tsx', 'export default function About() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 
@@ -46,7 +50,7 @@ describe('scanner/routeTreeBuilder', () => {
       expect(routeTree.length).toBeGreaterThan(0)
     })
 
-    it('应该正确处理布局路由', () => {
+    it('应该正确处理布局路由', async () => {
       createFile(
         'src/pages/users/_layout.tsx',
         'export default function UsersLayout() { return null }'
@@ -54,16 +58,8 @@ describe('scanner/routeTreeBuilder', () => {
       createFile('src/pages/users/index.tsx', 'export default function Users() { return null }')
       createFile('src/pages/users/profile.tsx', 'export default function Profile() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 
@@ -74,7 +70,7 @@ describe('scanner/routeTreeBuilder', () => {
       expect(usersRoute?.children?.length).toBe(2)
     })
 
-    it('应该正确处理嵌套路由', () => {
+    it('应该正确处理嵌套路由', async () => {
       createFile(
         'src/pages/settings/index.tsx',
         'export default function Settings() { return null }'
@@ -88,16 +84,8 @@ describe('scanner/routeTreeBuilder', () => {
         'export default function Account() { return null }'
       )
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 
@@ -106,21 +94,13 @@ describe('scanner/routeTreeBuilder', () => {
       expect(routeTree.length).toBeGreaterThan(0)
     })
 
-    it('应该正确排序路由', () => {
+    it('应该正确排序路由', async () => {
       createFile('src/pages/users.tsx', 'export default function UsersLayout() { return null }')
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
       createFile('src/pages/about.tsx', 'export default function About() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 

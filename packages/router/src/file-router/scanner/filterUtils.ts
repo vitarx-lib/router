@@ -225,15 +225,11 @@ export function isPageFile(
  *
  * @param file - 文件路径
  * @param pagesDirs - 页面目录配置列表
- * @param extensions - 支持的文件扩展名列表
  * @returns 如果是有效的页面文件返回 true
  */
-export function isPageFileInDirs(
-  file: string,
-  pagesDirs: ResolvedPageConfig[],
-  extensions: string[]
-): boolean {
+export function isPageFileInDirs(file: string, pagesDirs: ResolvedPageConfig[]): boolean {
   for (const dirConfig of pagesDirs) {
+    const extensions = dirConfig.extensions
     if (isPageFile(file, dirConfig.dir, dirConfig.include, dirConfig.exclude, extensions))
       return true
   }

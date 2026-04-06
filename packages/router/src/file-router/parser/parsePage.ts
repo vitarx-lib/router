@@ -9,8 +9,8 @@
  * 与构建工具无关，可在任何 Node.js 环境中使用。
  */
 import path from 'node:path'
+import type { FileReader, NamingStrategy, ParsedPage } from '../types.js'
 import { parseDefinePage } from '../macros/index.js'
-import type { NamingStrategy, ParsedPage } from '../types.js'
 import { warn } from '../utils/logger.js'
 import { applyNamingStrategyToName, applyNamingStrategyToPath } from '../utils/namingStrategy.js'
 import { normalizePathSeparator } from '../utils/pathUtils.js'
@@ -35,16 +35,13 @@ function parseFileName(fileName: string): {
   const params: string[] = []
   let isDynamic = false
 
-  // 匹配动态参数模式
   const dynamicMatch = fileName.match(DYNAMIC_PARAM_REGEX)
 
   if (dynamicMatch) {
     isDynamic = true
     const paramName = dynamicMatch[1]
-    // 检查是否为可选参数（以 ? 结尾）
     const isOptional = !!dynamicMatch[2]
     params.push(paramName)
-    // 生成路由参数格式：{param} 或 {param?}
     return { name: `{${paramName}${isOptional ? '?' : ''}}`, params, isDynamic }
   }
 
@@ -67,7 +64,6 @@ function generateRouteName(
   const dirPath = path.dirname(relativePath)
   const segments: string[] = []
 
-  // 处理路径前缀
   if (pathPrefix) {
     const prefixName = pathPrefix
       .trim()
@@ -79,17 +75,14 @@ function generateRouteName(
     }
   }
 
-  // 处理目录路径
   if (dirPath !== '.') {
     segments.push(...normalizePathSeparator(dirPath).split('/'))
   }
 
-  // 处理文件名
   if (baseName !== 'index' || dirPath === '.') {
     if (baseName === 'index' && dirPath === '.' && !pathPrefix) {
       segments.push('index')
     } else if (baseName !== 'index') {
-      // 处理动态参数
       const dynamicMatch = baseName.match(DYNAMIC_PARAM_REGEX)
       if (dynamicMatch) {
         segments.push(dynamicMatch[1])
@@ -119,7 +112,6 @@ function buildRoutePath(
 ): string {
   let routePath: string
 
-  // 构建基础路由路径
   if (isIndex) {
     if (dirPath === '.') {
       routePath = '/'
@@ -134,7 +126,6 @@ function buildRoutePath(
     }
   }
 
-  // 处理路径前缀
   pathPrefix = pathPrefix.trim() === '/' ? '' : pathPrefix.trim()
   if (pathPrefix) {
     const normalizedPrefix = pathPrefix.startsWith('/') ? pathPrefix : `/${pathPrefix}`
@@ -157,7 +148,6 @@ function buildRoutePath(
  * @returns 视图名称和去除视图名的基础名
  */
 function parseViewName(baseName: string): { viewName: string | null; baseWithoutView: string } {
-  // 查找 @ 分隔符
   const viewSeparatorIndex = baseName.indexOf('@')
   if (viewSeparatorIndex > -1) {
     return {
@@ -177,31 +167,29 @@ function parseViewName(baseName: string): { viewName: string | null; baseWithout
  * @param namingStrategy - 命名策略，默认为 'kebab'
  * @param pathPrefix - 路由路径前缀，默认为 ''
  * @param isLayout - 是否为布局文件，默认为 false
+ * @param fileReader - 可选的自定义文件读取函数
  * @returns 解析后的页面信息，解析失败或无有效导出返回 null
  */
-export function parsePageFile(
+export async function parsePageFile(
   filePath: string,
   pagesDir: string,
   parentPath: string,
   namingStrategy: NamingStrategy = 'kebab',
   pathPrefix: string = '',
-  isLayout: boolean = false
-): ParsedPage | null {
-  // 提取文件名和扩展名
+  isLayout: boolean = false,
+  fileReader?: FileReader
+): Promise<ParsedPage | null> {
   const fileName = path.basename(filePath)
   const ext = path.extname(fileName)
   const baseName = fileName.slice(0, -ext.length)
 
-  // 解析视图名称
   const { viewName, baseWithoutView } = parseViewName(baseName)
 
-  // 检查文件导出
   if (shouldCheckExport(ext)) {
-    const exportCheck = checkDefaultExport(filePath)
+    const exportCheck = await checkDefaultExport(filePath, pagesDir, fileReader)
 
     if (exportCheck.warning) {
-      const pageOptions = parseDefinePage(filePath)
-      // 检查是否有默认导出或 redirect 配置
+      const pageOptions = await parseDefinePage(filePath, pagesDir, fileReader)
       if (!exportCheck.hasDefaultExport || !exportCheck.isFunctionOrClass) {
         if (!pageOptions?.redirect) {
           warn('页面文件缺少有效导出且未定义 redirect', `${filePath}\n    ${exportCheck.warning}`)
@@ -211,25 +199,18 @@ export function parsePageFile(
     }
   }
 
-  // 计算相对路径
   const relativePath = path.relative(pagesDir, filePath)
   const dirPath = path.dirname(relativePath)
 
-  // 检查是否为索引页面
   const isIndex = isLayout ? false : baseWithoutView === 'index'
 
-  // 解析文件名，提取动态参数
   const { name: routeName, params, isDynamic } = parseFileName(baseWithoutView)
 
-  // 构建完整路由路径
   const routePath = buildRoutePath(isIndex, dirPath, routeName, pathPrefix)
 
-  // 解析 definePage 配置
-  const pageOptions = parseDefinePage(filePath)
+  const pageOptions = await parseDefinePage(filePath, pagesDir, fileReader)
 
-  // 应用命名策略
   const finalPath = applyNamingStrategyToPath(routePath, namingStrategy)
-  // 应用路由名称
   const finalName =
     pageOptions?.name ||
     applyNamingStrategyToName(
@@ -237,7 +218,6 @@ export function parsePageFile(
       namingStrategy
     )
 
-  // 返回解析结果
   return {
     path: finalPath,
     filePath,

@@ -52,7 +52,7 @@ interface WriteDtsResult {
  * })
  *
  * router.setRoot('/project/root')
- * router.scan()
+ * await router.scan()
  *
  * // 生成路由代码
  * const routes = await router.generateRoutes()
@@ -67,9 +67,9 @@ interface WriteDtsResult {
  * const router = new FileRouter(options)
  *
  * return {
- *   configResolved(config) {
+ *   async configResolved(config) {
  *     router.setRoot(config.root)
- *     router.scan()
+ *     await router.scan()
  *   },
  *   async load(id) {
  *     if (id === VIRTUAL_ID) {
@@ -109,12 +109,12 @@ export class FileRouter {
    * 扫描所有配置的页面目录，解析页面文件并构建路由树。
    * 扫描后会清除路由代码缓存。
    */
-  scan(): void {
+  async scan(): Promise<void> {
     this._cachedRoutesPromise = null
-    this._pages = scanMultiplePages({
+    this._pages = await scanMultiplePages({
       pages: this.config.pages,
-      extensions: this.config.extensions,
-      namingStrategy: this.config.namingStrategy
+      namingStrategy: this.config.namingStrategy,
+      fileReader: this.config.fileReader
     })
 
     this._routeTree = buildRouteTree(this._pages)
@@ -136,7 +136,7 @@ export class FileRouter {
    * @returns {boolean} - 是否为页面文件
    */
   isPageFile(file: string): boolean {
-    return isPageFileInDirs(file, this.config.pages, this.config.extensions)
+    return isPageFileInDirs(file, this.config.pages)
   }
 
   /**

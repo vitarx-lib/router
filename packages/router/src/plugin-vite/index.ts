@@ -71,9 +71,9 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
     config(_, env) {
       isPreview = !!env.isPreview
     },
-    configResolved() {
+    async configResolved() {
       if (isPreview) return
-      router.scan()
+      await router.scan()
       if (dts) {
         const result = router.writeDts(dts)
         info(`✨ generate type definitions:\n${chalk.yellow(result.path)}`)
@@ -109,9 +109,9 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
         server.watcher.add(dirConfig.dir)
       }
 
-      const handlePageFileChange = (file: string, server: ViteDevServer): void => {
+      const handlePageFileChange = async (file: string, server: ViteDevServer): Promise<void> => {
         if (router.isPageFile(file)) {
-          router.scan()
+          await router.scan()
           if (dts) {
             router.writeDts(dts)
           }

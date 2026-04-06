@@ -109,8 +109,10 @@ describe('plugin-vite/index', () => {
         pages: 'src/pages'
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const load = plugin.load as (id: string) => Promise<string | null>
       const code = await load('\0virtual:vitarx-router:routes')
@@ -128,8 +130,10 @@ describe('plugin-vite/index', () => {
         importMode: 'lazy'
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const load = plugin.load as (id: string) => Promise<string | null>
       const code = await load('\0virtual:vitarx-router:routes')
@@ -146,8 +150,10 @@ describe('plugin-vite/index', () => {
         importMode: 'file'
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const load = plugin.load as (id: string) => Promise<string | null>
       const code = await load('\0virtual:vitarx-router:routes')
@@ -157,7 +163,7 @@ describe('plugin-vite/index', () => {
   })
 
   describe('definePage 移除', () => {
-    it('应该在构建模式下移除 definePage', () => {
+    it('应该在构建模式下移除 definePage', async () => {
       createFile(
         'src/pages/index.tsx',
         `
@@ -174,8 +180,10 @@ describe('plugin-vite/index', () => {
         pages: 'src/pages'
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'build' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'build' })
 
       const transform = plugin.transform as (
         code: string,
@@ -191,7 +199,7 @@ describe('plugin-vite/index', () => {
       expect(result?.code).toContain('export default function Home')
     })
 
-    it('应该在开发模式下移除 definePage', () => {
+    it('应该在开发模式下移除 definePage', async () => {
       createFile(
         'src/pages/index.tsx',
         `
@@ -207,8 +215,10 @@ describe('plugin-vite/index', () => {
         pages: 'src/pages'
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const transform = plugin.transform as (
         code: string,
@@ -223,7 +233,7 @@ describe('plugin-vite/index', () => {
       expect(result?.code).not.toContain('definePage')
     })
 
-    it('非页面文件应该返回 null', () => {
+    it('非页面文件应该返回 null', async () => {
       createFile('src/utils/helper.ts', 'export function helper() { return true }')
 
       const plugin = VitarxRouter({
@@ -231,8 +241,10 @@ describe('plugin-vite/index', () => {
         pages: 'src/pages'
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'build' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'build' })
 
       const transform = plugin.transform as (
         code: string,
@@ -248,7 +260,7 @@ describe('plugin-vite/index', () => {
   })
 
   describe('类型定义生成', () => {
-    it('应该生成类型定义文件', () => {
+    it('应该生成类型定义文件', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
 
       const plugin = VitarxRouter({
@@ -257,8 +269,10 @@ describe('plugin-vite/index', () => {
         dts: 'typed-router.d.ts'
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const dtsPath = path.join(tempDir, 'typed-router.d.ts')
       expect(fs.existsSync(dtsPath)).toBe(true)
@@ -268,7 +282,7 @@ describe('plugin-vite/index', () => {
       expect(content).toContain('RouteIndexMap')
     })
 
-    it('禁用类型定义时不应该生成文件', () => {
+    it('禁用类型定义时不应该生成文件', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
 
       const plugin = VitarxRouter({
@@ -277,8 +291,10 @@ describe('plugin-vite/index', () => {
         dts: false
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const dtsPath = path.join(tempDir, 'typed-router.d.ts')
       expect(fs.existsSync(dtsPath)).toBe(false)
@@ -298,8 +314,10 @@ describe('plugin-vite/index', () => {
         namingStrategy: 'kebab'
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const load = plugin.load as (id: string) => Promise<string | null>
       const code = await load('\0virtual:vitarx-router:routes')
@@ -319,8 +337,10 @@ describe('plugin-vite/index', () => {
         namingStrategy: 'lowercase'
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const load = plugin.load as (id: string) => Promise<string | null>
       const code = await load('\0virtual:vitarx-router:routes')
@@ -340,8 +360,10 @@ describe('plugin-vite/index', () => {
         namingStrategy: 'none'
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const load = plugin.load as (id: string) => Promise<string | null>
       const code = await load('\0virtual:vitarx-router:routes')
@@ -363,8 +385,10 @@ describe('plugin-vite/index', () => {
         ]
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const load = plugin.load as (id: string) => Promise<string | null>
       const code = await load('\0virtual:vitarx-router:routes')
@@ -390,8 +414,10 @@ describe('plugin-vite/index', () => {
         }
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const load = plugin.load as (id: string) => Promise<string | null>
       await load('\0virtual:vitarx-router:routes')
@@ -411,8 +437,10 @@ describe('plugin-vite/index', () => {
         injectImports: ["import { customHelper } from './helpers'"]
       })
 
-      const configResolved = plugin.configResolved as (config: { command: string }) => void
-      configResolved({ command: 'serve' })
+      const configResolved = plugin.configResolved as (
+        config: { command: string }
+      ) => Promise<void>
+      await configResolved({ command: 'serve' })
 
       const load = plugin.load as (id: string) => Promise<string | null>
       const code = await load('\0virtual:vitarx-router:routes')

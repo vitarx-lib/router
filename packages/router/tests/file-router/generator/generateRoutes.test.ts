@@ -17,6 +17,18 @@ import { createTestHelpers } from '../testUtils.js'
 const { createTestDir, cleanupTestDir, createFile, resolvePath } =
   createTestHelpers('generate-routes')
 
+const DEFAULT_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js']
+
+function createPageConfig(dir: string): ResolvedPageConfig {
+  return {
+    dir: resolvePath(dir),
+    include: [],
+    exclude: [],
+    prefix: '',
+    extensions: DEFAULT_EXTENSIONS
+  }
+}
+
 describe('generator/generateRoutes', () => {
   beforeEach(() => {
     createTestDir()
@@ -31,16 +43,8 @@ describe('generator/generateRoutes', () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
       createFile('src/pages/about.tsx', 'export default function About() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 
@@ -54,16 +58,8 @@ describe('generator/generateRoutes', () => {
     it('应该使用 lazy 导入模式', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 
@@ -77,16 +73,8 @@ describe('generator/generateRoutes', () => {
     it('应该使用 file 导入模式', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 
@@ -99,16 +87,8 @@ describe('generator/generateRoutes', () => {
     it('应该注入自定义导入语句', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 
@@ -123,16 +103,8 @@ describe('generator/generateRoutes', () => {
     it('应该调用 extendRoute 钩子', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 

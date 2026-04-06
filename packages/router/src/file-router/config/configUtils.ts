@@ -7,7 +7,9 @@
 import path from 'node:path'
 import { DEFAULT_EXTENSIONS, DEFAULT_INCLUDE, DEFAULT_PAGES_DIR } from '../constants.js'
 import type {
+  BasePageConfig,
   ExtendRouteHook,
+  FileReader,
   FileRouterOptions,
   ImportMode,
   NamingStrategy,
@@ -32,8 +34,6 @@ export interface ResolvedConfig {
    * @default 'src/pages'
    */
   pages: ResolvedPageConfig[]
-  /** 支持的文件扩展名，默认为 ['.tsx', '.ts', '.jsx', '.js'] */
-  extensions: string[]
   /**
    * 组件导入模式
    *
@@ -56,6 +56,10 @@ export interface ResolvedConfig {
    * @default 'kebab'
    */
   namingStrategy: NamingStrategy
+  /**
+   * 自定义文件读取函数
+   */
+  fileReader?: FileReader
 }
 
 /**
@@ -68,62 +72,27 @@ export interface ResolvedConfig {
  * 4. 对象数组：每个目录独立配置
  *
  * @param pages - 用户配置的 pages
- * @param include - 全局 include 规则
- * @param exclude - 全局 exclude 规则
- * @param prefix - 全局 prefix 配置
+ * @param baseConfig - 基础配置
  * @param root - 项目根目录路径（用于解析相对路径）
  * @returns - 规范化后的目录配置数组
  */
-function resolvePageDirs(
+function resolvePageConfigs(
   pages: string | PageConfig | (PageConfig | string)[],
-  include: string[],
-  exclude: string[],
-  prefix: string,
+  baseConfig: Required<BasePageConfig>,
   root: string
 ): ResolvedPageConfig[] {
-  if (typeof pages === 'string') {
-    return [
-      {
-        dir: path.isAbsolute(pages) ? pages : path.resolve(root, pages),
-        include,
-        exclude,
-        prefix
-      }
-    ]
-  }
-
-  if (Array.isArray(pages)) {
-    return (pages as (PageConfig | string)[]).map(item => {
-      if (typeof item === 'string') {
-        return {
-          dir: path.isAbsolute(item) ? item : path.resolve(root, item),
-          include,
-          exclude,
-          prefix
-        }
-      } else {
-        return {
-          dir: path.isAbsolute(item.dir) ? item.dir : path.resolve(root, item.dir),
-          include: item.include || include,
-          exclude: item.exclude || exclude,
-          prefix: item.prefix || prefix
-        }
-      }
-    })
-  }
-
-  if (typeof pages === 'object' && pages !== null && 'dir' in pages) {
-    return [
-      {
-        dir: path.isAbsolute(pages.dir) ? pages.dir : path.resolve(root, pages.dir),
-        include: pages.include || include,
-        exclude: pages.exclude || exclude,
-        prefix: pages.prefix || prefix
-      }
-    ]
-  }
-
-  return [{ dir: path.resolve(root, DEFAULT_PAGES_DIR), include, exclude, prefix }]
+  const list = Array.isArray(pages) ? pages : [pages]
+  return list.map(page => {
+    const config = typeof page === 'string' ? { dir: page } : page
+    const resolvedConfig = {
+      ...baseConfig,
+      ...config,
+      dir: path.isAbsolute(config.dir) ? config.dir : path.resolve(root, config.dir)
+    }
+    resolvedConfig.prefix =
+      resolvedConfig.prefix === '/' ? '/' : resolvedConfig.prefix.replace(/\/+$/, '')
+    return resolvedConfig
+  })
 }
 
 /**
@@ -145,17 +114,23 @@ export function resolveConfig(options: FileRouterOptions): ResolvedConfig {
     extendRoute,
     injectImports = [],
     namingStrategy = 'kebab',
-    prefix = ''
+    prefix = '/',
+    fileReader
   } = options
-
-  const pagesDirs = resolvePageDirs(pages, include, exclude, prefix, root)
+  const basePageConfig: Required<BasePageConfig> = {
+    include,
+    exclude,
+    prefix,
+    extensions
+  }
+  const pagesDirs = resolvePageConfigs(pages, basePageConfig, root)
   return {
     root,
     pages: pagesDirs,
-    extensions,
     importMode,
     extendRoute,
     injectImports: injectImports,
-    namingStrategy
+    namingStrategy,
+    fileReader
   }
 }

@@ -6,6 +6,38 @@
  */
 import type { NavOptions, RouteMetaData } from '../core/index.js'
 
+export interface BasePageConfig {
+  /**
+   * 要包含的文件/目录 glob 模式列表
+   *
+   * 默认匹配所有文件。只有匹配 include 模式的文件才会被扫描。
+   */
+  include?: string[]
+  /** 要排除的文件/目录 glob 模式列表 */
+  exclude?: string[]
+  /**
+   * 路由路径前缀
+   *
+   * 用于为该目录下的所有路由添加统一的前缀。
+   *
+   * @default '/'
+   *
+   * @example
+   * ```typescript
+   * // src/admin/home.tsx -> /admin/home（需要指定结尾的 /）
+   * { dir: 'src/admin', path: '/admin/' }
+   *
+   * // src/admin/home.tsx -> /adminhome（不指定结尾的 / 会直接拼接）
+   * { dir: 'src/admin', path: '/admin' }
+   *
+   * // src/promos/black-friday.vue -> /promos-black-friday
+   * { dir: 'src/promos', path: 'promos-' }
+   * ```
+   */
+  prefix?: string
+  /** 支持的文件扩展名，默认为 ['.tsx', '.jsx'] */
+  extensions?: string[]
+}
 /**
  * 页面配置选项
  *
@@ -207,47 +239,15 @@ export type ExtendRouteHook = (
  *
  * @example
  * ```typescript
- * const pagesDirs: PagesDirConfig[] = [
+ * const pagess: pagesConfig[] = [
  *   { dir: 'src/pages', exclude: ['components'] },
  *   { dir: 'src/admin', include: ['**\/*.tsx'], prefix: '/admin' }
  * ]
  * ```
  */
-export interface PageConfig {
+export interface PageConfig extends BasePageConfig {
   /** 页面目录路径 */
   dir: string
-  /**
-   * 要包含的文件/目录 glob 模式列表
-   *
-   * 默认匹配所有文件。只有匹配 include 模式的文件才会被扫描。
-   */
-  include?: string[]
-  /** 要排除的文件/目录 glob 模式列表 */
-  exclude?: string[]
-  /**
-   * 路由路径前缀
-   *
-   * 用于为该目录下的所有路由添加统一的前缀。
-   *
-   * 拼接规则：
-   * 1. 前缀不以 / 开头时，自动添加 / 前缀
-   * 2. 直接拼接前缀和路径（去掉路径开头的 /）
-   *
-   * @default ''
-   *
-   * @example
-   * ```typescript
-   * // src/admin/home.tsx -> /admin/home（需要指定结尾的 /）
-   * { dir: 'src/admin', prefix: '/admin/' }
-   *
-   * // src/admin/home.tsx -> /adminhome（不指定结尾的 / 会直接拼接）
-   * { dir: 'src/admin', prefix: '/admin' }
-   *
-   * // src/promos/black-friday.vue -> /promos-black-friday
-   * { dir: 'src/promos', prefix: 'promos-' }
-   * ```
-   */
-  prefix?: string
 }
 
 /**
@@ -268,6 +268,55 @@ export type ImportMode = 'lazy' | 'file'
 export type NamingStrategy = 'kebab' | 'lowercase' | 'none'
 
 /**
+ * 文件读取上下文
+ *
+ * 提供文件的基本信息，供读取函数使用
+ */
+export interface FileReadContext {
+  /** 文件绝对路径 */
+  filePath: string
+  /** 文件扩展名（包含点，如 '.md', '.tsx'） */
+  extension: string
+  /** 相对于页面目录的路径 */
+  relativePath: string
+  /** 页面目录路径 */
+  pagesDir: string
+}
+
+/**
+ * 文件读取函数
+ *
+ * 用于自定义文件读取和内容转换逻辑。
+ * 支持异步操作，可用于：
+ * - 读取 Markdown 文件并转换为 React 组件
+ * - 自定义文件内容预处理
+ * - 集成第三方转换工具
+ *
+ * @param context - 文件读取上下文
+ * @param defaultRead - 默认读取函数，用于读取原始文件内容
+ * @returns 文件内容字符串
+ *
+ * @example
+ * ```typescript
+ * // Markdown 转 React 组件示例
+ * const fileReader: FileReader = async (context, defaultRead) => {
+ *   if (context.extension === '.md') {
+ *     const markdown = await defaultRead()
+ *     const html = marked(markdown)
+ *     return `export default function MarkdownPage() {
+ *       return <div dangerouslySetInnerHTML={{ __html: ${JSON.stringify(html)} }} />
+ *     }`
+ *   }
+ *   return defaultRead()
+ * }
+ * ```
+ */
+export type FileReader = (
+  context: FileReadContext,
+  defaultRead: () => Promise<string>
+) => string | Promise<string>
+
+/**
  * 文件路由配置选项（与构建工具无关）
  *
  * 用于配置文件路由的核心行为。
@@ -276,18 +325,18 @@ export type NamingStrategy = 'kebab' | 'lowercase' | 'none'
  * ```typescript
  * // 基本使用
  * const options: FileRouterOptions = {
- *   pagesDir: 'src/views',
+ *   pages: 'src/views',
  *   extensions: ['.tsx', '.ts', '.vue'],
  * }
  *
  * // 多个目录
  * const options: FileRouterOptions = {
- *   pagesDir: ['src/pages', 'src/admin']
+ *   pages: ['src/pages', 'src/admin']
  * }
  *
  * // 多个目录，每个目录独立配置
  * const options: FileRouterOptions = {
- *   pagesDir: [
+ *   pages: [
  *     { dir: 'src/pages', exclude: ['components'] },
  *     { dir: 'src/admin', include: ['**\/*.tsx'] }
  *   ]
@@ -352,4 +401,33 @@ export interface FileRouterOptions {
    * @default 'kebab'
    */
   namingStrategy?: NamingStrategy
+  /**
+   * 自定义文件读取函数
+   *
+   * 用于读取和转换文件内容，支持异步操作。
+   * 可用于将 Markdown 等非标准文件转换为组件代码。
+   *
+   * 当返回转换后的代码时，路由解析器将使用转换后的代码进行：
+   * - 检测默认导出
+   * - 解析 definePage 配置
+   *
+   * @example
+   * ```typescript
+   * // 支持 Markdown 文件
+   * {
+   *   extensions: ['.tsx', '.md'],
+   *   fileReader: async (context, defaultRead) => {
+   *     if (context.extension === '.md') {
+   *       const content = await defaultRead()
+   *       const html = marked(content)
+   *       return `export default function Page() {
+   *         return <div className="prose" dangerouslySetInnerHTML={{__html: ${JSON.stringify(html)}}} />
+   *       }`
+   *     }
+   *     return defaultRead()
+   *   }
+   * }
+   * ```
+   */
+  fileReader?: FileReader
 }

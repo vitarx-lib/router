@@ -15,6 +15,18 @@ import { createTestHelpers } from '../testUtils.js'
 
 const { createTestDir, cleanupTestDir, createFile, resolvePath } = createTestHelpers('generate-types')
 
+const DEFAULT_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js']
+
+function createPageConfig(dir: string): ResolvedPageConfig {
+  return {
+    dir: resolvePath(dir),
+    include: [],
+    exclude: [],
+    prefix: '',
+    extensions: DEFAULT_EXTENSIONS
+  }
+}
+
 describe('generator/generateTypes', () => {
   beforeEach(() => {
     createTestDir()
@@ -25,20 +37,12 @@ describe('generator/generateTypes', () => {
   })
 
   describe('generateFullDtsFile', () => {
-    it('应该生成正确的类型定义', () => {
+    it('应该生成正确的类型定义', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
       createFile('src/pages/users/[id].tsx', 'export default function UserDetail() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 
@@ -49,19 +53,11 @@ describe('generator/generateTypes', () => {
       expect(dts).toContain('RouteIndexMap')
     })
 
-    it('应该正确处理动态参数类型', () => {
+    it('应该正确处理动态参数类型', async () => {
       createFile('src/pages/users/[id].tsx', 'export default function UserDetail() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 
@@ -72,26 +68,18 @@ describe('generator/generateTypes', () => {
       expect(dts).toContain('id')
     })
 
-    it('应该包含正确的模块引用', () => {
+    it('应该包含正确的模块引用', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
-      const pages = scanMultiplePages({
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+      const pages = await scanMultiplePages({
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       })
 
       const routeTree = buildRouteTree(pages)
       const dts = generateFullDtsFile(routeTree)
 
-      expect(dts).toContain("/// <reference types=\"vitarx-router/global\" />")
+      expect(dts).toContain("declare module 'vitarx-router'")
     })
   })
 })

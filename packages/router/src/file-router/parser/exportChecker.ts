@@ -5,8 +5,9 @@
  * 用于验证页面文件是否可以作为路由组件。
  */
 import type * as BabelTypes from '@babel/types'
-import fs from 'node:fs'
+import type { FileReader } from '../types.js'
 import { parseCode, babelTraverse } from '../utils/babelUtils.js'
+import { readFileContent } from '../utils/fileReader.js'
 
 /** 需要进行默认导出检测的文件扩展名 */
 const CHECK_EXPORT_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js']
@@ -214,23 +215,12 @@ function processExportSpecifiers(
 }
 
 /**
- * 检测文件是否具有有效的默认导出函数组件
+ * 从代码内容检测默认导出
  *
- * @param filePath - 文件路径
+ * @param content - 代码内容
  * @returns 检测结果
  */
-export function checkDefaultExport(filePath: string): DefaultExportCheckResult {
-  if (!fs.existsSync(filePath)) {
-    return {
-      hasDefaultExport: false,
-      isFunctionOrClass: false,
-      exportName: null,
-      warning: `文件不存在: ${filePath}`
-    }
-  }
-
-  const content = fs.readFileSync(filePath, 'utf-8')
-
+function checkDefaultExportFromContent(content: string): DefaultExportCheckResult {
   if (!content.includes('export')) {
     return {
       hasDefaultExport: false,
@@ -274,6 +264,32 @@ export function checkDefaultExport(filePath: string): DefaultExportCheckResult {
       isFunctionOrClass: false,
       exportName: null,
       warning: `解析文件失败: ${error instanceof Error ? error.message : String(error)}`
+    }
+  }
+}
+
+/**
+ * 检测文件是否具有有效的默认导出函数组件
+ *
+ * @param filePath - 文件路径
+ * @param pagesDir - 页面目录路径
+ * @param fileReader - 可选的自定义文件读取函数
+ * @returns 检测结果
+ */
+export async function checkDefaultExport(
+  filePath: string,
+  pagesDir: string,
+  fileReader?: FileReader
+): Promise<DefaultExportCheckResult> {
+  try {
+    const content = await readFileContent(filePath, pagesDir, fileReader)
+    return checkDefaultExportFromContent(content)
+  } catch (error) {
+    return {
+      hasDefaultExport: false,
+      isFunctionOrClass: false,
+      exportName: null,
+      warning: `读取文件失败: ${error instanceof Error ? error.message : String(error)}`
     }
   }
 }

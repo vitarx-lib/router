@@ -15,6 +15,18 @@ import { createTestHelpers } from '../testUtils.js'
 
 const { createTestDir, cleanupTestDir, createFile, resolvePath } = createTestHelpers('scan-pages')
 
+const DEFAULT_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js']
+
+function createPageConfig(dir: string, prefix: string = ''): ResolvedPageConfig {
+  return {
+    dir: resolvePath(dir),
+    include: [],
+    exclude: [],
+    prefix,
+    extensions: DEFAULT_EXTENSIONS
+  }
+}
+
 describe('scanner/scanPages', () => {
   beforeEach(() => {
     createTestDir()
@@ -25,70 +37,46 @@ describe('scanner/scanPages', () => {
   })
 
   describe('scanMultiplePages', () => {
-    it('应该扫描单个页面文件', () => {
+    it('应该扫描单个页面文件', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return <div>Home</div> }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
       const options: MultiScanOptions = {
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       }
 
-      const pages = scanMultiplePages(options)
+      const pages = await scanMultiplePages(options)
 
       expect(pages).toHaveLength(1)
       expect(pages[0].path).toBe('/')
       expect(pages[0].isIndex).toBe(true)
     })
 
-    it('应该扫描嵌套目录结构', () => {
+    it('应该扫描嵌套目录结构', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
       createFile('src/pages/about.tsx', 'export default function About() { return null }')
       createFile('src/pages/users/index.tsx', 'export default function Users() { return null }')
       createFile('src/pages/users/[id].tsx', 'export default function UserDetail() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
       const options: MultiScanOptions = {
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       }
 
-      const pages = scanMultiplePages(options)
+      const pages = await scanMultiplePages(options)
 
       expect(pages.length).toBeGreaterThan(0)
     })
 
-    it('应该正确处理动态路由参数', () => {
+    it('应该正确处理动态路由参数', async () => {
       createFile('src/pages/users/[id].tsx', 'export default function UserDetail() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
       const options: MultiScanOptions = {
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       }
 
-      const pages = scanMultiplePages(options)
+      const pages = await scanMultiplePages(options)
 
       const dynamicPage = pages.find(p => p.isDynamic)
       expect(dynamicPage).toBeDefined()
@@ -96,136 +84,92 @@ describe('scanner/scanPages', () => {
       expect(dynamicPage?.path).toBe('/users/{id}')
     })
 
-    it('应该正确处理路径前缀', () => {
+    it('应该正确处理路径前缀', async () => {
       createFile('admin/dashboard.tsx', 'export default function Dashboard() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('admin'),
-        include: [],
-        exclude: [],
-        prefix: '/admin/'
-      }
-
       const options: MultiScanOptions = {
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+        pages: [createPageConfig('admin', '/admin/')],
         namingStrategy: 'kebab'
       }
 
-      const pages = scanMultiplePages(options)
+      const pages = await scanMultiplePages(options)
 
       expect(pages[0].path).toBe('/admin/dashboard')
     })
 
-    it('应该正确处理多个页面目录', () => {
+    it('应该正确处理多个页面目录', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
       createFile('src/admin/dashboard.tsx', 'export default function Dashboard() { return null }')
 
       const options: MultiScanOptions = {
-        pages: [
-          { dir: resolvePath('src/pages'), include: [], exclude: [], prefix: '/' },
-          { dir: resolvePath('src/admin'), include: [], exclude: [], prefix: '/admin/' }
-        ],
-        extensions: ['.tsx', '.ts'],
+        pages: [createPageConfig('src/pages', '/'), createPageConfig('src/admin', '/admin/')],
         namingStrategy: 'kebab'
       }
 
-      const pages = scanMultiplePages(options)
+      const pages = await scanMultiplePages(options)
 
       expect(pages.length).toBe(2)
     })
 
-    it('应该正确处理布局文件', () => {
+    it('应该正确处理布局文件', async () => {
       createFile(
         'src/pages/users/_layout.tsx',
         'export default function UsersLayout() { return null }'
       )
       createFile('src/pages/users/index.tsx', 'export default function Users() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
       const options: MultiScanOptions = {
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       }
 
-      const pages = scanMultiplePages(options)
+      const pages = await scanMultiplePages(options)
 
       const layoutPage = pages.find(p => p.path === '/users')
       expect(layoutPage?.isLayoutFile).toBe(true)
     })
 
-    it('应该正确处理命名布局文件', () => {
+    it('应该正确处理命名布局文件', async () => {
       createFile(
         'src/pages/users/_layout.admin.tsx',
         'export default function AdminLayout() { return null }'
       )
       createFile('src/pages/users/index.tsx', 'export default function Users() { return null }')
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
       const options: MultiScanOptions = {
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       }
 
-      const pages = scanMultiplePages(options)
+      const pages = await scanMultiplePages(options)
 
       const layoutPage = pages.find(p => p.path === '/users' && p.isLayoutFile)
       expect(layoutPage).toBeDefined()
       expect(layoutPage?.filePath).toContain('_layout.admin.tsx')
     })
 
-    it('应该在同名文件和目录同时存在时抛出异常', () => {
+    it('应该在同名文件和目录同时存在时抛出异常', async () => {
       createFile('src/pages/users.tsx', 'export default function Users() { return null }')
       createFile(
         'src/pages/users/index.tsx',
         'export default function UsersIndex() { return null }'
       )
 
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('src/pages'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
       const options: MultiScanOptions = {
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+        pages: [createPageConfig('src/pages')],
         namingStrategy: 'kebab'
       }
 
-      expect(() => scanMultiplePages(options)).toThrow(/不允许同名文件和目录同时存在/)
+      await expect(scanMultiplePages(options)).rejects.toThrow(/不允许同名文件和目录同时存在/)
     })
 
-    it('应该正确处理不存在的目录', () => {
-      const pageConfig: ResolvedPageConfig = {
-        dir: resolvePath('non-existent'),
-        include: [],
-        exclude: [],
-        prefix: ''
-      }
-
+    it('应该正确处理不存在的目录', async () => {
       const options: MultiScanOptions = {
-        pages: [pageConfig],
-        extensions: ['.tsx', '.ts'],
+        pages: [createPageConfig('non-existent')],
         namingStrategy: 'kebab'
       }
 
-      const pages = scanMultiplePages(options)
+      const pages = await scanMultiplePages(options)
 
       expect(pages).toHaveLength(0)
     })

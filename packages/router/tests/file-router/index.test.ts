@@ -30,7 +30,7 @@ describe('file-router/index (FileRouter)', () => {
     it('应该使用默认配置创建 FileRouter', () => {
       const router = new FileRouter()
       expect(router.config).toBeDefined()
-      expect(router.config.extensions).toEqual(['.tsx', '.jsx'])
+      expect(router.config.pages[0].extensions).toEqual(['.tsx', '.jsx'])
       expect(router.config.importMode).toBe('lazy')
       expect(router.config.namingStrategy).toBe('kebab')
     })
@@ -45,7 +45,7 @@ describe('file-router/index (FileRouter)', () => {
       })
 
       expect(router.config.root).toBe(tempDir)
-      expect(router.config.extensions).toEqual(['.tsx'])
+      expect(router.config.pages[0].extensions).toEqual(['.tsx'])
       expect(router.config.importMode).toBe('file')
       expect(router.config.namingStrategy).toBe('lowercase')
     })
@@ -64,7 +64,7 @@ describe('file-router/index (FileRouter)', () => {
   })
 
   describe('页面扫描', () => {
-    it('应该扫描单个页面文件', () => {
+    it('应该扫描单个页面文件', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return <div>Home</div> }')
 
       const router = new FileRouter({
@@ -72,7 +72,7 @@ describe('file-router/index (FileRouter)', () => {
         pages: 'src/pages'
       })
 
-      router.scan()
+      await router.scan()
       const pages = router.getPages()
 
       expect(pages).toHaveLength(1)
@@ -80,7 +80,7 @@ describe('file-router/index (FileRouter)', () => {
       expect(pages[0].isIndex).toBe(true)
     })
 
-    it('应该正确处理动态路由参数', () => {
+    it('应该正确处理动态路由参数', async () => {
       createFile('src/pages/users/[id].tsx', 'export default function UserDetail() { return null }')
 
       const router = new FileRouter({
@@ -88,7 +88,7 @@ describe('file-router/index (FileRouter)', () => {
         pages: 'src/pages'
       })
 
-      router.scan()
+      await router.scan()
       const pages = router.getPages()
 
       const dynamicPage = pages.find(p => p.isDynamic)
@@ -99,7 +99,7 @@ describe('file-router/index (FileRouter)', () => {
   })
 
   describe('路由树构建', () => {
-    it('应该构建正确的路由树结构', () => {
+    it('应该构建正确的路由树结构', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
       createFile('src/pages/about.tsx', 'export default function About() { return null }')
 
@@ -108,7 +108,7 @@ describe('file-router/index (FileRouter)', () => {
         pages: 'src/pages'
       })
 
-      router.scan()
+      await router.scan()
       const routeTree = router.getRouteTree()
 
       expect(routeTree.length).toBeGreaterThan(0)
@@ -125,7 +125,7 @@ describe('file-router/index (FileRouter)', () => {
         pages: 'src/pages'
       })
 
-      router.scan()
+      await router.scan()
       const result = await router.generateRoutes()
 
       expect(result.code).toBeDefined()
@@ -142,7 +142,7 @@ describe('file-router/index (FileRouter)', () => {
         importMode: 'lazy'
       })
 
-      router.scan()
+      await router.scan()
       const result = await router.generateRoutes()
 
       expect(result.code).toContain("import { lazy } from 'vitarx'")
@@ -158,7 +158,7 @@ describe('file-router/index (FileRouter)', () => {
         importMode: 'file'
       })
 
-      router.scan()
+      await router.scan()
       const result = await router.generateRoutes()
 
       expect(result.code).not.toContain("import { lazy } from 'vitarx'")
@@ -166,7 +166,7 @@ describe('file-router/index (FileRouter)', () => {
   })
 
   describe('类型定义生成', () => {
-    it('应该生成正确的类型定义', () => {
+    it('应该生成正确的类型定义', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
       createFile('src/pages/users/[id].tsx', 'export default function UserDetail() { return null }')
 
@@ -175,14 +175,14 @@ describe('file-router/index (FileRouter)', () => {
         pages: 'src/pages'
       })
 
-      router.scan()
+      await router.scan()
       const dts = router.generateDts()
 
       expect(dts).toContain('declare module')
       expect(dts).toContain('RouteIndexMap')
     })
 
-    it('应该正确写入类型定义文件', () => {
+    it('应该正确写入类型定义文件', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
 
       const router = new FileRouter({
@@ -190,7 +190,7 @@ describe('file-router/index (FileRouter)', () => {
         pages: 'src/pages'
       })
 
-      router.scan()
+      await router.scan()
       const result = router.writeDts('typed-router.d.ts')
 
       expect(result).toBeDefined()
@@ -259,7 +259,7 @@ describe('file-router/index (FileRouter)', () => {
   })
 
   describe('isPageFile 方法', () => {
-    it('应该正确识别页面文件', () => {
+    it('应该正确识别页面文件', async () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
 
       const router = new FileRouter({
@@ -267,7 +267,7 @@ describe('file-router/index (FileRouter)', () => {
         pages: 'src/pages'
       })
 
-      router.scan()
+      await router.scan()
 
       const indexPath = resolvePath('src/pages/index.tsx')
 
@@ -284,7 +284,7 @@ describe('file-router/index (FileRouter)', () => {
         pages: 'src/pages'
       })
 
-      router.scan()
+      await router.scan()
       await router.generateRoutes()
 
       router.invalidate()
