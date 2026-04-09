@@ -8,7 +8,7 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          name: 'jsdom',
+          name: 'core',
           include: ['tests/{core,components}/**/*.{test,spec}.ts'],
           environment: 'jsdom',
           testTimeout: 30000,
