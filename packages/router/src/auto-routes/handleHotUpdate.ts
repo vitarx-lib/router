@@ -1,4 +1,4 @@
-import type { Route, Router } from '../../core/index.js'
+import type { Route, Router } from '../core/index.js'
 
 /**
  * 处理路由热更新函数

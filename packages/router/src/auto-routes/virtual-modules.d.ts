@@ -5,7 +5,7 @@
  */
 
 declare module 'virtual:vitarx-router:routes' {
-  import type { Route } from '../../core/index.js'
+  import type { Route } from '../core/index.js'
   const routes: Route[]
   export default routes
 }
