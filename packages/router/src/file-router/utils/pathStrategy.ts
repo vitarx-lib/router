@@ -8,7 +8,8 @@
  *
  * 注意：只处理路径段名称，不处理动态参数变量名。
  */
-import type { NamingStrategy } from '../types.js'
+
+import type { PathStrategy } from '../types/index.js'
 
 /**
  * 将驼峰命名转换为 kebab-case
@@ -45,13 +46,13 @@ function toKebabCase(str: string): string {
  * applyNamingStrategy('MainHome', 'none')      // => 'MainHome'
  * ```
  */
-export function applyNamingStrategy(str: string, strategy: NamingStrategy): string {
+function applyStrategy(str: string, strategy: PathStrategy): string {
   switch (strategy) {
     case 'kebab':
       return toKebabCase(str)
     case 'lowercase':
       return str.toLowerCase()
-    case 'none':
+    case 'raw':
     default:
       return str
   }
@@ -59,9 +60,9 @@ export function applyNamingStrategy(str: string, strategy: NamingStrategy): stri
 
 /**
  * 动态参数正则表达式
- * 匹配 {paramName} 或 {paramName?} 格式
+ * 匹配 [paramName] 或 [paramName?] 格式
  */
-const DYNAMIC_PARAM_REGEX = /\{([^}]+)}/g
+const DYNAMIC_PARAM_REGEX = /\[([^]]+)]/g
 
 /**
  * 应用命名策略转换路由路径
@@ -75,12 +76,12 @@ const DYNAMIC_PARAM_REGEX = /\{([^}]+)}/g
  * @example
  * ```typescript
  * applyNamingStrategyToPath('/MainHome', 'kebab')     // => '/main-home'
- * applyNamingStrategyToPath('/User/{userName}', 'kebab')  // => '/user/{userName}'
+ * applyNamingStrategyToPath('/User/[userName]', 'kebab')  // => '/user/[userName]'
  * applyNamingStrategyToPath('/API/UserProfile', 'kebab')  // => '/api/user-profile'
  * ```
  */
-export function applyNamingStrategyToPath(path: string, strategy: NamingStrategy): string {
-  if (strategy === 'none') {
+export function applyPathStrategy(path: string, strategy: PathStrategy): string {
+  if (strategy === 'raw') {
     return path
   }
 
@@ -99,30 +100,8 @@ export function applyNamingStrategyToPath(path: string, strategy: NamingStrategy
       continue
     }
 
-    result.push(applyNamingStrategy(segment, strategy))
+    result.push(applyStrategy(segment, strategy))
   }
 
   return result.join('/')
-}
-
-/**
- * 应用命名策略转换路由名称
- *
- * @param name - 路由名称
- * @param strategy - 命名策略
- * @returns 转换后的名称
- *
- * @example
- * ```typescript
- * applyNamingStrategyToName('MainHome', 'kebab')     // => 'main-home'
- * applyNamingStrategyToName('user-MainHome', 'kebab')  // => 'user-main-home'
- * ```
- */
-export function applyNamingStrategyToName(name: string, strategy: NamingStrategy): string {
-  if (strategy === 'none') {
-    return name
-  }
-
-  const parts = name.split('-')
-  return parts.map(part => applyNamingStrategy(part, strategy)).join('-')
 }

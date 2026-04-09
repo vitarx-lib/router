@@ -5,7 +5,7 @@
  * 用于解析 definePage 宏的配置参数。
  */
 import type * as BabelTypes from '@babel/types'
-import type { PageOptions, RedirectConfig } from '../types.js'
+import type { PageOptions, RedirectConfig } from '../types/index.js'
 
 /**
  * 提取字面量值

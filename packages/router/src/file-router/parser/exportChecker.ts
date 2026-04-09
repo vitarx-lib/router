@@ -4,32 +4,14 @@
  * 检测文件是否具有有效的默认导出函数组件。
  * 用于验证页面文件是否可以作为路由组件。
  */
+import type { NodePath, TraverseOptions } from '@babel/traverse'
 import type * as BabelTypes from '@babel/types'
-import type { FileReader } from '../types.js'
-import { parseCode, babelTraverse } from '../utils/babelUtils.js'
-import { readFileContent } from '../utils/fileReader.js'
-
-/** 需要进行默认导出检测的文件扩展名 */
-const CHECK_EXPORT_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js']
-
-/**
- * 默认导出检测结果
- */
-export interface DefaultExportCheckResult {
-  /** 是否有默认导出 */
-  hasDefaultExport: boolean
-  /** 默认导出是否为函数或类 */
-  isFunctionOrClass: boolean
-  /** 导出名称（如果有） */
-  exportName: string | null
-  /** 警告信息 */
-  warning: string | null
-}
+import { babelTraverse, debug, parseCode, warn } from '../utils/index.js'
 
 /**
  * 变量声明类型
  */
-type VariableType = 'function' | 'arrow' | 'class' | 'unknown'
+type VariableType = 'function' | 'arrow' | 'unknown'
 
 /**
  * 收集变量声明
@@ -41,9 +23,9 @@ type VariableType = 'function' | 'arrow' | 'class' | 'unknown'
  */
 function createVariableDeclarationVisitor(
   variableDeclarations: Map<string, VariableType>
-): object {
+): TraverseOptions {
   return {
-    VariableDeclarator(nodePath: any) {
+    VariableDeclarator(nodePath: NodePath<BabelTypes.VariableDeclarator>) {
       const { node } = nodePath
       if (node.id.type === 'Identifier') {
         const name = node.id.name
@@ -52,24 +34,16 @@ function createVariableDeclarationVisitor(
             variableDeclarations.set(name, 'arrow')
           } else if (node.init.type === 'FunctionExpression') {
             variableDeclarations.set(name, 'function')
-          } else if (node.init.type === 'ClassExpression') {
-            variableDeclarations.set(name, 'class')
           } else {
             variableDeclarations.set(name, 'unknown')
           }
         }
       }
     },
-    FunctionDeclaration(nodePath: any) {
+    FunctionDeclaration(nodePath: NodePath<BabelTypes.FunctionDeclaration>) {
       const { node } = nodePath
       if (node.id) {
         variableDeclarations.set(node.id.name, 'function')
-      }
-    },
-    ClassDeclaration(nodePath: any) {
-      const { node } = nodePath
-      if (node.id) {
-        variableDeclarations.set(node.id.name, 'class')
       }
     }
   }
@@ -83,9 +57,9 @@ function createVariableDeclarationVisitor(
  * @returns traverse visitor 对象
  */
 function createExportDeclarationVisitor(
-  result: { hasDefaultExport: boolean; isFunction: boolean; exportName: string | null },
+  result: { hasDefaultExport: boolean; isFunction: boolean },
   variableDeclarations: Map<string, VariableType>
-): object {
+): TraverseOptions {
   return {
     ExportDefaultDeclaration(nodePath: any) {
       const { node } = nodePath
@@ -97,7 +71,6 @@ function createExportDeclarationVisitor(
         case 'FunctionDeclaration':
         case 'FunctionExpression':
           result.isFunction = true
-          result.exportName = declaration.id?.name || null
           break
 
         case 'ArrowFunctionExpression':
@@ -105,9 +78,8 @@ function createExportDeclarationVisitor(
           break
 
         case 'Identifier':
-          result.exportName = declaration.name
           const varType = variableDeclarations.get(declaration.name)
-          if (varType === 'function' || varType === 'arrow' || varType === 'class') {
+          if (varType === 'function' || varType === 'arrow') {
             result.isFunction = true
           }
           break
@@ -115,7 +87,6 @@ function createExportDeclarationVisitor(
     },
     ExportNamedDeclaration(nodePath: any) {
       const { node } = nodePath
-
       processNamedExportDeclaration(node, result, variableDeclarations)
     }
   }
@@ -130,7 +101,7 @@ function createExportDeclarationVisitor(
  */
 function processNamedExportDeclaration(
   node: BabelTypes.ExportNamedDeclaration,
-  result: { hasDefaultExport: boolean; isFunction: boolean; exportName: string | null },
+  result: { hasDefaultExport: boolean; isFunction: boolean },
   variableDeclarations: Map<string, VariableType>
 ): void {
   if (node.declaration) {
@@ -156,10 +127,6 @@ function processNamedExportDeclarationNode(
     if (declaration.id) {
       variableDeclarations.set(declaration.id.name, 'function')
     }
-  } else if (declaration.type === 'ClassDeclaration') {
-    if (declaration.id) {
-      variableDeclarations.set(declaration.id.name, 'class')
-    }
   } else if (declaration.type === 'VariableDeclaration') {
     for (const decl of declaration.declarations) {
       if (decl.id.type === 'Identifier') {
@@ -169,8 +136,6 @@ function processNamedExportDeclarationNode(
             variableDeclarations.set(name, 'function')
           } else if (decl.init.type === 'FunctionExpression') {
             variableDeclarations.set(name, 'function')
-          } else if (decl.init.type === 'ClassExpression') {
-            variableDeclarations.set(name, 'class')
           }
         }
       }
@@ -191,7 +156,7 @@ function processExportSpecifiers(
     | BabelTypes.ExportNamespaceSpecifier
     | BabelTypes.ExportSpecifier
   )[],
-  result: { hasDefaultExport: boolean; isFunction: boolean; exportName: string | null },
+  result: { hasDefaultExport: boolean; isFunction: boolean },
   variableDeclarations: Map<string, VariableType>
 ): void {
   for (const specifier of specifiers) {
@@ -203,10 +168,9 @@ function processExportSpecifiers(
 
       if (exportedName === 'default') {
         result.hasDefaultExport = true
-        result.exportName = specifier.local.name
 
         const varType = variableDeclarations.get(specifier.local.name)
-        if (varType === 'function' || varType === 'arrow' || varType === 'class') {
+        if (varType === 'function' || varType === 'arrow') {
           result.isFunction = true
         }
       }
@@ -215,91 +179,56 @@ function processExportSpecifiers(
 }
 
 /**
- * 从代码内容检测默认导出
- *
- * @param content - 代码内容
- * @returns 检测结果
- */
-function checkDefaultExportFromContent(content: string): DefaultExportCheckResult {
-  if (!content.includes('export')) {
-    return {
-      hasDefaultExport: false,
-      isFunctionOrClass: false,
-      exportName: null,
-      warning: `未检测到默认导出 (default export)，该文件将被跳过。请确保导出一个函数组件。`
-    }
-  }
-
-  try {
-    const ast = parseCode(content)
-
-    const variableDeclarations = new Map<string, VariableType>()
-    const result = {
-      hasDefaultExport: false,
-      isFunction: false,
-      exportName: null as string | null
-    }
-
-    babelTraverse(ast, {
-      ...createVariableDeclarationVisitor(variableDeclarations),
-      ...createExportDeclarationVisitor(result, variableDeclarations)
-    })
-
-    let warning: string | null = null
-    if (!result.hasDefaultExport) {
-      warning = `未检测到默认导出 (default export)，该文件将被跳过。请确保导出一个函数组件。`
-    } else if (!result.isFunction) {
-      warning = `默认导出不是函数或类，该文件将被跳过。请确保导出一个有效的 React 组件。`
-    }
-
-    return {
-      hasDefaultExport: result.hasDefaultExport,
-      isFunctionOrClass: result.isFunction,
-      exportName: result.exportName,
-      warning
-    }
-  } catch (error) {
-    return {
-      hasDefaultExport: false,
-      isFunctionOrClass: false,
-      exportName: null,
-      warning: `解析文件失败: ${error instanceof Error ? error.message : String(error)}`
-    }
-  }
-}
-
-/**
  * 检测文件是否具有有效的默认导出函数组件
  *
- * @param filePath - 文件路径
- * @param pagesDir - 页面目录路径
- * @param fileReader - 可选的自定义文件读取函数
- * @returns 检测结果
+ * @param content - 文件内容
+ * @param file - 文件路径
+ * @returns {boolean} 检测结果
  */
-export async function checkDefaultExport(
-  filePath: string,
-  pagesDir: string,
-  fileReader?: FileReader
-): Promise<DefaultExportCheckResult> {
-  try {
-    const content = await readFileContent(filePath, pagesDir, fileReader)
-    return checkDefaultExportFromContent(content)
-  } catch (error) {
-    return {
-      hasDefaultExport: false,
-      isFunctionOrClass: false,
-      exportName: null,
-      warning: `读取文件失败: ${error instanceof Error ? error.message : String(error)}`
-    }
+export function checkDefaultExport(content: string, file: string): boolean {
+  // 快速检测，避免对文件进行复杂的解析
+  if (!content.includes('export default')) {
+    debug(
+      `⚠️ 未检测到默认导出 (default export)，该文件可能被跳过。请确保导出一个函数组件。`,
+      `in ${file}`
+    )
+    return false
   }
-}
 
-/**
- * 检查文件扩展名是否需要导出检测
- *
- * @param ext - 文件扩展名
- * @returns 是否需要检测
- */
-export function shouldCheckExport(ext: string): boolean {
-  return CHECK_EXPORT_EXTENSIONS.includes(ext)
+  // 解析文件内容为 AST 进行精确检查
+  const ast = parseCode(content)
+
+  const variableDeclarations = new Map<string, VariableType>()
+  const result = {
+    hasDefaultExport: false,
+    isFunction: false
+  }
+
+  try {
+    babelTraverse(ast, {
+      ...createVariableDeclarationVisitor(variableDeclarations),
+      ...createExportDeclarationVisitor(result, variableDeclarations),
+      CallExpression(nodePath) {
+        const { node } = nodePath
+        if (node.callee.type === 'Identifier' && node.callee.name === 'console') {
+          nodePath.remove()
+        }
+      }
+    })
+
+    let debugInfo: string | null = null
+    if (!result.hasDefaultExport) {
+      debugInfo = `⚠️ 未检测到默认导出 (default export)，该文件可能被跳过。请确保导出一个函数组件。`
+    } else if (!result.isFunction) {
+      debugInfo = `⚠️ 默认导出的不是函数，该文件可能被跳过。请确保导出一个有效的函数组件。`
+    }
+    if (debugInfo) {
+      debug(debugInfo, `in ${file}`)
+      return false
+    }
+    return true
+  } catch (e) {
+    warn(`⚠️ 无法解析文件 ${file}`, `${e instanceof Error ? e.message : String(e)}`)
+    return false
+  }
 }

@@ -4,7 +4,9 @@
  * 负责生成路由的 TypeScript 类型定义，用于提供 IDE 类型提示和编译时类型检查。
  * 与构建工具无关，可在任何 Node.js 环境中使用。
  */
-import type { ParsedPage } from '../types.js'
+
+import type { RouteNode } from '../types/index.js'
+import { hasDynamicPath } from '../utils/index.js'
 
 /**
  * 路由索引映射表
@@ -52,26 +54,15 @@ function extractParamsFromPath(path: string): string[] {
 }
 
 /**
- * 检查路径是否包含动态参数
- *
- * @param path - 路由路径
- * @returns 是否包含动态参数
- */
-function hasDynamicParams(path: string): boolean {
-  return /\{[^}]+}/.test(path)
-}
-
-/**
  * 判断路由是否需要注册
  *
- * @param page - 页面信息
- * @returns 是否需要注册
+ * @param route - 路由信息
+ * @returns {boolean} 是否需要注册
  */
-function shouldRegisterRoute(page: ParsedPage): boolean {
-  const hasComponent = page.filePath && page.filePath.trim() !== ''
-  const hasChildren = page.children.length > 0
-  const hasRedirect = page.redirect !== undefined
-  return (hasComponent && !hasChildren) || hasRedirect
+function shouldRegisterRoute(route: RouteNode): boolean {
+  const isGroup = route.children?.length
+  const hasRedirect = route.redirect !== undefined
+  return !isGroup || hasRedirect
 }
 
 /**
@@ -119,60 +110,54 @@ function formatRouteIndexEntry(
  * 递归处理单个页面及其子页面
  *
  * @param map - 路由索引映射表
- * @param page - 页面信息
+ * @param route - 页面信息
  * @param parentFullPath - 父级完整路径
  */
 function processPage(
   map: ParsedRouteIndexMap,
-  page: ParsedPage,
+  route: RouteNode,
   parentFullPath: string = ''
 ): void {
-  if (shouldRegisterRoute(page)) {
-    const params = extractParamsFromPath(page.path)
+  const currentPath = route.fullPath
+  if (shouldRegisterRoute(route)) {
+    const params = extractParamsFromPath(route.fullPath)
     const entry =
       params.length > 0
         ? { params: params.reduce((acc, p) => ({ ...acc, [p]: 'string | number' }), {}) }
         : {}
 
-    map[page.name] = entry
+    // 命名路由
+    if (route.name) map[route.name] = entry
 
-    if (!hasDynamicParams(page.path)) {
-      let fullPath = page.path
-      if (page.path === '' && parentFullPath) {
-        fullPath = parentFullPath
-      }
-      if (fullPath) {
-        map[fullPath] = entry
-      }
+    if (!hasDynamicPath(currentPath)) {
+      map[currentPath] = entry
     }
-
-    if (page.alias) {
-      const aliases = Array.isArray(page.alias) ? page.alias : [page.alias]
+    if (route.alias) {
+      const aliases = Array.isArray(route.alias) ? route.alias : [route.alias]
       for (const alias of aliases) {
         const aliasPath = resolveAliasPath(alias, parentFullPath)
-        if (aliasPath && !hasDynamicParams(aliasPath)) {
+        if (aliasPath && !hasDynamicPath(aliasPath)) {
           map[aliasPath] = entry
         }
       }
     }
   }
 
-  const currentFullPath = page.path === '' ? parentFullPath : page.path || parentFullPath
-
-  for (const child of page.children) {
-    processPage(map, child, currentFullPath)
+  if (route.children) {
+    for (const child of route.children) {
+      processPage(map, child, currentPath)
+    }
   }
 }
-
 /**
  * 构建路由索引映射表
  *
- * @param pages - 页面列表
+ * @param routes - 页面列表
  * @returns 路由索引映射表
  */
-function buildRouteIndexMap(pages: ParsedPage[]): ParsedRouteIndexMap {
+function buildRouteIndexMap(routes: RouteNode[]): ParsedRouteIndexMap {
   const map: ParsedRouteIndexMap = {}
-  for (const page of pages) {
+  for (const page of routes) {
     processPage(map, page)
   }
   return map
@@ -181,12 +166,12 @@ function buildRouteIndexMap(pages: ParsedPage[]): ParsedRouteIndexMap {
 /**
  * 生成完整的 .d.ts 声明文件内容
  *
- * @param pages - 解析后的页面列表
+ * @param routes - 解析后的页面列表
  * @returns 完整的 .d.ts 文件内容
  */
-export function generateFullDtsFile(pages: ParsedPage[]): string {
+export function generateDtsCode(routes: RouteNode[]): string {
   const moduleName = 'vitarx-router'
-  const indexMap = buildRouteIndexMap(pages)
+  const indexMap = buildRouteIndexMap(routes)
 
   const lines: string[] = []
   lines.push('/// <reference types="vitarx-router/global" />')

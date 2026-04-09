@@ -19,7 +19,7 @@
  * /// <reference types="vitarx-router/global" />
  * ```
  */
-import type { PageOptions } from './types.js'
+import type { PageOptions } from './types/index.js'
 
 declare global {
   /**

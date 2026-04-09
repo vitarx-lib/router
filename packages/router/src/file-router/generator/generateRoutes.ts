@@ -4,24 +4,26 @@
  * 负责将解析后的页面信息转换为可执行的路由配置代码。
  * 与构建工具无关，可在任何 Node.js 环境中使用。
  */
-import type {
-  ExtendRouteHook,
-  ImportMode,
-  NamingStrategy,
-  ParsedPage,
-  ResolvedRoute
-} from '../types.js'
+
+import { createHash } from 'node:crypto'
+import type { ExtendRouteHook, ImportMode, PageNode, RouteNode } from '../types/index.js'
+import { normalizeRoutePath } from '../utils/index.js'
+import { generateDtsCode } from './generateTypes.js'
 
 /**
  * 路由生成选项
  */
 export interface GenerateRoutesOptions {
   /**
+   * 是否生成类型代码
+   */
+  dts: boolean
+  /**
    * 组件导入模式
    * - `lazy`: 使用 lazy(() => import(...)) 懒加载组件
    * - `file`: 直接使用文件路径作为组件
    */
-  importMode?: ImportMode
+  importMode: ImportMode
   /**
    * 路由扩展钩子
    * 在生成每个路由配置时调用，允许开发者自定义扩展路由配置
@@ -31,79 +33,104 @@ export interface GenerateRoutesOptions {
    * 自定义导入语句
    * 允许向虚拟模块注入自定义的导入语句
    */
-  imports?: string[]
-  /**
-   * 路由命名策略
-   * - `kebab`: 将驼峰命名转换为 kebab-case（默认）
-   * - `lowercase`: 简单转换为小写
-   * - `none`: 保持原始命名
-   * @default 'kebab'
-   */
-  namingStrategy?: NamingStrategy
+  imports?: readonly string[]
+}
+export interface GenerateResult {
+  routes: RouteNode[]
+  code: string
+  dts: string
+}
+/**
+ * 将绝对路径转换为百分百唯一、合法的 import 变量名
+ */
+export function pathToUniqueName(absolutePath: string): string {
+  // md5 碰撞概率在现实场景中为 0，且生成速度极快
+  const hash = createHash('md5').update(absolutePath).digest('hex')
+
+  // 加上 '_' 前缀，因为 hash 结果可能是数字开头（如 '1a2b3c...'），
+  // 数字开头的标识符在 JS 中不能直接作为变量名。
+  return `_${hash}`
+}
+/**
+ * 生成路由名称
+ *
+ * @returns 路由名称
+ */
+function generateRouteName(fullPath: string): string {
+  return (
+    fullPath
+      // 1. 去除首尾斜杠
+      .replace(/^\/+|\/+$/g, '')
+      // 2. 直接删除花括号和问号（不替换为-，保护静态路径的连续中划线）
+      .replace(/[{}?]/g, '')
+      // 3. 仅将斜杠替换为中划线
+      .replace(/\//g, '-')
+  )
 }
 
 /**
  * 构建单个路由配置
  *
  * @param page - 页面信息
- * @param options - 生成选项
+ * @param parent
+ * @param extendRoute - 路由扩展钩子
  * @returns 解析后的路由配置
  */
-async function buildResolvedRoute(
-  page: ParsedPage,
-  options: GenerateRoutesOptions
-): Promise<ResolvedRoute> {
-  const { extendRoute } = options
-
+function buildRouteNode(
+  page: PageNode,
+  extendRoute?: ExtendRouteHook,
+  parent?: RouteNode
+): RouteNode {
   // 创建基础路由配置
-  const route: ResolvedRoute = {
-    path: page.path
+  const route: RouteNode = {
+    path: page.path,
+    fullPath: parent ? normalizeRoutePath(parent.fullPath + '/' + page.path) : page.path
   }
 
   // 处理组件配置
-  if (page.filePath && page.filePath.trim() !== '') {
-    if (page.namedViews) {
-      // 处理命名视图
-      const components: Record<string, string> = {
-        default: JSON.stringify(page.filePath)
-      }
-      for (const [viewName, viewPath] of Object.entries(page.namedViews)) {
-        components[viewName] = JSON.stringify(viewPath)
-      }
-      route.component = components
-    } else {
-      // 处理普通组件
-      route.component = JSON.stringify(page.filePath)
+  if (page.components) {
+    // 处理命名视图
+    const components: Record<string, string> = {
+      default: JSON.stringify(page.filePath)
+    }
+    for (const [viewName, viewPath] of Object.entries(page.components)) {
+      components[viewName] = viewPath
+    }
+    route.component = components
+  }
+
+  // 处理路由配置
+  if (page.options) {
+    const { name, meta, pattern, redirect, alias } = page.options
+    if (name?.trim()) {
+      route.name = name
+    }
+    // 处理其他路由配置
+    if (meta && Object.keys(meta).length > 0) {
+      route.meta = { ...meta }
+    }
+    if (pattern && Object.keys(pattern).length > 0) {
+      route.pattern = { ...pattern }
+    }
+    if (redirect !== undefined) {
+      route.redirect = typeof redirect === 'object' ? { ...redirect } : redirect
+    }
+    if (alias !== undefined) {
+      route.alias = Array.isArray(alias) ? Array.from(alias) : alias
     }
   }
 
-  // 处理其他路由配置
-  if (page.meta && Object.keys(page.meta).length > 0) {
-    route.meta = page.meta
-  }
-  if (page.pattern && Object.keys(page.pattern).length > 0) {
-    route.pattern = page.pattern
-  }
-  if (page.redirect !== undefined) {
-    route.redirect = page.redirect
-  }
-  if (page.alias !== undefined) {
-    route.alias = page.alias
-  }
-  if (page.children.length > 0) {
+  // 处理子路由
+  if (page.children && page.children.size > 0) {
     // 递归处理子路由
-    route.children = await buildResolvedRoutes(page.children, options)
-  }
-
-  // 为叶子路由或重定向路由添加名称
-  if (page.children.length === 0 || page.redirect !== undefined) {
-    route.name = page.name
+    route.children = buildRoutes(page.children.values(), extendRoute, route)
   }
 
   // 应用路由扩展钩子
-  if (extendRoute) {
-    const result = await extendRoute(route)
-    if (result) return result
+  if (extendRoute) extendRoute(route, page)
+  // 动态路由不存在name时生成一个name
+  if (!route.name && route.fullPath.includes('{')) {
+    route.name = generateRouteName(route.fullPath)
   }
   return route
 }
@@ -112,16 +139,18 @@ async function buildResolvedRoute(
  * 构建解析后的路由配置列表
  *
  * @param pages - 页面列表
- * @param options - 生成选项
+ * @param extendRoute - 路由扩展钩子
+ * @param parent - 父路由
  * @returns 路由配置列表
  */
-async function buildResolvedRoutes(
-  pages: ParsedPage[],
-  options: GenerateRoutesOptions
-): Promise<ResolvedRoute[]> {
-  const routes: ResolvedRoute[] = []
+function buildRoutes(
+  pages: Iterable<PageNode>,
+  extendRoute?: ExtendRouteHook,
+  parent?: RouteNode
+): RouteNode[] {
+  const routes: RouteNode[] = []
   for (const page of pages) {
-    const route = await buildResolvedRoute(page, options)
+    const route = buildRouteNode(page, extendRoute, parent)
     routes.push(route)
   }
   return routes
@@ -132,19 +161,24 @@ async function buildResolvedRoutes(
  *
  * @param component - 组件路径或命名视图映射
  * @param importMode - 导入模式
+ * @param importLines - 导入语句集合
  * @returns 格式化后的组件表达式代码
  */
 function formatComponent(
   component: string | Record<string, string>,
-  importMode: ImportMode
+  importMode: ImportMode,
+  importLines: Set<string>
 ): string {
-  if (typeof component === 'string') {
-    // 处理单个组件
-    return importMode === 'file' ? component : `lazy(() => import(${component}))`
-  }
   // 处理命名视图
-  const entries = Object.entries(component).map(([name, value]) => {
-    const expr = importMode === 'file' ? value : `lazy(() => import(${value}))`
+  const entries = Object.entries(component).map(([name, file]) => {
+    const importPath = JSON.stringify(file)
+    let expr: string
+    if (importMode === 'sync') {
+      expr = pathToUniqueName(file)
+      importLines.add(`import ${expr} from ${importPath}`)
+    } else {
+      expr = `lazy(() => import(${importPath}))`
+    }
     return `${name}: ${expr}`
   })
   return `{ ${entries.join(', ')} }`
@@ -170,13 +204,15 @@ function generatePatternCode(pattern: Record<string, RegExp>): string {
  * @param indent - 缩进字符串
  * @param isLast - 是否为最后一个元素
  * @param importMode - 导入模式
+ * @param importLines - 导入语句集合
  * @returns 代码行数组
  */
 function generateRouteCode(
-  route: ResolvedRoute,
+  route: RouteNode,
   indent: string,
   isLast: boolean,
-  importMode: ImportMode
+  importMode: ImportMode,
+  importLines: Set<string>
 ): string[] {
   const lines: string[] = []
   const comma = isLast ? '' : ','
@@ -194,7 +230,7 @@ function generateRouteCode(
   // 添加组件配置
   if (route.component) {
     lines[lines.length - 1] += ','
-    lines.push(`${indent}  component: ${formatComponent(route.component, importMode)}`)
+    lines.push(`${indent}  component: ${formatComponent(route.component, importMode, importLines)}`)
   }
   // 添加 meta 配置
   if (route.meta) {
@@ -224,7 +260,13 @@ function generateRouteCode(
       const child = route.children[i]
       // 递归生成子路由代码
       lines.push(
-        ...generateRouteCode(child, indent + '    ', i === route.children!.length - 1, importMode)
+        ...generateRouteCode(
+          child,
+          indent + '    ',
+          i === route.children!.length - 1,
+          importMode,
+          importLines
+        )
       )
     }
     lines.push(`${indent}  ]`)
@@ -241,41 +283,42 @@ function generateRouteCode(
  * @param importMode - 导入模式
  * @param customImports - 自定义导入语句
  * @param indent - 缩进字符串
- * @returns 完整的路由模块代码
+ * @returns {string} 完整的路由模块代码
  */
 function generateRoutesCode(
-  routes: ResolvedRoute[],
+  routes: RouteNode[],
   importMode: ImportMode = 'lazy',
-  customImports?: string[],
+  customImports?: readonly string[],
   indent: string = '  '
 ): string {
-  const lines: string[] = []
+  const importLines: Set<string> = new Set<string>()
+  const codeLines: string[] = []
 
   // 添加 lazy 导入（如果需要）
   if (importMode === 'lazy') {
-    lines.push(`import { lazy } from 'vitarx'`)
+    importLines.add(`import { lazy } from 'vitarx'`)
   }
 
   // 添加自定义导入语句
   if (customImports && customImports.length > 0) {
-    for (const imp of customImports) {
-      lines.push(imp)
-    }
+    customImports.forEach(imp => importLines.add(imp))
   }
 
   // 添加空行
   if (importMode === 'lazy' || (customImports && customImports.length > 0)) {
-    lines.push('')
+    codeLines.push('')
   }
 
   // 生成路由数组
-  lines.push('export default [')
+  codeLines.push('export default [')
   for (let i = 0; i < routes.length; i++) {
     const route = routes[i]
-    lines.push(...generateRouteCode(route, indent, i === routes.length - 1, importMode))
+    codeLines.push(
+      ...generateRouteCode(route, indent, i === routes.length - 1, importMode, importLines)
+    )
   }
-  lines.push(']')
-  return lines.join('\n')
+  codeLines.push(']')
+  return Array.from(importLines.values()).concat(codeLines).join('\n')
 }
 
 /**
@@ -287,12 +330,11 @@ function generateRoutesCode(
  * @param options - 路由生成选项
  * @returns Promise 包含可执行路由配置代码字符串
  */
-export async function generateRoutes(
-  pages: ParsedPage[],
-  options: GenerateRoutesOptions = {}
-): Promise<string> {
+export function generateRoutes(pages: PageNode[], options: GenerateRoutesOptions): GenerateResult {
   // 构建解析后的路由配置
-  const routes = await buildResolvedRoutes(pages, options)
+  const routes = buildRoutes(pages, options.extendRoute)
   // 生成最终的路由代码
-  return generateRoutesCode(routes, options.importMode, options.imports)
+  const code = generateRoutesCode(routes, options.importMode, options.imports)
+  const dts = options.dts ? generateDtsCode(routes) : ''
+  return { routes, code, dts }
 }
