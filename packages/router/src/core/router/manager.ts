@@ -243,6 +243,7 @@ export class RouteManager {
 
     if (candidates) {
       for (const { regex, route } of candidates) {
+        regex.lastIndex = 0
         // 执行正则匹配
         const match = regex.exec(formattedPath)
         if (match) {
@@ -297,6 +298,7 @@ export class RouteManager {
     const resolvedParams: Record<string, string> = {}
 
     for (const paramDef of route.pattern) {
+      paramDef.regex.lastIndex = 0
       const value = params[paramDef.name]
       const rawValue = String(value ?? '') // 统一转字符串处理
 
