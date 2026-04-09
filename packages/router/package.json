@@ -1,7 +1,7 @@
 {
   "name": "vitarx-router",
   "version": "4.0.0-beta.2",
-  "description": "Vitarx 前端框架官方路由解决方案，提供声明式路由配置、导航守卫、动态路由匹配、文件系统路由等企业级功能。",
+  "description": "Official routing solution for Vitarx framework with declarative routing, navigation guards, dynamic routes, file-based routing with HMR, and full TypeScript support.",
   "author": "ZhuChonglin <8210856@qq.com>",
   "license": "MIT",
   "repository": {
