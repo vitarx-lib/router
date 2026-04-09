@@ -4,6 +4,7 @@
  * 提供页面目录配置的处理和文件检查功能。
  * 与构建工具无关，可在任何 Node.js 环境中使用。
  */
+import { accessSync, constants } from 'node:fs'
 import path from 'node:path'
 import {
   DEFAULT_CONFIG_FILE,
@@ -75,6 +76,13 @@ function resolvePageConfigs(
     }
     if (resolved.prefix !== '/' && !resolved.prefix.startsWith('/')) {
       resolved.prefix = '/' + resolved.prefix
+    }
+    try {
+      accessSync(resolved.dir, constants.R_OK | constants.W_OK)
+    } catch (error) {
+      throw new Error(
+        `File router: Pages directory "${resolved.dir}" does not exist or is not accessible`
+      )
     }
     return resolved
   })
