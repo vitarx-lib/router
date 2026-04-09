@@ -6,7 +6,8 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [
     VitarxRouter({
-      pages: 'src/pages'
+      pages: 'src/pages',
+      dts: true
     }),
     vitarx()
   ],
