@@ -17,23 +17,12 @@ import { FileRouter } from 'vitarx-router/file-router'
 
 const router = new FileRouter({
   root: process.cwd(),
-  pages: 'src/pages',
-  extensions: ['.tsx', '.jsx']
+  pages: 'src/pages'
 })
 
-router.scan()
-
-const { code } = await router.generateRoutes()
+// 构造函数自动扫描页面文件，无需手动调用 scan()
+const { code, dts } = router.generate()
 console.log(code)
-```
-
-### 生成类型定义
-
-```typescript
-const dts = router.generateDts()
-console.log(dts)
-
-router.writeDts('typed-router.d.ts')
 ```
 
 ## API
@@ -48,26 +37,29 @@ router.writeDts('typed-router.d.ts')
 new FileRouter(options?: FileRouterOptions)
 ```
 
+构造函数会自动扫描页面目录并构建路由树，无需手动调用 scan 方法。
+
 #### 实例方法
 
-| 方法                                 | 说明                  |
-|------------------------------------|---------------------|
-| `scan()`                           | 扫描页面目录，解析页面文件并构建路由树 |
-| `invalidate()`                     | 清除路由代码缓存            |
-| `isPageFile(file)`                 | 检查文件是否为页面文件         |
-| `getPages()`                       | 获取解析后的页面列表          |
-| `getRouteTree()`                   | 获取路由树结构             |
-| `generateRoutes()`                 | 生成路由代码              |
-| `generateDts()`                    | 生成类型定义内容            |
-| `writeDts(dtsPath)`                | 写入类型定义文件            |
-| `removeDefinePage(code, filePath)` | 移除 definePage 宏调用   |
+| 方法                                 | 说明                |
+|------------------------------------|-------------------|
+| `generate()`                       | 生成路由代码和类型定义       |
+| `clearGenerateResult()`            | 清除路由代码缓存          |
+| `removeDefinePage(code, filePath)` | 移除 definePage 宏调用 |
+| `addPage(filePath)`                | 动态添加页面文件          |
+| `removePage(filePath)`             | 动态移除页面文件          |
+| `updatePage(filePath)`             | 动态更新页面文件          |
+| `handleChange(event, path)`        | 处理文件变化事件          |
+| `reload()`                         | 重新加载所有页面          |
 
 #### 实例属性
 
-| 属性       | 类型               | 说明     |
-|----------|------------------|--------|
-| `config` | `ResolvedConfig` | 解析后的配置 |
-| `root`   | `string`         | 项目根目录  |
+| 属性         | 类型                        | 说明         |
+|------------|---------------------------|------------|
+| `config`   | `ResolvedConfig`          | 解析后的配置     |
+| `root`     | `string`                  | 项目根目录      |
+| `nodeTree` | `ParsedNode[]`            | 解析后的节点树结构  |
+| `fileMap`  | `Map<string, ParsedNode>` | 文件到页面节点的映射 |
 
 ## 配置选项
 
@@ -76,48 +68,60 @@ new FileRouter(options?: FileRouterOptions)
 ```typescript
 interface FileRouterOptions {
   root?: string
-  pages?: string | PageConfig | (PageConfig | string)[]
-  prefix?: string
-  extensions?: string[]
-  include?: string[]
-  exclude?: string[]
-  importMode?: 'lazy' | 'file'
+  pages?: PageSource | readonly PageSource[]
+  pathStrategy?: 'kebab' | 'lowercase' | 'raw'
+  importMode?: 'lazy' | 'sync'
+  injectImports?: readonly string[]
+  dts?: boolean | string
+  layoutFileName?: string
+  configFileName?: string
+  transform?: CodeTransformHook
   extendRoute?: ExtendRouteHook
-  injectImports?: string[]
-  namingStrategy?: 'kebab' | 'lowercase' | 'none'
 }
 ```
 
-| 选项               | 类型                                                 | 默认值                | 说明           |
-|------------------|----------------------------------------------------|--------------------|--------------|
-| `root`           | `string`                                           | `process.cwd()`    | 项目根目录        |
-| `pages`          | `string \| PageConfig \| (PageConfig \| string)[]` | `'src/pages'`      | 页面目录配置       |
-| `prefix`         | `string`                                           | -                  | 路由前缀         |
-| `extensions`     | `string[]`                                         | `['.tsx', '.jsx']` | 支持的文件扩展名     |
-| `include`        | `string[]`                                         | `[]`               | 要包含的 glob 模式 |
-| `exclude`        | `string[]`                                         | `[]`               | 要排除的 glob 模式 |
-| `importMode`     | `'lazy' \| 'file'`                                 | `'lazy'`           | 组件导入模式       |
-| `extendRoute`    | `ExtendRouteHook`                                  | -                  | 路由扩展钩子       |
-| `injectImports`  | `string[]`                                         | -                  | 注入自定义导入语句    |
-| `namingStrategy` | `'kebab' \| 'lowercase' \| 'none'`                 | `'kebab'`          | 路由命名策略       |
+| 选项               | 类型                                    | 默认值             | 说明        |
+|------------------|---------------------------------------|-----------------|-----------|
+| `root`           | `string`                              | `process.cwd()` | 项目根目录     |
+| `pages`          | `PageSource \| readonly PageSource[]` | `'src/pages'`   | 页面来源配置    |
+| `pathStrategy`   | `'kebab' \| 'lowercase' \| 'raw'`     | `'kebab'`       | 路径命名策略    |
+| `importMode`     | `'lazy' \| 'sync'`                    | `'lazy'`        | 组件导入模式    |
+| `injectImports`  | `readonly string[]`                   | -               | 注入自定义导入语句 |
+| `dts`            | `boolean \| string`                   | `false`         | 类型定义文件配置  |
+| `layoutFileName` | `string`                              | `'_layout'`     | 布局文件名     |
+| `configFileName` | `string`                              | `'_config'`     | 分组配置文件名   |
+| `transform`      | `CodeTransformHook`                   | -               | 代码转换钩子    |
+| `extendRoute`    | `ExtendRouteHook`                     | -               | 路由扩展钩子    |
 
-### PageConfig
+### PageSource
+
+页面来源配置，支持字符串或对象形式：
 
 ```typescript
-interface PageConfig {
+type PageSource = string | PageDirOptions
+```
+
+### PageDirOptions
+
+页面目录选项配置：
+
+```typescript
+interface PageDirOptions {
   dir: string
-  include?: string[]
-  exclude?: string[]
+  include?: readonly string[]
+  exclude?: readonly string[]
   prefix?: string
+  group?: boolean
 }
 ```
 
-| 选项        | 类型         | 说明           |
-|-----------|------------|--------------|
-| `dir`     | `string`   | 页面目录路径       |
-| `include` | `string[]` | 要包含的 glob 模式 |
-| `exclude` | `string[]` | 要排除的 glob 模式 |
-| `prefix`  | `string`   | 路由路径前缀       |
+| 选项        | 类型                  | 默认值                                                  | 说明           |
+|-----------|---------------------|------------------------------------------------------|--------------|
+| `dir`     | `string`            | -                                                    | 页面目录路径       |
+| `include` | `readonly string[]` | `['**\/*.{jsx,tsx}']`                                | 要包含的 glob 模式 |
+| `exclude` | `readonly string[]` | `['**\/node_modules\/**', '**\/dist\/**', '**\/.*']` | 要排除的 glob 模式 |
+| `prefix`  | `string`            | -                                                    | 路由路径前缀       |
+| `group`   | `boolean`           | -                                                    | 是否创建分组路由     |
 
 ### pages 配置示例
 
@@ -132,8 +136,8 @@ const router = new FileRouter({
 
 const router = new FileRouter({
   pages: [
-    { dir: 'src/pages', exclude: ['components'] },
-    { dir: 'src/admin', include: ['**\/*.tsx'], prefix: '/admin/' }
+    { dir: 'src/pages', exclude: ['**/components/**'] },
+    { dir: 'src/admin', include: ['**/*.tsx'], prefix: '/admin/', group: true }
   ]
 })
 ```
@@ -240,7 +244,7 @@ interface PageOptions {
 ## importMode 配置
 
 - `lazy`（默认）：使用 `lazy(() => import(...))` 懒加载组件
-- `file`：直接使用文件路径作为组件，由用户自行处理导入
+- `sync`：使用静态导入，组件会被打包到主bundle中
 
 ```typescript
 const router = new FileRouter({
@@ -248,14 +252,7 @@ const router = new FileRouter({
 })
 
 const router = new FileRouter({
-  importMode: 'file',
-  injectImports: ["import { lazy } from 'vitarx'"],
-  extendRoute(route) {
-    if (route.component && typeof route.component === 'string') {
-      route.component = `lazy(() => import(${route.component}))`
-    }
-    return route
-  }
+  importMode: 'sync'
 })
 ```
 
@@ -287,17 +284,136 @@ const router = new FileRouter({
 })
 ```
 
-## namingStrategy 配置
+## layoutFileName 配置
 
-控制路由名称和路径的命名转换方式：
-
-- `kebab`（默认）：将驼峰命名转换为 kebab-case，如 `MainHome` → `main-home`
-- `lowercase`：简单转换为小写，如 `MainHome` → `mainhome`
-- `none`：保持原始命名，不进行转换
+自定义布局文件名，默认为 `_layout`：
 
 ```typescript
 const router = new FileRouter({
-  namingStrategy: 'kebab'
+  layoutFileName: '__layout__'
+})
+```
+
+## configFileName 配置
+
+自定义分组配置文件名，默认为 `_config`：
+
+```typescript
+const router = new FileRouter({
+  configFileName: '__config__'
+})
+```
+
+## transform 钩子
+
+代码转换钩子，通常用于转换 markdown 文件内容为 ESModule：
+
+```typescript
+const router = new FileRouter({
+  transform(content, file) {
+    const { ext, name } = path.parse(file)
+    if (ext === '.md') {
+      const html = markdownToHtml(content)
+      return `export default function ${name}() { return ${html} }`
+    }
+    return content
+  }
+})
+```
+
+## pathStrategy 配置
+
+控制路由路径的命名转换方式：
+
+- `kebab`（默认）：将驼峰命名转换为 kebab-case，如 `MainHome` → `main-home`
+- `lowercase`：简单转换为小写，如 `MainHome` → `mainhome`
+- `raw`：保持原始命名，不进行转换
+
+```typescript
+const router = new FileRouter({
+  pathStrategy: 'kebab'
+})
+```
+
+## 动态页面管理
+
+FileRouter 提供了动态管理页面文件的能力，适用于开发模式下的热更新场景。
+
+### 添加页面
+
+```typescript
+const router = new FileRouter({
+  root: process.cwd(),
+  pages: 'src/pages'
+})
+
+// 添加新页面
+router.addPage('/absolute/path/to/new-page.tsx')
+```
+
+### 移除页面
+
+```typescript
+// 移除页面
+router.removePage('/absolute/path/to/page.tsx')
+```
+
+### 更新页面
+
+```typescript
+// 更新页面（会重新解析文件）
+router.updatePage('/absolute/path/to/page.tsx')
+```
+
+### 处理文件变化
+
+```typescript
+// 处理文件系统事件
+router.handleChange('add', '/path/to/file.tsx')
+router.handleChange('change', '/path/to/file.tsx')
+router.handleChange('unlink', '/path/to/file.tsx')
+router.handleChange('unlinkDir', '/path/to/directory')
+```
+
+### 重新加载所有页面
+
+```typescript
+// 重新扫描所有页面
+router.reload()
+```
+
+## generate() 方法
+
+生成路由代码和类型定义。
+
+```typescript
+const result = router.generate()
+
+// result.code - 路由代码
+// result.dts - 类型定义代码（如果启用）
+// result.routes - 解析后的路由数组
+```
+
+### 类型定义生成
+
+```typescript
+const router = new FileRouter({
+  root: process.cwd(),
+  pages: 'src/pages',
+  dts: 'typed-router.d.ts'  // 指定类型定义文件路径
+})
+
+const result = router.generate()
+// 类型定义会自动写入到 typed-router.d.ts 文件
+```
+
+禁用类型定义：
+
+```typescript
+const router = new FileRouter({
+  root: process.cwd(),
+  pages: 'src/pages',
+  dts: false
 })
 ```
 
@@ -366,48 +482,51 @@ src/pages/
 
 ## 类型定义
 
-### ParsedPage
+### ParsedNode
 
-解析后的页面信息。
+解析后的节点信息，核心 IR 节点。
 
 ```typescript
-interface ParsedPage {
-  path: string
-  filePath: string
-  name: string
-  params: string[]
-  isIndex: boolean
-  isDynamic: boolean
-  children: ParsedPage[]
-  meta?: RouteMetaData
-  customName?: string
-  pattern?: Record<string, RegExp>
-  parentPath: string
-  redirect?: string | RedirectConfig
-  alias?: string | string[]
-  isLayoutFile?: boolean
-  layoutFilePath?: string
-  viewName?: string | null
-  namedViews?: Record<string, string>
+interface ParsedNode {
+  readonly filePath: string
+  readonly path: string
+  parent?: ParsedNode
+  children?: Set<ParsedNode>
+  components?: Record<string, string>
+  options?: PageOptions
+  dirConfigFile?: string
 }
 ```
 
-### ResolvedRoute
+| 属性              | 类型                       | 说明            |
+|-----------------|--------------------------|---------------|
+| `filePath`      | `string`                 | 文件绝对路径        |
+| `path`          | `string`                 | 当前 path（不含父级） |
+| `parent`        | `ParsedNode`             | 父节点           |
+| `children`      | `Set<ParsedNode>`        | 子节点映射         |
+| `components`    | `Record<string, string>` | 组件映射（命名视图）    |
+| `options`       | `PageOptions`            | 页面配置选项        |
+| `dirConfigFile` | `string`                 | 目录配置文件        |
 
-解析后的路由配置。
+### RouteNode
+
+路由节点，解析后的路由配置。
 
 ```typescript
-interface ResolvedRoute {
-  path: string
-  name?: string
-  component?: string | Record<string, string>
-  meta?: RouteMetaData
-  pattern?: Record<string, RegExp>
-  children?: ResolvedRoute[]
-  redirect?: string | NavOptions
-  alias?: string | string[]
+interface RouteNode extends PageOptions {
+  readonly path: string
+  readonly fullPath: string
+  children?: readonly RouteNode[]
+  component?: Record<string, string>
 }
 ```
+
+| 属性          | 类型                              | 说明                |
+|-------------|---------------------------------|-------------------|
+| `path`      | `string`                        | 当前 path（不含父级）     |
+| `fullPath`  | `string`                        | 完整 path（含父级）      |
+| `children`  | `readonly RouteNode[]`          | 子节点映射             |
+| `component` | `Record<string, string>`        | 组件映射（命名视图）        |
 
 ### ExtendRouteHook
 
@@ -415,8 +534,8 @@ interface ResolvedRoute {
 
 ```typescript
 type ExtendRouteHook = (
-  route: ResolvedRoute
-) => ResolvedRoute | void | Promise<ResolvedRoute | void>
+  route: RouteNode
+) => RouteNode | void | Promise<RouteNode | void>
 ```
 
 ## License
