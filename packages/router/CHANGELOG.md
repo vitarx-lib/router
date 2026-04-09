@@ -1,4 +1,27 @@
-# [4.0.0-beta.2](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.1...v4.0.0-beta.2) (2026-04-02)
+# [4.0.0-beta.3](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.2...v4.0.0-beta.3) (2026-04-09)
+
+
+### Bug Fixes
+
+* **router:** 优化布局文件识别逻辑 ([8b096ad](https://github.com/vitarx-lib/router/commit/8b096add7de95cccafafc7258347bbddd2175e42))
+* **router:** 修复扫描时路由缓存未清除问题 ([0cb6b9e](https://github.com/vitarx-lib/router/commit/0cb6b9eda460021bebd105353205efb586f07cff))
+* **router:** 修复页面文件变更时路由无效处理 ([5b21cd5](https://github.com/vitarx-lib/router/commit/5b21cd5607e1debea00869d543a7d40fc7661023))
+* **router:** 修改类型生成文件的注释和引用声明 ([19aba47](https://github.com/vitarx-lib/router/commit/19aba4733d097dc288679393f7c22b131e576517))
+* **router:** 修正 package.json 中的路径和作者名称错误 ([a1aafcf](https://github.com/vitarx-lib/router/commit/a1aafcfce80acab241394155d75f322503fba584))
+* **router:** 增加页面目录访问权限检查 ([ec25060](https://github.com/vitarx-lib/router/commit/ec250607eb01f6c6b357c3bc0d3e9d312a97b0a9))
+* **router:** 添加预览模式下跳过路由处理逻辑 ([8181adc](https://github.com/vitarx-lib/router/commit/8181adc739cb42e5d603b1b89f4a455f54b30d4e))
+* **router:** 重置正则表达式状态以避免匹配错误 ([c53543f](https://github.com/vitarx-lib/router/commit/c53543fd68ef7522b9ac7dc546a86d2cbb1fd34c))
+
+
+### Features
+
+* **router:** 优化文件路由全局宏函数注释 ([6000741](https://github.com/vitarx-lib/router/commit/60007412e62a8928ae2c90f860727fbf186e12fc))
+* **router:** 支持基于 _layout.jsx 的布局路由结构 ([85d38b4](https://github.com/vitarx-lib/router/commit/85d38b444eaaa71ca565c5a9ef71ccbd78ddc5d1))
+* **router:** 重构文件路由模块并新增导出检测和过滤工具 ([421bef5](https://github.com/vitarx-lib/router/commit/421bef5c0425d4c3426d0811910877ed946b38a4))
+
+
+
+# [4.0.0-beta.1](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.0...v4.0.0-beta.1) (2026-03-26)
 
 
 ### Bug Fixes
@@ -23,8 +46,6 @@
 * **router:** 修复销毁时未清空守卫和钩子的问题 ([ebe325b](https://github.com/vitarx-lib/router/commit/ebe325bf1e96f9715b492b6ebe61e05941f994b0))
 * **router:** 修复锚点跳转时路由对象克隆问题 ([92879e8](https://github.com/vitarx-lib/router/commit/92879e8f490300df0f3bcd9ae35942d2025f3af3))
 * **router:** 修改 RouterView 组件以修复路由匹配和属性处理 ([ed3de9a](https://github.com/vitarx-lib/router/commit/ed3de9ad08186e143452fce05e59153c209ba53e))
-* **router:** 修改类型生成文件的注释和引用声明 ([19aba47](https://github.com/vitarx-lib/router/commit/19aba4733d097dc288679393f7c22b131e576517))
-* **router:** 修正 package.json 中的路径和作者名称错误 ([a1aafcf](https://github.com/vitarx-lib/router/commit/a1aafcfce80acab241394155d75f322503fba584))
 * **router:** 修正 RouteLeaveGuard 返回类型定义 ([4878232](https://github.com/vitarx-lib/router/commit/4878232111bc7d23562b383f246fa13ad6dcfcac))
 * **router:** 修正 RouterLink 中的路由匹配警告逻辑 ([f5470f5](https://github.com/vitarx-lib/router/commit/f5470f50182ad7d23c5d88fb722952f6da1b55c4))
 * **router:** 修正params类型断言 ([5b5bc9d](https://github.com/vitarx-lib/router/commit/5b5bc9d2358f8e44cac5ec87e3963f0af464f0e5))
@@ -45,7 +66,6 @@
 
 * **router:** 优化 RouterView 组件渲染逻辑 ([d9bde1c](https://github.com/vitarx-lib/router/commit/d9bde1c8017e87fe15df8bc5bee220fe314115c4))
 * **router:** 优化异步组件解析逻辑 ([5d040d6](https://github.com/vitarx-lib/router/commit/5d040d63540c7b72fff671bbfa13a75c923c09b3))
-* **router:** 优化文件路由全局宏函数注释 ([6000741](https://github.com/vitarx-lib/router/commit/60007412e62a8928ae2c90f860727fbf186e12fc))
 * **router:** 增加路径变量提取与别名验证功能 ([431b4b5](https://github.com/vitarx-lib/router/commit/431b4b568eea18ccf895a9fd8181e368ab8f6340))
 * **router:** 支持 RouterView children 回调传入当前路由信息 ([6d37736](https://github.com/vitarx-lib/router/commit/6d3773665c7fff44debad7001f230c939b7d8bad))
 * **router:** 支持路由别名功能及相关管理优化 ([244e0ce](https://github.com/vitarx-lib/router/commit/244e0ce4e0554cf9e59cfea5d958741b47f69cb2))
@@ -56,7 +76,6 @@
 * **router:** 添加等待视图渲染完成的方法 ([11ca02b](https://github.com/vitarx-lib/router/commit/11ca02b62c3b40a65b6bdac9973231424c32927c))
 * **router:** 添加获取解析路由记录数组的方法 ([7cda8e7](https://github.com/vitarx-lib/router/commit/7cda8e7d4002da8dbdca0fab152fcf477b9f141b))
 * **router:** 添加路由命名策略配置和支持 ([c581ac3](https://github.com/vitarx-lib/router/commit/c581ac308993448b47763ec8a030469ccf38477b))
-* **router:** 重构文件路由模块并新增导出检测和过滤工具 ([421bef5](https://github.com/vitarx-lib/router/commit/421bef5c0425d4c3426d0811910877ed946b38a4))
 
 
 
