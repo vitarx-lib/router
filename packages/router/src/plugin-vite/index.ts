@@ -25,14 +25,9 @@
  *
  * @module vite
  */
-import chalk from 'chalk'
-import type { Plugin, ViteDevServer } from 'vite'
+import type { Plugin } from 'vite'
 
-import { FileRouter, info } from '../file-router/index.js'
-import type { FileRouterOptions } from '../file-router/types.js'
-
-/** 默认的类型声明文件路径 */
-export const DEFAULT_DTS_FILE = 'typed-router.d.ts'
+import { FileRouter, type FileRouterOptions } from '../file-router/index.js'
 
 /** 虚拟模块 ID：路由配置 */
 const VIRTUAL_ROUTES_ID = 'virtual:vitarx-router:routes'
@@ -45,15 +40,7 @@ const RESOLVED_ROUTES_ID = '\0' + VIRTUAL_ROUTES_ID
  *
  * 扩展自 FileRouterOptions，添加 Vite 特有的配置项。
  */
-export interface RouterPluginOptions extends FileRouterOptions {
-  /**
-   * 类型声明文件路径，设为 false 可禁用生成
-   *
-   * @default 'typed-router.d.ts'
-   */
-  dts?: string | false
-}
-
+export interface RouterPluginOptions extends FileRouterOptions {}
 /**
  * 创建 Vitarx Router Vite 插件
  *
@@ -61,8 +48,7 @@ export interface RouterPluginOptions extends FileRouterOptions {
  * @returns Vite 插件实例
  */
 export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin {
-  const dts = options.dts ?? DEFAULT_DTS_FILE
-  const router = new FileRouter(options)
+  let router: FileRouter | null = null
   let isPreview: boolean = false
   return {
     name: 'vite-plugin-vitarx-router',
@@ -73,11 +59,7 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
     },
     async configResolved() {
       if (isPreview) return
-      await router.scan()
-      if (dts) {
-        const result = router.writeDts(dts)
-        info(`✨ generate type definitions:\n${chalk.yellow(result.path)}`)
-      }
+      router = new FileRouter(options)
     },
 
     resolveId(id) {
@@ -89,42 +71,34 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
     },
 
     async load(id) {
-      if (isPreview) return null
+      if (!router) return null
       if (id === RESOLVED_ROUTES_ID) {
-        const { code } = await router.generateRoutes()
-        return code
+        return router.generate().code
       }
       return null
     },
 
     transform(code, id) {
-      if (isPreview) return null
+      if (!router) return null
       return router.removeDefinePage(code, id)
     },
 
     configureServer(server) {
-      if (isPreview) return
+      if (!router) return
+      const currentRouter = router
       const absolutePagesDirs = router.config.pages
       for (const dirConfig of absolutePagesDirs) {
         server.watcher.add(dirConfig.dir)
       }
-
-      const handlePageFileChange = async (file: string, server: ViteDevServer): Promise<void> => {
-        if (router.isPageFile(file)) {
-          await router.scan()
-          if (dts) {
-            router.writeDts(dts)
-          }
-          const mod = server.moduleGraph.getModuleById(RESOLVED_ROUTES_ID)
-          if (mod) {
-            server.moduleGraph.invalidateModule(mod)
-          }
+      // 监听所有变化事件 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir'
+      server.watcher.on('all', (event, file) => {
+        const mod = server.moduleGraph.getModuleById(RESOLVED_ROUTES_ID)
+        if (mod) {
+          const result = currentRouter.handleChange(event, file)
+          // 如果 handleChange 返回 true，则表示路由受到影响，需要更新模块
+          if (result) server.moduleGraph.invalidateModule(mod)
         }
-      }
-
-      server.watcher.on('add', file => handlePageFileChange(file, server))
-      server.watcher.on('unlink', file => handlePageFileChange(file, server))
-      server.watcher.on('change', file => handlePageFileChange(file, server))
+      })
     }
   }
 }
