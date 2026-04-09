@@ -1,15 +1,14 @@
-import type { PageNode } from './page.js'
-import type { RouteNode } from './route.js'
+import type { ParsedNode, RouteNode } from './route.js'
 
 /**
  * 扩展路由的钩子
  *
  * 支持对 route 的数据直接进行修改，但不可修改 children ！
  *
- * @param route - 路由节点
- * @param page - 页面节点
+ * @param route - 生成的路由节点
+ * @param parsed - 解析的路由节点
  */
-export type ExtendRouteHook = (route: RouteNode, page: Readonly<PageNode>) => void
+export type ExtendRouteHook = (route: RouteNode, parsed: Readonly<ParsedNode>) => void
 
 /**
  * 代码转换函数

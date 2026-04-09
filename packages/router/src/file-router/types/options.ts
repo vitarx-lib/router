@@ -128,6 +128,15 @@ export interface FileRouterOptions {
   transform?: CodeTransformHook
   /**
    * 扩展路由
+   *
+   * @example
+   * ```js
+   * {
+   *   extendRoute(route) {
+   *      route.meta ??= { auth: true }
+   *   }
+   * }
+   * ```
    */
   extendRoute?: ExtendRouteHook
 }
