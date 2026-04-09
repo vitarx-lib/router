@@ -38,8 +38,8 @@
     },
     "./auto-routes": {
       "import": {
-        "types": "./dist/plugin-vite/auto-routes/index.d.ts",
-        "default": "./dist/plugin-vite/auto-routes/index.js"
+        "types": "./dist/auto-routes/index.d.ts",
+        "default": "./dist/auto-routes/index.js"
       }
     },
     "./global": {
