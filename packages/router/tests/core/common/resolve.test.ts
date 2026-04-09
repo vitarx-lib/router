@@ -1,14 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
-import {
-  resolveComponent,
-  resolvePattern,
-  resolveProps
-} from '../../../src/core/common/resolve.js'
+import { describe, expect, it } from 'vitest'
+import { resolveComponent, resolvePattern, resolveProps } from '../../../src/core/common/resolve.js'
 import type { Route } from '../../../src/core/types/index.js'
 
-function createMockComponent() {
-  return vi.fn()
-}
+import { createMockComponent } from '../testHelpers.js'
 
 describe('common/resolve', () => {
   describe('resolveComponent', () => {
@@ -147,14 +141,26 @@ describe('common/resolve', () => {
 
     it('应该正确使用自定义 pattern', () => {
       const customPattern = /\d+/
-      const result = resolvePattern('/user/{id}', { id: customPattern }, false, false, defaultPattern)
+      const result = resolvePattern(
+        '/user/{id}',
+        { id: customPattern },
+        false,
+        false,
+        defaultPattern
+      )
       expect(result.regex.test('/user/123')).toBe(true)
       expect(result.regex.test('/user/abc')).toBe(false)
       expect(result.pattern[0].regex).toBe(customPattern)
     })
 
     it('当自定义 pattern 不是正则时应该使用默认 pattern', () => {
-      const result = resolvePattern('/user/{id}', { id: 'invalid' as any }, false, false, defaultPattern)
+      const result = resolvePattern(
+        '/user/{id}',
+        { id: 'invalid' as any },
+        false,
+        false,
+        defaultPattern
+      )
       expect(result.pattern[0].regex).toBe(defaultPattern)
     })
 
@@ -171,7 +177,13 @@ describe('common/resolve', () => {
     })
 
     it('应该正确解析多个参数', () => {
-      const result = resolvePattern('/user/{userId}/post/{postId}', {}, false, false, defaultPattern)
+      const result = resolvePattern(
+        '/user/{userId}/post/{postId}',
+        {},
+        false,
+        false,
+        defaultPattern
+      )
       expect(result.pattern).toHaveLength(2)
       expect(result.pattern[0].name).toBe('userId')
       expect(result.pattern[1].name).toBe('postId')
@@ -186,7 +198,13 @@ describe('common/resolve', () => {
 
     it('应该正确处理正则中的锚点', () => {
       const patternWithAnchors = /^[a-z]+$/
-      const result = resolvePattern('/user/{id}', { id: patternWithAnchors }, false, false, defaultPattern)
+      const result = resolvePattern(
+        '/user/{id}',
+        { id: patternWithAnchors },
+        false,
+        false,
+        defaultPattern
+      )
       expect(result.regex.test('/user/abc')).toBe(true)
       expect(result.regex.test('/user/ABC')).toBe(false)
     })

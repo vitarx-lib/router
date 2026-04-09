@@ -4,28 +4,26 @@
  * 测试路由代码生成功能，包括：
  * - 基本路由代码生成
  * - lazy 导入模式
- * - file 导入模式
+ * - sync 导入模式
  * - 自定义导入语句
+ * - extendRoute 钩子
+ * - 嵌套路由
+ * - 命名视图
+ * - 动态路由参数
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { ResolvedPageConfig } from '../../../src/file-router/config/index.js'
 import { generateRoutes } from '../../../src/file-router/generator/generateRoutes.js'
-import { buildRouteTree } from '../../../src/file-router/scanner/routeTreeBuilder.js'
-import { scanMultiplePages } from '../../../src/file-router/scanner/scanPages.js'
+import type { ParsedNode } from '../../../src/file-router/types/index.js'
 import { createTestHelpers } from '../testUtils.js'
 
-const { createTestDir, cleanupTestDir, createFile, resolvePath } =
+const { createTestDir, cleanupTestDir, resolvePath } =
   createTestHelpers('generate-routes')
 
-const DEFAULT_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js']
-
-function createPageConfig(dir: string): ResolvedPageConfig {
+function createMockPageNode(overrides?: Partial<ParsedNode>): ParsedNode {
   return {
-    dir: resolvePath(dir),
-    include: [],
-    exclude: [],
-    prefix: '',
-    extensions: DEFAULT_EXTENSIONS
+    filePath: resolvePath('src/pages/index.tsx'),
+    path: '/',
+    ...overrides
   }
 }
 
@@ -39,88 +37,179 @@ describe('generator/generateRoutes', () => {
   })
 
   describe('generateRoutes', () => {
-    it('应该生成正确的路由代码', async () => {
-      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
-      createFile('src/pages/about.tsx', 'export default function About() { return null }')
+    it('应该生成正确的路由代码', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
 
-      const pages = await scanMultiplePages({
-        pages: [createPageConfig('src/pages')],
-        namingStrategy: 'kebab'
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: 'lazy'
       })
 
-      const routeTree = buildRouteTree(pages)
-      const code = await generateRoutes(routeTree)
-
-      expect(code).toBeDefined()
-      expect(code).toContain('export default')
+      expect(result.code).toBeDefined()
+      expect(result.code).toContain('export default')
+      expect(result.routes).toBeDefined()
     })
 
-    it('应该使用 lazy 导入模式', async () => {
-      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+    it('应该使用 lazy 导入模式', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
 
-      const pages = await scanMultiplePages({
-        pages: [createPageConfig('src/pages')],
-        namingStrategy: 'kebab'
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: 'lazy'
       })
 
-      const routeTree = buildRouteTree(pages)
-      const code = await generateRoutes(routeTree, { importMode: 'lazy' })
-
-      expect(code).toContain("import { lazy } from 'vitarx'")
-      expect(code).toContain('lazy(() => import(')
+      expect(result.code).toContain("import { lazy } from 'vitarx'")
+      expect(result.code).toContain('lazy(() => import(')
     })
 
-    it('应该使用 file 导入模式', async () => {
-      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+    it('应该使用 sync 导入模式', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
 
-      const pages = await scanMultiplePages({
-        pages: [createPageConfig('src/pages')],
-        namingStrategy: 'kebab'
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: 'sync'
       })
 
-      const routeTree = buildRouteTree(pages)
-      const code = await generateRoutes(routeTree, { importMode: 'file' })
-
-      expect(code).not.toContain("import { lazy } from 'vitarx'")
+      expect(result.code).not.toContain("import { lazy } from 'vitarx'")
     })
 
-    it('应该注入自定义导入语句', async () => {
-      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+    it('应该注入自定义导入语句', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
 
-      const pages = await scanMultiplePages({
-        pages: [createPageConfig('src/pages')],
-        namingStrategy: 'kebab'
-      })
-
-      const routeTree = buildRouteTree(pages)
-      const code = await generateRoutes(routeTree, {
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: 'lazy',
         imports: ["import { customHelper } from './helpers'"]
       })
 
-      expect(code).toContain("import { customHelper } from './helpers'")
+      expect(result.code).toContain("import { customHelper } from './helpers'")
     })
 
-    it('应该调用 extendRoute 钩子', async () => {
-      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+    it('应该调用 extendRoute 钩子', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
 
-      const pages = await scanMultiplePages({
-        pages: [createPageConfig('src/pages')],
-        namingStrategy: 'kebab'
-      })
-
-      const routeTree = buildRouteTree(pages)
       let calledWithRoute: any = null
-
-      await generateRoutes(routeTree, {
+      generateRoutes(pages, {
+        dts: false,
+        importMode: 'lazy',
         extendRoute: route => {
           calledWithRoute = route
           route.meta = { ...route.meta, custom: true }
           return route
         }
       })
-
       expect(calledWithRoute).toBeDefined()
       expect(calledWithRoute.meta?.custom).toBe(true)
+    })
+
+    it('应该生成类型定义代码', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
+
+      const result = generateRoutes(pages, {
+        dts: true,
+        importMode: 'lazy'
+      })
+
+      expect(result.dts).toBeDefined()
+      expect(result.dts).toContain('declare module')
+    })
+
+    it('应该正确处理嵌套路由', () => {
+      const childPage: ParsedNode = createMockPageNode({
+        filePath: resolvePath('src/pages/users/[id].tsx'),
+        path: '{id}',
+        components: { default: resolvePath('src/pages/users/[id].tsx') }
+      })
+
+      const parentPage: ParsedNode = createMockPageNode({
+        filePath: resolvePath('src/pages/users/index.tsx'),
+        path: '/users',
+        components: { default: resolvePath('src/pages/users/index.tsx') },
+        children: new Set([childPage])
+      })
+
+      childPage.parent = parentPage
+
+      const result = generateRoutes([parentPage], {
+        dts: false,
+        importMode: 'lazy'
+      })
+
+      expect(result.code).toContain('/users')
+      expect(result.code).toContain('{id}')
+    })
+
+    it('应该正确处理命名视图', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: {
+            default: resolvePath('src/pages/index.tsx'),
+            sidebar: resolvePath('src/pages/index@sidebar.tsx')
+          }
+        })
+      ]
+
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: 'lazy'
+      })
+
+      expect(result.code).toBeDefined()
+    })
+
+    it('应该正确处理动态路由参数', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/users/[id].tsx'),
+          path: '/users/{id}',
+          components: { default: resolvePath('src/pages/users/[id].tsx') }
+        })
+      ]
+
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: 'lazy'
+      })
+
+      expect(result.code).toContain('/users/{id}')
     })
   })
 })

@@ -3,9 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from '../../../src/core/shared/index.js'
 import { createMemoryRouter, defineRoutes, type Route } from '../../../src/index.js'
 
-function createMockComponent() {
-  return vi.fn()
-}
+import { createMockComponent } from '../testHelpers.js'
 
 const basicRoutes: Route[] = defineRoutes(
   { path: '/', component: createMockComponent(), name: 'home' },

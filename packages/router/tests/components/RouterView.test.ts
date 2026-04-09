@@ -1,4 +1,4 @@
-import { type App as VitarxApp, type Component, createApp, Dynamic, h } from 'vitarx'
+import { type App as VitarxApp, createApp, Dynamic, h } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RouterView } from '../../src/components/index.js'
 import {
@@ -8,10 +8,7 @@ import {
   NavState,
   type Route
 } from '../../src/index.js'
-
-function createMockComponent(name = 'MockComponent'): Component {
-  return () => h('div', { 'data-testid': name }, name)
-}
+import { createMockComponent, waitForRender } from '../core/testHelpers.js'
 
 const basicRoutes: Route[] = defineRoutes(
   {
@@ -47,10 +44,6 @@ const basicRoutes: Route[] = defineRoutes(
     props: { default: (route: any) => ({ routePath: route.path }) }
   }
 )
-
-function waitForRender(timeout = 50): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, timeout))
-}
 
 describe('RouterView', () => {
   let app: VitarxApp | null = null

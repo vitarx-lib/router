@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { NavState } from '../../../src/core/common/constant.js'
+import { MemoryRouter } from '../../../src/core/router/memory.js'
+import { WebRouter } from '../../../src/core/router/web.js'
 import {
   createMemoryRouter,
   createRouteManager,
@@ -11,13 +13,9 @@ import {
   useRoute,
   useRouter
 } from '../../../src/core/shared/index.js'
-import { MemoryRouter } from '../../../src/core/router/memory.js'
-import { WebRouter } from '../../../src/core/router/web.js'
 import type { NavigateResult, Route, RouterOptions } from '../../../src/core/types/index.js'
 
-function createMockComponent() {
-  return vi.fn()
-}
+import { createMockComponent } from '../testHelpers.js'
 
 describe('router/helpers', () => {
   describe('defineRoutes', () => {

@@ -8,10 +8,7 @@ import {
   type Route,
   RouterLink
 } from '../../src/index.js'
-
-function createMockComponent() {
-  return vi.fn()
-}
+import { createMockComponent, waitForRender } from '../core/testHelpers.js'
 
 const basicRoutes: Route[] = defineRoutes(
   { path: '/', component: createMockComponent(), name: 'home' },
@@ -24,10 +21,6 @@ const basicRoutes: Route[] = defineRoutes(
     children: [{ path: '/admin/dashboard', component: createMockComponent(), name: 'dashboard' }]
   }
 )
-
-function waitForRender(timeout = 50): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, timeout))
-}
 
 interface TestContext {
   app: VitarxApp | null

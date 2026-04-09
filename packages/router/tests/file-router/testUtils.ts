@@ -38,8 +38,24 @@ export function createTestHelpers(testName: string) {
     return fullPath
   }
 
+  function createPagesDir(dir: string): string {
+    const fullPath = path.join(tempDir, dir)
+    if (!fs.existsSync(fullPath)) {
+      fs.mkdirSync(fullPath, { recursive: true })
+    }
+    return fullPath
+  }
+
   function resolvePath(...paths: string[]) {
     return path.join(tempDir, ...paths)
+  }
+
+  function fileExists(filePath: string): boolean {
+    return fs.existsSync(path.join(tempDir, filePath))
+  }
+
+  function readFile(filePath: string): string {
+    return fs.readFileSync(path.join(tempDir, filePath), 'utf-8')
   }
 
   return {
@@ -47,6 +63,9 @@ export function createTestHelpers(testName: string) {
     createTestDir,
     cleanupTestDir,
     createFile,
-    resolvePath
+    createPagesDir,
+    resolvePath,
+    fileExists,
+    readFile
   }
 }

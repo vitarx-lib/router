@@ -3,9 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { RouteManager } from '../../../src/core/router/manager.js'
 import type { Route } from '../../../src/core/types/index.js'
 
-function createMockComponent() {
-  return () => h('div', {}, 'mock')
-}
+import { createMockComponent } from '../testHelpers.js'
 
 function createMockComponent2() {
   return () => h('span', {}, 'mock2')

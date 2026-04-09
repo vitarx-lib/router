@@ -2,10 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWebRouter } from '../../../src/core/shared/index.js'
 import { WebRouter } from '../../../src/core/router/web.js'
 import type { Route, RouterOptions } from '../../../src/core/types/index.js'
-
-function createMockComponent() {
-  return vi.fn()
-}
+import { createMockComponent } from '../testHelpers.js'
 
 function createTestWebRouter(options?: Partial<RouterOptions>): WebRouter {
   const defaultRoutes: Route[] = [

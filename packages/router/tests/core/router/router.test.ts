@@ -1,29 +1,9 @@
 import type { App } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { __ROUTER_KEY__, NavState } from '../../../src/core/common/constant.js'
-import { createMemoryRouter } from '../../../src/core/shared/index.js'
 import { MemoryRouter } from '../../../src/core/router/memory.js'
-import type { Route, RouterOptions } from '../../../src/core/types/index.js'
-
-function createMockComponent() {
-  return vi.fn()
-}
-
-function createTestRouter(options?: Partial<RouterOptions>): MemoryRouter {
-  const defaultRoutes: Route[] = [
-    { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
-    { path: '/home', component: { default: createMockComponent() }, props: { default: {} } },
-    { path: '/about', component: { default: createMockComponent() }, props: { default: {} } },
-    { path: '/user/{id}', component: { default: createMockComponent() }, props: { default: true } }
-  ]
-  const router = createMemoryRouter({
-    routes: options?.routes || defaultRoutes,
-    mode: 'path',
-    ...options
-  })
-  router.replace({ index: '/' }).then()
-  return router
-}
+import type { Route } from '../../../src/core/types/index.js'
+import { createMockComponent, createTestRouter } from '../testHelpers.js'
 
 describe('router/router', () => {
   let router: MemoryRouter | null = null
@@ -433,7 +413,7 @@ describe('router/router', () => {
     it('应该返回所有注册的路由记录', async () => {
       router = createTestRouter()
       await router.isReady()
-      expect(router.routes.length).toBeGreaterThan(0)
+      expect(router.routes.length).toBe(4)
     })
   })
 

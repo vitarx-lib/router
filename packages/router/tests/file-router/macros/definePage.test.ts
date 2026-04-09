@@ -5,86 +5,95 @@
  * - 解析 definePage 配置
  * - 移除 definePage 调用
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { parseDefinePage, removeDefinePage } from '../../../src/file-router/macros/definePage.js'
-import { createTestHelpers } from '../testUtils.js'
-
-const { createTestDir, cleanupTestDir, createFile, resolvePath } = createTestHelpers('define-page')
 
 describe('macros/definePage', () => {
-  beforeEach(() => {
-    createTestDir()
-  })
-
-  afterEach(() => {
-    cleanupTestDir()
-  })
-
   describe('parseDefinePage', () => {
-    it('应该解析 definePage 配置', async () => {
-      const filePath = createFile(
-        'page.tsx',
-        `
+    it('应该解析 definePage 配置', () => {
+      const content = `
         definePage({
           name: 'home',
           meta: { title: 'Home' }
         })
         export default function Home() { return null }
       `
-      )
 
-      const options = await parseDefinePage(filePath, resolvePath(''))
+      const options = parseDefinePage(content, '/test/page.tsx')
 
       expect(options).toBeDefined()
       expect(options?.name).toBe('home')
       expect(options?.meta).toEqual({ title: 'Home' })
     })
 
-    it('应该解析 redirect 配置', async () => {
-      const filePath = createFile(
-        'page.tsx',
-        `
+    it('应该解析 redirect 配置', () => {
+      const content = `
         definePage({
           redirect: '/dashboard'
         })
         export default function Page() { return null }
       `
-      )
 
-      const options = await parseDefinePage(filePath, resolvePath(''))
+      const options = parseDefinePage(content, '/test/page.tsx')
 
       expect(options).toBeDefined()
       expect(options?.redirect).toBe('/dashboard')
     })
 
-    it('应该解析 pattern 配置', async () => {
-      const filePath = createFile(
-        'page.tsx',
-        `
+    it('应该解析 pattern 配置', () => {
+      const content = `
         definePage({
           pattern: { id: /\\d+/ }
         })
         export default function Page() { return null }
       `
-      )
 
-      const options = await parseDefinePage(filePath, resolvePath(''))
+      const options = parseDefinePage(content, '/test/page.tsx')
 
       expect(options).toBeDefined()
       expect(options?.pattern).toBeDefined()
     })
 
-    it('没有 definePage 时应该返回 null', async () => {
-      const filePath = createFile('page.tsx', 'export default function Home() { return null }')
+    it('没有 definePage 时应该返回 null', () => {
+      const content = 'export default function Home() { return null }'
 
-      const options = await parseDefinePage(filePath, resolvePath(''))
+      const options = parseDefinePage(content, '/test/page.tsx')
 
       expect(options).toBeNull()
     })
 
-    it('文件不存在时应该返回 null', async () => {
-      const options = await parseDefinePage('/non/existent/file.tsx', '/non/existent')
-      expect(options).toBeNull()
+    it('应该解析 alias 配置', () => {
+      const content = `
+        definePage({
+          alias: ['/home', '/index']
+        })
+        export default function Page() { return null }
+      `
+
+      const options = parseDefinePage(content, '/test/page.tsx')
+
+      expect(options).toBeDefined()
+      expect(options?.alias).toEqual(['/home', '/index'])
+    })
+
+    it('应该解析完整的 definePage 配置', () => {
+      const content = `
+        definePage({
+          name: 'user-detail',
+          meta: { requiresAuth: true },
+          redirect: '/login',
+          alias: '/user'
+        })
+        export default function Page() { return null }
+      `
+
+      const options = parseDefinePage(content, '/test/page.tsx')
+
+      expect(options).toBeDefined()
+      expect(options?.name).toBe('user-detail')
+      expect(options?.meta).toEqual({ requiresAuth: true })
+      expect(options?.redirect).toBe('/login')
+      expect(options?.alias).toBe('/user')
     })
   })
 

@@ -1,26 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryRouter } from '../../../src/core/shared/index.js'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { MemoryRouter } from '../../../src/core/router/memory.js'
-import type { Route, RouterOptions } from '../../../src/core/types/index.js'
-
-function createMockComponent() {
-  return vi.fn()
-}
-
-function createTestRouter(options?: Partial<RouterOptions>): MemoryRouter {
-  const defaultRoutes: Route[] = [
-    { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
-    { path: '/home', component: { default: createMockComponent() }, props: { default: {} } },
-    { path: '/about', component: { default: createMockComponent() }, props: { default: {} } },
-    { path: '/user/{id}', component: { default: createMockComponent() }, props: { default: true } }
-  ]
-  const router = createMemoryRouter({
-    routes: options?.routes || defaultRoutes,
-    ...options
-  })
-  router.replace({ index: '/' }).then()
-  return router
-}
+import type { Route } from '../../../src/core/types/index.js'
+import { createMockComponent, createTestRouter } from '../testHelpers.js'
 
 describe('router/memory', () => {
   let router: MemoryRouter | null = null
