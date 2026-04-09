@@ -6,7 +6,7 @@
  */
 
 import { createHash } from 'node:crypto'
-import type { ExtendRouteHook, ImportMode, PageNode, RouteNode } from '../types/index.js'
+import type { ExtendRouteHook, ImportMode, ParsedNode, RouteNode } from '../types/index.js'
 import { normalizeRoutePath } from '../utils/index.js'
 import { generateDtsCode } from './generateTypes.js'
 
@@ -77,7 +77,7 @@ function generateRouteName(fullPath: string): string {
  * @returns 解析后的路由配置
  */
 function buildRouteNode(
-  page: PageNode,
+  page: ParsedNode,
   extendRoute?: ExtendRouteHook,
   parent?: RouteNode
 ): RouteNode {
@@ -144,7 +144,7 @@ function buildRouteNode(
  * @returns 路由配置列表
  */
 function buildRoutes(
-  pages: Iterable<PageNode>,
+  pages: Iterable<ParsedNode>,
   extendRoute?: ExtendRouteHook,
   parent?: RouteNode
 ): RouteNode[] {
@@ -328,9 +328,12 @@ function generateRoutesCode(
  *
  * @param pages - 解析后的页面列表
  * @param options - 路由生成选项
- * @returns Promise 包含可执行路由配置代码字符串
+ * @returns { GenerateResult } 包含routes、code、dts的路由配置结果
  */
-export function generateRoutes(pages: PageNode[], options: GenerateRoutesOptions): GenerateResult {
+export function generateRoutes(
+  pages: ParsedNode[],
+  options: GenerateRoutesOptions
+): GenerateResult {
   // 构建解析后的路由配置
   const routes = buildRoutes(pages, options.extendRoute)
   // 生成最终的路由代码
