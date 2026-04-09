@@ -32,8 +32,8 @@ import {
   validateOptions
 } from './utils/index.js'
 
-export * from './utils/logger.js'
 export type * from './types/index.js'
+export * from './utils/logger.js'
 
 type ScanDirConfig = Omit<PageDirConfig, 'group'>
 /**
@@ -531,7 +531,8 @@ export class FileRouter {
     }
     if (result) {
       this.clearGenerateResult()
-      info(`${path} has been changed, the route has been updated.`)
+      const relativePath = nodePath.relative(this.root, path)
+      info(`✨ Route updated: ${relativePath}`)
     }
     return result
   }
