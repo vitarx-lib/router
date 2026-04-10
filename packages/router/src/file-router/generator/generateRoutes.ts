@@ -179,7 +179,7 @@ function formatComponent(
     } else {
       expr = `lazy(() => import(${importPath}))`
     }
-    return `${name}: ${expr}`
+    return `${JSON.stringify(name)}: ${expr}`
   })
   return `{ ${entries.join(', ')} }`
 }
