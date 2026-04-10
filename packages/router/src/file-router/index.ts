@@ -303,15 +303,15 @@ export class FileRouter {
    * 检查文件是否为页面文件
    *
    * @param file - 文件绝对路径
-   * @param pages - 页面配置，默认为 `config.pages`
+   * @param filter - 过滤配置，默认为 `config.pages`
    * @returns {boolean} - 是否为页面文件
    */
-  private isPageFile(file: string, pages?: FilterOptions | readonly FilterOptions[]): boolean {
-    if (pages) {
-      if (Array.isArray(pages)) {
-        return !!isPageFileInDirs(file, pages)
+  public isPageFile(file: string, filter?: FilterOptions | readonly FilterOptions[]): boolean {
+    if (filter) {
+      if (Array.isArray(filter)) {
+        return !!isPageFileInDirs(file, filter)
       } else {
-        return isPageFile(file, pages as FilterOptions)
+        return isPageFile(file, filter as FilterOptions)
       }
     }
     return !!isPageFileInDirs(file, this.config.pages)
