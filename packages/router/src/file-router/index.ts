@@ -138,7 +138,7 @@ export class FileRouter {
         route = this.processDir(filePath, dirent.name, page, parent)
       } else {
         // 处理文件
-        route = this.processFile(filePath, dirent.name, page, pageMapping, parent)
+        route = this.processFile(filePath, page, pageMapping, parent)
       }
       if (route) {
         children.add(route)
@@ -175,7 +175,6 @@ export class FileRouter {
   /**
    * 处理文件
    * @param filePath - 文件路径
-   * @param fileName - 文件名
    * @param page - 页面配置
    * @param pageMapping - 子路由
    * @param parent - 父节点
@@ -183,16 +182,13 @@ export class FileRouter {
    */
   private processFile(
     filePath: string,
-    fileName: string,
     page: ScanDirConfig,
     pageMapping: Map<string, ParsedNode>,
     parent?: ParsedNode
   ): ParsedNode | null {
-    // 获取扩展名称
-    const ext = nodePath.extname(fileName)
-    // 获取文件名
-    const baseName = nodePath.basename(fileName, ext)
-    const fileType = this.getPageType(filePath, baseName, ext, page)
+    // 分离出路由 path 和视图命名
+    const { routePath, viewName = 'default' } = parseRoutePath(filePath, this.config.pathParser)
+    const fileType = this.getPageType(filePath, routePath, page)
     if (fileType === 'ignore') return null
     // 处理分组配置文件
     if (fileType === 'config') {
@@ -210,8 +206,6 @@ export class FileRouter {
       }
       return null
     }
-    // 分离出路由 path 和视图命名
-    const { routePath, viewName } = parseRoutePath(baseName)
     // 处理分组布局文件
     if (fileType === 'layout') {
       if (!parent) return null
@@ -278,20 +272,18 @@ export class FileRouter {
    *
    * @param file - 文件绝对路径
    * @param name - 文件名
-   * @param ext - 文件扩展名
    * @param pages - 页面配置，默认为 `config.pages`
    * @returns {string} - 文件类型，可选值有 `layout`、`config`、`page`、`ignore`
    */
   private getPageType(
     file: string,
     name: string,
-    ext: string,
     pages?: FilterOptions | readonly FilterOptions[]
   ): 'layout' | 'config' | 'page' | 'ignore' {
-    if (name === this.config.layoutFileName || name.startsWith(`${this.config.configFileName}@`)) {
+    if (name === this.config.layoutFileName) {
       return 'layout'
     }
-    if (name === this.config.configFileName && (ext === '.ts' || ext === '.js')) {
+    if (name === this.config.configFileName && (file.endsWith('.ts') || file.endsWith('.js'))) {
       return 'config'
     }
     if (this.isPageFile(file, pages)) {
@@ -385,16 +377,16 @@ export class FileRouter {
   public addPage(filePath: string): boolean {
     const page = isPageFileInDirs(filePath, this.config.pages) as PageDirConfig | false
     if (!page) return false
+    // 分离出路由 path 和视图命名
+    const { routePath, viewName } = parseRoutePath(filePath, this.config.pathParser)
     const dirPath = nodePath.dirname(filePath)
-    const filename = nodePath.basename(filePath)
     const parent = this.fileMap.get(dirPath)
     const pageMapping = new Map<string, ParsedNode>()
     const prefix = parent ? '' : page.prefix
     // 如果是命名文件，则先查找是否存在同名路由，存在则添加到同名路由的 children 中
-    if (filename.includes('@')) {
-      const baseName = filename.split('@')[0]
+    if (viewName) {
       const pages = parent ? parent.children! : this.nodeTree
-      const newRoutePath = this.applyPathStrategy(prefix + baseName)
+      const newRoutePath = this.applyPathStrategy(prefix + routePath)
       let sameRoute: ParsedNode | null = null
       for (const route of pages) {
         if (route.path === newRoutePath) {
@@ -403,13 +395,12 @@ export class FileRouter {
         }
       }
       if (sameRoute) {
-        pageMapping.set(baseName, sameRoute)
+        pageMapping.set(routePath, sameRoute)
       }
     }
 
     const route = this.processFile(
       filePath,
-      filename,
       {
         dir: dirPath,
         include: page.include,

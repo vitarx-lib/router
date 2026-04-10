@@ -13,7 +13,25 @@ export type ImportMode = 'lazy' | 'sync'
 export type PathStrategy = 'kebab' | 'lowercase' | 'raw'
 
 export type PageSource = string | PageDirOptions
-
+/**
+ * 路径解析结果
+ */
+export type PathParseResult =
+  | string
+  | {
+      /** 解析后的路径 */
+      routePath: string
+      /** 视图名称 */
+      viewName?: string
+    }
+/**
+ * 路径解析器
+ *
+ * @param basename - 文件名称（不包含扩展名)
+ * @param filePath - 完整的文件路径
+ * @returns {PathParseResult} 路径解析结果包含路径和视图名称
+ */
+export type PathParser = (basename: string, filePath: string) => PathParseResult
 /**
  * 页面目录选项
  */
@@ -64,6 +82,11 @@ export interface FileRouterOptions {
   /**
    * 路径转换策略
    *
+   * - 'kebab': 转换为 kebab-case
+   * - 'lowercase': 转换为 lowercase
+   * - 'raw': 不转换
+   *
+   * @values 'kebab' | 'lowercase' | 'raw'
    * @default 'kebab'
    */
   pathStrategy?: PathStrategy
@@ -139,4 +162,12 @@ export interface FileRouterOptions {
    * ```
    */
   extendRoute?: ExtendRouteHook
+  /**
+   * 路径解析器
+   *
+   * @param basename - 文件名称（不包含扩展名）或目录名称
+   * @param filePath - 完整的文件路径
+   * @returns {PathParseResult} 返回字符串path，或包含path和viewName的对象
+   */
+  pathParser?: PathParser
 }

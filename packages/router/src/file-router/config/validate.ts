@@ -223,6 +223,21 @@ function validateExtendRoute(opts: FileRouterOptions): void {
     throw new Error('options.extendRoute 必须是函数')
   }
 }
+
+/**
+ * 验证 pathParser 配置
+ *
+ * @param opts - 配置选项
+ * @throws {Error} 当配置无效时抛出错误
+ */
+function validatePathParser(opts: FileRouterOptions): void {
+  if (opts.pathParser === undefined) return
+
+  if (typeof opts.pathParser !== 'function') {
+    throw new Error('options.pathParser 必须是函数')
+  }
+}
+
 /**
  * 验证插件配置选项
  *
@@ -237,6 +252,7 @@ function validateExtendRoute(opts: FileRouterOptions): void {
  * 8. configFileName 配置
  * 9. transform 配置
  * 10. extendRoute 配置
+ * 11. pathParser 配置
  *
  * @param opts - 用户提供的配置选项
  * @throws {Error} 当配置无效时抛出错误
@@ -252,4 +268,5 @@ export function validateOptions(opts: FileRouterOptions): void {
   validateConfigFileName(opts)
   validateTransform(opts)
   validateExtendRoute(opts)
+  validatePathParser(opts)
 }
