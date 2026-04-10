@@ -5,6 +5,7 @@
  * - 基本路由代码生成
  * - lazy 导入模式
  * - sync 导入模式
+ * - 自定义函数导入模式
  * - 自定义导入语句
  * - extendRoute 钩子
  * - 嵌套路由
@@ -210,6 +211,100 @@ describe('generator/generateRoutes', () => {
       })
 
       expect(result.code).toContain('/users/{id}')
+    })
+
+    it('应该支持自定义函数导入模式', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
+
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: (context) => {
+          context.addImport(`import { lazy } from 'react'`)
+          return `lazy(() => import(${context.importPath}))`
+        }
+      })
+
+      expect(result.code).toContain("import { lazy } from 'react'")
+      expect(result.code).toContain('lazy(() => import(')
+      expect(result.code).not.toContain("import { lazy } from 'vitarx'")
+    })
+
+    it('自定义函数模式应该接收正确的上下文参数', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
+
+      let receivedContext: any = null
+      generateRoutes(pages, {
+        dts: false,
+        importMode: (context) => {
+          receivedContext = context
+          return 'CustomComponent'
+        }
+      })
+
+      expect(receivedContext).toBeDefined()
+      expect(receivedContext.filePath).toBe(resolvePath('src/pages/index.tsx'))
+      expect(receivedContext.importPath).toBe(JSON.stringify(resolvePath('src/pages/index.tsx')))
+      expect(typeof receivedContext.addImport).toBe('function')
+    })
+
+    it('自定义函数模式应该能够添加多个导入语句', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
+
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: (context) => {
+          context.addImport(`import { lazy } from 'react'`)
+          context.addImport(`import { Suspense } from 'react'`)
+          return `lazy(() => import(${context.importPath}))`
+        }
+      })
+
+      expect(result.code).toContain("import { lazy } from 'react'")
+      expect(result.code).toContain("import { Suspense } from 'react'")
+    })
+
+    it('自定义函数模式应该正确处理命名视图', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: {
+            default: resolvePath('src/pages/index.tsx'),
+            sidebar: resolvePath('src/pages/index@sidebar.tsx')
+          }
+        })
+      ]
+
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: (context) => {
+          context.addImport(`import { lazy } from 'react'`)
+          return `lazy(() => import(${context.importPath}))`
+        }
+      })
+
+      expect(result.code).toContain('"default":')
+      expect(result.code).toContain('"sidebar":')
+      const lazyCount = (result.code.match(/lazy\(\(\) => import\(/g) || []).length
+      expect(lazyCount).toBe(2)
     })
   })
 })

@@ -70,28 +70,30 @@ interface FileRouterOptions {
   root?: string
   pages?: PageSource | readonly PageSource[]
   pathStrategy?: 'kebab' | 'lowercase' | 'raw'
-  importMode?: 'lazy' | 'sync'
+  importMode?: 'lazy' | 'sync' | ImportModeFunction
   injectImports?: readonly string[]
   dts?: boolean | string
   layoutFileName?: string
   configFileName?: string
   transform?: CodeTransformHook
   extendRoute?: ExtendRouteHook
+  pathParser?: PathParser
 }
 ```
 
-| 选项               | 类型                                    | 默认值             | 说明        |
-|------------------|---------------------------------------|-----------------|-----------|
-| `root`           | `string`                              | `process.cwd()` | 项目根目录     |
-| `pages`          | `PageSource \| readonly PageSource[]` | `'src/pages'`   | 页面来源配置    |
-| `pathStrategy`   | `'kebab' \| 'lowercase' \| 'raw'`     | `'kebab'`       | 路径命名策略    |
-| `importMode`     | `'lazy' \| 'sync'`                    | `'lazy'`        | 组件导入模式    |
-| `injectImports`  | `readonly string[]`                   | -               | 注入自定义导入语句 |
-| `dts`            | `boolean \| string`                   | `false`         | 类型定义文件配置  |
-| `layoutFileName` | `string`                              | `'_layout'`     | 布局文件名     |
-| `configFileName` | `string`                              | `'_config'`     | 分组配置文件名   |
-| `transform`      | `CodeTransformHook`                   | -               | 代码转换钩子    |
-| `extendRoute`    | `ExtendRouteHook`                     | -               | 路由扩展钩子    |
+| 选项               | 类型                                         | 默认值             | 说明        |
+|------------------|--------------------------------------------|-----------------|-----------|
+| `root`           | `string`                                   | `process.cwd()` | 项目根目录     |
+| `pages`          | `PageSource \| readonly PageSource[]`      | `'src/pages'`   | 页面来源配置    |
+| `pathStrategy`   | `'kebab' \| 'lowercase' \| 'raw'`          | `'kebab'`       | 路径格式化策略   |
+| `importMode`     | `'lazy' \| 'sync' \| ImportModeFunction`   | `'lazy'`        | 组件导入模式    |
+| `injectImports`  | `readonly string[]`                        | -               | 注入自定义导入语句 |
+| `dts`            | `boolean \| string`                        | `false`         | 类型定义文件配置  |
+| `layoutFileName` | `string`                                   | `'_layout'`     | 布局文件名     |
+| `configFileName` | `string`                                   | `'_config'`     | 分组配置文件名   |
+| `transform`      | `CodeTransformHook`                        | -               | 代码转换钩子    |
+| `extendRoute`    | `ExtendRouteHook`                          | -               | 路由扩展钩子    |
+| `pathParser`     | `PathParser`                               | -               | 自定义路径解析器  |
 
 ### PageSource
 
@@ -243,6 +245,10 @@ interface PageOptions {
 
 ## importMode 配置
 
+组件导入模式支持三种方式：
+
+### 预设模式
+
 - `lazy`（默认）：使用 `lazy(() => import(...))` 懒加载组件
 - `sync`：使用静态导入，组件会被打包到主bundle中
 
@@ -255,6 +261,49 @@ const router = new FileRouter({
   importMode: 'sync'
 })
 ```
+
+### 自定义函数模式
+
+通过函数自定义导入逻辑，可以实现更灵活的导入方式：
+
+```typescript
+// 使用 React.lazy
+const router = new FileRouter({
+  importMode: (context) => {
+    context.addImport(`import { lazy } from 'react'`)
+    return `lazy(() => import(${context.importPath}))`
+  }
+})
+
+// 自定义懒加载包装器
+const router = new FileRouter({
+  importMode: (context) => {
+    context.addImport(`import { lazyLoad } from '@/utils/lazy'`)
+    return `lazyLoad(() => import(${context.importPath}))`
+  }
+})
+
+// 条件导入
+const router = new FileRouter({
+  importMode: (context) => {
+    if (context.filePath.includes('/admin/')) {
+      context.addImport(`import { authLazy } from '@/auth'`)
+      return `authLazy(() => import(${context.importPath}))`
+    }
+    return `lazy(() => import(${context.importPath}))`
+  }
+})
+```
+
+#### ImportModeContext
+
+自定义函数接收一个上下文对象：
+
+| 属性           | 类型                            | 说明                       |
+|--------------|-------------------------------|--------------------------|
+| `importPath` | `string`                      | 组件文件路径（已 JSON.stringify） |
+| `filePath`   | `string`                      | 组件文件原始路径                 |
+| `addImport`  | `(statement: string) => void` | 添加导入语句到生成的代码顶部           |
 
 ## extendRoute 钩子
 
@@ -333,6 +382,68 @@ const router = new FileRouter({
 const router = new FileRouter({
   pathStrategy: 'kebab'
 })
+```
+
+## pathParser 配置
+
+自定义路径解析器，用于完全控制文件名到路由路径的转换逻辑：
+
+```typescript
+const router = new FileRouter({
+  pathParser(basename, filePath) {
+    // basename: 文件名（不包含扩展名）
+    // filePath: 完整的文件路径
+
+    // 示例：将所有下划线转换为横线
+    if (basename.includes('_')) {
+      return basename.replace(/_/g, '-')
+    }
+
+    // 返回字符串表示路由路径
+    return basename
+  }
+})
+```
+
+### 返回值
+
+路径解析器可以返回以下两种类型：
+
+1. **字符串**：直接作为路由路径
+2. **对象**：包含路由路径和视图名称
+
+```typescript
+const router = new FileRouter({
+  pathParser(basename, filePath) {
+    // 处理命名视图
+    // 例如：index@sidebar.tsx
+    const [path, viewName] = basename.split('@')
+
+    if (viewName) {
+      return {
+        routePath: path,
+        viewName: viewName
+      }
+    }
+
+    return path
+  }
+})
+```
+
+### PathParser 类型定义
+
+```typescript
+type PathParser = (basename: string, filePath: string) => PathParseResult
+
+type PathParseResult =
+  | string
+  | {
+      /** 解析后的路径 */
+      routePath: string
+      /** 视图名称 */
+      viewName?: string
+    }
 ```
 
 ## 动态页面管理

@@ -1,12 +1,49 @@
 import type { CodeTransformHook, ExtendRouteHook } from './hooks.js'
 
 /**
+ * 自定义导入模式函数的上下文
+ */
+export interface ImportModeContext {
+  /**
+   * 组件文件路径（已 JSON.stringify）
+   */
+  importPath: string
+  /**
+   * 组件文件原始路径
+   */
+  filePath: string
+  /**
+   * 添加导入语句
+   * 用于向生成的代码顶部添加 import 语句
+   */
+  addImport: (statement: string) => void
+}
+
+/**
+ * 自定义导入模式函数
+ *
+ * @param context - 导入上下文
+ * @returns 组件表达式代码
+ *
+ * @example
+ * ```ts
+ * // 自定义导入模式：使用 React.lazy
+ * (context) => {
+ *   context.addImport(`import { lazy } from 'react'`)
+ *   return `lazy(() => import(${context.importPath}))`
+ * }
+ * ```
+ */
+export type ImportModeFunction = (context: ImportModeContext) => string
+
+/**
  * 组件导入模式。
  *
- * - 'lazy': 生成懒加载表达式
- * - 'sync': 同步加载组件
+ * - 'lazy': 生成懒加载表达式 `lazy(() => import(path))`
+ * - 'sync': 同步加载组件，生成 `import` 语句
+ * - 函数: 自定义导入逻辑
  */
-export type ImportMode = 'lazy' | 'sync'
+export type ImportMode = 'lazy' | 'sync' | ImportModeFunction
 /**
  * 生成路径的策略。
  */
@@ -92,6 +129,22 @@ export interface FileRouterOptions {
   pathStrategy?: PathStrategy
   /**
    * 组件导入模式
+   *
+   * - 'lazy': 生成懒加载表达式 `lazy(() => import(path))`
+   * - 'sync': 同步加载组件，生成 `import` 语句
+   * - 函数: 自定义导入逻辑
+   *
+   * @example
+   * ```ts
+   * // 使用预设模式
+   * importMode: 'lazy'
+   *
+   * // 使用自定义函数
+   * importMode: (context) => {
+   *   context.addImport(`import { lazy } from 'react'`)
+   *   return `lazy(() => import(${context.importPath}))`
+   * }
+   * ```
    *
    * @default 'lazy'
    */

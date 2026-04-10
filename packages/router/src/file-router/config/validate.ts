@@ -98,9 +98,11 @@ function validateRoot(opts: FileRouterOptions): void {
 function validateImportMode(opts: FileRouterOptions): void {
   if (opts.importMode === undefined) return
 
+  if (typeof opts.importMode === 'function') return
+
   const validModes: ImportMode[] = ['lazy', 'sync']
-  if (!validModes.includes(opts.importMode)) {
-    throw new Error(`options.importMode 必须是 'lazy' 或 'sync'`)
+  if (!validModes.includes(opts.importMode as 'lazy' | 'sync')) {
+    throw new Error(`options.importMode 必须是 'lazy'、'sync' 或函数`)
   }
 }
 

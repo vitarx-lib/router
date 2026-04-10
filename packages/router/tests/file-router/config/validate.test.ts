@@ -123,7 +123,7 @@ describe('config/validate', () => {
 
     it('应该在 importMode 无效时抛出错误', () => {
       expect(() => validateOptions({ importMode: 'invalid' as any })).toThrow(
-        "options.importMode 必须是 'lazy' 或 'sync'"
+        "options.importMode 必须是 'lazy'、'sync' 或函数"
       )
     })
   })

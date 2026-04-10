@@ -169,15 +169,20 @@ function formatComponent(
   importMode: ImportMode,
   importLines: Set<string>
 ): string {
-  // 处理命名视图
   const entries = Object.entries(component).map(([name, file]) => {
     const importPath = JSON.stringify(file)
     let expr: string
     if (importMode === 'sync') {
       expr = pathToUniqueName(file)
       importLines.add(`import ${expr} from ${importPath}`)
-    } else {
+    } else if (importMode === 'lazy') {
       expr = `lazy(() => import(${importPath}))`
+    } else {
+      expr = importMode({
+        importPath,
+        filePath: file,
+        addImport: statement => importLines.add(statement)
+      })
     }
     return `${JSON.stringify(name)}: ${expr}`
   })
@@ -294,22 +299,14 @@ function generateRoutesCode(
   const importLines: Set<string> = new Set<string>()
   const codeLines: string[] = []
 
-  // 添加 lazy 导入（如果需要）
   if (importMode === 'lazy') {
     importLines.add(`import { lazy } from 'vitarx'`)
   }
 
-  // 添加自定义导入语句
   if (customImports && customImports.length > 0) {
     customImports.forEach(imp => importLines.add(imp))
   }
 
-  // 添加空行
-  if (importMode === 'lazy' || (customImports && customImports.length > 0)) {
-    codeLines.push('')
-  }
-
-  // 生成路由数组
   codeLines.push('export default [')
   for (let i = 0; i < routes.length; i++) {
     const route = routes[i]
@@ -318,7 +315,12 @@ function generateRoutesCode(
     )
   }
   codeLines.push(']')
-  return Array.from(importLines.values()).concat(codeLines).join('\n')
+
+  const allImports = Array.from(importLines.values())
+  if (allImports.length > 0) {
+    allImports.push('')
+  }
+  return allImports.concat(codeLines).join('\n')
 }
 
 /**
