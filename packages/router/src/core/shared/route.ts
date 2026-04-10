@@ -66,9 +66,8 @@ export function useRoute(global: boolean = false): DeepReadonly<RouteLocation> {
   }
 
   const record = route.matched[depth]
-  if (!record) {
-    return route
-  }
+
+  if (!record) return route
 
   return createRouteProxy(route, record)
 }
