@@ -1,13 +1,12 @@
-# [4.0.0-beta.3](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.2...v4.0.0-beta.3) (2026-04-09)
+# [4.0.0-beta.4](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.3...v4.0.0-beta.4) (2026-04-10)
 
 
 ### Bug Fixes
 
 * **router:** 优化布局文件识别逻辑 ([8b096ad](https://github.com/vitarx-lib/router/commit/8b096add7de95cccafafc7258347bbddd2175e42))
 * **router:** 修复扫描时路由缓存未清除问题 ([0cb6b9e](https://github.com/vitarx-lib/router/commit/0cb6b9eda460021bebd105353205efb586f07cff))
+* **router:** 修复路由生成器中懒加载导入语法错误 ([f4ea12f](https://github.com/vitarx-lib/router/commit/f4ea12f58fbb5ca951d0ccbcefe3d3cf500c6baa))
 * **router:** 修复页面文件变更时路由无效处理 ([5b21cd5](https://github.com/vitarx-lib/router/commit/5b21cd5607e1debea00869d543a7d40fc7661023))
-* **router:** 修改类型生成文件的注释和引用声明 ([19aba47](https://github.com/vitarx-lib/router/commit/19aba4733d097dc288679393f7c22b131e576517))
-* **router:** 修正 package.json 中的路径和作者名称错误 ([a1aafcf](https://github.com/vitarx-lib/router/commit/a1aafcfce80acab241394155d75f322503fba584))
 * **router:** 增加页面目录访问权限检查 ([ec25060](https://github.com/vitarx-lib/router/commit/ec250607eb01f6c6b357c3bc0d3e9d312a97b0a9))
 * **router:** 添加预览模式下跳过路由处理逻辑 ([8181adc](https://github.com/vitarx-lib/router/commit/8181adc739cb42e5d603b1b89f4a455f54b30d4e))
 * **router:** 重置正则表达式状态以避免匹配错误 ([c53543f](https://github.com/vitarx-lib/router/commit/c53543fd68ef7522b9ac7dc546a86d2cbb1fd34c))
@@ -15,8 +14,23 @@
 
 ### Features
 
-* **router:** 优化文件路由全局宏函数注释 ([6000741](https://github.com/vitarx-lib/router/commit/60007412e62a8928ae2c90f860727fbf186e12fc))
+* **file-router:** 支持自定义路径解析器和路径解析错误处理 ([3d2712b](https://github.com/vitarx-lib/router/commit/3d2712b95534d55237f39126a2f25cac0094761c))
 * **router:** 支持基于 _layout.jsx 的布局路由结构 ([85d38b4](https://github.com/vitarx-lib/router/commit/85d38b444eaaa71ca565c5a9ef71ccbd78ddc5d1))
+
+
+
+# [4.0.0-beta.2](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.1...v4.0.0-beta.2) (2026-04-02)
+
+
+### Bug Fixes
+
+* **router:** 修改类型生成文件的注释和引用声明 ([19aba47](https://github.com/vitarx-lib/router/commit/19aba4733d097dc288679393f7c22b131e576517))
+* **router:** 修正 package.json 中的路径和作者名称错误 ([a1aafcf](https://github.com/vitarx-lib/router/commit/a1aafcfce80acab241394155d75f322503fba584))
+
+
+### Features
+
+* **router:** 优化文件路由全局宏函数注释 ([6000741](https://github.com/vitarx-lib/router/commit/60007412e62a8928ae2c90f860727fbf186e12fc))
 * **router:** 重构文件路由模块并新增导出检测和过滤工具 ([421bef5](https://github.com/vitarx-lib/router/commit/421bef5c0425d4c3426d0811910877ed946b38a4))
 
 
