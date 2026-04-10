@@ -52,7 +52,6 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
   let isPreview: boolean = false
   return {
     name: 'vite-plugin-vitarx-router',
-    enforce: 'pre',
 
     config(_, env) {
       isPreview = !!env.isPreview
@@ -61,7 +60,6 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
       if (isPreview) return
       router = new FileRouter(options)
     },
-
     resolveId(id) {
       if (isPreview) return null
       if (id === VIRTUAL_ROUTES_ID) {
@@ -69,7 +67,6 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
       }
       return null
     },
-
     async load(id) {
       if (!router) return null
       if (id === RESOLVED_ROUTES_ID) {
@@ -77,12 +74,10 @@ export default function VitarxRouter(options: RouterPluginOptions = {}): Plugin 
       }
       return null
     },
-
     transform(code, id) {
       if (!router) return null
       return router.removeDefinePage(code, id)
     },
-
     configureServer(server) {
       if (!router) return
       const currentRouter = router
