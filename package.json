@@ -7,29 +7,29 @@
     "test:watch": "cd packages/router && pnpm test:watch"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.4.3",
-    "@commitlint/config-conventional": "^20.4.3",
-    "@commitlint/types": "^20.4.3",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@commitlint/types": "^20.5.0",
     "@types/node": "25.4.0",
-    "@vitarx/plugin-vite": "0.0.1-beta.5",
+    "@vitarx/plugin-vite": "0.0.1-beta.7",
+    "@vitest/browser-playwright": "^4.1.4",
+    "@vitest/coverage-v8": "^4.1.4",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
-    "prettier": "^3.8.1",
+    "prettier": "^3.8.2",
     "typescript": "^5.9.3",
-    "vitarx": "4.0.0-beta.10",
-    "vite": "8.0.1",
-    "@vitest/browser-playwright": "^4.1.0",
-    "vitest": "^4.1.0",
-    "@vitest/coverage-v8": "^4.1.0"
+    "vitarx": "4.0.0-beta.11",
+    "vite": "8.0.5",
+    "vitest": "^4.1.4"
   },
   "packageManager": "pnpm@10.30.3",
   "pnpm": {
     "overrides": {
       "@types/node": "25.4.0",
       "rollup": "4.53.3",
-      "vite": "8.0.1",
-      "@vitarx/plugin-vite": "0.0.1-beta.5",
-      "vitarx": "4.0.0-beta.10"
+      "vite": "8.0.5",
+      "@vitarx/plugin-vite": "0.0.1-beta.7",
+      "vitarx": "4.0.0-beta.11"
     }
   }
 }
