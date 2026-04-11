@@ -29,7 +29,8 @@ import {
   normalizePathSeparator,
   readFileContent,
   resolvePathVariable,
-  validateOptions
+  validateOptions,
+  warn
 } from './utils/index.js'
 
 export type * from './types/index.js'
@@ -100,6 +101,10 @@ export class FileRouter {
   protected scanPages(): ParsedNode[] {
     const pages: ParsedNode[] = []
     for (const page of this.config.pages) {
+      if (!existsSync(page.dir)) {
+        warn(`Directory ${page.dir} does not exist, please check your configuration.`)
+        continue
+      }
       if (page.group && page.prefix) {
         const route: ParsedNode = {
           filePath: page.dir,
