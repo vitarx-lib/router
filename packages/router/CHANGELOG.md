@@ -1,11 +1,27 @@
-# [4.0.0-beta.4](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.3...v4.0.0-beta.4) (2026-04-10)
+# [4.0.0-beta.5](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.4...v4.0.0-beta.5) (2026-04-12)
+
+
+### Bug Fixes
+
+* **router:** 修复扫描页面目录时不存在目录的处理 ([54fe121](https://github.com/vitarx-lib/router/commit/54fe121474e1fd12ec47d9858cd2e54aa9c2fc89))
+* **router:** 修复路由生成器中懒加载导入语法错误 ([f4ea12f](https://github.com/vitarx-lib/router/commit/f4ea12f58fbb5ca951d0ccbcefe3d3cf500c6baa))
+
+
+### Features
+
+* **file-router:** 支持自定义路径解析器和路径解析错误处理 ([3d2712b](https://github.com/vitarx-lib/router/commit/3d2712b95534d55237f39126a2f25cac0094761c))
+* **router:** 导出并实现页面配置解析功能 ([64679df](https://github.com/vitarx-lib/router/commit/64679df0a7fbc2263622cb98b4d712719dec1f8c))
+* **router:** 支持自定义组件导入模式 ([b5cf6a7](https://github.com/vitarx-lib/router/commit/b5cf6a716d7faee76c1bc42ee4c456937abf5433))
+
+
+
+# [4.0.0-beta.3](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.2...v4.0.0-beta.3) (2026-04-09)
 
 
 ### Bug Fixes
 
 * **router:** 优化布局文件识别逻辑 ([8b096ad](https://github.com/vitarx-lib/router/commit/8b096add7de95cccafafc7258347bbddd2175e42))
 * **router:** 修复扫描时路由缓存未清除问题 ([0cb6b9e](https://github.com/vitarx-lib/router/commit/0cb6b9eda460021bebd105353205efb586f07cff))
-* **router:** 修复路由生成器中懒加载导入语法错误 ([f4ea12f](https://github.com/vitarx-lib/router/commit/f4ea12f58fbb5ca951d0ccbcefe3d3cf500c6baa))
 * **router:** 修复页面文件变更时路由无效处理 ([5b21cd5](https://github.com/vitarx-lib/router/commit/5b21cd5607e1debea00869d543a7d40fc7661023))
 * **router:** 增加页面目录访问权限检查 ([ec25060](https://github.com/vitarx-lib/router/commit/ec250607eb01f6c6b357c3bc0d3e9d312a97b0a9))
 * **router:** 添加预览模式下跳过路由处理逻辑 ([8181adc](https://github.com/vitarx-lib/router/commit/8181adc739cb42e5d603b1b89f4a455f54b30d4e))
@@ -14,7 +30,6 @@
 
 ### Features
 
-* **file-router:** 支持自定义路径解析器和路径解析错误处理 ([3d2712b](https://github.com/vitarx-lib/router/commit/3d2712b95534d55237f39126a2f25cac0094761c))
 * **router:** 支持基于 _layout.jsx 的布局路由结构 ([85d38b4](https://github.com/vitarx-lib/router/commit/85d38b444eaaa71ca565c5a9ef71ccbd78ddc5d1))
 
 
