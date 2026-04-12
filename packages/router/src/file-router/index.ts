@@ -35,7 +35,7 @@ import {
 
 export type * from './types/index.js'
 export * from './utils/logger.js'
-
+export { resolvePageConfigs } from './config/resolve.js'
 type ScanDirConfig = Omit<PageDirConfig, 'group'>
 /**
  * 文件路由管理器
