@@ -3,8 +3,6 @@ import {
   type Component,
   getLazyLoader,
   isArray,
-  isBool,
-  isComponent,
   isFunction,
   isPlainObject,
   isPromise,
@@ -50,16 +48,68 @@ import type {
   ScrollPosition,
   ScrollTarget,
   URLHash,
-  URLMode,
   URLQuery
 } from '../types/index.js'
+import { checkRouterOptions } from './checkOptions.js'
 import { RouteManager, type RouteMatchResult } from './manager.js'
 
+/**
+ * 钩子函数集合
+ *
+ * 存储路由器生命周期中各阶段的回调函数，
+ * 每个阶段的钩子以 Set 形式存储，支持动态添加和移除。
+ */
 interface Hooks {
+  /** 全局前置守卫集合，在路由匹配成功后、导航确认前执行 */
   beforeEach: Set<NavigationGuard> | null
+  /** 全局后置钩子集合，在导航成功结束后执行 */
   afterEach: Set<AfterCallback> | null
+  /** 错误处理钩子集合，在导航过程中发生错误时执行 */
   onError: Set<NavErrorListener> | null
+  /** 未匹配路由钩子集合，在路由匹配失败（404）时执行 */
   onNotFound: Set<NotFoundHandler> | null
+}
+
+/**
+ * 导航上下文
+ *
+ * 在每次导航过程中创建，封装该次导航所需的所有状态和操作。
+ * 作为各导航阶段处理方法之间的共享数据载体，避免方法间传递大量独立参数。
+ *
+ * @internal
+ */
+export interface NavigationContext {
+  /** 当前导航任务的唯一标识，用于并发导航竞争检测 */
+  taskId: number
+  /** 导航结果对象，各阶段处理方法可修改其 state 和 message */
+  result: NavigateResult
+  /** 目标路由位置，匹配失败时为 null */
+  to: RouteLocation | null
+  /** 来源路由位置 */
+  from: RouteLocation
+  /** 重定向来源路由位置，仅在重定向链中存在 */
+  redirectFrom: RouteLocation | undefined
+  /** 是否替换当前历史记录（而非推入新记录） */
+  replace: boolean
+  /**
+   * 检测重定向循环
+   *
+   * 每次重定向时调用，递增重定向计数器。
+   * 当重定向次数超过最大限制时抛出错误，防止无限循环。
+   *
+   * @param path - 重定向目标路径，用于错误信息
+   * @throws {Error} 当重定向次数超过 MAX_REDIRECTS 时
+   */
+  checkRedirectLoop: (path: string) => void
+  /**
+   * 检测并发导航竞争
+   *
+   * 判断当前导航任务是否已被更新的导航任务取代。
+   * 如果已被取代，则将结果状态标记为 cancelled。
+   *
+   * @returns true 表示当前导航已被新导航取代，应中止执行
+   */
+  hasChanged: () => boolean
 }
 /**
  * 路由器抽象基类
@@ -421,6 +471,11 @@ export abstract class Router {
    * @param route - 路由
    */
   protected hashUpdate?(route: RouteLocation): void
+
+  // ============================================================
+  // 导航流程
+  // ============================================================
+
   /**
    * 处理首次导航
    * 它会拦截 navigate 的结果，仅在首次调用时生效，用于控制 isReady 状态
@@ -438,8 +493,291 @@ export abstract class Router {
       })
     return result
   }
+
+  /**
+   * 创建导航上下文
+   *
+   * 在每次导航开始时构建上下文对象，封装该次导航所需的所有状态：
+   * - 生成唯一任务ID，用于并发导航竞争检测
+   * - 重置重定向计数器（非重定向场景下）
+   * - 执行路由匹配，确定目标路由位置
+   * - 构建 NavigateResult 基础对象
+   * - 提供 checkRedirectLoop 和 hasChanged 闭包方法
+   *
+   * @param target - 导航目标
+   * @param fromRoute - 来源路由，默认使用当前路由位置
+   * @param redirectFrom - 重定向来源路由
+   * @returns 导航上下文对象
+   */
+  private createNavigationContext(
+    target: NavTarget,
+    fromRoute?: RouteLocation,
+    redirectFrom?: RouteLocation
+  ): NavigationContext {
+    // 生成任务ID并标记为当前任务
+    const taskId = ++this._taskCounter
+    this._currentTaskId = taskId
+    // 新的导航任务（非重定向）重置重定向计数器
+    if (!redirectFrom) {
+      this._redirectCount = 0
+    }
+    // 解析目标路由
+    const to = this.matchRoute(target, redirectFrom)
+    // 确定来源路由
+    const from = fromRoute ?? cloneRouteLocation(this._routeLocation)
+    // 构建导航结果基础对象
+    const result: NavigateResult = {
+      state: NavState.success,
+      to,
+      from,
+      redirectFrom,
+      message: 'Navigation successful'
+    }
+    return {
+      taskId,
+      result,
+      to,
+      from,
+      redirectFrom,
+      replace: !!target.replace,
+      /**
+       * 重定向循环检测闭包
+       * 每次重定向时递增计数器，超过最大限制时抛出错误
+       */
+      checkRedirectLoop: (path: string) => {
+        this._redirectCount++
+        if (this._redirectCount > Router.MAX_REDIRECTS) {
+          throw new Error(
+            `[Router] Detected infinite redirect loop: exceeded maximum redirects (${Router.MAX_REDIRECTS}). Last redirect was to "${path}". Check your route configuration or navigation guards.`
+          )
+        }
+      },
+      /**
+       * 并发竞争检测闭包
+       * 比较当前任务ID与最新任务ID，判断当前导航是否已被新导航取代
+       */
+      hasChanged: () => {
+        if (this._currentTaskId === taskId) return false
+        result.state = NavState.cancelled
+        result.message = 'Navigation superseded by a newer navigation'
+        return true
+      }
+    }
+  }
+
+  /**
+   * 处理路由未匹配（404）场景
+   *
+   * 当目标路由无法匹配时执行：
+   * 1. 触发全局 onNotFound 钩子
+   * 2. 如果钩子返回了新的导航目标，进行重定向
+   * 3. 否则返回 notfound 状态
+   *
+   * @param context - 导航上下文
+   * @param target - 原始导航目标
+   * @returns 导航结果
+   */
+  private handleNotFound(
+    context: NavigationContext,
+    target: NavTarget
+  ): Promise<NavigateResult> | NavigateResult {
+    const notFoundResult = this.runNotFoundHook(target)
+    // 钩子返回了新的导航目标，进行重定向
+    if (notFoundResult) {
+      context.checkRedirectLoop(String(notFoundResult.index))
+      return this.navigate(notFoundResult, context.from)
+    }
+    // 无钩子处理，返回未匹配结果
+    context.result.message = `No match found for target: ${JSON.stringify((target as NavTarget).index)}`
+    context.result.state = NavState.notfound
+    return context.result
+  }
+
+  /**
+   * 处理重复路由场景
+   *
+   * 当目标路由与当前路由的 href 和最终匹配记录完全相同时，
+   * 视为重复导航，返回 duplicated 状态，不执行后续流程。
+   *
+   * @param context - 导航上下文
+   * @returns 重复路由结果，或 null 表示非重复路由
+   */
+  private handleDuplicatedRoute(context: NavigationContext): NavigateResult | null {
+    if (!context.to) return null
+    if (
+      context.to.href === context.from.href &&
+      context.to.matched.at(-1) === context.from.matched.at(-1)
+    ) {
+      context.result.state = NavState.duplicated
+      context.result.message = 'Navigation aborted due to the same route'
+      return context.result
+    }
+    return null
+  }
+
+  /**
+   * 处理仅 hash 变化场景
+   *
+   * 当路由路径和查询参数相同，仅 hash 部分发生变化时，
+   * 直接更新 hash 值并触发 hashUpdate 回调，不执行完整的导航流程。
+   *
+   * @param context - 导航上下文
+   * @returns hash 变化结果，或 null 表示非仅 hash 变化
+   */
+  private handleHashOnlyChange(context: NavigationContext): NavigateResult | null {
+    if (!context.to) return null
+    if (hasOnlyChangeHash(context.to, context.from)) {
+      this._routeLocation.href = context.to.href
+      this.hashUpdate?.(context.to)
+      context.result.state = NavState.success
+      context.result.message = 'Navigation succeeded: only hash changed'
+      return context.result
+    }
+    return null
+  }
+
+  /**
+   * 处理路由重定向场景
+   *
+   * 当目标路由配置了 redirect 字段时，解析重定向目标并递归执行导航：
+   * 1. 支持 redirect 为函数（动态重定向）或静态值
+   * 2. 重定向目标可以是路由索引（RouteIndex）或导航目标（NavTarget）
+   * 3. 如果重定向配置无效且无组件定义，抛出错误
+   *
+   * @param context - 导航上下文
+   * @returns 重定向导航结果，或 null 表示无需重定向
+   */
+  private handleRedirect(
+    context: NavigationContext
+  ): Promise<NavigateResult> | NavigateResult | null {
+    if (!context.to) return null
+    const to = context.to
+    const matched = to.matched.at(-1)!
+    // 解析重定向配置：支持函数和静态值
+    const redirect = isFunction(matched.redirect)
+      ? matched.redirect.call(this, to)
+      : matched.redirect
+    if (!redirect) return null
+    // 重定向目标为路由索引（路径或名称）
+    if (hasValidRouteIndex(redirect)) {
+      context.checkRedirectLoop(String(redirect))
+      return this.navigate({ index: redirect }, context.from, context.redirectFrom ?? to)
+    }
+    // 重定向目标为完整的导航目标对象
+    if (hasValidNavTarget(redirect)) {
+      context.checkRedirectLoop(String(redirect.index))
+      return this.navigate(redirect, context.from, context.redirectFrom ?? to)
+    }
+    // 重定向配置无效且无组件定义，抛出错误
+    if (!matched.component) {
+      throw new Error(
+        `[Router] Navigation failed: The redirect configuration for the matching destination route is invalid and the components are not defined, check the configuration of the ${to.path} route`
+      )
+    }
+    return null
+  }
+
+  /**
+   * 执行守卫流程
+   *
+   * 按顺序执行路由离开守卫和全局前置守卫，
+   * 在每个异步守卫执行后进行并发竞争检测。
+   * 如果守卫拦截导航或触发重定向，返回对应结果；
+   * 如果守卫全部通过，返回 null 表示继续导航。
+   *
+   * @param context - 导航上下文
+   * @returns 守卫拦截/重定向结果，或 null 表示守卫全部通过
+   */
+  private async executeGuards(context: NavigationContext): Promise<NavigateResult | null> {
+    if (!context.to) return null
+    try {
+      // 执行离开守卫（从内到外）
+      const leaveGuardResult = await this.runRouteLeaveGuards(context.to, context.from)
+      // 并发竞争检测：离开守卫是异步的，执行期间可能有新导航
+      if (context.hasChanged()) return context.result
+      // 离开守卫拦截
+      if (!leaveGuardResult) {
+        context.result.state = NavState.aborted
+        context.result.message = 'Navigation aborted by leave guard'
+        return context.result
+      }
+      // 执行前置守卫（全局 → 路由独享）
+      const guardResult = await this.runBeforeGuards(context.to, context.from)
+      // 并发竞争检测：前置守卫也是异步的
+      if (context.hasChanged()) return context.result
+      // 处理前置守卫结果
+      return this.handleGuardResult(context, guardResult)
+    } catch (error: unknown) {
+      // 捕获守卫内部的同步/异步错误
+      this.reportError(error, context.to, context.from)
+      return Promise.reject(error)
+    }
+  }
+
+  /**
+   * 处理前置守卫执行结果
+   *
+   * 根据守卫返回值决定导航走向：
+   * - false: 拦截导航，返回 aborted 状态
+   * - NavTarget: 重定向到新目标
+   * - 其他（true/void）: 放行，继续导航
+   *
+   * @param context - 导航上下文
+   * @param guardResult - 前置守卫的返回值
+   * @returns 拦截/重定向结果，或 null 表示守卫通过
+   */
+  private handleGuardResult(
+    context: NavigationContext,
+    guardResult: boolean | NavTarget | void
+  ): NavigateResult | Promise<NavigateResult> | null {
+    // 守卫拦截
+    if (guardResult === false) {
+      context.result.state = NavState.aborted
+      context.result.message = 'Navigation aborted by before guard'
+      return context.result
+    }
+    // 守卫重定向
+    if (hasValidNavTarget(guardResult)) {
+      context.checkRedirectLoop(String(guardResult.index))
+      return this.navigate(
+        guardResult,
+        context.from,
+        context.redirectFrom ?? context.to ?? undefined
+      )
+    }
+    // 守卫通过，继续导航
+    return null
+  }
+
+  /**
+   * 完成导航流程
+   *
+   * 守卫全部通过后执行最后的导航确认：
+   * 1. 根据替换标记更新历史记录（push 或 replace）
+   * 2. 调用 completeNavigation 更新路由状态、触发后置钩子和滚动行为
+   *
+   * @param context - 导航上下文
+   * @returns 导航成功结果
+   */
+  private finalizeNavigation(context: NavigationContext): NavigateResult {
+    if (!context.to) return context.result
+    const scrollPosition = this[context.replace ? 'replaceHistory' : 'pushHistory'](context.to)
+    this.completeNavigation(context.to, context.from, scrollPosition ?? null)
+    return context.result
+  }
+
   /**
    * 导航到指定位置
+   *
+   * 作为导航流程的编排器，按顺序协调各场景处理方法的执行：
+   * 1. 创建导航上下文（路由匹配、并发控制初始化）
+   * 2. 处理 404 场景（路由未匹配）
+   * 3. 处理重复路由场景
+   * 4. 处理仅 hash 变化场景
+   * 5. 处理路由重定向场景
+   * 6. 执行守卫流程（离开守卫 → 前置守卫）
+   * 7. 完成导航（更新历史记录、触发后置钩子）
+   *
    * @param target - 导航目标对象 | 路由位置对象
    * @param fromRoute - 来源路由对象
    * @param redirectFrom - 重定向来源对象
@@ -450,134 +788,32 @@ export abstract class Router {
     fromRoute?: RouteLocation,
     redirectFrom?: RouteLocation
   ): Promise<NavigateResult> {
-    // 0. 生成任务ID并开始导航
-    const taskId = ++this._taskCounter
-    this._currentTaskId = taskId
-    // 如果是新的导航任务（非重定向），重置重定向计数器
-    if (!redirectFrom) {
-      this._redirectCount = 0
+    // 创建导航上下文
+    const context = this.createNavigationContext(target, fromRoute, redirectFrom)
+    // 场景1: 路由未匹配 (404)
+    if (!context.to) {
+      return this.handleNotFound(context, target)
     }
-    const hasChanged = (): boolean => {
-      if (this._currentTaskId === taskId) return false
-      result.state = NavState.cancelled
-      result.message = 'Navigation superseded by a newer navigation'
-      return true
-    }
-    const checkRedirectLoop = (targetPath: string): void => {
-      this._redirectCount++
-      if (this._redirectCount > Router.MAX_REDIRECTS) {
-        throw new Error(
-          `[Router] Detected infinite redirect loop: exceeded maximum redirects (${Router.MAX_REDIRECTS}). Last redirect was to "${targetPath}". Check your route configuration or navigation guards.`
-        )
-      }
-    }
-    // 1. 解析目标路由
-    const to = this.matchRoute(target, redirectFrom)
-    // 2. 确保 from 对象存在
-    const from = fromRoute ?? cloneRouteLocation(this._routeLocation)
-    // 3. 构建 NavigationResult 基础对象
-    const result: NavigateResult = {
-      state: NavState.success, // 初始状态
-      to, // 最终导航位置
-      from, // 来源位置
-      redirectFrom, // 最初的导航位置
-      message: 'Navigation successful'
-    }
-    // ----------------------------------------------------------------
-    // 4. 场景 A: 路由未匹配 (404)
-    // ----------------------------------------------------------------
-    if (!to) {
-      // 触发全局 onNotFound 钩子
-      const notFoundResult = this.runNotFoundHook(target)
-      // 如果钩子返回了新的目标，进行重定向
-      if (notFoundResult) {
-        const redirectPath = String(notFoundResult.index)
-        checkRedirectLoop(redirectPath)
-        return this.navigate(notFoundResult, from)
-      }
-      result.message = `No match found for target: ${JSON.stringify((target as NavTarget).index)}`
-      result.state = NavState.notfound
-      return result
-    }
-    // ----------------------------------------------------------------
-    // 5. 场景 B: 仅hash变化 / 重复路由
-    // ----------------------------------------------------------------
-    // 5.1 重复路由
-    if (to.href === from.href && to.matched.at(-1) === from.matched.at(-1)) {
-      result.state = NavState.duplicated
-      result.message = 'Navigation aborted due to the same route'
-      return result
-    }
-    // 5.2 仅hash变化
-    if (hasOnlyChangeHash(to, from)) {
-      this._routeLocation.href = to.href
-      this.hashUpdate?.(to)
-      result.state = NavState.success
-      result.message = 'Navigation succeeded: only hash changed'
-      return result
-    }
-    // ----------------------------------------------------------------
-    // 6. 场景 C: 路由重定向
-    // ----------------------------------------------------------------
-    const matched = to.matched.at(-1)!
-    const redirect = isFunction(matched.redirect)
-      ? matched.redirect.call(this, to)
-      : matched.redirect
-    if (redirect) {
-      if (hasValidRouteIndex(redirect)) {
-        checkRedirectLoop(String(redirect))
-        return this.navigate({ index: redirect }, from, redirectFrom ?? to)
-      } else if (hasValidNavTarget(redirect)) {
-        checkRedirectLoop(String(redirect.index))
-        return this.navigate(redirect, from, redirectFrom ?? to)
-      } else if (!matched.component) {
-        throw new Error(
-          `[Router] Navigation failed: The redirect configuration for the matching destination route is invalid and the components are not defined, check the configuration of the ${to.path} route`
-        )
-      }
-    }
-    // ----------------------------------------------------------------
-    // 7. 场景 D: 路由匹配成功，执行守卫流程
-    // ----------------------------------------------------------------
-    try {
-      // 7.0 离开守卫
-      const leaveGuardResult = await this.runRouteLeaveGuards(to, from)
-
-      if (hasChanged()) return result
-
-      if (!leaveGuardResult) {
-        result.state = NavState.aborted
-        result.message = 'Navigation aborted by leave guard'
-        return result
-      }
-
-      // 执行全局前置守卫
-      const guardResult = await this.runBeforeGuards(to, from)
-
-      // 7.1 并发竞争检查
-      if (hasChanged()) return result
-
-      // 7.2 守卫拦截
-      if (guardResult === false) {
-        result.state = NavState.aborted
-        result.message = 'Navigation aborted by before guard'
-        return result
-      }
-      // 7.3 守卫重定向
-      if (hasValidNavTarget(guardResult)) {
-        checkRedirectLoop(String(guardResult.index))
-        // 直接返回递归结果，如果内部 Reject 会自动向上传播
-        return this.navigate(guardResult, from, redirectFrom ?? to)
-      }
-    } catch (error: unknown) {
-      // 捕获守卫内部的同步/异步错误
-      this.reportError(error, to, from)
-      return Promise.reject(error)
-    }
-    const scrollPosition = this[target.replace ? 'replaceHistory' : 'pushHistory'](to)
-    this.completeNavigation(to, from, scrollPosition ?? null)
-    return result
+    // 场景2: 重复路由
+    const duplicatedResult = this.handleDuplicatedRoute(context)
+    if (duplicatedResult) return duplicatedResult
+    // 场景3: 仅hash变化
+    const hashOnlyResult = this.handleHashOnlyChange(context)
+    if (hashOnlyResult) return hashOnlyResult
+    // 场景4: 路由重定向
+    const redirectResult = await this.handleRedirect(context)
+    if (redirectResult) return redirectResult
+    // 场景5: 执行守卫流程
+    const guardResult = await this.executeGuards(context)
+    if (guardResult) return guardResult
+    // 场景6: 完成导航
+    return this.finalizeNavigation(context)
   }
+
+  // ============================================================
+  // 导航完成与滚动行为
+  // ============================================================
+
   /**
    * 完成导航过程
    * 更新路由状态并触发相关的生命周期钩子
@@ -639,6 +875,11 @@ export abstract class Router {
       }
     })
   }
+
+  // ============================================================
+  // 守卫与钩子执行
+  // ============================================================
+
   /**
    * 处理 404 错误
    * @param target - 导航目标对象
@@ -791,6 +1032,11 @@ export abstract class Router {
       }
     }
   }
+
+  // ============================================================
+  // 路由匹配与URL构建
+  // ============================================================
+
   /**
    * 创建缺失的路由
    * @param component - 路由组件
@@ -902,141 +1148,6 @@ export abstract class Router {
       matched,
       meta,
       redirectFrom
-    }
-  }
-}
-
-/**
- * 检查路由器配置选项的合法性
- * @param options 用户传入的 RouterOptions 对象
- * @throws {Error} 当选项不合法时抛出错误
- */
-const checkRouterOptions = (options: RouterOptions): void => {
-  // 1. 检查 options 是否为对象
-  if (typeof options !== 'object' || options === null) {
-    throw new Error('[Router] Router options must be an object.')
-  }
-
-  // 2. 检查 routes 是否存在且为有效类型
-  if (!('routes' in options) || options.routes === undefined) {
-    throw new Error('[Router] "routes" is a required option.')
-  }
-
-  // 更新判断逻辑以匹配新的 RouteManager 命名
-  if (!Array.isArray(options.routes) && !(options.routes instanceof RouteManager)) {
-    throw new Error('[Router] "routes" must be an array or a RouteManager instance.')
-  }
-
-  // 3. 检查 mode 的值是否合法
-  if ('mode' in options && options.mode !== undefined) {
-    const validModes: URLMode[] = ['hash', 'path']
-    if (!validModes.includes(options.mode)) {
-      throw new Error(
-        `[Router] "mode" must be one of: ${validModes.join(', ')}. Received "${options.mode}".`
-      )
-    }
-  }
-
-  // 4. 检查 base 的格式
-  if ('base' in options && options.base !== undefined) {
-    if (typeof options.base !== 'string') {
-      throw new Error('[Router] "base" must be a string.')
-    }
-    if (!options.base.startsWith('/')) {
-      throw new Error('[Router] "base" must start with a slash (/).')
-    }
-  }
-
-  // 5. 检查 suffix 的格式
-  if ('suffix' in options && options.suffix !== undefined) {
-    if (typeof options.suffix !== 'string') {
-      throw new Error('[Router] "suffix" must be a string.')
-    }
-    if (!options.suffix.startsWith('.')) {
-      throw new Error('[Router] "suffix" must start with a dot (.).')
-    }
-    if (options.suffix === '.') {
-      throw new Error(
-        '[Router] "suffix" cannot be just a dot, please provide a valid extension like ".html".'
-      )
-    }
-  }
-
-  // 6. 检查 props 的类型
-  if ('props' in options && options.props !== undefined) {
-    if (!isBool(options.props) && !isFunction(options.props)) {
-      throw new Error('[Router] "props" must be a boolean or function.')
-    }
-  }
-
-  // 7. 检查 scrollBehavior 的类型
-  if ('scrollBehavior' in options && options.scrollBehavior !== undefined) {
-    if (!isFunction(options.scrollBehavior)) {
-      throw new Error('[Router] "scrollBehavior" must be a function.')
-    }
-  }
-
-  // 8. 检查钩子函数的类型
-  if ('beforeEach' in options && options.beforeEach !== undefined) {
-    if (!isFunction(options.beforeEach) && !Array.isArray(options.beforeEach)) {
-      throw new Error('[Router] "beforeEach" must be a function or an array of functions.')
-    }
-    if (Array.isArray(options.beforeEach)) {
-      options.beforeEach.forEach((hook, index) => {
-        if (!isFunction(hook)) {
-          throw new Error(
-            `[Router] "beforeEach" must be a function or an array of functions. Index: ${index}`
-          )
-        }
-      })
-    }
-  }
-  if ('afterEach' in options && options.afterEach !== undefined) {
-    if (!isFunction(options.afterEach) && !Array.isArray(options.afterEach)) {
-      throw new Error('[Router] "afterEach" must be a function or an array of functions.')
-    }
-    if (Array.isArray(options.afterEach)) {
-      options.afterEach.forEach((hook, index) => {
-        if (!isFunction(hook)) {
-          throw new Error(
-            `[Router] "afterEach" must be a function or an array of functions. Index: ${index}`
-          )
-        }
-      })
-    }
-  }
-  if ('onNotFound' in options && options.onNotFound !== undefined) {
-    if (!isFunction(options.onNotFound) && !Array.isArray(options.onNotFound)) {
-      throw new Error('[Router] "onNotFound" must be a function or an array of functions.')
-    }
-    if (Array.isArray(options.onNotFound)) {
-      options.onNotFound.forEach((hook, index) => {
-        if (!isFunction(hook)) {
-          throw new Error(
-            `[Router] "onNotFound" must be a function or an array of functions. Index: ${index}`
-          )
-        }
-      })
-    }
-  }
-  if ('onError' in options && options.onError !== undefined) {
-    if (!isFunction(options.onError) && !Array.isArray(options.onError)) {
-      throw new Error('[Router] "onError" must be a function or an array of functions.')
-    }
-    if (Array.isArray(options.onError)) {
-      options.onError.forEach((hook, index) => {
-        if (!isFunction(hook)) {
-          throw new Error(
-            `[Router] "onError" must be a function or an array of functions. Index: ${index}`
-          )
-        }
-      })
-    }
-  }
-  // 9. 检查 missing 组件的类型
-  if ('missing' in options && options.missing !== undefined) {
-    if (!isComponent(options.missing)) {
-      throw new Error('[Router] "missing" must be a valid component.')
     }
   }
 }
