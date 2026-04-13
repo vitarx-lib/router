@@ -1,6 +1,6 @@
 {
   "name": "vitarx-router",
-  "version": "4.0.0-beta.5",
+  "version": "4.0.0-beta.6",
   "description": "Official routing solution for Vitarx framework with declarative routing, navigation guards, dynamic routes, file-based routing with HMR, and full TypeScript support.",
   "author": "ZhuChonglin <8210856@qq.com>",
   "license": "MIT",
