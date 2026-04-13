@@ -35,6 +35,7 @@ import {
 
 export type * from './types/index.js'
 export * from './utils/logger.js'
+export type { GenerateResult } from './generator/index.js'
 export { resolvePageConfigs } from './config/resolve.js'
 type ScanDirConfig = Omit<PageDirConfig, 'group'>
 /**
