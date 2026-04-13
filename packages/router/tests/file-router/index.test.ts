@@ -86,6 +86,18 @@ describe('file-router/index (FileRouter)', () => {
       expect(router.nodeTree[0].filePath).toContain('index.tsx')
     })
 
+    it('pages/test.jsx 应生成路径 /test', () => {
+      createFile('src/pages/test.jsx', 'export default function Test() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+      expect(router.nodeTree).toHaveLength(1)
+      expect(router.nodeTree[0].path).toBe('/test')
+      expect(router.nodeTree[0].filePath).toContain('test.jsx')
+    })
+
     it('应该正确处理动态路由参数', () => {
       createFile('src/pages/users/[id].tsx', 'export default function UserDetail() { return null }')
 
@@ -629,7 +641,7 @@ describe('file-router/index (FileRouter)', () => {
         root: tempDir,
         pages: [
           { dir: 'src/pages', prefix: '/' },
-          { dir: 'src/admin', prefix: '/admin/', group: true }
+          { dir: 'src/admin', prefix: '/admin', group: true }
         ]
       })
 
@@ -639,6 +651,109 @@ describe('file-router/index (FileRouter)', () => {
         r => r.path === '/admin' || r.path.startsWith('/admin')
       )
       expect(adminGroup).toBeDefined()
+    })
+
+    it('分组路由的子路由路径不应包含父路由前缀', () => {
+      createFile('src/admin/dashboard.tsx', 'export default function Dashboard() { return null }')
+      createFile('src/admin/users/profile.tsx', 'export default function Profile() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: [{ dir: 'src/admin', prefix: '/admin', group: true }]
+      })
+
+      const adminGroup = router.nodeTree.find(r => r.path === '/admin')
+      expect(adminGroup).toBeDefined()
+      expect(adminGroup?.children).toBeDefined()
+      expect(adminGroup?.children?.size).toBeGreaterThan(0)
+
+      if (adminGroup?.children) {
+        for (const child of adminGroup.children) {
+          expect(child.path).not.toMatch(/^\/admin\//)
+        }
+      }
+
+      const dashboardRoute = Array.from(adminGroup?.children || []).find(r =>
+        r.filePath.includes('dashboard')
+      )
+      expect(dashboardRoute).toBeDefined()
+      expect(dashboardRoute?.path).toBe('dashboard')
+    })
+
+    it('分组路由中的嵌套目录路径应正确', () => {
+      createFile('src/admin/users/index.tsx', 'export default function Users() { return null }')
+      createFile('src/admin/users/[id].tsx', 'export default function UserDetail() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: [{ dir: 'src/admin', prefix: '/admin', group: true }]
+      })
+
+      const adminGroup = router.nodeTree.find(r => r.path === '/admin')
+      expect(adminGroup).toBeDefined()
+
+      const usersRoute = Array.from(adminGroup?.children || []).find(r => r.path === 'users')
+      expect(usersRoute).toBeDefined()
+      expect(usersRoute?.path).toBe('users')
+      expect(usersRoute?.children?.size).toBe(2)
+
+      if (usersRoute?.children) {
+        for (const child of usersRoute.children) {
+          expect(child.path).not.toMatch(/^\/admin\//)
+        }
+      }
+    })
+
+    it('分组路由生成的代码中子路由路径应正确', () => {
+      createFile('src/admin/dashboard.tsx', 'export default function Dashboard() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: [{ dir: 'src/admin', prefix: '/admin', group: true }]
+      })
+
+      const result = router.generate()
+
+      expect(result.code).toContain('path: "/admin"')
+      expect(result.code).toContain('path: "dashboard"')
+      expect(result.code).not.toContain('path: "admin/dashboard"')
+      expect(result.code).not.toContain('path: "/admin/dashboard"')
+    })
+
+    it('prefix 以斜杠结尾时应自动移除尾部斜杠', () => {
+      createFile('src/admin/dashboard.tsx', 'export default function Dashboard() { return null }')
+
+      expect(
+        () =>
+          new FileRouter({
+            root: tempDir,
+            pages: [{ dir: 'src/admin', prefix: '/admin/', group: true }]
+          })
+      ).toThrow("options.pages[0].prefix 当 group 为 true 时不能以 '/' 结尾，请使用 '/admin'")
+    })
+
+    it('group 为 false 时 prefix 可以以斜杠结尾', () => {
+      createFile('src/admin/dashboard.tsx', 'export default function Dashboard() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: [{ dir: 'src/admin', prefix: '/admin/', group: false }]
+      })
+
+      expect(router.nodeTree.length).toBeGreaterThan(0)
+    })
+
+    it('prefix 不以斜杠开头时应自动添加前导斜杠', () => {
+      createFile('src/admin/dashboard.tsx', 'export default function Dashboard() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: [{ dir: 'src/admin', prefix: 'admin', group: true }]
+      })
+
+      const adminGroup = router.nodeTree.find(r => r.path === '/admin')
+      expect(adminGroup).toBeDefined()
+      expect(adminGroup?.path).toBe('/admin')
     })
   })
 })
