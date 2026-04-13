@@ -33,10 +33,10 @@ import {
   warn
 } from './utils/index.js'
 
+export { resolvePageConfigs } from './config/resolve.js'
+export type { GenerateResult } from './generator/index.js'
 export type * from './types/index.js'
 export * from './utils/logger.js'
-export type { GenerateResult } from './generator/index.js'
-export { resolvePageConfigs } from './config/resolve.js'
 type ScanDirConfig = Omit<PageDirConfig, 'group'>
 /**
  * 文件路由管理器
@@ -111,7 +111,7 @@ export class FileRouter {
           filePath: page.dir,
           path: this.applyPathStrategy(page.prefix)
         }
-        route.children = this.scanPageDir(page, route)
+        route.children = this.scanPageDir({ ...page, prefix: '' }, route)
         // 如果有子路由则添加到页面列表中
         if (route.children.size > 0) {
           pages.push(route)
@@ -169,7 +169,7 @@ export class FileRouter {
     page: ScanDirConfig,
     parent?: ParsedNode
   ): ParsedNode | null {
-    const pathPrefix = page.prefix
+    const pathPrefix = parent ? '' : page.prefix
     const route: ParsedNode = {
       parent,
       filePath,
@@ -240,7 +240,9 @@ export class FileRouter {
     // 忽略不具备默认导出，且无重定向配置的文件
     if (!pageOptions?.redirect && !checkDefaultExport(content, filePath)) return null
     // 最终 path
-    const finalPath = this.applyPathStrategy(page.prefix + (routePath === 'index' ? '' : routePath))
+    const finalPath = this.applyPathStrategy(
+      (parent ? '' : page.prefix) + (routePath === 'index' ? '' : routePath)
+    )
     // 创建路由对象
     const route: ParsedNode = {
       parent,
