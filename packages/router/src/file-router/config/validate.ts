@@ -52,7 +52,13 @@ function validatePagesDirItem(item: unknown, index: number): void {
   }
 
   if (typeof item === 'object' && item !== null) {
-    const config = item as { dir?: unknown; include?: unknown; exclude?: unknown }
+    const config = item as {
+      dir?: unknown
+      include?: unknown
+      exclude?: unknown
+      prefix?: unknown
+      group?: unknown
+    }
 
     if (!config.dir || typeof config.dir !== 'string' || config.dir.trim() === '') {
       throw new Error(`options.pages[${index}].dir 必须是非空字符串`)
@@ -65,6 +71,19 @@ function validatePagesDirItem(item: unknown, index: number): void {
     if (config.exclude !== undefined && !Array.isArray(config.exclude)) {
       throw new Error(`options.pages[${index}].exclude 必须是数组`)
     }
+
+    if (
+      config.group === true &&
+      config.prefix !== undefined &&
+      typeof config.prefix === 'string' &&
+      config.prefix !== '/' &&
+      config.prefix.endsWith('/')
+    ) {
+      throw new Error(
+        `options.pages[${index}].prefix 当 group 为 true 时不能以 '/' 结尾，请使用 '${config.prefix.slice(0, -1)}'`
+      )
+    }
+
     return
   }
 
