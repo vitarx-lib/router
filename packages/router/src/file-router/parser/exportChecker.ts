@@ -70,10 +70,11 @@ function createExportDeclarationVisitor(
       switch (declaration.type) {
         case 'FunctionDeclaration':
         case 'FunctionExpression':
+        case 'ArrowFunctionExpression':
           result.isFunction = true
           break
 
-        case 'ArrowFunctionExpression':
+        case 'CallExpression':
           result.isFunction = true
           break
 
