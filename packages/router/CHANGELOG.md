@@ -1,4 +1,19 @@
-# [4.0.0-beta.6](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.5...v4.0.0-beta.6) (2026-04-13)
+# [4.0.0-beta.7](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.6...v4.0.0-beta.7) (2026-04-13)
+
+
+### Bug Fixes
+
+* **router:** 修复 group 为 true 时 prefix 结尾检查逻辑 ([0b813b3](https://github.com/vitarx-lib/router/commit/0b813b35fff330b7d186de24e22374213e36aff8))
+* **router:** 修复导出检查中函数类型判断逻辑 ([a2788bd](https://github.com/vitarx-lib/router/commit/a2788bd7becae41c86c0d38619b5c6a419597970))
+
+
+### Features
+
+* **router:** 导出 GenerateResult 类型以支持类型推断 ([169c171](https://github.com/vitarx-lib/router/commit/169c171d6ed1635e6d8137203228af82a67f6b7a))
+
+
+
+# [4.0.0-beta.5](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.4...v4.0.0-beta.5) (2026-04-12)
 
 
 ### Bug Fixes
@@ -8,7 +23,6 @@
 
 ### Features
 
-* **router:** 导出 GenerateResult 类型以支持类型推断 ([169c171](https://github.com/vitarx-lib/router/commit/169c171d6ed1635e6d8137203228af82a67f6b7a))
 * **router:** 导出并实现页面配置解析功能 ([64679df](https://github.com/vitarx-lib/router/commit/64679df0a7fbc2263622cb98b4d712719dec1f8c))
 * **router:** 支持自定义组件导入模式 ([b5cf6a7](https://github.com/vitarx-lib/router/commit/b5cf6a716d7faee76c1bc42ee4c456937abf5433))
 
