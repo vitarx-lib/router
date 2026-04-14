@@ -143,7 +143,7 @@ function buildRouteNode(
  * @param parent - 父路由
  * @returns 路由配置列表
  */
-function buildRoutes(
+export function buildRoutes(
   pages: Iterable<ParsedNode>,
   extendRoute?: ExtendRouteHook,
   parent?: RouteNode
@@ -290,7 +290,7 @@ function generateRouteCode(
  * @param indent - 缩进字符串
  * @returns {string} 完整的路由模块代码
  */
-function generateRoutesCode(
+export function generateRoutesCode(
   routes: RouteNode[],
   importMode: ImportMode = 'lazy',
   customImports?: readonly string[],

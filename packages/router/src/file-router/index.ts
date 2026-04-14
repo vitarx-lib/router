@@ -34,9 +34,10 @@ import {
 } from './utils/index.js'
 
 export { resolvePageConfigs } from './config/resolve.js'
-export type { GenerateResult } from './generator/index.js'
+export * from './generator/index.js'
 export type * from './types/index.js'
 export * from './utils/logger.js'
+
 type ScanDirConfig = Omit<PageDirConfig, 'group'>
 /**
  * 文件路由管理器

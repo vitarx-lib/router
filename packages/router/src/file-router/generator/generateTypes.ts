@@ -28,7 +28,7 @@ import { hasDynamicPath } from '../utils/index.js'
  * router.push({ index: 'user-id', params: { id: '123' } })
  * ```
  */
-export interface ParsedRouteIndexMap {
+interface ParsedRouteIndexMap {
   [key: string]: {
     /** 动态参数类型映射 */
     params?: Record<string, string | number>
