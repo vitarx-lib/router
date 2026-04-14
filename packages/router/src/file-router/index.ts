@@ -37,7 +37,12 @@ export { resolvePageConfigs } from './config/resolve.js'
 export * from './generator/index.js'
 export type * from './types/index.js'
 export * from './utils/logger.js'
-
+/**
+ * 文件监听器事件类型
+ *
+ * 对应 chokidar 文件监听器的事件类型
+ */
+export type FileWatcherEvent = 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir'
 type ScanDirConfig = Omit<PageDirConfig, 'group'>
 /**
  * 文件路由管理器
@@ -512,10 +517,7 @@ export class FileRouter {
    * })
    * ```
    */
-  public handleChange(
-    eventName: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir',
-    path: string
-  ): boolean {
+  public handleChange(eventName: FileWatcherEvent, path: string): boolean {
     let result: boolean
     switch (eventName) {
       case 'unlinkDir':

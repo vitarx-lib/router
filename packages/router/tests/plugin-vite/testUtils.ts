@@ -5,8 +5,8 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import type { RouterPluginOptions } from '../../src/plugin-vite/index.js'
-import VitarxRouter from '../../src/plugin-vite/index.js'
+import type { RouterPluginOptions } from '../../src/plugin-vite/plugin.js'
+import VitarxRouter from '../../src/plugin-vite/plugin.js'
 
 /**
  * 测试上下文接口
