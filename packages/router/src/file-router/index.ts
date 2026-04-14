@@ -72,7 +72,6 @@ export class FileRouter {
     validateOptions(options)
     this.config = resolveConfig(options)
     this.#nodeTree = this.scanPages()
-    info(`✨ File Router Manager created`)
   }
   /**
    * 获取项目根目录
