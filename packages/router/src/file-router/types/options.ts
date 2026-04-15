@@ -27,9 +27,9 @@ export interface ImportModeContext {
  *
  * @example
  * ```ts
- * // 自定义导入模式：使用 React.lazy
+ * // 自定义导入模式：使用 Vitarx.lazy
  * (context) => {
- *   context.addImport(`import { lazy } from 'react'`)
+ *   context.addImport(`import { lazy } from 'vitarx'`)
  *   return `lazy(() => import(${context.importPath}))`
  * }
  * ```
@@ -141,7 +141,7 @@ export interface FileRouterOptions {
    *
    * // 使用自定义函数
    * importMode: (context) => {
-   *   context.addImport(`import { lazy } from 'react'`)
+   *   context.addImport(`import { lazy } from 'vitarx'`)
    *   return `lazy(() => import(${context.importPath}))`
    * }
    * ```
