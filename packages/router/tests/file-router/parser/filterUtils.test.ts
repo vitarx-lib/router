@@ -7,8 +7,8 @@
  */
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { isPageFile, isPageFileInDirs } from '../../../src/file-router/parser/filterUtils.js'
 import type { FilterOptions } from '../../../src/file-router/parser/filterUtils.js'
+import { isPageFile, isPageFileInDirs } from '../../../src/file-router/parser/filterUtils.js'
 
 const DIR = '/project/src/pages'
 
@@ -86,7 +86,7 @@ describe('parser/filterUtils', () => {
 
     const pages: readonly FilterOptions[] = [
       makeOptions({ dir: DIR_A, include: ['**/*.tsx'] }),
-      makeOptions({ dir: DIR_B, include: ['**/*.vue'] })
+      makeOptions({ dir: DIR_B, include: ['**/*.jsx'] })
     ]
 
     it('应该在文件属于第一个目录时返回对应配置', () => {
@@ -98,7 +98,7 @@ describe('parser/filterUtils', () => {
     })
 
     it('应该在文件属于第二个目录时返回对应配置', () => {
-      const result = isPageFileInDirs(path.join(DIR_B, 'dashboard.vue'), pages)
+      const result = isPageFileInDirs(path.join(DIR_B, 'dashboard.jsx'), pages)
       expect(result).not.toBe(false)
       if (result !== false) {
         expect(result.dir).toBe(DIR_B)
@@ -110,7 +110,7 @@ describe('parser/filterUtils', () => {
     })
 
     it('应该在文件不匹配目录的 include 模式时返回 false', () => {
-      expect(isPageFileInDirs(path.join(DIR_A, 'index.vue'), pages)).toBe(false)
+      expect(isPageFileInDirs(path.join(DIR_A, 'index.jsx'), pages)).toBe(false)
       expect(isPageFileInDirs(path.join(DIR_B, 'dashboard.tsx'), pages)).toBe(false)
     })
 
