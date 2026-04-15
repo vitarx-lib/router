@@ -157,6 +157,33 @@ export function buildRoutes(
 }
 
 /**
+ * 解析组件导入表达式
+ *
+ * @param file - 组件文件路径
+ * @param importPath - JSON.stringify 后的文件路径
+ * @param mode - 解析后的导入模式（'lazy' | 'sync' | 自定义表达式）
+ * @param importLines - 导入语句集合
+ * @returns 组件表达式代码
+ */
+function resolveComponentExpr(
+  file: string,
+  importPath: string,
+  mode: 'lazy' | 'sync' | string,
+  importLines: Set<string>
+): string {
+  if (mode === 'sync') {
+    const expr = pathToUniqueName(file)
+    importLines.add(`import ${expr} from ${importPath}`)
+    return expr
+  }
+  if (mode === 'lazy') {
+    importLines.add(`import { lazy } from 'vitarx'`)
+    return `lazy(() => import(${importPath}))`
+  }
+  return mode
+}
+
+/**
  * 格式化组件表达式
  *
  * @param component - 组件路径或命名视图映射
@@ -171,19 +198,15 @@ function formatComponent(
 ): string {
   const entries = Object.entries(component).map(([name, file]) => {
     const importPath = JSON.stringify(file)
-    let expr: string
-    if (importMode === 'sync') {
-      expr = pathToUniqueName(file)
-      importLines.add(`import ${expr} from ${importPath}`)
-    } else if (importMode === 'lazy') {
-      expr = `lazy(() => import(${importPath}))`
-    } else {
-      expr = importMode({
-        importPath,
-        filePath: file,
-        addImport: statement => importLines.add(statement)
-      })
-    }
+    const mode =
+      typeof importMode === 'function'
+        ? importMode({
+            importPath,
+            filePath: file,
+            addImport: statement => importLines.add(statement)
+          })
+        : importMode
+    const expr = resolveComponentExpr(file, importPath, mode, importLines)
     return `${JSON.stringify(name)}: ${expr}`
   })
   return `{ ${entries.join(', ')} }`
@@ -298,10 +321,6 @@ export function generateRoutesCode(
 ): string {
   const importLines: Set<string> = new Set<string>()
   const codeLines: string[] = []
-
-  if (importMode === 'lazy') {
-    importLines.add(`import { lazy } from 'vitarx'`)
-  }
 
   if (customImports && customImports.length > 0) {
     customImports.forEach(imp => importLines.add(imp))

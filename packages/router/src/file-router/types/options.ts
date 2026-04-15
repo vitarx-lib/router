@@ -23,18 +23,22 @@ export interface ImportModeContext {
  * 自定义导入模式函数
  *
  * @param context - 导入上下文
- * @returns 组件表达式代码
+ * @returns 'lazy' | 'sync' | 表达式字符串
  *
  * @example
  * ```ts
- * // 自定义导入模式：使用 Vitarx.lazy
+ * // 返回预设模式
+ * (context) => 'lazy'
+ * (context) => 'sync'
+ *
+ * // 返回自定义表达式
  * (context) => {
  *   context.addImport(`import { lazy } from 'vitarx'`)
  *   return `lazy(() => import(${context.importPath}))`
  * }
  * ```
  */
-export type ImportModeFunction = (context: ImportModeContext) => string
+export type ImportModeFunction = (context: ImportModeContext) => 'lazy' | 'sync' | string
 
 /**
  * 组件导入模式。

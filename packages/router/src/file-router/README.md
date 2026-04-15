@@ -264,9 +264,23 @@ const router = new FileRouter({
 
 ### 自定义函数模式
 
-通过函数自定义导入逻辑，可以实现更灵活的导入方式：
+通过函数自定义导入逻辑，可以实现更灵活的导入方式。函数支持返回三种类型：
+
+- `'lazy'`：使用预设的懒加载模式
+- `'sync'`：使用预设的同步导入模式
+- 自定义表达式字符串
 
 ```typescript
+// 返回预设模式
+const router = new FileRouter({
+  importMode: (context) => {
+    if (context.filePath.includes('/admin/')) {
+      return 'sync'
+    }
+    return 'lazy'
+  }
+})
+
 // 使用 Vitarx.lazy
 const router = new FileRouter({
   importMode: (context) => {
@@ -290,7 +304,7 @@ const router = new FileRouter({
       context.addImport(`import { authLazy } from '@/auth'`)
       return `authLazy(() => import(${context.importPath}))`
     }
-    return `lazy(() => import(${context.importPath}))`
+    return 'lazy'
   }
 })
 ```

@@ -304,5 +304,70 @@ describe('generator/generateRoutes', () => {
       const lazyCount = (result.code.match(/lazy\(\(\) => import\(/g) || []).length
       expect(lazyCount).toBe(2)
     })
+
+    it('自定义函数模式应该支持返回 lazy 预设模式', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
+
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: () => 'lazy'
+      })
+
+      expect(result.code).toContain("import { lazy } from 'vitarx'")
+      expect(result.code).toContain('lazy(() => import(')
+    })
+
+    it('自定义函数模式应该支持返回 sync 预设模式', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
+
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: () => 'sync'
+      })
+
+      expect(result.code).not.toContain("import { lazy } from 'vitarx'")
+      expect(result.code).toContain('import _')
+    })
+
+    it('自定义函数模式应该支持根据条件返回不同模式', () => {
+      const pages: ParsedNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/admin.tsx'),
+          path: '/admin',
+          components: { default: resolvePath('src/pages/admin.tsx') }
+        }),
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
+
+      const result = generateRoutes(pages, {
+        dts: false,
+        importMode: context => {
+          if (context.filePath.includes('/admin')) {
+            return 'sync'
+          }
+          return 'lazy'
+        }
+      })
+
+      expect(result.code).toContain("import { lazy } from 'vitarx'")
+      expect(result.code).toContain('lazy(() => import(')
+      expect(result.code).toContain('import _')
+    })
   })
 })
