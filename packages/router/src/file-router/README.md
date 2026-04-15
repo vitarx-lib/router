@@ -267,10 +267,10 @@ const router = new FileRouter({
 通过函数自定义导入逻辑，可以实现更灵活的导入方式：
 
 ```typescript
-// 使用 React.lazy
+// 使用 Vitarx.lazy
 const router = new FileRouter({
   importMode: (context) => {
-    context.addImport(`import { lazy } from 'react'`)
+    context.addImport(`import { lazy } from 'vitarx'`)
     return `lazy(() => import(${context.importPath}))`
   }
 })
