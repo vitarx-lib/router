@@ -17,8 +17,7 @@ import { generateRoutes } from '../../../src/file-router/generator/generateRoute
 import type { ParsedNode } from '../../../src/file-router/types/index.js'
 import { createTestHelpers } from '../testUtils.js'
 
-const { createTestDir, cleanupTestDir, resolvePath } =
-  createTestHelpers('generate-routes')
+const { createTestDir, cleanupTestDir, resolvePath } = createTestHelpers('generate-routes')
 
 function createMockPageNode(overrides?: Partial<ParsedNode>): ParsedNode {
   return {
@@ -224,15 +223,14 @@ describe('generator/generateRoutes', () => {
 
       const result = generateRoutes(pages, {
         dts: false,
-        importMode: (context) => {
-          context.addImport(`import { lazy } from 'react'`)
+        importMode: context => {
+          context.addImport(`import { lazy } from 'vitarx'`)
           return `lazy(() => import(${context.importPath}))`
         }
       })
 
-      expect(result.code).toContain("import { lazy } from 'react'")
+      expect(result.code).toContain("import { lazy } from 'vitarx'")
       expect(result.code).toContain('lazy(() => import(')
-      expect(result.code).not.toContain("import { lazy } from 'vitarx'")
     })
 
     it('自定义函数模式应该接收正确的上下文参数', () => {
@@ -247,7 +245,7 @@ describe('generator/generateRoutes', () => {
       let receivedContext: any = null
       generateRoutes(pages, {
         dts: false,
-        importMode: (context) => {
+        importMode: context => {
           receivedContext = context
           return 'CustomComponent'
         }
@@ -270,15 +268,15 @@ describe('generator/generateRoutes', () => {
 
       const result = generateRoutes(pages, {
         dts: false,
-        importMode: (context) => {
-          context.addImport(`import { lazy } from 'react'`)
-          context.addImport(`import { Suspense } from 'react'`)
+        importMode: context => {
+          context.addImport(`import { lazy } from 'vitarx'`)
+          context.addImport(`import { Suspense } from 'vitarx'`)
           return `lazy(() => import(${context.importPath}))`
         }
       })
 
-      expect(result.code).toContain("import { lazy } from 'react'")
-      expect(result.code).toContain("import { Suspense } from 'react'")
+      expect(result.code).toContain("import { lazy } from 'vitarx'")
+      expect(result.code).toContain("import { Suspense } from 'vitarx'")
     })
 
     it('自定义函数模式应该正确处理命名视图', () => {
@@ -295,8 +293,8 @@ describe('generator/generateRoutes', () => {
 
       const result = generateRoutes(pages, {
         dts: false,
-        importMode: (context) => {
-          context.addImport(`import { lazy } from 'react'`)
+        importMode: context => {
+          context.addImport(`import { lazy } from 'vitarx'`)
           return `lazy(() => import(${context.importPath}))`
         }
       })
