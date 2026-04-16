@@ -119,7 +119,6 @@ function createInitialState(): PluginState {
  * - 支持热模块替换（HMR）
  * - 自动移除 `definePage` 宏调用
  * - 支持 TypeScript 类型定义生成
- * - 支持预览模式（不执行任何操作）
  *
  * @param options - 插件配置选项
  * @returns Vite 插件实例
