@@ -189,7 +189,6 @@ export default function vitarxRouter(options: RouterPluginOptions = {}): Plugin 
      * @returns 解析后的模块 ID，不匹配则返回 null
      */
     resolveId(id) {
-      if (state.isPreview) return null
       if (id === VIRTUAL_ROUTES_ID) {
         return RESOLVED_ROUTES_ID
       }
@@ -206,7 +205,7 @@ export default function vitarxRouter(options: RouterPluginOptions = {}): Plugin 
      * @returns 模块内容，不匹配则返回 null
      * @throws 当路由生成失败时抛出错误
      */
-    async load(id) {
+    load(id) {
       if (!state.router) return null
       if (id !== RESOLVED_ROUTES_ID) return null
 
