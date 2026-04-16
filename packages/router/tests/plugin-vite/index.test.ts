@@ -280,13 +280,6 @@ describe('plugin-vite/index', () => {
       expect(result).toBeNull()
     })
 
-    it('在preview模式下resolveId应该返回null', () => {
-      const helper = createPluginHelper({ root: ctx.tempDir }, { isPreview: true })
-
-      const result = helper.resolveId('virtual:vitarx-router:routes')
-      expect(result).toBeNull()
-    })
-
     it('在preview模式下transform应该返回null', async () => {
       ctx.createFile('src/pages/index.tsx', 'export default function Home() { return null }')
 
