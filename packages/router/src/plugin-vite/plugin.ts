@@ -208,14 +208,7 @@ export default function vitarxRouter(options: RouterPluginOptions = {}): Plugin 
     load(id) {
       if (!state.router) return null
       if (id !== RESOLVED_ROUTES_ID) return null
-
-      try {
-        return state.router.generate().code
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        warn(`Failed to generate routes: ${errorMessage}`)
-        throw error
-      }
+      return state.router.generate().code
     },
 
     /**
@@ -234,8 +227,7 @@ export default function vitarxRouter(options: RouterPluginOptions = {}): Plugin 
       try {
         return state.router.removeDefinePage(code, id)
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        warn(`Failed to transform ${id}: ${errorMessage}`)
+        warn(`Failed to transform ${id}:`, error)
         return null
       }
     },
