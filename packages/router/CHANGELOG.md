@@ -1,16 +1,27 @@
-# [4.0.0-beta.8](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.7...v4.0.0-beta.8) (2026-04-15)
+# [4.0.0-beta.9](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.8...v4.0.0-beta.9) (2026-04-16)
+
+
+### Bug Fixes
+
+* **router:** 修正自定义导入模式中的库名称错误 ([b546837](https://github.com/vitarx-lib/router/commit/b546837e9b315faa78f08e28334fb835c766d177))
+* **router:** 移除文件路由管理器创建时的多余日志输出 ([3abb7f9](https://github.com/vitarx-lib/router/commit/3abb7f92a430877aaea7ca5236dba1384e365a5a))
+
+
+### Features
+
+* **router:** 支持自定义函数模式的组件导入模式 ([6aeec70](https://github.com/vitarx-lib/router/commit/6aeec70381ab429c5db3f81c524144fadcffc9a0))
+* **router:** 支持路由管理器延迟加载能力 ([a5bf71f](https://github.com/vitarx-lib/router/commit/a5bf71f9afd2b417cf22dded44780cd4ee0818fa))
+* **vite:** 优化文件路由插件实现并完善文档注释 ([b736c42](https://github.com/vitarx-lib/router/commit/b736c42162d2204f9b006a3ec6fa707c111a0688))
+
+
+
+# [4.0.0-beta.7](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.6...v4.0.0-beta.7) (2026-04-13)
 
 
 ### Bug Fixes
 
 * **router:** 修复 group 为 true 时 prefix 结尾检查逻辑 ([0b813b3](https://github.com/vitarx-lib/router/commit/0b813b35fff330b7d186de24e22374213e36aff8))
 * **router:** 修复导出检查中函数类型判断逻辑 ([a2788bd](https://github.com/vitarx-lib/router/commit/a2788bd7becae41c86c0d38619b5c6a419597970))
-* **router:** 移除文件路由管理器创建时的多余日志输出 ([3abb7f9](https://github.com/vitarx-lib/router/commit/3abb7f92a430877aaea7ca5236dba1384e365a5a))
-
-
-### Features
-
-* **vite:** 优化文件路由插件实现并完善文档注释 ([b736c42](https://github.com/vitarx-lib/router/commit/b736c42162d2204f9b006a3ec6fa707c111a0688))
 
 
 
