@@ -253,8 +253,7 @@ export default function vitarxRouter(options: RouterPluginOptions = {}): Plugin 
             server.moduleGraph.invalidateModule(mod)
           }
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error)
-          warn(`Failed to handle file change for ${file}: ${errorMessage}`)
+          warn(`Failed to handle file change for ${file}:`, error)
         }
       })
     },
