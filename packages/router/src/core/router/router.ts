@@ -435,7 +435,7 @@ export abstract class Router {
    * await router.push('/foo')
    * await router.waitViewRender()
    *
-   * // 此时 DOM 已确保更新
+   * // 此时 DOM 已更新
    * console.log(document.querySelector('#app').innerHTML)
    */
   public async waitViewRender(navResult?: Promise<NavigateResult>): Promise<void> {
