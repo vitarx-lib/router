@@ -75,12 +75,57 @@ function getLevelColor(level: LogLevel): (text: string) => string {
 }
 
 /**
+ * 格式化错误信息
+ * @param error 错误对象
+ * @returns 格式化后的错误字符串
+ */
+function formatError(error: Error): string {
+  const lines: string[] = []
+
+  lines.push(`${chalk.red(error.name)}: ${error.message}`)
+
+  if (error.stack) {
+    const stackLines = error.stack
+      .split('\n')
+      .slice(1, 4)
+      .map(line => line.trim())
+      .filter(Boolean)
+
+    if (stackLines.length > 0) {
+      lines.push(chalk.gray(stackLines.join('\n    ')))
+    }
+  }
+
+  return lines.join('\n    ')
+}
+
+/**
+ * 格式化详细信息
+ * @param details 详细信息
+ * @returns 格式化后的字符串
+ */
+function formatDetails(details: unknown): string {
+  if (details instanceof Error) {
+    return formatError(details)
+  }
+
+  if (details && (Array.isArray(details) || typeof details === 'object')) {
+    try {
+      return JSON.stringify(details, null, 2)
+    } catch {
+      return String(details)
+    }
+  }
+  return String(details)
+}
+
+/**
  * 基础日志函数
  * @param level 日志级别
  * @param message 日志消息
  * @param details 详细信息（可选）
  */
-function log(level: LogLevel, message: string, details?: string): void {
+function log(level: LogLevel, message: string, details?: unknown): void {
   if (level === 'debug' && !debugEnabled) {
     return
   }
@@ -90,7 +135,9 @@ function log(level: LogLevel, message: string, details?: string): void {
 
   const prefix = `${chalk.gray(timestamp)} ${chalk.cyan(`[${globalLogPrefix}]`)}`
   const levelTag = chalk.gray(`(${level})`)
-  const detailsPart = details ? `\n    ${chalk.gray(details)}` : ''
+
+  const formattedDetails = details !== undefined ? formatDetails(details) : ''
+  const detailsPart = formattedDetails ? `\n    ${chalk.gray(formattedDetails)}` : ''
 
   console.log(`${prefix} ${levelTag} ${levelColor(message)}${detailsPart}`)
 }
@@ -103,7 +150,7 @@ function log(level: LogLevel, message: string, details?: string): void {
  * @param message 日志消息
  * @param details 详细信息（可选）
  */
-export function info(message: string, details?: string): void {
+export function info(message: string, details?: unknown): void {
   log('info', message, details)
 }
 
@@ -115,7 +162,7 @@ export function info(message: string, details?: string): void {
  * @param message 日志消息
  * @param details 详细信息（可选）
  */
-export function warn(message: string, details?: string): void {
+export function warn(message: string, details?: unknown): void {
   log('warn', message, details)
 }
 
@@ -127,7 +174,7 @@ export function warn(message: string, details?: string): void {
  * @param message 日志消息
  * @param details 详细信息（可选）
  */
-export function error(message: string, details?: string): void {
+export function error(message: string, details?: unknown): void {
   log('error', message, details)
 }
 
@@ -139,6 +186,6 @@ export function error(message: string, details?: string): void {
  * @param message 日志消息
  * @param details 详细信息（可选）
  */
-export function debug(message: string, details?: string): void {
+export function debug(message: string, details?: unknown): void {
   log('debug', message, details)
 }
