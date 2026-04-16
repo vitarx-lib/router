@@ -72,11 +72,12 @@ export class FileRouter {
    * 创建文件路由管理器
    *
    * @param options - 配置选项
+   * @param [init = true] - 是否初始化加载
    */
-  constructor(options: FileRouterOptions = {}) {
+  constructor(options: FileRouterOptions = {}, init: boolean = true) {
     validateOptions(options)
     this.config = resolveConfig(options)
-    this.#nodeTree = this.scanPages()
+    this.#nodeTree = init ? this.scanPages() : []
   }
   /**
    * 获取项目根目录
@@ -90,6 +91,7 @@ export class FileRouter {
   get nodeTree(): ParsedNode[] {
     return this.#nodeTree
   }
+
   /**
    * 获取文件映射表
    *
@@ -98,7 +100,17 @@ export class FileRouter {
   get fileMap(): Map<string, ParsedNode> {
     return this.#fileMap
   }
-
+  /**
+   * 加载/重新加载文件路由管理器
+   *
+   * @returns {FileRouter} 文件路由管理器实例
+   */
+  public reload(): this {
+    this.clearGenerateResult()
+    this.#fileMap.clear()
+    this.#nodeTree = this.scanPages()
+    return this
+  }
   /**
    * 构建路由数组
    *
@@ -358,16 +370,8 @@ export class FileRouter {
   /**
    * 清空生成结果
    */
-  public clearGenerateResult() {
+  public clearGenerateResult(): void {
     this.#generateResult = null
-  }
-  /**
-   * 重新加载
-   */
-  public reload(): void {
-    this.clearGenerateResult()
-    this.#fileMap.clear()
-    this.#nodeTree = this.scanPages()
   }
   /**
    * 移除 definePage 宏
