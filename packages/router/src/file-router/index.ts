@@ -376,8 +376,8 @@ export class FileRouter {
   /**
    * 移除 definePage 宏
    *
-   * 在构建模式下移除页面文件中的 definePage 宏调用。
-   * definePage 作为全局宏使用，无需导入。
+   * 移除页面文件中的 definePage 宏调用。
+   * definePage 在客户端无法运行，必须移除。
    *
    * @param code - 源代码
    * @param filePath - 文件路径
