@@ -1,9 +1,20 @@
-# [4.0.0-beta.10](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.9...v4.0.0-beta.10) (2026-04-16)
+# [4.0.0-beta.11](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.10...v4.0.0-beta.11) (2026-04-19)
 
 
 ### Bug Fixes
 
 * **router:** 修复vite插件导出无效BUG ([f04661a](https://github.com/vitarx-lib/router/commit/f04661abdcc41280cc54fa54140698a04261446c))
+* **router:** 修复预览模式下插件加载逻辑错误 ([d77752e](https://github.com/vitarx-lib/router/commit/d77752e2772538ac4acb779f2c03dcba5245687c))
+* **router:** 改进文件变更错误日志输出 ([57b285f](https://github.com/vitarx-lib/router/commit/57b285f4b95ecab4cbfba3f052bacdf425c7af25))
+* **router:** 简化路由插件错误处理逻辑 ([c636ffc](https://github.com/vitarx-lib/router/commit/c636ffc11081741ccddea0e1c4927dd193c5a8b4))
+
+
+
+# [4.0.0-beta.9](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.8...v4.0.0-beta.9) (2026-04-16)
+
+
+### Bug Fixes
+
 * **router:** 修正自定义导入模式中的库名称错误 ([b546837](https://github.com/vitarx-lib/router/commit/b546837e9b315faa78f08e28334fb835c766d177))
 
 
