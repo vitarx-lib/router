@@ -20,7 +20,7 @@ export interface ImportModeContext {
 }
 
 /**
- * 自定义导入模式函数
+ * 自定义导入处理函数
  *
  * @param context - 导入上下文
  * @returns 'lazy' | 'sync' | 表达式字符串
@@ -38,7 +38,7 @@ export interface ImportModeContext {
  * }
  * ```
  */
-export type ImportModeFunction = (context: ImportModeContext) => 'lazy' | 'sync' | string
+export type ComponentImportHandler = (context: ImportModeContext) => 'lazy' | 'sync' | string
 
 /**
  * 组件导入模式。
@@ -47,7 +47,7 @@ export type ImportModeFunction = (context: ImportModeContext) => 'lazy' | 'sync'
  * - 'sync': 同步加载组件，生成 `import` 语句
  * - 函数: 自定义导入逻辑
  */
-export type ImportMode = 'lazy' | 'sync' | ImportModeFunction
+export type ImportMode = 'lazy' | 'sync' | ComponentImportHandler
 /**
  * 生成路径的策略。
  */
