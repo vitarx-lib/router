@@ -40,9 +40,19 @@ export interface GenerateResult {
   code: string
   dts: string
 }
-/**
- * 将绝对路径转换为百分百唯一、合法的 import 变量名
- */
+
+const IMPORT_QUOTE_REGEX = /from\s+(['"])([^'"]*)\1/g
+const IMPORT_NORMALIZE_REGEX = /\s+/g
+
+function normalizeImportStatement(statement: string): string {
+  let result = statement.trim()
+  result = result.replace(IMPORT_QUOTE_REGEX, 'from "$2"')
+  result = result.replace(IMPORT_NORMALIZE_REGEX, ' ')
+  result = result.replace(/import\s*\{/g, 'import {')
+  result = result.replace(/\}\s*from/g, '} from')
+  return result
+}
+
 export function pathToUniqueName(absolutePath: string): string {
   // md5 碰撞概率在现实场景中为 0，且生成速度极快
   const hash = createHash('md5').update(absolutePath).digest('hex')
@@ -173,11 +183,11 @@ function resolveComponentExpr(
 ): string {
   if (mode === 'sync') {
     const expr = pathToUniqueName(file)
-    importLines.add(`import ${expr} from ${importPath}`)
+    importLines.add(normalizeImportStatement(`import ${expr} from ${importPath}`))
     return expr
   }
   if (mode === 'lazy') {
-    importLines.add(`import { lazy } from 'vitarx'`)
+    importLines.add(normalizeImportStatement(`import { lazy } from 'vitarx'`))
     return `lazy(() => import(${importPath}))`
   }
   return mode
@@ -203,7 +213,7 @@ function formatComponent(
         ? importMode({
             importPath,
             filePath: file,
-            addImport: statement => importLines.add(statement)
+            addImport: statement => importLines.add(normalizeImportStatement(statement))
           })
         : importMode
     const expr = resolveComponentExpr(file, importPath, mode, importLines)
@@ -323,7 +333,7 @@ export function generateRoutesCode(
   const codeLines: string[] = []
 
   if (customImports && customImports.length > 0) {
-    customImports.forEach(imp => importLines.add(imp))
+    customImports.forEach(imp => importLines.add(normalizeImportStatement(imp)))
   }
 
   codeLines.push('export default [')

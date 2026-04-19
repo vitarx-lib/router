@@ -182,7 +182,7 @@ describe('file-router/index (FileRouter)', () => {
 
       const result = router.generate()
 
-      expect(result.code).toContain("import { lazy } from 'vitarx'")
+      expect(result.code).toContain('import { lazy } from "vitarx"')
       expect(result.code).toContain('lazy(() => import(')
     })
 
@@ -197,7 +197,7 @@ describe('file-router/index (FileRouter)', () => {
 
       const result = router.generate()
 
-      expect(result.code).not.toContain("import { lazy } from 'vitarx'")
+      expect(result.code).not.toContain('import { lazy } from "vitarx"')
     })
   })
 

@@ -1,17 +1,3 @@
-/**
- * @fileoverview 路由代码生成模块测试
- *
- * 测试路由代码生成功能，包括：
- * - 基本路由代码生成
- * - lazy 导入模式
- * - sync 导入模式
- * - 自定义函数导入模式
- * - 自定义导入语句
- * - extendRoute 钩子
- * - 嵌套路由
- * - 命名视图
- * - 动态路由参数
- */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { generateRoutes } from '../../../src/file-router/generator/generateRoutes.js'
 import type { ParsedNode } from '../../../src/file-router/types/index.js'
@@ -70,7 +56,7 @@ describe('generator/generateRoutes', () => {
         importMode: 'lazy'
       })
 
-      expect(result.code).toContain("import { lazy } from 'vitarx'")
+      expect(result.code).toContain('import { lazy } from "vitarx"')
       expect(result.code).toContain('lazy(() => import(')
     })
 
@@ -88,7 +74,7 @@ describe('generator/generateRoutes', () => {
         importMode: 'sync'
       })
 
-      expect(result.code).not.toContain("import { lazy } from 'vitarx'")
+      expect(result.code).not.toContain('import { lazy } from "vitarx"')
     })
 
     it('应该注入自定义导入语句', () => {
@@ -106,7 +92,7 @@ describe('generator/generateRoutes', () => {
         imports: ["import { customHelper } from './helpers'"]
       })
 
-      expect(result.code).toContain("import { customHelper } from './helpers'")
+      expect(result.code).toContain('import { customHelper } from "./helpers"')
     })
 
     it('应该调用 extendRoute 钩子', () => {
@@ -229,7 +215,7 @@ describe('generator/generateRoutes', () => {
         }
       })
 
-      expect(result.code).toContain("import { lazy } from 'vitarx'")
+      expect(result.code).toContain('import { lazy } from "vitarx"')
       expect(result.code).toContain('lazy(() => import(')
     })
 
@@ -275,8 +261,8 @@ describe('generator/generateRoutes', () => {
         }
       })
 
-      expect(result.code).toContain("import { lazy } from 'vitarx'")
-      expect(result.code).toContain("import { Suspense } from 'vitarx'")
+      expect(result.code).toContain('import { lazy } from "vitarx"')
+      expect(result.code).toContain('import { Suspense } from "vitarx"')
     })
 
     it('自定义函数模式应该正确处理命名视图', () => {
@@ -319,7 +305,7 @@ describe('generator/generateRoutes', () => {
         importMode: () => 'lazy'
       })
 
-      expect(result.code).toContain("import { lazy } from 'vitarx'")
+      expect(result.code).toContain('import { lazy } from "vitarx"')
       expect(result.code).toContain('lazy(() => import(')
     })
 
@@ -337,7 +323,7 @@ describe('generator/generateRoutes', () => {
         importMode: () => 'sync'
       })
 
-      expect(result.code).not.toContain("import { lazy } from 'vitarx'")
+      expect(result.code).not.toContain('import { lazy } from "vitarx"')
       expect(result.code).toContain('import _')
     })
 
@@ -365,9 +351,93 @@ describe('generator/generateRoutes', () => {
         }
       })
 
-      expect(result.code).toContain("import { lazy } from 'vitarx'")
+      expect(result.code).toContain('import { lazy } from "vitarx"')
       expect(result.code).toContain('lazy(() => import(')
       expect(result.code).toContain('import _')
+    })
+
+    describe('导入语句规范化', () => {
+      it('应该规范化单引号为双引号', () => {
+        const pages: ParsedNode[] = [
+          createMockPageNode({
+            filePath: resolvePath('src/pages/index.tsx'),
+            path: '/',
+            components: { default: resolvePath('src/pages/index.tsx') }
+          })
+        ]
+
+        const result = generateRoutes(pages, {
+          dts: false,
+          importMode: 'lazy',
+          imports: ["import { lazy } from 'vitarx'"]
+        })
+
+        const lazyImportMatches = result.code.match(/import \{ lazy \} from "vitarx"/g)
+        expect(lazyImportMatches).toHaveLength(1)
+      })
+
+      it('应该规范化多余空格', () => {
+        const pages: ParsedNode[] = [
+          createMockPageNode({
+            filePath: resolvePath('src/pages/index.tsx'),
+            path: '/',
+            components: { default: resolvePath('src/pages/index.tsx') }
+          })
+        ]
+
+        const result = generateRoutes(pages, {
+          dts: false,
+          importMode: 'lazy',
+          imports: ["import  {  lazy  }  from  'vitarx'"]
+        })
+
+        expect(result.code).toContain('import { lazy } from "vitarx"')
+      })
+
+      it('应该对规范化后的导入语句去重', () => {
+        const pages: ParsedNode[] = [
+          createMockPageNode({
+            filePath: resolvePath('src/pages/index.tsx'),
+            path: '/',
+            components: { default: resolvePath('src/pages/index.tsx') }
+          })
+        ]
+
+        const result = generateRoutes(pages, {
+          dts: false,
+          importMode: 'lazy',
+          imports: [
+            "import { lazy } from 'vitarx'",
+            'import { lazy } from "vitarx"',
+            "import  {  lazy  }  from  'vitarx'"
+          ]
+        })
+
+        const lazyImportMatches = result.code.match(/import \{ lazy \} from "vitarx"/g)
+        expect(lazyImportMatches).toHaveLength(1)
+      })
+
+      it('应该规范化自定义函数模式添加的导入语句', () => {
+        const pages: ParsedNode[] = [
+          createMockPageNode({
+            filePath: resolvePath('src/pages/index.tsx'),
+            path: '/',
+            components: { default: resolvePath('src/pages/index.tsx') }
+          })
+        ]
+
+        const result = generateRoutes(pages, {
+          dts: false,
+          importMode: context => {
+            context.addImport("import {  lazy  }  from  'vitarx'")
+            return `lazy(() => import(${context.importPath}))`
+          }
+        })
+
+        expect(result.code).toContain('import { lazy } from "vitarx"')
+        const lazyImportMatches = result.code.match(/import \{ lazy \} from "vitarx"/g)
+        expect(lazyImportMatches).toHaveLength(1)
+      })
     })
   })
 })
