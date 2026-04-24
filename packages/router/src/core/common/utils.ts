@@ -134,7 +134,8 @@ export function resolveNavTarget(index: NavTarget | RouteIndex | RouteLocation):
     return {
       index: index.matched.at(-1)?.name || index.path, // 使用最后一个匹配的路由名称，如果没有则使用路径
       params: index.params, // 路由参数
-      query: index.query // 查询参数
+      query: index.query, // 查询参数
+      hash: index.hash // 哈希值
     }
   }
   throw new Error('Invalid navigation target')
