@@ -95,6 +95,20 @@ describe('macros/definePage', () => {
       expect(options?.redirect).toBe('/login')
       expect(options?.alias).toBe('/user')
     })
+
+    it('应该解析 meta 配置', () => {
+      const content = `
+definePage({
+  meta:{ "title": "test" }
+})
+export default () => (<div />)
+      `
+
+      const options = parseDefinePage(content, '/test/page.tsx')
+
+      expect(options).toBeDefined()
+      expect(options?.meta).toEqual({ title: 'test' })
+    })
   })
 
   describe('removeDefinePage', () => {

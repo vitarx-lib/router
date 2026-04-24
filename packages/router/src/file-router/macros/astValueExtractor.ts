@@ -57,7 +57,12 @@ function extractStringRecord(node: BabelTypes.ObjectExpression): Record<string, 
   for (const prop of node.properties) {
     if (prop.type !== 'ObjectProperty') continue
 
-    const key = prop.key.type === 'Identifier' ? prop.key.name : null
+    const key =
+      prop.key.type === 'Identifier'
+        ? prop.key.name
+        : prop.key.type === 'StringLiteral'
+          ? prop.key.value
+          : null
     if (!key) continue
 
     if (prop.value.type === 'StringLiteral') {
@@ -82,7 +87,12 @@ function extractMetaValue(node: BabelTypes.Node): Record<string, unknown> | unde
   for (const prop of node.properties) {
     if (prop.type !== 'ObjectProperty') continue
 
-    const key = prop.key.type === 'Identifier' ? prop.key.name : null
+    const key =
+      prop.key.type === 'Identifier'
+        ? prop.key.name
+        : prop.key.type === 'StringLiteral'
+          ? prop.key.value
+          : null
     if (!key) continue
 
     meta[key] = extractAstLiteralValue(prop.value)
@@ -107,7 +117,12 @@ function extractPatternValue(node: BabelTypes.Node): Record<string, RegExp> | un
   for (const prop of node.properties) {
     if (prop.type !== 'ObjectProperty') continue
 
-    const key = prop.key.type === 'Identifier' ? prop.key.name : null
+    const key =
+      prop.key.type === 'Identifier'
+        ? prop.key.name
+        : prop.key.type === 'StringLiteral'
+          ? prop.key.value
+          : null
     if (!key) continue
 
     const value = prop.value
@@ -183,7 +198,12 @@ function extractRedirectValue(node: BabelTypes.Node): string | RedirectConfig | 
     for (const prop of node.properties) {
       if (prop.type !== 'ObjectProperty') continue
 
-      const key = prop.key.type === 'Identifier' ? prop.key.name : null
+      const key =
+        prop.key.type === 'Identifier'
+          ? prop.key.name
+          : prop.key.type === 'StringLiteral'
+            ? prop.key.value
+            : null
       if (!key) continue
 
       if (key === 'index' && prop.value.type === 'StringLiteral') {
@@ -239,7 +259,12 @@ export function extractPageOptions(node: BabelTypes.ObjectExpression): PageOptio
   for (const prop of node.properties) {
     if (prop.type !== 'ObjectProperty') continue
 
-    const key = prop.key.type === 'Identifier' ? prop.key.name : null
+    const key =
+      prop.key.type === 'Identifier'
+        ? prop.key.name
+        : prop.key.type === 'StringLiteral'
+          ? prop.key.value
+          : null
     if (!key) continue
 
     switch (key) {

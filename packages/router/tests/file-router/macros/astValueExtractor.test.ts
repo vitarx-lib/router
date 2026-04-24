@@ -87,7 +87,9 @@ describe('macros/astValueExtractor', () => {
     })
 
     it('应该提取 redirect 对象配置带 params', () => {
-      const result = extractFromCode(`({ redirect: { index: 'user-detail', params: { id: '1' } } })`)
+      const result = extractFromCode(
+        `({ redirect: { index: 'user-detail', params: { id: '1' } } })`
+      )
       expect(result.redirect).toEqual({ index: 'user-detail', params: { id: '1' } })
     })
 
@@ -129,9 +131,9 @@ describe('macros/astValueExtractor', () => {
       expect(result).toEqual({})
     })
 
-    it('应该忽略非 Identifier 的 key', () => {
+    it('应该支持字符串字面量作为 key', () => {
       const result = extractFromCode(`({ 'name': 'home' })`)
-      expect(result.name).toBeUndefined()
+      expect(result.name).toBe('home')
     })
 
     it('应该忽略未知的属性', () => {
