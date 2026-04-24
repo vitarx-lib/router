@@ -10,7 +10,7 @@ import type { GeneratorResult } from '@babel/generator'
 import type { NodePath } from '@babel/traverse'
 import type { CallExpression } from '@babel/types'
 import type { PageOptions, RedirectConfig } from '../types/index.js'
-import { babelGenerate, babelTraverse, parseCode, warn } from '../utils/index.js'
+import { babelGenerate, babelTraverse, error, parseCode, warn } from '../utils/index.js'
 import { extractPageOptions } from './astValueExtractor.js'
 
 /**
@@ -91,7 +91,7 @@ export function parseDefinePage(content: string, filePath: string): PageOptions 
 
     return mergePageOptions(routeOptionsList)
   } catch (e) {
-    warn('解析 definePage 失败', `${e instanceof Error ? e.message : String(e)} in ${filePath}`)
+    error(`解析 definePage 失败 in ${e}`, e)
     return null
   }
 }
