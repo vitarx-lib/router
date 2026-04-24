@@ -44,15 +44,25 @@ export interface GenerateResult {
 const IMPORT_QUOTE_REGEX = /from\s+(['"])([^'"]*)\1/g
 const IMPORT_NORMALIZE_REGEX = /\s+/g
 
+/**
+ * 规范化导入语句
+ *
+ * @param statement
+ */
 function normalizeImportStatement(statement: string): string {
   let result = statement.trim()
   result = result.replace(IMPORT_QUOTE_REGEX, 'from "$2"')
   result = result.replace(IMPORT_NORMALIZE_REGEX, ' ')
   result = result.replace(/import\s*\{/g, 'import {')
-  result = result.replace(/\}\s*from/g, '} from')
+  result = result.replace(/}\s*from/g, '} from')
   return result
 }
 
+/**
+ * 根据绝对路径生成一个唯一的名称
+ *
+ * @param absolutePath
+ */
 export function pathToUniqueName(absolutePath: string): string {
   // md5 碰撞概率在现实场景中为 0，且生成速度极快
   const hash = createHash('md5').update(absolutePath).digest('hex')
@@ -61,6 +71,7 @@ export function pathToUniqueName(absolutePath: string): string {
   // 数字开头的标识符在 JS 中不能直接作为变量名。
   return `_${hash}`
 }
+
 /**
  * 生成路由名称
  *
