@@ -1,12 +1,22 @@
-# [4.0.0-beta.12](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.11...v4.0.0-beta.12) (2026-04-24)
+# [4.0.0-beta.13](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.12...v4.0.0-beta.13) (2026-04-24)
 
 
 ### Bug Fixes
 
+* **file-router:** 支持字符串字面量作为对象属性键 ([3404bec](https://github.com/vitarx-lib/router/commit/3404becd556454084fc1bd72491a1a15871e5dc1))
 * **router:** 修复重复路由检测逻辑 ([1832ca2](https://github.com/vitarx-lib/router/commit/1832ca28e918d682ca9a2a1838d8fa8a893fccd2))
+* **router:** 修正 definePage 解析失败时的警告信息 ([0f50d88](https://github.com/vitarx-lib/router/commit/0f50d888363c9dd1ce073894a5532e5d65615ee2))
+* **router:** 添加哈希值修复hash配置无效问题 ([86e20c5](https://github.com/vitarx-lib/router/commit/86e20c5dd0135013e0cf4bd0b9b774ec67b3f048))
+
+
+
+# [4.0.0-beta.11](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.10...v4.0.0-beta.11) (2026-04-19)
+
+
+### Bug Fixes
+
 * **router:** 修复预览模式下插件加载逻辑错误 ([d77752e](https://github.com/vitarx-lib/router/commit/d77752e2772538ac4acb779f2c03dcba5245687c))
 * **router:** 改进文件变更错误日志输出 ([57b285f](https://github.com/vitarx-lib/router/commit/57b285f4b95ecab4cbfba3f052bacdf425c7af25))
-* **router:** 添加哈希值修复hash配置无效问题 ([86e20c5](https://github.com/vitarx-lib/router/commit/86e20c5dd0135013e0cf4bd0b9b774ec67b3f048))
 * **router:** 简化路由插件错误处理逻辑 ([c636ffc](https://github.com/vitarx-lib/router/commit/c636ffc11081741ccddea0e1c4927dd193c5a8b4))
 
 
