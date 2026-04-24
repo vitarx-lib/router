@@ -794,12 +794,15 @@ export abstract class Router {
     if (!context.to) {
       return this.handleNotFound(context, target)
     }
-    // 场景2: 重复路由
-    const duplicatedResult = this.handleDuplicatedRoute(context)
-    if (duplicatedResult) return duplicatedResult
-    // 场景3: 仅hash变化
-    const hashOnlyResult = this.handleHashOnlyChange(context)
-    if (hashOnlyResult) return hashOnlyResult
+    // 仅在路由第一次路由后检测重复路由
+    if (context.from.matched.length) {
+      // 场景2: 重复路由
+      const duplicatedResult = this.handleDuplicatedRoute(context)
+      if (duplicatedResult) return duplicatedResult
+      // 场景3: 仅hash变化
+      const hashOnlyResult = this.handleHashOnlyChange(context)
+      if (hashOnlyResult) return hashOnlyResult
+    }
     // 场景4: 路由重定向
     const redirectResult = await this.handleRedirect(context)
     if (redirectResult) return redirectResult
