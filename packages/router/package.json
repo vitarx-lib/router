@@ -55,7 +55,8 @@
     "test:core": "vitest run --project jsdom",
     "test:plugin-vite": "vitest run --project plugin-vite",
     "test:watch": "vitest watch",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "release": "npx release-cli"
   },
   "peerDependencies": {
     "vitarx": "^4.0.0-0",
