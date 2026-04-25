@@ -2,12 +2,11 @@
  * 导航状态
  *
  * 枚举值：
- * 0. success: 导航成功
- * 1. aborted: 导航被阻止
- * 2. cancelled: 导航被取消
- * 3. duplicated: 重复导航
- * 4. notfound: 路由未匹配
- * 5. exception: 捕获到异常
+ * 1. success: 导航成功
+ * 2. aborted: 导航被阻止
+ * 4. cancelled: 导航被取消
+ * 8. duplicated: 重复导航
+ * 16. notfound: 路由未匹配
  */
 export enum NavState {
   /**
