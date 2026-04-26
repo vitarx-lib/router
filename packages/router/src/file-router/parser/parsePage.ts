@@ -63,7 +63,7 @@ export class PathParseError extends TypeError {
 /**
  * 解析结果接口
  */
-interface ParsedRouteResult {
+interface ParseResult {
   routePath: string
   viewName: string
 }
@@ -78,10 +78,7 @@ interface ParsedRouteResult {
  * @returns 路由路径和视图名称
  * @throws {PathParseError} 当路径解析失败时抛出
  */
-export function parseRoutePath(
-  filePath: string,
-  parser?: PathParser
-): Exclude<PathParseResult, string> {
+export function parseRoutePath(filePath: string, parser?: PathParser): ParseResult {
   const { basename } = extractFileInfo(filePath)
 
   if (!parser) {
@@ -89,7 +86,7 @@ export function parseRoutePath(
   }
 
   const result = parser(basename, filePath)
-  return parseCustomRouteResult(result, filePath)
+  return parseCustomResult(result, filePath)
 }
 
 /**
@@ -110,7 +107,7 @@ function extractFileInfo(filePath: string): { basename: string; ext: string } {
  * @param basename - 文件基本名称
  * @returns 解析结果
  */
-function defaultPathParser(basename: string): ParsedRouteResult {
+function defaultPathParser(basename: string): ParseResult {
   const [routePath, viewName] = basename.split('@', 2)
   return {
     routePath,
@@ -119,14 +116,14 @@ function defaultPathParser(basename: string): ParsedRouteResult {
 }
 
 /**
- * 解析自定义路由结果
+ * 解析自定义解析器结果
  *
  * @param result - 解析器返回的结果
  * @param filePath - 文件路径（用于错误上下文）
  * @returns 解析结果
  * @throws {PathParseError} 当结果无效时抛出
  */
-function parseCustomRouteResult(result: PathParseResult, filePath: string): ParsedRouteResult {
+function parseCustomResult(result: PathParseResult, filePath: string): ParseResult {
   if (typeof result === 'string') {
     return parseStringResult(result, filePath)
   }
@@ -150,7 +147,7 @@ function parseCustomRouteResult(result: PathParseResult, filePath: string): Pars
  * @returns 解析结果
  * @throws {PathParseError} 当路径无效时抛出
  */
-function parseStringResult(result: string, filePath: string): ParsedRouteResult {
+function parseStringResult(result: string, filePath: string): ParseResult {
   const routePath = normalizeRoutePath(result)
 
   if (!routePath) {
@@ -175,7 +172,7 @@ function parseStringResult(result: string, filePath: string): ParsedRouteResult 
 function parseObjectResult(
   result: { routePath: unknown; viewName?: unknown },
   filePath: string
-): ParsedRouteResult {
+): ParseResult {
   const { routePath: rawRoutePath, viewName } = result
 
   validateRoutePathType(rawRoutePath, filePath)
