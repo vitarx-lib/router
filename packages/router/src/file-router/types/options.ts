@@ -57,7 +57,7 @@ export type PageSource = string | PageDirOptions
 /**
  * 路径解析结果
  *
- * - string: 路径
+ * - string: 文件名称，交由内置默认的pathParser继续处理。
  * - `{ routePath: string, viewName?: string }`: 路径和视图名称
  */
 export type PathParseResult =
