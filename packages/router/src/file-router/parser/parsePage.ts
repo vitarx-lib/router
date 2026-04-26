@@ -108,7 +108,15 @@ function extractFileInfo(filePath: string): { basename: string; ext: string } {
  * @returns 解析结果
  */
 function defaultPathParser(basename: string): ParseResult {
-  const [routePath, viewName] = basename.split('@', 2)
+  const [rawPath, viewName] = basename.split('@', 2)
+  const routePath = normalizeRoutePath(rawPath)
+  if (!routePath) {
+    throw new PathParseError('pathParser returned empty routePath', {
+      filePath: basename,
+      originalValue: rawPath,
+      field: 'routePath'
+    })
+  }
   return {
     routePath,
     viewName: viewName || 'default'
@@ -125,7 +133,7 @@ function defaultPathParser(basename: string): ParseResult {
  */
 function parseCustomResult(result: PathParseResult, filePath: string): ParseResult {
   if (typeof result === 'string') {
-    return parseStringResult(result, filePath)
+    return defaultPathParser(result)
   }
 
   if (result && typeof result === 'object' && !Array.isArray(result)) {
@@ -137,28 +145,6 @@ function parseCustomResult(result: PathParseResult, filePath: string): ParseResu
     originalValue: result,
     field: 'result'
   })
-}
-
-/**
- * 解析字符串类型的结果
- *
- * @param result - 字符串结果
- * @param filePath - 文件路径
- * @returns 解析结果
- * @throws {PathParseError} 当路径无效时抛出
- */
-function parseStringResult(result: string, filePath: string): ParseResult {
-  const routePath = normalizeRoutePath(result)
-
-  if (!routePath) {
-    throw new PathParseError('pathParser returned empty routePath', {
-      filePath,
-      originalValue: result,
-      field: 'routePath'
-    })
-  }
-
-  return { routePath, viewName: 'default' }
 }
 
 /**
@@ -240,11 +226,14 @@ function validateViewName(viewName: unknown, filePath: string): void {
 /**
  * 标准化路由路径
  *
- * 去除路径首尾空白和开头的斜杠。
+ * 去除路径首尾空白和首尾的斜杠，将 . # 等不利于 URL 的字符替换为 -。
  *
  * @param routePath - 原始路由路径
  * @returns 标准化后的路由路径
  */
 function normalizeRoutePath(routePath: string): string {
-  return routePath.trim().replace(/^\/+/, '')
+  return routePath
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/[.#]/g, '-')
 }
