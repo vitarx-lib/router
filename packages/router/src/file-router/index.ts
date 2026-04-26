@@ -210,7 +210,7 @@ export class FileRouter {
     parent?: ParsedNode
   ): ParsedNode | null {
     // 分离出路由 path 和视图命名
-    const { routePath, viewName = 'default' } = parseRoutePath(filePath, this.config.pathParser)
+    const { routePath, viewName } = parseRoutePath(filePath, this.config.pathParser)
     const fileType = this.getPageType(filePath, routePath, page)
     if (fileType === 'ignore') return null
     // 处理分组配置文件
