@@ -56,10 +56,9 @@ describe('parser/parsePage', () => {
         expect(result.viewName).toBe('modal')
       })
 
-      it('应该正确解析仅命名视图无路由路径', () => {
-        const result = parseRoutePath('@sidebar')
-        expect(result.routePath).toBe('')
-        expect(result.viewName).toBe('sidebar')
+      it('应该抛出错误当只有命名视图无路由路径', () => {
+        expect(() => parseRoutePath('@sidebar')).toThrow(PathParseError)
+        expect(() => parseRoutePath('@sidebar')).toThrow('pathParser returned empty routePath')
       })
 
       it('应该正确解析带多个 @ 的文件名（仅第一个生效）', () => {
@@ -89,6 +88,20 @@ describe('parser/parsePage', () => {
         expect(result.viewName).toBe('default')
       })
 
+      it('应该支持 @ 语法提取视图名称', () => {
+        const parser: PathParser = () => 'admin@sidebar'
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('admin')
+        expect(result.viewName).toBe('sidebar')
+      })
+
+      it('应该支持 @ 语法且仅第一个 @ 生效', () => {
+        const parser: PathParser = () => 'path@view@extra'
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('path')
+        expect(result.viewName).toBe('view')
+      })
+
       it('应该去除路径开头的斜杠', () => {
         const parser: PathParser = () => '/leading-slash'
         const result = parseRoutePath('about.tsx', parser)
@@ -101,10 +114,47 @@ describe('parser/parsePage', () => {
         expect(result.routePath).toBe('multiple-slashes')
       })
 
+      it('应该去除路径结尾的斜杠', () => {
+        const parser: PathParser = () => 'trailing-slash/'
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('trailing-slash')
+      })
+
+      it('应该去除路径首尾的斜杠', () => {
+        const parser: PathParser = () => '/both-slashes/'
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('both-slashes')
+      })
+
       it('应该去除路径首尾空白', () => {
         const parser: PathParser = () => '  trimmed-path  '
         const result = parseRoutePath('about.tsx', parser)
         expect(result.routePath).toBe('trimmed-path')
+      })
+
+      it('应该将路径中的 . 替换为 -', () => {
+        const parser: PathParser = () => 'api.v2'
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('api-v2')
+      })
+
+      it('应该将路径中的 # 替换为 -', () => {
+        const parser: PathParser = () => 'section#part'
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('section-part')
+      })
+
+      it('应该将路径中的 . 和 # 同时替换为 -', () => {
+        const parser: PathParser = () => 'api.v2#release'
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('api-v2-release')
+      })
+
+      it('应该支持 @ 语法与 .# 替换组合', () => {
+        const parser: PathParser = () => 'api.v2@sidebar'
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('api-v2')
+        expect(result.viewName).toBe('sidebar')
       })
 
       it('应该抛出错误当返回空字符串', () => {
@@ -158,6 +208,36 @@ describe('parser/parsePage', () => {
         const parser: PathParser = () => ({ routePath: '/leading-slash' })
         const result = parseRoutePath('about.tsx', parser)
         expect(result.routePath).toBe('leading-slash')
+      })
+
+      it('应该去除路径结尾的斜杠', () => {
+        const parser: PathParser = () => ({ routePath: 'trailing-slash/' })
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('trailing-slash')
+      })
+
+      it('应该去除路径首尾的斜杠', () => {
+        const parser: PathParser = () => ({ routePath: '/both-slashes/' })
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('both-slashes')
+      })
+
+      it('应该将路径中的 . 替换为 -', () => {
+        const parser: PathParser = () => ({ routePath: 'api.v2' })
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('api-v2')
+      })
+
+      it('应该将路径中的 # 替换为 -', () => {
+        const parser: PathParser = () => ({ routePath: 'section#part' })
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('section-part')
+      })
+
+      it('应该将路径中的 . 和 # 同时替换为 -', () => {
+        const parser: PathParser = () => ({ routePath: 'api.v2#release' })
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('api-v2-release')
       })
 
       it('应该抛出错误当 routePath 不是字符串', () => {
