@@ -85,7 +85,7 @@ export function parseRoutePath(
   const { basename } = extractFileInfo(filePath)
 
   if (!parser) {
-    return parseDefaultRoutePath(basename)
+    return defaultPathParser(basename)
   }
 
   const result = parser(basename, filePath)
@@ -110,7 +110,7 @@ function extractFileInfo(filePath: string): { basename: string; ext: string } {
  * @param basename - 文件基本名称
  * @returns 解析结果
  */
-function parseDefaultRoutePath(basename: string): ParsedRouteResult {
+function defaultPathParser(basename: string): ParsedRouteResult {
   const [routePath, viewName] = basename.split('@', 2)
   return {
     routePath,
