@@ -79,7 +79,7 @@ export interface RouterViewOptions {
  * @returns {View} 返回渲染的视图
  */
 export function RouterView(props: RouterViewOptions): View {
-  const { children, name = 'default' } = props
+  const { children } = props
   // 获取路由实例
   const router = useRouter()
   // 获取父级 index
@@ -87,7 +87,7 @@ export function RouterView(props: RouterViewOptions): View {
   const index = parentIndex + 1 // 计算当前视图的索引
   provide(__ROUTER_VIEW_DEPTH_KEY__, index) // 向子组件提供当前索引
   // 匹配的路由线路
-
+  const viewName = computed(() => props.name || 'default')
   const matchedRoute = computed((): RouteRecord => {
     return router.route.matched[index] ?? null
   })
@@ -96,8 +96,7 @@ export function RouterView(props: RouterViewOptions): View {
   const routeProps = computed((): AnyProps | null => {
     const currentRoute = matchedRoute.value
     if (!currentRoute) return null
-    const name = props.name || 'default' // 获取视图名称，默认为 'default'
-    let injectProps = currentRoute.props?.[name] ?? router.config.props ?? false
+    let injectProps = currentRoute.props?.[viewName.value] ?? router.config.props ?? false
 
     if (injectProps === false) return null // 如果属性为 false，返回null
     if (injectProps === true && currentRoute.pattern) {
@@ -119,7 +118,7 @@ export function RouterView(props: RouterViewOptions): View {
   const component = computed(() => {
     const route = matchedRoute.value // 获取匹配的路由记录
     if (!route) return null
-    return route.component?.[name] ?? null
+    return route.component?.[viewName.value] ?? null
   })
 
   // 如果传入了 children 函数，则调用并返回其结果
@@ -128,6 +127,7 @@ export function RouterView(props: RouterViewOptions): View {
       return children(component, routeProps, matchedRoute)
     } catch (e) {
       logger.error('[RouterView] Error occurred while executing children function', e)
+      return createCommentView(`router-view:error`)
     }
   }
 
