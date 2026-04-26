@@ -56,6 +56,9 @@ export type PathStrategy = 'kebab' | 'lowercase' | 'raw'
 export type PageSource = string | PageDirOptions
 /**
  * 路径解析结果
+ *
+ * - string: 路径
+ * - `{ routePath: string, viewName?: string }`: 路径和视图名称
  */
 export type PathParseResult =
   | string
