@@ -60,9 +60,9 @@ export type PageSource = string | PageDirOptions
 export type PathParseResult =
   | string
   | {
-      /** 解析后的路径 */
+      /** 解析后的路径 如：home.jsx -> 'home' */
       routePath: string
-      /** 视图名称 */
+      /** 视图名称 如：home.nav.jsx -> 'nav' */
       viewName?: string
     }
 /**
