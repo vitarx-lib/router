@@ -1,4 +1,5 @@
 import { isString, logger } from 'vitarx'
+import { NavState } from '../common/constant.js'
 import { parseHashContent } from '../common/utils.js'
 import { normalizePath, parseQuery } from '../shared/utils.js'
 import type {
@@ -23,7 +24,11 @@ export class WebRouter extends Router {
   constructor(options: RouterOptions) {
     super(options)
     // 初始化路由
-    this.replace(this.urlToNavigateTarget()).then()
+    this.replace(this.urlToNavigateTarget()).then(res => {
+      if (res.state !== NavState.success) {
+        logger.error(`[Router] Initialization failed: ${res.message}`, res)
+      }
+    })
     // 初始化时监听 popstate 事件，处理历史记录返回时的路由恢复
     window.addEventListener('popstate', this.onPopState)
     if (this.config.mode === 'hash') {
