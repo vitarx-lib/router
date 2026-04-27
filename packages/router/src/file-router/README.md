@@ -77,23 +77,25 @@ interface FileRouterOptions {
   configFileName?: string
   transform?: CodeTransformHook
   extendRoute?: ExtendRouteHook
-  pathParser?: PathParser
+  beforeWriteRoutes?: BeforeWriteRoutesHook
+  pageParser?: PageParser
 }
 ```
 
-| 选项               | 类型                                         | 默认值             | 说明        |
-|------------------|--------------------------------------------|-----------------|-----------|
-| `root`           | `string`                                   | `process.cwd()` | 项目根目录     |
-| `pages`          | `PageSource \| readonly PageSource[]`      | `'src/pages'`   | 页面来源配置    |
-| `pathStrategy`   | `'kebab' \| 'lowercase' \| 'raw'`          | `'kebab'`       | 路径格式化策略   |
-| `importMode`     | `'lazy' \| 'sync' \| ImportModeFunction`   | `'lazy'`        | 组件导入模式    |
-| `injectImports`  | `readonly string[]`                        | -               | 注入自定义导入语句 |
-| `dts`            | `boolean \| string`                        | `false`         | 类型定义文件配置  |
-| `layoutFileName` | `string`                                   | `'_layout'`     | 布局文件名     |
-| `configFileName` | `string`                                   | `'_config'`     | 分组配置文件名   |
-| `transform`      | `CodeTransformHook`                        | -               | 代码转换钩子    |
-| `extendRoute`    | `ExtendRouteHook`                          | -               | 路由扩展钩子    |
-| `pathParser`     | `PathParser`                               | -               | 自定义路径解析器  |
+| 选项                  | 类型                                       | 默认值             | 说明         |
+|---------------------|------------------------------------------|-----------------|------------|
+| `root`              | `string`                                 | `process.cwd()` | 项目根目录      |
+| `pages`             | `PageSource \| readonly PageSource[]`    | `'src/pages'`   | 页面来源配置     |
+| `pathStrategy`      | `'kebab' \| 'lowercase' \| 'raw'`        | `'kebab'`       | 路径格式化策略    |
+| `importMode`        | `'lazy' \| 'sync' \| ImportModeFunction` | `'lazy'`        | 组件导入模式     |
+| `injectImports`     | `readonly string[]`                      | -               | 注入自定义导入语句  |
+| `dts`               | `boolean \| string`                      | `false`         | 类型定义文件配置   |
+| `layoutFileName`    | `string`                                 | `'_layout'`     | 布局文件名      |
+| `configFileName`    | `string`                                 | `'_config'`     | 分组配置文件名    |
+| `transform`         | `CodeTransformHook`                      | -               | 代码转换钩子     |
+| `extendRoute`       | `ExtendRouteHook`                        | -               | 路由扩展钩子     |
+| `beforeWriteRoutes` | `BeforeWriteRoutesHook`                  | -               | 写入路由文件前的钩子 |
+| `pageParser`        | `PageParser`                             | -               | 自定义页面解析器   |
 
 ### PageSource
 
@@ -398,13 +400,13 @@ const router = new FileRouter({
 })
 ```
 
-## pathParser 配置
+## PageParser 配置
 
-自定义路径解析器，用于完全控制文件名到路由路径的转换逻辑：
+自定义页面解析器，用于完全控制文件名到页面数据的转换逻辑：
 
 ```typescript
 const router = new FileRouter({
-  pathParser(basename, filePath) {
+  pageParser(basename, filePath) {
     // basename: 文件名（不包含扩展名）
     // filePath: 完整的文件路径
 
@@ -413,7 +415,7 @@ const router = new FileRouter({
       return basename.replace(/_/g, '-')
     }
 
-    // 返回字符串表示路由路径
+    // 返回字符串交由内置解析器处理
     return basename
   }
 })
@@ -428,7 +430,7 @@ const router = new FileRouter({
 
 ```typescript
 const router = new FileRouter({
-  pathParser(basename, filePath) {
+  pageParser(basename, filePath) {
     // 处理命名视图
     // 例如：index@sidebar.tsx
     const [path, viewName] = basename.split('@')
@@ -445,19 +447,21 @@ const router = new FileRouter({
 })
 ```
 
-### PathParser 类型定义
+### PageParser 类型定义
 
 ```typescript
-type PathParser = (basename: string, filePath: string) => PathParseResult
+type PageParser = (basename: string, filePath: string) => string | PathParseResult
 
-type PathParseResult =
-  | string
-  | {
-      /** 解析后的路径 */
-      routePath: string
-      /** 视图名称 */
-      viewName?: string
-    }
+interface PageParseResult {
+   /** 解析后的路径 如：home.jsx -> 'home' */
+   path: string
+   /**
+    * 页面相关可配置选项
+    */
+   options?: PageOptions
+   /** 视图名称 如：home.nav.jsx -> 'nav' */
+   viewName?: string
+}
 ```
 
 ## 动态页面管理
