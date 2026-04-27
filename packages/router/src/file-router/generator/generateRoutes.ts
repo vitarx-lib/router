@@ -115,6 +115,7 @@ function buildRouteNode(
 ): RouteNode {
   // 创建基础路由配置
   const route: RouteNode = {
+    isGroup: page.isGroup,
     filePath: page.filePath,
     path: page.path,
     fullPath: parent ? normalizeRoutePath(parent.fullPath + '/' + page.path) : page.path
