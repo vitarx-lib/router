@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { generateRoutes } from '../../../src/file-router/generator/generateRoutes.js'
-import type { ParsedNode } from '../../../src/file-router/types/index.js'
+import type { ScanNode } from '../../../src/file-router/types/index.js'
 import { createTestHelpers } from '../testUtils.js'
 
 const { createTestDir, cleanupTestDir, resolvePath } = createTestHelpers('generate-routes')
 
-function createMockPageNode(overrides?: Partial<ParsedNode>): ParsedNode {
+function createMockPageNode(overrides?: Partial<ScanNode>): ScanNode {
   return {
+    isGroup: false,
     filePath: resolvePath('src/pages/index.tsx'),
     path: '/',
     ...overrides
@@ -24,7 +25,7 @@ describe('generator/generateRoutes', () => {
 
   describe('generateRoutes', () => {
     it('应该生成正确的路由代码', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -43,7 +44,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('应该使用 lazy 导入模式', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -61,7 +62,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('应该使用 sync 导入模式', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -78,7 +79,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('应该注入自定义导入语句', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -96,7 +97,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('应该调用 extendRoute 钩子', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -119,7 +120,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('应该生成类型定义代码', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -137,13 +138,13 @@ describe('generator/generateRoutes', () => {
     })
 
     it('应该正确处理嵌套路由', () => {
-      const childPage: ParsedNode = createMockPageNode({
+      const childPage: ScanNode = createMockPageNode({
         filePath: resolvePath('src/pages/users/[id].tsx'),
         path: '{id}',
         components: { default: resolvePath('src/pages/users/[id].tsx') }
       })
 
-      const parentPage: ParsedNode = createMockPageNode({
+      const parentPage: ScanNode = createMockPageNode({
         filePath: resolvePath('src/pages/users/index.tsx'),
         path: '/users',
         components: { default: resolvePath('src/pages/users/index.tsx') },
@@ -162,7 +163,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('应该正确处理命名视图', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -182,7 +183,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('应该正确处理动态路由参数', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/users/[id].tsx'),
           path: '/users/{id}',
@@ -199,7 +200,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('应该支持自定义函数导入模式', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -220,7 +221,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('自定义函数模式应该接收正确的上下文参数', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -244,7 +245,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('自定义函数模式应该能够添加多个导入语句', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -266,7 +267,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('自定义函数模式应该正确处理命名视图', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -292,7 +293,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('自定义函数模式应该支持返回 lazy 预设模式', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -310,7 +311,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('自定义函数模式应该支持返回 sync 预设模式', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/index.tsx'),
           path: '/',
@@ -328,7 +329,7 @@ describe('generator/generateRoutes', () => {
     })
 
     it('自定义函数模式应该支持根据条件返回不同模式', () => {
-      const pages: ParsedNode[] = [
+      const pages: ScanNode[] = [
         createMockPageNode({
           filePath: resolvePath('src/pages/admin.tsx'),
           path: '/admin',
@@ -358,7 +359,7 @@ describe('generator/generateRoutes', () => {
 
     describe('导入语句规范化', () => {
       it('应该规范化单引号为双引号', () => {
-        const pages: ParsedNode[] = [
+        const pages: ScanNode[] = [
           createMockPageNode({
             filePath: resolvePath('src/pages/index.tsx'),
             path: '/',
@@ -372,12 +373,12 @@ describe('generator/generateRoutes', () => {
           imports: ["import { lazy } from 'vitarx'"]
         })
 
-        const lazyImportMatches = result.code.match(/import \{ lazy \} from "vitarx"/g)
+        const lazyImportMatches = result.code.match(/import \{ lazy } from "vitarx"/g)
         expect(lazyImportMatches).toHaveLength(1)
       })
 
       it('应该规范化多余空格', () => {
-        const pages: ParsedNode[] = [
+        const pages: ScanNode[] = [
           createMockPageNode({
             filePath: resolvePath('src/pages/index.tsx'),
             path: '/',
@@ -395,7 +396,7 @@ describe('generator/generateRoutes', () => {
       })
 
       it('应该对规范化后的导入语句去重', () => {
-        const pages: ParsedNode[] = [
+        const pages: ScanNode[] = [
           createMockPageNode({
             filePath: resolvePath('src/pages/index.tsx'),
             path: '/',
@@ -413,12 +414,12 @@ describe('generator/generateRoutes', () => {
           ]
         })
 
-        const lazyImportMatches = result.code.match(/import \{ lazy \} from "vitarx"/g)
+        const lazyImportMatches = result.code.match(/import \{ lazy } from "vitarx"/g)
         expect(lazyImportMatches).toHaveLength(1)
       })
 
       it('应该规范化自定义函数模式添加的导入语句', () => {
-        const pages: ParsedNode[] = [
+        const pages: ScanNode[] = [
           createMockPageNode({
             filePath: resolvePath('src/pages/index.tsx'),
             path: '/',
@@ -435,7 +436,7 @@ describe('generator/generateRoutes', () => {
         })
 
         expect(result.code).toContain('import { lazy } from "vitarx"')
-        const lazyImportMatches = result.code.match(/import \{ lazy \} from "vitarx"/g)
+        const lazyImportMatches = result.code.match(/import \{ lazy } from "vitarx"/g)
         expect(lazyImportMatches).toHaveLength(1)
       })
     })
