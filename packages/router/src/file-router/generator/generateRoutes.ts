@@ -6,7 +6,13 @@
  */
 
 import { createHash } from 'node:crypto'
-import type { ExtendRouteHook, ImportMode, ParsedNode, RouteNode } from '../types/index.js'
+import type {
+  BeforeWriteRoutesHook,
+  ExtendRouteHook,
+  ImportMode,
+  RouteNode,
+  ScanNode
+} from '../types/index.js'
 import { normalizeRoutePath } from '../utils/index.js'
 import { generateDtsCode } from './generateTypes.js'
 
@@ -29,6 +35,11 @@ export interface GenerateRoutesOptions {
    * 在生成每个路由配置时调用，允许开发者自定义扩展路由配置
    */
   extendRoute?: ExtendRouteHook
+  /**
+   * 路由写入前钩子
+   * 在生成路由代码前调用，允许开发者自定义路由配置
+   */
+  beforeWriteRoutes?: BeforeWriteRoutesHook
   /**
    * 自定义导入语句
    * 允许向虚拟模块注入自定义的导入语句
@@ -98,12 +109,13 @@ function generateRouteName(fullPath: string): string {
  * @returns 解析后的路由配置
  */
 function buildRouteNode(
-  page: ParsedNode,
+  page: ScanNode,
   extendRoute?: ExtendRouteHook,
   parent?: RouteNode
 ): RouteNode {
   // 创建基础路由配置
   const route: RouteNode = {
+    filePath: page.filePath,
     path: page.path,
     fullPath: parent ? normalizeRoutePath(parent.fullPath + '/' + page.path) : page.path
   }
@@ -141,14 +153,15 @@ function buildRouteNode(
     }
   }
 
+  // 应用路由扩展钩子
+  if (extendRoute) extendRoute(route)
+
   // 处理子路由
   if (page.children && page.children.size > 0) {
     // 递归处理子路由
     route.children = buildRoutes(page.children.values(), extendRoute, route)
   }
 
-  // 应用路由扩展钩子
-  if (extendRoute) extendRoute(route, page)
   // 动态路由不存在name时生成一个name
   if (!route.name && route.fullPath.includes('{')) {
     route.name = generateRouteName(route.fullPath)
@@ -165,7 +178,7 @@ function buildRouteNode(
  * @returns 路由配置列表
  */
 export function buildRoutes(
-  pages: Iterable<ParsedNode>,
+  pages: Iterable<ScanNode>,
   extendRoute?: ExtendRouteHook,
   parent?: RouteNode
 ): RouteNode[] {
@@ -372,12 +385,13 @@ export function generateRoutesCode(
  * @param options - 路由生成选项
  * @returns { GenerateResult } 包含routes、code、dts的路由配置结果
  */
-export function generateRoutes(
-  pages: ParsedNode[],
-  options: GenerateRoutesOptions
-): GenerateResult {
+export function generateRoutes(pages: ScanNode[], options: GenerateRoutesOptions): GenerateResult {
   // 构建解析后的路由配置
-  const routes = buildRoutes(pages, options.extendRoute)
+  let routes = buildRoutes(pages, options.extendRoute)
+  if (options.beforeWriteRoutes) {
+    const result = options.beforeWriteRoutes(routes)
+    if (Array.isArray(result)) routes = result
+  }
   // 生成最终的路由代码
   const code = generateRoutesCode(routes, options.importMode, options.imports)
   const dts = options.dts ? generateDtsCode(routes) : ''

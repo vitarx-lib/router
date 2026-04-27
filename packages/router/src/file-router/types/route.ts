@@ -42,13 +42,17 @@ export interface PageOptions {
 }
 
 /**
- * 解析的节点 - 核心 IR 节点
+ * 扫描的节点 - 核心 IR 节点
  */
-export interface ParsedNode {
+export interface ScanNode {
   /**
    * 目录配置文件
    */
   dirConfigFile?: string
+  /**
+   * 是否为分组
+   */
+  readonly isGroup: boolean
   /**
    * 文件绝对路径
    */
@@ -60,11 +64,11 @@ export interface ParsedNode {
   /**
    * 父节点
    */
-  parent?: ParsedNode
+  parent?: ScanNode
   /**
    * 子节点映射
    */
-  children?: Set<ParsedNode>
+  children?: Set<ScanNode>
   /**
    * 组件映射（命名视图）
    */
@@ -80,17 +84,21 @@ export interface ParsedNode {
  */
 export interface RouteNode extends PageOptions {
   /**
+   * 文件绝对路径
+   */
+  filePath: string
+  /**
    * 当前 path（不含父级）
    */
-  readonly path: string
+  path: string
   /**
    * 完整 path（含父级）
    */
-  readonly fullPath: string
+  fullPath: string
   /**
-   * 子节点映射
+   * 子节点
    */
-  children?: readonly RouteNode[]
+  children?: RouteNode[]
   /**
    * 组件映射（命名视图）
    *

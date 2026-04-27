@@ -1,4 +1,4 @@
-import type { ParsedNode, RouteNode } from './route.js'
+import type { RouteNode } from './route.js'
 
 /**
  * 扩展路由的钩子
@@ -8,8 +8,11 @@ import type { ParsedNode, RouteNode } from './route.js'
  * @param route - 生成的路由节点
  * @param parsed - 解析的路由节点
  */
-export type ExtendRouteHook = (route: RouteNode, parsed: Readonly<ParsedNode>) => void
-
+export type ExtendRouteHook = (route: RouteNode) => void
+/**
+ * 写入路由文件前的钩子
+ */
+export type BeforeWriteRoutesHook = (routes: RouteNode[]) => void | RouteNode[]
 /**
  * 代码转换函数
  *

@@ -1,4 +1,4 @@
-import type { CodeTransformHook, ExtendRouteHook } from './hooks.js'
+import type { BeforeWriteRoutesHook, CodeTransformHook, ExtendRouteHook } from './hooks.js'
 
 /**
  * 自定义导入模式函数的上下文
@@ -222,6 +222,10 @@ export interface FileRouterOptions {
    * ```
    */
   extendRoute?: ExtendRouteHook
+  /**
+   * 写入路由之前
+   */
+  beforeWriteRoutes?: BeforeWriteRoutesHook
   /**
    * 路径解析器
    *

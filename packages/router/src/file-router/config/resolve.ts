@@ -21,7 +21,8 @@ import type {
   PageDirOptions,
   PageSource,
   PathParser,
-  PathStrategy
+  PathStrategy,
+  RouteNode
 } from '../types/index.js'
 
 export type PageDirConfig = Required<PageDirOptions>
@@ -40,6 +41,7 @@ export interface ResolvedConfig {
   configFileName: string
   transform?: CodeTransformHook
   extendRoute?: ExtendRouteHook
+  beforeWriteRoutes?: (routes: RouteNode[]) => void | RouteNode[]
   pathParser?: PathParser
 }
 
@@ -102,6 +104,7 @@ export function resolveConfig(options: FileRouterOptions): ResolvedConfig {
     configFileName = DEFAULT_CONFIG_FILE,
     transform,
     extendRoute,
+    beforeWriteRoutes,
     pathParser
   } = options
   const resolvedPages = resolvePageConfigs(pages, root)
@@ -116,6 +119,7 @@ export function resolveConfig(options: FileRouterOptions): ResolvedConfig {
     configFileName,
     transform,
     extendRoute,
+    beforeWriteRoutes,
     pathParser
   }
 }

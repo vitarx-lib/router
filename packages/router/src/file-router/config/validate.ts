@@ -246,6 +246,17 @@ function validateExtendRoute(opts: FileRouterOptions): void {
 }
 
 /**
+ * 验证 beforeWriteRoutes 配置
+ * @param opts
+ */
+function validateBeforeWriteRoutes(opts: FileRouterOptions): void {
+  if (opts.beforeWriteRoutes === undefined) return
+
+  if (typeof opts.beforeWriteRoutes !== 'function') {
+    throw new Error('options.beforeWriteRoutes 必须是函数')
+  }
+}
+/**
  * 验证 pathParser 配置
  *
  * @param opts - 配置选项
@@ -289,5 +300,6 @@ export function validateOptions(opts: FileRouterOptions): void {
   validateConfigFileName(opts)
   validateTransform(opts)
   validateExtendRoute(opts)
+  validateBeforeWriteRoutes(opts)
   validatePathParser(opts)
 }
