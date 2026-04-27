@@ -84,6 +84,10 @@ export interface ScanNode {
  */
 export interface RouteNode extends PageOptions {
   /**
+   * 是否为分组
+   */
+  isGroup: boolean
+  /**
    * 文件绝对路径
    */
   filePath: string
