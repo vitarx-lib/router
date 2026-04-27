@@ -13,16 +13,18 @@ import type { PageOptions, RedirectConfig } from '../types/index.js'
 import { babelGenerate, babelTraverse, error, parseCode, warn } from '../utils/index.js'
 import { extractPageOptions } from './astValueExtractor.js'
 
+type Falsy = false | null | undefined | 0 | ''
 /**
  * 合并多个页面配置
  *
  * @param optionsList - 配置列表
  * @returns 合并后的配置
  */
-export function mergePageOptions(optionsList: PageOptions[]): PageOptions {
+export function mergePageOptions(...optionsList: (PageOptions | Falsy)[]): PageOptions {
   const merged: PageOptions = {}
 
   for (const options of optionsList) {
+    if (!options) continue
     if (options.name) merged.name = options.name
     if (options.meta) merged.meta = { ...merged.meta, ...options.meta }
     if (options.pattern) merged.pattern = { ...merged.pattern, ...options.pattern }
@@ -89,7 +91,7 @@ export function parseDefinePage(content: string, filePath: string): PageOptions 
       )
     }
 
-    return mergePageOptions(routeOptionsList)
+    return mergePageOptions(...routeOptionsList)
   } catch (e) {
     error(`解析 definePage 失败 in ${e}`, e)
     return null
