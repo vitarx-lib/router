@@ -25,7 +25,7 @@ export class WebRouter extends Router {
     super(options)
     // 初始化路由
     this.replace(this.urlToNavigateTarget()).then(res => {
-      if (res.state !== NavState.success) {
+      if (__VITARX_DEV__ && res.state !== NavState.success && res.state !== NavState.cancelled) {
         logger.error(`[Router] Initialization failed: ${res.message}`, res)
       }
     })
