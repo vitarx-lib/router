@@ -1,21 +1,31 @@
-# [4.0.0-beta.15](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.14...v4.0.0-beta.15) (2026-04-27)
+# [4.0.0-beta.16](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.15...v4.0.0-beta.16) (2026-04-27)
 
 
 ### Bug Fixes
 
 * **router:** 修复 mergePageOptions 函数参数处理 ([09298db](https://github.com/vitarx-lib/router/commit/09298dbe3b03bd6ba8c1bea5f1ccfa866d16f31c))
-* **router:** 修复 RouterView 组件视图名称处理问题 ([5c670c3](https://github.com/vitarx-lib/router/commit/5c670c3f3ba7f57b4cf3c2bb1635901f33479802))
-* **router:** 修复初始化路由时错误日志记录问题 ([3f2d7cf](https://github.com/vitarx-lib/router/commit/3f2d7cfd3eebd064aab11957460010956385521a))
 * **router:** 修复开发模式下路由初始化失败日志打印问题 ([a214217](https://github.com/vitarx-lib/router/commit/a214217f14d43f7779ffc1acf794ef9134c629f4))
-* **router:** 修复路由解析中视图命名默认值问题 ([9473455](https://github.com/vitarx-lib/router/commit/9473455703427025636dedf53287df35b7a5ce78))
-* **router:** 修正导航状态枚举值编号错误 ([5a5878a](https://github.com/vitarx-lib/router/commit/5a5878ad50f2037852c3fefbff933925ecfbb04c))
-* **router:** 修正路径解析结果注释描述 ([1e42734](https://github.com/vitarx-lib/router/commit/1e42734b20fed22087bead27227c9337e2250cac))
+* **router:** 修复路由生成时缺失的 isGroup 属性 ([92b0140](https://github.com/vitarx-lib/router/commit/92b0140d3c8cedacd820015d44eefbbce81c64be))
 
 
 ### Features
 
 * **router:** 在路由生成流程中添加写入前钩子支持 ([986a509](https://github.com/vitarx-lib/router/commit/986a509292557222c8f327a1ea835913823b5565))
 * **router:** 支持路径解析返回页面选项并合并页面配置 ([86bce58](https://github.com/vitarx-lib/router/commit/86bce58ae56e38579be31b49693c79f7d30b6fed))
+* **router:** 添加 RouteNode 接口 isGroup 属性 ([9f61af8](https://github.com/vitarx-lib/router/commit/9f61af85a9acdcdc746689027ee1552bcb619702))
+
+
+
+# [4.0.0-beta.14](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.13...v4.0.0-beta.14) (2026-04-26)
+
+
+### Bug Fixes
+
+* **router:** 修复 RouterView 组件视图名称处理问题 ([5c670c3](https://github.com/vitarx-lib/router/commit/5c670c3f3ba7f57b4cf3c2bb1635901f33479802))
+* **router:** 修复初始化路由时错误日志记录问题 ([3f2d7cf](https://github.com/vitarx-lib/router/commit/3f2d7cfd3eebd064aab11957460010956385521a))
+* **router:** 修复路由解析中视图命名默认值问题 ([9473455](https://github.com/vitarx-lib/router/commit/9473455703427025636dedf53287df35b7a5ce78))
+* **router:** 修正导航状态枚举值编号错误 ([5a5878a](https://github.com/vitarx-lib/router/commit/5a5878ad50f2037852c3fefbff933925ecfbb04c))
+* **router:** 修正路径解析结果注释描述 ([1e42734](https://github.com/vitarx-lib/router/commit/1e42734b20fed22087bead27227c9337e2250cac))
 
 
 
