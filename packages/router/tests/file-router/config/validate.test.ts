@@ -229,6 +229,22 @@ describe('config/validate', () => {
     })
   })
 
+  describe('validateOptions - beforeWriteRoutes 配置', () => {
+    it('应该接受有效的 beforeWriteRoutes 函数', () => {
+      expect(() => validateOptions({ beforeWriteRoutes: () => {} })).not.toThrow()
+    })
+
+    it('应该在 beforeWriteRoutes 为非函数时抛出错误', () => {
+      expect(() => validateOptions({ beforeWriteRoutes: 'wrong' as any })).toThrow(
+        'options.beforeWriteRoutes 必须是函数'
+      )
+    })
+
+    it('应该在 beforeWriteRoutes 未定义时通过验证', () => {
+      expect(() => validateOptions({})).not.toThrow()
+    })
+  })
+
   describe('validateOptions - 完整配置', () => {
     it('应该接受空配置', () => {
       expect(() => validateOptions({})).not.toThrow()
@@ -246,7 +262,8 @@ describe('config/validate', () => {
           layoutFileName: '_layout',
           configFileName: '_config',
           transform: (content: string) => content,
-          extendRoute: route => route
+          extendRoute: () => {},
+          beforeWriteRoutes: () => {}
         })
       ).not.toThrow()
     })

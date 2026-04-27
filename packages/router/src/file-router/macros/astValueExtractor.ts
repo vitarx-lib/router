@@ -151,8 +151,8 @@ function extractRegExp(node: BabelTypes.Node): RegExp | null {
     if (node.callee.type === 'Identifier' && node.callee.name === 'RegExp') {
       const args = node.arguments
       if (args.length >= 1) {
-        const firstArg = args[0]
-        const secondArg = args[1]
+        const firstArg = args.at(0)!
+        const secondArg = args.at(1)!
 
         let patternStr: string | null = null
         let flags = ''

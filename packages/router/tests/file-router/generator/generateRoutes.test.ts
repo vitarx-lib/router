@@ -112,11 +112,31 @@ describe('generator/generateRoutes', () => {
         extendRoute: route => {
           calledWithRoute = route
           route.meta = { ...route.meta, custom: true }
-          return route
         }
       })
       expect(calledWithRoute).toBeDefined()
       expect(calledWithRoute.meta?.custom).toBe(true)
+    })
+
+    it('extendRoute 钩子应只接收 route 参数', () => {
+      const pages: ScanNode[] = [
+        createMockPageNode({
+          filePath: resolvePath('src/pages/index.tsx'),
+          path: '/',
+          components: { default: resolvePath('src/pages/index.tsx') }
+        })
+      ]
+
+      let secondArg: unknown = 'SENTINEL'
+      generateRoutes(pages, {
+        dts: false,
+        importMode: 'lazy',
+        extendRoute: (route, ...args) => {
+          secondArg = args.at(0)
+          route.meta = { ...route.meta, custom: true }
+        }
+      })
+      expect(secondArg).toBeUndefined()
     })
 
     it('应该生成类型定义代码', () => {
@@ -135,6 +155,166 @@ describe('generator/generateRoutes', () => {
 
       expect(result.dts).toBeDefined()
       expect(result.dts).toContain('declare module')
+    })
+
+    describe('beforeWriteRoutes 钩子', () => {
+      it('应该调用 beforeWriteRoutes 钩子', () => {
+        const pages: ScanNode[] = [
+          createMockPageNode({
+            filePath: resolvePath('src/pages/index.tsx'),
+            path: '/',
+            components: { default: resolvePath('src/pages/index.tsx') }
+          })
+        ]
+
+        let called = false
+        let receivedRoutes: any = null
+        generateRoutes(pages, {
+          dts: false,
+          importMode: 'lazy',
+          beforeWriteRoutes: routes => {
+            called = true
+            receivedRoutes = routes
+          }
+        })
+
+        expect(called).toBe(true)
+        expect(receivedRoutes).toBeDefined()
+        expect(receivedRoutes.length).toBe(1)
+      })
+
+      it('beforeWriteRoutes 返回数组时应替换路由', () => {
+        const pages: ScanNode[] = [
+          createMockPageNode({
+            filePath: resolvePath('src/pages/index.tsx'),
+            path: '/',
+            components: { default: resolvePath('src/pages/index.tsx') }
+          }),
+          createMockPageNode({
+            filePath: resolvePath('src/pages/about.tsx'),
+            path: '/about',
+            components: { default: resolvePath('src/pages/about.tsx') }
+          })
+        ]
+
+        const result = generateRoutes(pages, {
+          dts: false,
+          importMode: 'lazy',
+          beforeWriteRoutes: routes => {
+            return [routes[0]]
+          }
+        })
+
+        expect(result.routes).toHaveLength(1)
+        expect(result.routes[0].path).toBe('/')
+      })
+
+      it('beforeWriteRoutes 返回 void 时应保持原始路由', () => {
+        const pages: ScanNode[] = [
+          createMockPageNode({
+            filePath: resolvePath('src/pages/index.tsx'),
+            path: '/',
+            components: { default: resolvePath('src/pages/index.tsx') }
+          }),
+          createMockPageNode({
+            filePath: resolvePath('src/pages/about.tsx'),
+            path: '/about',
+            components: { default: resolvePath('src/pages/about.tsx') }
+          })
+        ]
+
+        const result = generateRoutes(pages, {
+          dts: false,
+          importMode: 'lazy',
+          beforeWriteRoutes: routes => {
+            routes[0].meta = { modified: true }
+          }
+        })
+
+        expect(result.routes).toHaveLength(2)
+        expect(result.routes[0].meta).toEqual({ modified: true })
+      })
+
+      it('beforeWriteRoutes 返回空数组时应清空路由', () => {
+        const pages: ScanNode[] = [
+          createMockPageNode({
+            filePath: resolvePath('src/pages/index.tsx'),
+            path: '/',
+            components: { default: resolvePath('src/pages/index.tsx') }
+          })
+        ]
+
+        const result = generateRoutes(pages, {
+          dts: false,
+          importMode: 'lazy',
+          beforeWriteRoutes: () => []
+        })
+
+        expect(result.routes).toHaveLength(0)
+      })
+
+      it('未提供 beforeWriteRoutes 时不应影响路由生成', () => {
+        const pages: ScanNode[] = [
+          createMockPageNode({
+            filePath: resolvePath('src/pages/index.tsx'),
+            path: '/',
+            components: { default: resolvePath('src/pages/index.tsx') }
+          })
+        ]
+
+        const result = generateRoutes(pages, {
+          dts: false,
+          importMode: 'lazy'
+        })
+
+        expect(result.routes).toHaveLength(1)
+      })
+    })
+
+    describe('RouteNode 结构', () => {
+      it('生成的 RouteNode 应包含 filePath 字段', () => {
+        const pages: ScanNode[] = [
+          createMockPageNode({
+            filePath: resolvePath('src/pages/index.tsx'),
+            path: '/',
+            components: { default: resolvePath('src/pages/index.tsx') }
+          })
+        ]
+
+        const result = generateRoutes(pages, {
+          dts: false,
+          importMode: 'lazy'
+        })
+
+        expect(result.routes[0].filePath).toBe(resolvePath('src/pages/index.tsx'))
+      })
+
+      it('嵌套路由的 RouteNode 也应包含 filePath', () => {
+        const childPage: ScanNode = createMockPageNode({
+          filePath: resolvePath('src/pages/users/[id].tsx'),
+          path: '{id}',
+          components: { default: resolvePath('src/pages/users/[id].tsx') }
+        })
+
+        const parentPage: ScanNode = createMockPageNode({
+          filePath: resolvePath('src/pages/users/index.tsx'),
+          path: '/users',
+          components: { default: resolvePath('src/pages/users/index.tsx') },
+          children: new Set([childPage])
+        })
+
+        childPage.parent = parentPage
+
+        const result = generateRoutes([parentPage], {
+          dts: false,
+          importMode: 'lazy'
+        })
+
+        expect(result.routes[0].filePath).toBe(resolvePath('src/pages/users/index.tsx'))
+        expect(result.routes[0].children?.[0].filePath).toBe(
+          resolvePath('src/pages/users/[id].tsx')
+        )
+      })
     })
 
     it('应该正确处理嵌套路由', () => {

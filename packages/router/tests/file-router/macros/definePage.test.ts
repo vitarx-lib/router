@@ -6,9 +6,83 @@
  * - 移除 definePage 调用
  */
 import { describe, expect, it } from 'vitest'
-import { parseDefinePage, removeDefinePage } from '../../../src/file-router/macros/definePage.js'
+import {
+  mergePageOptions,
+  parseDefinePage,
+  removeDefinePage
+} from '../../../src/file-router/macros/definePage.js'
 
 describe('macros/definePage', () => {
+  describe('mergePageOptions', () => {
+    it('应该合并多个页面配置', () => {
+      const result = mergePageOptions(
+        { name: 'home', meta: { title: 'Home' } },
+        { meta: { auth: true } }
+      )
+      expect(result.name).toBe('home')
+      expect(result.meta).toEqual({ title: 'Home', auth: true })
+    })
+
+    it('应该跳过 falsy 值', () => {
+      const result = mergePageOptions(
+        null as any,
+        undefined as any,
+        false as any,
+        0 as any,
+        '' as any,
+        { name: 'home' }
+      )
+      expect(result.name).toBe('home')
+    })
+
+    it('应该正确合并 alias 配置', () => {
+      const result = mergePageOptions(
+        { alias: '/home' },
+        { alias: '/index' }
+      )
+      expect(result.alias).toEqual(['/home', '/index'])
+    })
+
+    it('应该正确合并 alias 数组', () => {
+      const result = mergePageOptions(
+        { alias: ['/home', '/main'] },
+        { alias: ['/index'] }
+      )
+      expect(result.alias).toEqual(['/home', '/main', '/index'])
+    })
+
+    it('应该正确合并 meta 配置', () => {
+      const result = mergePageOptions(
+        { meta: { title: 'Home' } },
+        { meta: { auth: true } }
+      )
+      expect(result.meta).toEqual({ title: 'Home', auth: true })
+    })
+
+    it('应该正确合并 pattern 配置', () => {
+      const result = mergePageOptions(
+        { pattern: { id: /\d+/ } },
+        { pattern: { slug: /[a-z]+/ } }
+      )
+      expect(result.pattern).toEqual({ id: /\d+/, slug: /[a-z]+/ })
+    })
+
+    it('无参数时应返回空对象', () => {
+      const result = mergePageOptions()
+      expect(result).toEqual({})
+    })
+
+    it('全部为 falsy 值时应返回空对象', () => {
+      const result = mergePageOptions(null as any, undefined as any, false as any)
+      expect(result).toEqual({})
+    })
+
+    it('单个配置应正常返回', () => {
+      const result = mergePageOptions({ name: 'home' })
+      expect(result.name).toBe('home')
+    })
+  })
+
   describe('parseDefinePage', () => {
     it('应该解析 definePage 配置', () => {
       const content = `

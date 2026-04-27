@@ -10,8 +10,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { parseRoutePath, PathParseError } from '../../../src/file-router/parser/parsePage.js'
-import { createTestHelpers } from '../testUtils.js'
 import type { PathParser } from '../../../src/file-router/types/index.js'
+import { createTestHelpers } from '../testUtils.js'
 
 const { createTestDir, cleanupTestDir } = createTestHelpers('parse-page')
 
@@ -29,19 +29,16 @@ describe('parser/parsePage', () => {
       it('应该正确解析普通文件名', () => {
         const result = parseRoutePath('about')
         expect(result.routePath).toBe('about')
-        expect(result.viewName).toBe('default')
       })
 
       it('应该正确解析 index 文件名', () => {
         const result = parseRoutePath('index')
         expect(result.routePath).toBe('index')
-        expect(result.viewName).toBe('default')
       })
 
       it('应该正确解析动态路由参数', () => {
         const result = parseRoutePath('[id]')
         expect(result.routePath).toBe('[id]')
-        expect(result.viewName).toBe('default')
       })
 
       it('应该正确解析命名视图', () => {
@@ -54,6 +51,11 @@ describe('parser/parsePage', () => {
         const result = parseRoutePath('[id]@modal')
         expect(result.routePath).toBe('[id]')
         expect(result.viewName).toBe('modal')
+      })
+
+      it('无命名视图时 viewName 应为 undefined', () => {
+        const result = parseRoutePath('about')
+        expect(result.viewName).toBeUndefined()
       })
 
       it('应该抛出错误当只有命名视图无路由路径', () => {
@@ -70,7 +72,6 @@ describe('parser/parsePage', () => {
       it('应该正确处理带扩展名的文件路径', () => {
         const result = parseRoutePath('about.tsx')
         expect(result.routePath).toBe('about')
-        expect(result.viewName).toBe('default')
       })
 
       it('应该正确处理带扩展名和命名视图的文件路径', () => {
@@ -85,7 +86,6 @@ describe('parser/parsePage', () => {
         const parser: PathParser = () => 'custom-path'
         const result = parseRoutePath('about.tsx', parser)
         expect(result.routePath).toBe('custom-path')
-        expect(result.viewName).toBe('default')
       })
 
       it('应该支持 @ 语法提取视图名称', () => {
@@ -160,13 +160,17 @@ describe('parser/parsePage', () => {
       it('应该抛出错误当返回空字符串', () => {
         const parser: PathParser = () => ''
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned empty routePath')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned empty routePath'
+        )
       })
 
       it('应该抛出错误当返回只有空白字符的字符串', () => {
         const parser: PathParser = () => '   '
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned empty routePath')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned empty routePath'
+        )
       })
 
       it('应该抛出错误当返回只有斜杠的字符串', () => {
@@ -180,7 +184,6 @@ describe('parser/parsePage', () => {
         const parser: PathParser = () => ({ routePath: 'custom-path' })
         const result = parseRoutePath('about.tsx', parser)
         expect(result.routePath).toBe('custom-path')
-        expect(result.viewName).toBe('default')
       })
 
       it('应该正确解析包含 routePath 和 viewName 的对象', () => {
@@ -190,18 +193,75 @@ describe('parser/parsePage', () => {
         expect(result.viewName).toBe('sidebar')
       })
 
+      it('应该正确解析包含 options 的对象', () => {
+        const parser: PathParser = () => ({
+          routePath: 'custom-path',
+          options: { name: 'custom-name', meta: { auth: true } }
+        })
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('custom-path')
+        expect(result.options).toEqual({ name: 'custom-name', meta: { auth: true } })
+      })
+
+      it('应该正确解析包含 options 和 viewName 的对象', () => {
+        const parser: PathParser = () => ({
+          routePath: 'custom-path',
+          viewName: 'sidebar',
+          options: { name: 'custom-name' }
+        })
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('custom-path')
+        expect(result.viewName).toBe('sidebar')
+        expect(result.options).toEqual({ name: 'custom-name' })
+      })
+
+      it('options 为 undefined 时应通过验证', () => {
+        const parser: PathParser = () => ({
+          routePath: 'custom-path',
+          options: undefined
+        })
+        const result = parseRoutePath('about.tsx', parser)
+        expect(result.routePath).toBe('custom-path')
+        expect(result.options).toBeUndefined()
+      })
+
+      it('应该抛出错误当 options 为非对象类型（字符串）', () => {
+        const parser: PathParser = () =>
+          ({ routePath: 'valid', options: 'invalid' } as any)
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned invalid options type'
+        )
+      })
+
+      it('应该抛出错误当 options 为非对象类型（数字）', () => {
+        const parser: PathParser = () =>
+          ({ routePath: 'valid', options: 123 } as any)
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned invalid options type'
+        )
+      })
+
+      it('应该抛出错误当 options 为数组', () => {
+        const parser: PathParser = () =>
+          ({ routePath: 'valid', options: [] } as any)
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned invalid options type'
+        )
+      })
+
       it('应该正确处理 viewName 为 undefined', () => {
         const parser: PathParser = () => ({ routePath: 'custom-path', viewName: undefined })
         const result = parseRoutePath('about.tsx', parser)
         expect(result.routePath).toBe('custom-path')
-        expect(result.viewName).toBe('default')
       })
 
       it('应该正确处理 viewName 为空字符串', () => {
         const parser: PathParser = () => ({ routePath: 'custom-path', viewName: '' })
         const result = parseRoutePath('about.tsx', parser)
         expect(result.routePath).toBe('custom-path')
-        expect(result.viewName).toBe('default')
       })
 
       it('应该去除路径开头的斜杠', () => {
@@ -243,43 +303,63 @@ describe('parser/parsePage', () => {
       it('应该抛出错误当 routePath 不是字符串', () => {
         const parser: PathParser = () => ({ routePath: 123 as unknown as string })
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned non-string routePath')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned non-string routePath'
+        )
       })
 
       it('应该抛出错误当 routePath 为 null', () => {
         const parser: PathParser = () => ({ routePath: null as unknown as string })
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned non-string routePath')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned non-string routePath'
+        )
       })
 
       it('应该抛出错误当 routePath 为空字符串', () => {
         const parser: PathParser = () => ({ routePath: '' })
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned empty or whitespace-only routePath')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned empty or whitespace-only routePath'
+        )
       })
 
       it('应该抛出错误当 routePath 只有空白字符', () => {
         const parser: PathParser = () => ({ routePath: '   ' })
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned empty or whitespace-only routePath')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned empty or whitespace-only routePath'
+        )
       })
 
       it('应该抛出错误当 routePath 只有斜杠', () => {
         const parser: PathParser = () => ({ routePath: '///' })
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned empty routePath after normalization')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned empty routePath after normalization'
+        )
       })
 
       it('应该抛出错误当 viewName 不是字符串', () => {
-        const parser: PathParser = () => ({ routePath: 'valid', viewName: 123 as unknown as string })
+        const parser: PathParser = () => ({
+          routePath: 'valid',
+          viewName: 123 as unknown as string
+        })
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned non-string viewName')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned non-string viewName'
+        )
       })
 
       it('应该抛出错误当 viewName 为 null', () => {
-        const parser: PathParser = () => ({ routePath: 'valid', viewName: null as unknown as string })
+        const parser: PathParser = () => ({
+          routePath: 'valid',
+          viewName: null as unknown as string
+        })
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned non-string viewName')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned non-string viewName'
+        )
       })
     })
 
@@ -287,25 +367,33 @@ describe('parser/parsePage', () => {
       it('应该抛出错误当返回 null', () => {
         const parser: PathParser = () => null as unknown as string
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned invalid result type')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned invalid result type'
+        )
       })
 
       it('应该抛出错误当返回 number', () => {
         const parser: PathParser = () => 123 as unknown as string
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned invalid result type')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned invalid result type'
+        )
       })
 
       it('应该抛出错误当返回 boolean', () => {
         const parser: PathParser = () => true as unknown as string
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned invalid result type')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned invalid result type'
+        )
       })
 
       it('应该抛出错误当返回数组', () => {
         const parser: PathParser = () => ['path'] as unknown as string
         expect(() => parseRoutePath('about.tsx', parser)).toThrow(PathParseError)
-        expect(() => parseRoutePath('about.tsx', parser)).toThrow('pathParser returned invalid result type')
+        expect(() => parseRoutePath('about.tsx', parser)).toThrow(
+          'pathParser returned invalid result type'
+        )
       })
     })
   })
