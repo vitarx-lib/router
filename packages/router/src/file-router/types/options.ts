@@ -58,7 +58,7 @@ export type PageSource = string | PageDirOptions
 /**
  * 路径解析结果
  */
-export type PageParseResult = {
+export interface PageParseResult {
   /** 解析后的路径 如：home.jsx -> 'home' */
   path: string
   /**
