@@ -611,16 +611,16 @@ src/pages/
 
 ## 类型定义
 
-### ParsedNode
+### ScanNode
 
-解析后的节点信息，核心 IR 节点。
+扫描的节点信息，核心 IR 节点。
 
 ```typescript
-interface ParsedNode {
+interface ScanNode {
   readonly filePath: string
   readonly path: string
-  parent?: ParsedNode
-  children?: Set<ParsedNode>
+  parent?: ScanNode
+  children?: Set<ScanNode>
   components?: Record<string, string>
   options?: PageOptions
   dirConfigFile?: string
@@ -631,8 +631,8 @@ interface ParsedNode {
 |-----------------|--------------------------|---------------|
 | `filePath`      | `string`                 | 文件绝对路径        |
 | `path`          | `string`                 | 当前 path（不含父级） |
-| `parent`        | `ParsedNode`             | 父节点           |
-| `children`      | `Set<ParsedNode>`        | 子节点映射         |
+| `parent`        | `ScanNode`               | 父节点           |
+| `children`      | `Set<ScanNode>`          | 子节点映射         |
 | `components`    | `Record<string, string>` | 组件映射（命名视图）    |
 | `options`       | `PageOptions`            | 页面配置选项        |
 | `dirConfigFile` | `string`                 | 目录配置文件        |
