@@ -423,20 +423,7 @@ export const router = createRouter({ routes })
 
 ### 文件路由配置选项
 
-| 选项               | 类型                                         | 默认值           | 说明       |
-|------------------|--------------------------------------------|---------------|----------|
-| `pages`          | `PageSource \| readonly PageSource[]`      | `'src/pages'` | 页面来源配置   |
-| `pathStrategy`   | `'kebab' \| 'lowercase' \| 'raw'`          | `'kebab'`     | 路径格式化策略  |
-| `importMode`     | `'lazy' \| 'sync' \| ImportModeFunction`   | `'lazy'`      | 组件导入模式   |
-| `injectImports`  | `readonly string[]`                        | -             | 自定义导入语句  |
-| `dts`            | `boolean \| string`                        | `false`       | 类型声明文件配置 |
-| `layoutFileName` | `string`                                   | `'_layout'`   | 布局文件名    |
-| `configFileName` | `string`                                   | `'_config'`   | 分组配置文件名  |
-| `transform`      | `CodeTransformHook`                        | -             | 代码转换钩子   |
-| `extendRoute`    | `ExtendRouteHook`                          | -             | 路由扩展钩子   |
-| `pathParser`     | `PathParser`                               | -             | 自定义路径解析器 |
-
-详细配置请参考 [File Router 文档](src/file-router/README.md)。
+请参考 [File Router 文档](src/file-router/README.md)。
 
 ## TypeScript 支持
 
