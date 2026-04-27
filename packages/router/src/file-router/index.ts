@@ -34,6 +34,7 @@ import {
 } from './utils/index.js'
 
 export { resolvePageConfigs } from './config/resolve.js'
+export { mergePageOptions } from './macros/definePage.js'
 export * from './generator/index.js'
 export type * from './types/index.js'
 export * from './utils/logger.js'
@@ -212,7 +213,11 @@ export class FileRouter {
     parent?: ScanNode
   ): ScanNode | null {
     // 分离出路由 path 和视图命名
-    const { routePath, viewName } = parseRoutePath(filePath, this.config.pathParser)
+    const {
+      routePath,
+      viewName = 'default',
+      options
+    } = parseRoutePath(filePath, this.config.pathParser)
     const fileType = this.getPageType(filePath, routePath, page)
     if (fileType === 'ignore') return null
     // 处理分组配置文件
@@ -221,11 +226,7 @@ export class FileRouter {
       const content = this.readFile(filePath)
       const pageOptions = parseDefinePage(content, filePath)
       if (pageOptions) {
-        if (parent.options) {
-          mergePageOptions([parent.options, pageOptions])
-        } else {
-          parent.options = pageOptions
-        }
+        parent.options = mergePageOptions(parent.options, pageOptions)
         parent.dirConfigFile = filePath
         this.fileMap.set(filePath, parent)
       }
@@ -255,9 +256,11 @@ export class FileRouter {
       return null
     }
     // 解析页面选项
-    const pageOptions = parseDefinePage(content, filePath)
+    const definePageOptions = parseDefinePage(content, filePath)
+    // 合并页面选项
+    const pageOptions = mergePageOptions(options, definePageOptions)
     // 忽略不具备默认导出，且无重定向配置的文件
-    if (!pageOptions?.redirect && !checkDefaultExport(content, filePath)) return null
+    if (!pageOptions.redirect && !checkDefaultExport(content, filePath)) return null
     // 最终 path
     const finalPath = this.applyPathStrategy(
       (parent ? '' : page.prefix) + (routePath === 'index' ? '' : routePath)
@@ -273,7 +276,7 @@ export class FileRouter {
       }
     }
     // 添加页面选项
-    if (pageOptions) route.options = pageOptions
+    if (Object.keys(pageOptions).length) route.options = pageOptions
     // 添加到子路由映射中
     pageMapping.set(routePath, route)
     return route

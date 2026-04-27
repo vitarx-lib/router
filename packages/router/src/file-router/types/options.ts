@@ -1,4 +1,5 @@
 import type { BeforeWriteRoutesHook, CodeTransformHook, ExtendRouteHook } from './hooks.js'
+import type { PageOptions } from './route.js'
 
 /**
  * 自定义导入模式函数的上下文
@@ -56,26 +57,25 @@ export type PathStrategy = 'kebab' | 'lowercase' | 'raw'
 export type PageSource = string | PageDirOptions
 /**
  * 路径解析结果
- *
- * - string: 文件名称，交由内置默认的pathParser继续处理。
- * - `{ routePath: string, viewName?: string }`: 路径和视图名称
  */
-export type PathParseResult =
-  | string
-  | {
-      /** 解析后的路径 如：home.jsx -> 'home' */
-      routePath: string
-      /** 视图名称 如：home.nav.jsx -> 'nav' */
-      viewName?: string
-    }
+export type PathParseResult = {
+  /** 解析后的路径 如：home.jsx -> 'home' */
+  routePath: string
+  /**
+   * 页面相关可配置选项
+   */
+  options?: PageOptions
+  /** 视图名称 如：home.nav.jsx -> 'nav' */
+  viewName?: string
+}
 /**
  * 路径解析器
  *
  * @param basename - 文件名称（不包含扩展名)
  * @param filePath - 完整的文件路径
- * @returns {PathParseResult} 路径解析结果包含路径和视图名称
+ * @returns {PathParseResult | string} 如果返回字符串则交由内置的pathParser继续处理，否则返回`PathParseResult`对象
  */
-export type PathParser = (basename: string, filePath: string) => PathParseResult
+export type PathParser = (basename: string, filePath: string) => string | PathParseResult
 /**
  * 页面目录选项
  */

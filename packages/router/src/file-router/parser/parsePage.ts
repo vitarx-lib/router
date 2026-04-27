@@ -61,14 +61,6 @@ export class PathParseError extends TypeError {
 }
 
 /**
- * 解析结果接口
- */
-interface ParseResult {
-  routePath: string
-  viewName: string
-}
-
-/**
  * 解析路由路径和视图名称
  *
  * 从文件名中提取路由路径和命名视图名称。
@@ -78,7 +70,7 @@ interface ParseResult {
  * @returns 路由路径和视图名称
  * @throws {PathParseError} 当路径解析失败时抛出
  */
-export function parseRoutePath(filePath: string, parser?: PathParser): ParseResult {
+export function parseRoutePath(filePath: string, parser?: PathParser): PathParseResult {
   const { basename } = extractFileInfo(filePath)
 
   if (!parser) {
@@ -107,7 +99,7 @@ function extractFileInfo(filePath: string): { basename: string; ext: string } {
  * @param basename - 文件基本名称
  * @returns 解析结果
  */
-function defaultPathParser(basename: string): ParseResult {
+function defaultPathParser(basename: string): PathParseResult {
   const [rawPath, viewName] = basename.split('@', 2)
   const routePath = normalizeRoutePath(rawPath)
   if (!routePath) {
@@ -119,7 +111,7 @@ function defaultPathParser(basename: string): ParseResult {
   }
   return {
     routePath,
-    viewName: viewName || 'default'
+    viewName
   }
 }
 
@@ -131,7 +123,7 @@ function defaultPathParser(basename: string): ParseResult {
  * @returns 解析结果
  * @throws {PathParseError} 当结果无效时抛出
  */
-function parseCustomResult(result: PathParseResult, filePath: string): ParseResult {
+function parseCustomResult(result: string | PathParseResult, filePath: string): PathParseResult {
   if (typeof result === 'string') {
     return defaultPathParser(result)
   }
@@ -155,16 +147,10 @@ function parseCustomResult(result: PathParseResult, filePath: string): ParseResu
  * @returns 解析结果
  * @throws {PathParseError} 当结果无效时抛出
  */
-function parseObjectResult(
-  result: { routePath: unknown; viewName?: unknown },
-  filePath: string
-): ParseResult {
-  const { routePath: rawRoutePath, viewName } = result
-
+function parseObjectResult(result: PathParseResult, filePath: string): PathParseResult {
+  const { routePath: rawRoutePath, viewName, options } = result
   validateRoutePathType(rawRoutePath, filePath)
-
   const routePath = normalizeRoutePath(rawRoutePath)
-
   if (!routePath) {
     throw new PathParseError('pathParser returned empty routePath after normalization', {
       filePath,
@@ -172,12 +158,11 @@ function parseObjectResult(
       field: 'routePath'
     })
   }
-
   validateViewName(viewName, filePath)
-
+  validateOptions(options, filePath)
   return {
-    routePath,
-    viewName: (viewName as string) || 'default'
+    ...result,
+    routePath
   }
 }
 
@@ -223,6 +208,21 @@ function validateViewName(viewName: unknown, filePath: string): void {
   }
 }
 
+/**
+ * 验证选项
+ *
+ * @param options - 选项
+ * @param filePath - 文件路径
+ */
+function validateOptions(options: unknown, filePath: string) {
+  if (options !== undefined && Object.prototype.toString.call(options) !== '[object Object]') {
+    throw new PathParseError('pathParser returned invalid options type', {
+      filePath,
+      originalValue: options,
+      field: 'options'
+    })
+  }
+}
 /**
  * 标准化路由路径
  *
