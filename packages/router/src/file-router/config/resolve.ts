@@ -19,8 +19,8 @@ import type {
   FileRouterOptions,
   ImportMode,
   PageDirOptions,
+  PageParser,
   PageSource,
-  PathParser,
   PathStrategy,
   RouteNode
 } from '../types/index.js'
@@ -42,7 +42,7 @@ export interface ResolvedConfig {
   transform?: CodeTransformHook
   extendRoute?: ExtendRouteHook
   beforeWriteRoutes?: (routes: RouteNode[]) => void | RouteNode[]
-  pathParser?: PathParser
+  pageParser?: PageParser
 }
 
 const DEFAULT_PAGE_CONFIG: Omit<Required<PageDirOptions>, 'dir'> = {
@@ -105,7 +105,7 @@ export function resolveConfig(options: FileRouterOptions): ResolvedConfig {
     transform,
     extendRoute,
     beforeWriteRoutes,
-    pathParser
+    pageParser
   } = options
   const resolvedPages = resolvePageConfigs(pages, root)
   return {
@@ -120,6 +120,6 @@ export function resolveConfig(options: FileRouterOptions): ResolvedConfig {
     transform,
     extendRoute,
     beforeWriteRoutes,
-    pathParser
+    pageParser
   }
 }

@@ -21,7 +21,7 @@ import {
   isPageFile,
   isPageFileInDirs
 } from './parser/index.js'
-import { parseRoutePath } from './parser/parsePage.js'
+import { parsePageFile } from './parser/parsePage.js'
 import type { FileRouterOptions, ScanNode } from './types/index.js'
 import {
   applyPathStrategy,
@@ -213,12 +213,8 @@ export class FileRouter {
     parent?: ScanNode
   ): ScanNode | null {
     // 分离出路由 path 和视图命名
-    const {
-      routePath,
-      viewName = 'default',
-      options
-    } = parseRoutePath(filePath, this.config.pathParser)
-    const fileType = this.getPageType(filePath, routePath, page)
+    const { path, viewName = 'default', options } = parsePageFile(filePath, this.config.pageParser)
+    const fileType = this.getPageType(filePath, path, page)
     if (fileType === 'ignore') return null
     // 处理分组配置文件
     if (fileType === 'config') {
@@ -246,7 +242,7 @@ export class FileRouter {
     // 读取文件内容
     const content = this.readFile(filePath)
     // 处理同名路由
-    const sameRoute = pageMapping.get(routePath)
+    const sameRoute = pageMapping.get(path)
     if (sameRoute) {
       if (!checkDefaultExport(content, filePath)) return null
       // 添加命名组件
@@ -263,7 +259,7 @@ export class FileRouter {
     if (!pageOptions.redirect && !checkDefaultExport(content, filePath)) return null
     // 最终 path
     const finalPath = this.applyPathStrategy(
-      (parent ? '' : page.prefix) + (routePath === 'index' ? '' : routePath)
+      (parent ? '' : page.prefix) + (path === 'index' ? '' : path)
     )
     // 创建路由对象
     const route: ScanNode = {
@@ -278,7 +274,7 @@ export class FileRouter {
     // 添加页面选项
     if (Object.keys(pageOptions).length) route.options = pageOptions
     // 添加到子路由映射中
-    pageMapping.set(routePath, route)
+    pageMapping.set(path, route)
     return route
   }
   /**
@@ -402,7 +398,7 @@ export class FileRouter {
     const page = isPageFileInDirs(filePath, this.config.pages) as PageDirConfig | false
     if (!page) return false
     // 分离出路由 path 和视图命名
-    const { routePath, viewName } = parseRoutePath(filePath, this.config.pathParser)
+    const { path, viewName } = parsePageFile(filePath, this.config.pageParser)
     const dirPath = nodePath.dirname(filePath)
     const parent = this.fileMap.get(dirPath)
     const pageMapping = new Map<string, ScanNode>()
@@ -410,7 +406,7 @@ export class FileRouter {
     // 如果是命名文件，则先查找是否存在同名路由，存在则添加到同名路由的 children 中
     if (viewName) {
       const pages = parent ? parent.children! : this.nodeTree
-      const newRoutePath = this.applyPathStrategy(prefix + routePath)
+      const newRoutePath = this.applyPathStrategy(prefix + path)
       let sameRoute: ScanNode | null = null
       for (const route of pages) {
         if (route.path === newRoutePath) {
@@ -419,7 +415,7 @@ export class FileRouter {
         }
       }
       if (sameRoute) {
-        pageMapping.set(routePath, sameRoute)
+        pageMapping.set(path, sameRoute)
       }
     }
 

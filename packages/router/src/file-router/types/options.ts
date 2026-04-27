@@ -58,9 +58,9 @@ export type PageSource = string | PageDirOptions
 /**
  * 路径解析结果
  */
-export type PathParseResult = {
+export type PageParseResult = {
   /** 解析后的路径 如：home.jsx -> 'home' */
-  routePath: string
+  path: string
   /**
    * 页面相关可配置选项
    */
@@ -73,9 +73,9 @@ export type PathParseResult = {
  *
  * @param basename - 文件名称（不包含扩展名)
  * @param filePath - 完整的文件路径
- * @returns {PathParseResult | string} 如果返回字符串则交由内置的pathParser继续处理，否则返回`PathParseResult`对象
+ * @returns {PageParseResult | string} 如果返回字符串则交由内置解析器处理，否则返回`FileParseResult`对象
  */
-export type PathParser = (basename: string, filePath: string) => string | PathParseResult
+export type PageParser = (basename: string, filePath: string) => string | PageParseResult
 /**
  * 页面目录选项
  */
@@ -227,11 +227,9 @@ export interface FileRouterOptions {
    */
   beforeWriteRoutes?: BeforeWriteRoutesHook
   /**
-   * 路径解析器
+   * 页面解析器
    *
-   * @param basename - 文件名称（不包含扩展名）或目录名称
-   * @param filePath - 完整的文件路径
-   * @returns {PathParseResult} 返回字符串path，或包含path和viewName的对象
+   * @see {@linkcode PageParser}
    */
-  pathParser?: PathParser
+  pageParser?: PageParser
 }

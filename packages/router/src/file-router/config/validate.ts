@@ -263,9 +263,9 @@ function validateBeforeWriteRoutes(opts: FileRouterOptions): void {
  * @throws {Error} 当配置无效时抛出错误
  */
 function validatePathParser(opts: FileRouterOptions): void {
-  if (opts.pathParser === undefined) return
+  if (opts.pageParser === undefined) return
 
-  if (typeof opts.pathParser !== 'function') {
+  if (typeof opts.pageParser !== 'function') {
     throw new Error('options.pathParser 必须是函数')
   }
 }

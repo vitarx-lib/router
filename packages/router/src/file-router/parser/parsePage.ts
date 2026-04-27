@@ -7,14 +7,14 @@
  * 与构建工具无关，可在任何 Node.js 环境中使用。
  */
 import path from 'node:path'
-import type { PathParser, PathParseResult } from '../types/index.js'
+import type { PageParser, PageParseResult } from '../types/index.js'
 
 /**
  * 路径解析错误类
  *
  * 提供详细的错误上下文信息，包括文件路径、错误类型和原始值。
  */
-export class PathParseError extends TypeError {
+export class PageParseError extends TypeError {
   /** 文件路径上下文 */
   readonly filePath?: string
   /** 错误字段名称 */
@@ -38,7 +38,7 @@ export class PathParseError extends TypeError {
     this.originalValue = options?.originalValue
 
     if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, PathParseError)
+      Error.captureStackTrace(this, PageParseError)
     }
   }
 
@@ -66,15 +66,15 @@ export class PathParseError extends TypeError {
  * 从文件名中提取路由路径和命名视图名称。
  *
  * @param filePath - 文件路径
- * @param [parser] - 路径解析器
+ * @param [parser] - 自定义解析器
  * @returns 路由路径和视图名称
- * @throws {PathParseError} 当路径解析失败时抛出
+ * @throws {PageParseError} 当路径解析失败时抛出
  */
-export function parseRoutePath(filePath: string, parser?: PathParser): PathParseResult {
+export function parsePageFile(filePath: string, parser?: PageParser): PageParseResult {
   const { basename } = extractFileInfo(filePath)
 
   if (!parser) {
-    return defaultPathParser(basename)
+    return defaultPageParser(basename)
   }
 
   const result = parser(basename, filePath)
@@ -99,18 +99,18 @@ function extractFileInfo(filePath: string): { basename: string; ext: string } {
  * @param basename - 文件基本名称
  * @returns 解析结果
  */
-function defaultPathParser(basename: string): PathParseResult {
+function defaultPageParser(basename: string): PageParseResult {
   const [rawPath, viewName] = basename.split('@', 2)
   const routePath = normalizeRoutePath(rawPath)
   if (!routePath) {
-    throw new PathParseError('pathParser returned empty routePath', {
+    throw new PageParseError('PageParser returned empty path', {
       filePath: basename,
       originalValue: rawPath,
-      field: 'routePath'
+      field: 'path'
     })
   }
   return {
-    routePath,
+    path: routePath,
     viewName
   }
 }
@@ -121,21 +121,20 @@ function defaultPathParser(basename: string): PathParseResult {
  * @param result - 解析器返回的结果
  * @param filePath - 文件路径（用于错误上下文）
  * @returns 解析结果
- * @throws {PathParseError} 当结果无效时抛出
+ * @throws {PageParseError} 当结果无效时抛出
  */
-function parseCustomResult(result: string | PathParseResult, filePath: string): PathParseResult {
+function parseCustomResult(result: string | PageParseResult, filePath: string): PageParseResult {
   if (typeof result === 'string') {
-    return defaultPathParser(result)
+    return defaultPageParser(result)
   }
 
   if (result && typeof result === 'object' && !Array.isArray(result)) {
     return parseObjectResult(result, filePath)
   }
 
-  throw new PathParseError('pathParser returned invalid result type', {
+  throw new PageParseError('PageParser returned invalid result type', {
     filePath,
-    originalValue: result,
-    field: 'result'
+    originalValue: result
   })
 }
 
@@ -145,24 +144,24 @@ function parseCustomResult(result: string | PathParseResult, filePath: string): 
  * @param result - 对象结果
  * @param filePath - 文件路径
  * @returns 解析结果
- * @throws {PathParseError} 当结果无效时抛出
+ * @throws {PageParseError} 当结果无效时抛出
  */
-function parseObjectResult(result: PathParseResult, filePath: string): PathParseResult {
-  const { routePath: rawRoutePath, viewName, options } = result
+function parseObjectResult(result: PageParseResult, filePath: string): PageParseResult {
+  const { path: rawRoutePath, viewName, options } = result
   validateRoutePathType(rawRoutePath, filePath)
   const routePath = normalizeRoutePath(rawRoutePath)
   if (!routePath) {
-    throw new PathParseError('pathParser returned empty routePath after normalization', {
+    throw new PageParseError('PageParser returned empty path after normalization', {
       filePath,
       originalValue: rawRoutePath,
-      field: 'routePath'
+      field: 'path'
     })
   }
   validateViewName(viewName, filePath)
   validateOptions(options, filePath)
   return {
     ...result,
-    routePath
+    path: routePath
   }
 }
 
@@ -171,22 +170,22 @@ function parseObjectResult(result: PathParseResult, filePath: string): PathParse
  *
  * @param routePath - 路由路径
  * @param filePath - 文件路径（用于错误上下文）
- * @throws {PathParseError} 当类型无效时抛出
+ * @throws {PageParseError} 当类型无效时抛出
  */
 function validateRoutePathType(routePath: unknown, filePath: string): asserts routePath is string {
   if (typeof routePath !== 'string') {
-    throw new PathParseError('pathParser returned non-string routePath', {
+    throw new PageParseError('PageParser returned non-string path', {
       filePath,
       originalValue: routePath,
-      field: 'routePath'
+      field: 'path'
     })
   }
 
   if (!routePath.trim()) {
-    throw new PathParseError('pathParser returned empty or whitespace-only routePath', {
+    throw new PageParseError('PageParser returned empty or whitespace-only path', {
       filePath,
       originalValue: routePath,
-      field: 'routePath'
+      field: 'path'
     })
   }
 }
@@ -196,11 +195,11 @@ function validateRoutePathType(routePath: unknown, filePath: string): asserts ro
  *
  * @param viewName - 视图名称
  * @param filePath - 文件路径（用于错误上下文）
- * @throws {PathParseError} 当视图名称无效时抛出
+ * @throws {PageParseError} 当视图名称无效时抛出
  */
 function validateViewName(viewName: unknown, filePath: string): void {
   if (viewName !== undefined && typeof viewName !== 'string') {
-    throw new PathParseError('pathParser returned non-string viewName', {
+    throw new PageParseError('PageParser returned non-string viewName', {
       filePath,
       originalValue: viewName,
       field: 'viewName'
@@ -216,7 +215,7 @@ function validateViewName(viewName: unknown, filePath: string): void {
  */
 function validateOptions(options: unknown, filePath: string) {
   if (options !== undefined && Object.prototype.toString.call(options) !== '[object Object]') {
-    throw new PathParseError('pathParser returned invalid options type', {
+    throw new PageParseError('PageParser returned invalid options type', {
       filePath,
       originalValue: options,
       field: 'options'
