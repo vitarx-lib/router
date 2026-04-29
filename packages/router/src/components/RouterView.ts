@@ -96,7 +96,7 @@ export function RouterView(props: RouterViewOptions): View {
   const routeProps = computed((): AnyProps | null => {
     const currentRoute = matchedRoute.value
     if (!currentRoute) return null
-    let injectProps = currentRoute.props?.[viewName.value] ?? router.config.props ?? false
+    let injectProps = currentRoute.props?.[viewName.value] ?? router.config.props ?? true
 
     if (injectProps === false) return null // 如果属性为 false，返回null
     if (injectProps === true && currentRoute.pattern) {

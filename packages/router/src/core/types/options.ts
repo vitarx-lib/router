@@ -53,6 +53,8 @@ export interface RouterOptions {
    * 全局 props 注入配置
    *
    * 优先级低于 route 的 props 配置
+   *
+   * @default true
    */
   props?: boolean | InjectPropsHandler
 
