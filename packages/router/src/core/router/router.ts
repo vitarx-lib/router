@@ -140,6 +140,11 @@ export abstract class Router {
    */
   private readonly _routeLocation: RouteLocation
   /**
+   * 只读路由位置对象
+   * @private
+   */
+  private readonly _readonlyLocation: ReadonlyObject<RouteLocation, true>
+  /**
    * 存储就绪状态的 Promise（延迟创建）
    * @private
    */
@@ -219,12 +224,13 @@ export abstract class Router {
       matched: shallowReactive([]),
       meta: shallowReactive({})
     })
+    this._readonlyLocation = readonly(this._routeLocation)
   }
   /**
    * 获取当前路由位置对象
    */
   get route(): ReadonlyObject<RouteLocation, true> {
-    return readonly(this._routeLocation)
+    return this._readonlyLocation
   }
   /**
    * 获取解析后的路由记录数组
