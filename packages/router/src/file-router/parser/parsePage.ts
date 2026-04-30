@@ -45,7 +45,7 @@ export class PageParseError extends TypeError {
   /**
    * 生成详细的错误信息
    */
-  toString(): string {
+  override toString(): string {
     let details = `${this.name}: ${this.message}`
     if (this.filePath) {
       details += `\n  File: ${this.filePath}`
@@ -67,45 +67,68 @@ export class PageParseError extends TypeError {
  *
  * @param filePath - 文件路径
  * @param [parser] - 自定义解析器
- * @returns 路由路径和视图名称
+ * @param [precomputed] - 预计算的文件信息，避免重复解析文件路径
+ * @returns 路径解析结果
  * @throws {PageParseError} 当路径解析失败时抛出
  */
-export function parsePageFile(filePath: string, parser?: PageParser): PageParseResult {
-  const { basename } = extractFileInfo(filePath)
+export function parsePageFile(
+  filePath: string,
+  parser?: PageParser,
+  precomputed?: FileInfo
+): PageParseResult {
+  const info = precomputed ?? extractFileInfo(filePath)
 
   if (!parser) {
-    return defaultPageParser(basename)
+    return defaultPageParser(info.rawName, info.viewName)
   }
 
-  const result = parser(basename, filePath)
+  const result = parser(info.basename, filePath)
   return parseCustomResult(result, filePath)
+}
+
+/**
+ * 文件信息
+ *
+ * 从文件路径中提取的结构化信息，作为文件名解析的唯一来源。
+ */
+export interface FileInfo {
+  /** 文件名（不含扩展名），如 home@sidebar → home@sidebar */
+  basename: string
+  /** 路由名（@之前的部分），如 home@sidebar → home */
+  rawName: string
+  /** 视图名称（@之后的部分），如 home@sidebar → sidebar */
+  viewName: string | undefined
 }
 
 /**
  * 提取文件信息
  *
+ * 从文件路径中提取文件名、路由名和视图名称。
+ * 这是文件名解析的唯一入口，其他模块应复用此函数而非重复实现。
+ *
  * @param filePath - 文件路径
- * @returns 文件基本信息
+ * @returns 文件信息
  */
-function extractFileInfo(filePath: string): { basename: string; ext: string } {
+export function extractFileInfo(filePath: string): FileInfo {
   const ext = path.extname(filePath)
   const basename = path.basename(filePath, ext)
-  return { basename, ext }
+  const [rawName, viewName] = basename.split('@', 2)
+  return { basename, rawName, viewName }
 }
 
 /**
  * 解析默认路由路径（无自定义解析器）
  *
- * @param basename - 文件基本名称
+ * @param rawName - 路由名（@之前的部分）
+ * @param viewName - 视图名称（@之后的部分）
  * @returns 解析结果
  */
-function defaultPageParser(basename: string): PageParseResult {
-  const [rawPath, viewName] = basename.split('@', 2)
-  const routePath = normalizeRoutePath(rawPath)
+function defaultPageParser(rawName: string, viewName?: string): PageParseResult {
+  const routePath = normalizeRoutePath(rawName)
   if (!routePath) {
     throw new PageParseError('PageParser returned empty path', {
-      filePath: basename,
-      originalValue: rawPath,
+      filePath: rawName,
+      originalValue: rawName,
       field: 'path'
     })
   }
@@ -125,7 +148,8 @@ function defaultPageParser(basename: string): PageParseResult {
  */
 function parseCustomResult(result: string | PageParseResult, filePath: string): PageParseResult {
   if (typeof result === 'string') {
-    return defaultPageParser(result)
+    const [rawName, viewName] = result.split('@', 2)
+    return defaultPageParser(rawName, viewName)
   }
 
   if (result && typeof result === 'object' && !Array.isArray(result)) {
