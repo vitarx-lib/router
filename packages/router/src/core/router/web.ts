@@ -216,7 +216,7 @@ export class WebRouter extends Router {
       query: route.query
     }
   }
-  public destroy() {
+  public override destroy() {
     super.destroy()
     window.removeEventListener('popstate', this.onPopState)
     window.removeEventListener('hashchange', this.onHashChange)
