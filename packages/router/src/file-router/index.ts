@@ -21,8 +21,8 @@ import {
   isPageFile,
   isPageFileInDirs
 } from './parser/index.js'
-import { parsePageFile } from './parser/parsePage.js'
-import type { FileRouterOptions, ScanNode } from './types/index.js'
+import { extractFileInfo, type FileInfo, parsePageFile } from './parser/parsePage.js'
+import type { FileRouterOptions, PageParseResult, ScanNode } from './types/index.js'
 import {
   applyPathStrategy,
   info,
@@ -34,8 +34,8 @@ import {
 } from './utils/index.js'
 
 export { resolvePageConfigs } from './config/resolve.js'
-export { mergePageOptions } from './macros/definePage.js'
 export * from './generator/index.js'
+export { mergePageOptions } from './macros/definePage.js'
 export type * from './types/index.js'
 export * from './utils/logger.js'
 /**
@@ -45,6 +45,11 @@ export * from './utils/logger.js'
  */
 export type FileWatcherEvent = 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir'
 type ScanDirConfig = Omit<PageDirConfig, 'group'>
+type FileType = 'layout' | 'config' | 'page' | 'ignore'
+interface ResolvedFile {
+  fileInfo: FileInfo
+  fileType: FileType
+}
 /**
  * 文件路由管理器
  */
@@ -200,9 +205,12 @@ export class FileRouter {
   }
   /**
    * 处理文件
+   *
+   * 根据文件类型分发到对应的处理器。
+   *
    * @param filePath - 文件路径
    * @param page - 页面配置
-   * @param pageMapping - 子路由
+   * @param pageMapping - 同路径路由映射
    * @param parent - 父节点
    * @private
    */
@@ -212,56 +220,107 @@ export class FileRouter {
     pageMapping: Map<string, ScanNode>,
     parent?: ScanNode
   ): ScanNode | null {
-    // 分离出路由 path 和视图命名
-    const { path, viewName = 'default', options } = parsePageFile(filePath, this.config.pageParser)
-    const fileType = this.getPageType(filePath, path, page)
-    if (fileType === 'ignore') return null
-    // 处理分组配置文件
-    if (fileType === 'config') {
-      if (!parent) return null
-      const content = this.readFile(filePath)
-      const pageOptions = parseDefinePage(content, filePath)
-      if (pageOptions) {
-        parent.options = mergePageOptions(parent.options, pageOptions)
-        parent.dirConfigFile = filePath
-        this.fileMap.set(filePath, parent)
-      }
-      return null
+    const { fileInfo, fileType } = this.resolveFile(filePath, page)
+    switch (fileType) {
+      case 'ignore':
+        return null
+      case 'config':
+        this.processConfigFile(filePath, parent)
+        return null
+      case 'layout':
+        this.processLayoutFile(filePath, fileInfo, parent)
+        return null
+      case 'page':
+        return this.processPageFile(filePath, fileInfo, page, pageMapping, parent)
     }
-    // 处理分组布局文件
-    if (fileType === 'layout') {
-      if (!parent) return null
-      const content = this.readFile(filePath)
-      if (checkDefaultExport(content, filePath)) {
-        parent.components ??= {}
-        parent.components[viewName] = filePath
-      }
-      this.fileMap.set(filePath, parent)
-      return null
-    }
-    // 读取文件内容
+  }
+  /**
+   * 解析文件信息与类型
+   *
+   * 统一入口，避免多处重复调用 extractFileInfo + getPageType。
+   *
+   * @param filePath - 文件路径
+   * @param page - 页面配置
+   * @returns 文件信息与类型
+   */
+  private resolveFile(filePath: string, page: ScanDirConfig): ResolvedFile {
+    const fileInfo = extractFileInfo(filePath)
+    const fileType = this.getPageType(filePath, fileInfo.rawName, page)
+    return { fileInfo, fileType }
+  }
+  /**
+   * 处理分组配置文件
+   *
+   * 解析 definePage 宏并合并到父路由选项中。
+   *
+   * @param filePath - 文件路径
+   * @param parent - 父节点
+   */
+  private processConfigFile(filePath: string, parent?: ScanNode): void {
+    if (!parent) return
     const content = this.readFile(filePath)
-    // 处理同名路由
-    const sameRoute = pageMapping.get(path)
+    const pageOptions = parseDefinePage(content, filePath)
+    if (pageOptions) {
+      parent.options = mergePageOptions(parent.options, pageOptions)
+      parent.dirConfigFile = filePath
+      this.fileMap.set(filePath, parent)
+    }
+  }
+  /**
+   * 处理分组布局文件
+   *
+   * 将布局组件注册到父路由的 components 中。
+   *
+   * @param filePath - 文件路径
+   * @param fileInfo - 文件信息
+   * @param parent - 父节点
+   */
+  private processLayoutFile(filePath: string, fileInfo: FileInfo, parent?: ScanNode): void {
+    if (!parent) return
+    const content = this.readFile(filePath)
+    if (checkDefaultExport(content, filePath)) {
+      parent.components ??= {}
+      parent.components[fileInfo.viewName ?? 'default'] = filePath
+    }
+    this.fileMap.set(filePath, parent)
+  }
+  /**
+   * 处理页面文件
+   *
+   * 解析路由路径、视图命名和页面选项，创建或合并路由节点。
+   *
+   * @param filePath - 文件路径
+   * @param fileInfo - 文件信息
+   * @param page - 页面配置
+   * @param pageMapping - 同路径路由映射
+   * @param parent - 父节点
+   * @param [precomputedParsed] - 预计算的解析结果，避免重复调用 parsePageFile
+   * @returns 新创建的路由节点，或 null（合并到已有路由时）
+   */
+  private processPageFile(
+    filePath: string,
+    fileInfo: FileInfo,
+    page: ScanDirConfig,
+    pageMapping: Map<string, ScanNode>,
+    parent?: ScanNode,
+    precomputedParsed?: PageParseResult
+  ): ScanNode | null {
+    const parsed = precomputedParsed ?? parsePageFile(filePath, this.config.pageParser, fileInfo)
+    const viewName = parsed.viewName ?? 'default'
+    const content = this.readFile(filePath)
+    const sameRoute = pageMapping.get(parsed.path)
     if (sameRoute) {
       if (!checkDefaultExport(content, filePath)) return null
-      // 添加命名组件
       sameRoute.components![viewName] = filePath
-      // 更新文件映射表
       this.fileMap.set(filePath, sameRoute)
       return null
     }
-    // 解析页面选项
     const definePageOptions = parseDefinePage(content, filePath)
-    // 合并页面选项
-    const pageOptions = mergePageOptions(options, definePageOptions)
-    // 忽略不具备默认导出，且无重定向配置的文件
+    const pageOptions = mergePageOptions(parsed.options, definePageOptions)
     if (!pageOptions.redirect && !checkDefaultExport(content, filePath)) return null
-    // 最终 path
     const finalPath = this.applyPathStrategy(
-      (parent ? '' : page.prefix) + (path === 'index' ? '' : path)
+      (parent ? '' : page.prefix) + (parsed.path === 'index' ? '' : parsed.path)
     )
-    // 创建路由对象
     const route: ScanNode = {
       isGroup: false,
       parent,
@@ -271,11 +330,28 @@ export class FileRouter {
         [viewName]: filePath
       }
     }
-    // 添加页面选项
     if (Object.keys(pageOptions).length) route.options = pageOptions
-    // 添加到子路由映射中
-    pageMapping.set(path, route)
+    pageMapping.set(parsed.path, route)
     return route
+  }
+  /**
+   * 在已有路由树中查找同路径路由
+   *
+   * 用于 addPage 场景：新增文件时需要检查是否已存在同路径的路由节点，
+   * 以便将命名视图合并到已有路由而非创建重复路由。
+   *
+   * @param pathKey - 标准化后的路由路径
+   * @param prefix - 路径前缀
+   * @param parent - 父节点
+   * @returns 同路径的路由节点，未找到返回 null
+   */
+  private findSameRoute(pathKey: string, prefix: string, parent?: ScanNode): ScanNode | null {
+    const newRoutePath = this.applyPathStrategy(prefix + pathKey)
+    const pages = parent ? parent.children! : this.nodeTree
+    for (const route of pages) {
+      if (route.path === newRoutePath) return route
+    }
+    return null
   }
   /**
    * 应用路径策略
@@ -298,19 +374,19 @@ export class FileRouter {
    * 获取文件类型
    *
    * @param file - 文件绝对路径
-   * @param name - 文件名
-   * @param pages - 页面配置，默认为 `config.pages`
-   * @returns {string} - 文件类型，可选值有 `layout`、`config`、`page`、`ignore`
+   * @param rawName - 文件名（不含扩展名和 @视图命名）
+   * @param pages - 页面配置
+   * @returns 文件类型
    */
   private getPageType(
     file: string,
-    name: string,
+    rawName: string,
     pages?: FilterOptions | readonly FilterOptions[]
-  ): 'layout' | 'config' | 'page' | 'ignore' {
-    if (name === this.config.layoutFileName) {
+  ): FileType {
+    if (rawName === this.config.layoutFileName) {
       return 'layout'
     }
-    if (name === this.config.configFileName && (file.endsWith('.ts') || file.endsWith('.js'))) {
+    if (rawName === this.config.configFileName && (file.endsWith('.ts') || file.endsWith('.js'))) {
       return 'config'
     }
     if (this.isPageFile(file, pages)) {
@@ -392,49 +468,56 @@ export class FileRouter {
   /**
    * 添加页面文件
    *
-   * @param filePath
+   * 根据文件类型直接调用对应处理器，避免重复类型判断和文件解析。
+   *
+   * @param filePath - 文件路径
+   * @returns 是否创建了新的路由节点
    */
   public addPage(filePath: string): boolean {
     const page = isPageFileInDirs(filePath, this.config.pages) as PageDirConfig | false
     if (!page) return false
-    // 分离出路由 path 和视图命名
-    const { path, viewName } = parsePageFile(filePath, this.config.pageParser)
     const dirPath = nodePath.dirname(filePath)
     const parent = this.fileMap.get(dirPath)
-    const pageMapping = new Map<string, ScanNode>()
     const prefix = parent ? '' : page.prefix
-    // 如果是命名文件，则先查找是否存在同名路由，存在则添加到同名路由的 children 中
-    if (viewName) {
-      const pages = parent ? parent.children! : this.nodeTree
-      const newRoutePath = this.applyPathStrategy(prefix + path)
-      let sameRoute: ScanNode | null = null
-      for (const route of pages) {
-        if (route.path === newRoutePath) {
-          sameRoute = route
-          break
-        }
-      }
-      if (sameRoute) {
-        pageMapping.set(path, sameRoute)
-      }
+    const { fileInfo, fileType } = this.resolveFile(filePath, page)
+    const pageConfig: ScanDirConfig = {
+      dir: dirPath,
+      include: page.include,
+      exclude: page.exclude,
+      prefix
     }
 
-    const route = this.processFile(
-      filePath,
-      {
-        dir: dirPath,
-        include: page.include,
-        exclude: page.exclude,
-        prefix
-      },
-      pageMapping,
-      parent
-    )
-    if (route) {
-      this.fileMap.set(filePath, route)
-      return true
+    switch (fileType) {
+      case 'ignore':
+        return false
+      case 'config':
+        this.processConfigFile(filePath, parent)
+        return false
+      case 'layout':
+        this.processLayoutFile(filePath, fileInfo, parent)
+        return false
+      case 'page': {
+        const parsed = parsePageFile(filePath, this.config.pageParser, fileInfo)
+        const pageMapping = new Map<string, ScanNode>()
+        const sameRoute = this.findSameRoute(parsed.path, prefix, parent)
+        if (sameRoute) {
+          pageMapping.set(parsed.path, sameRoute)
+        }
+        const route = this.processPageFile(
+          filePath,
+          fileInfo,
+          pageConfig,
+          pageMapping,
+          parent,
+          parsed
+        )
+        if (route) {
+          this.fileMap.set(filePath, route)
+          return true
+        }
+        return false
+      }
     }
-    return false
   }
   /**
    * 移除指定的文件或目录
