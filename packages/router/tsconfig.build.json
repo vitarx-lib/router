@@ -1,9 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "noEmit": true,
-    "declaration": false,
+    "jsx": "preserve",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "types": ["vitarx", "@vitarx/plugin-vite", "vite/client"]
   },
-  "include": ["tests", "src"]
+  "include": ["./src/**/*.ts"]
 }
