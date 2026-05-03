@@ -39,27 +39,57 @@ describe('generator/generateTypes', () => {
     })
 
     it('应该为静态路由生成类型条目', () => {
-      const routes: RouteNode[] = [{ path: '/', fullPath: '/', name: 'home' }]
+      const routes: RouteNode[] = [
+        {
+          path: '/',
+          fullPath: '/',
+          name: 'home',
+          isGroup: false,
+          filePath: ''
+        }
+      ]
       const result = generateDtsCode(routes)
       expect(result).toContain("'home': {}")
       expect(result).toContain("'/': {}")
     })
 
     it('应该为动态参数路由生成 params 类型', () => {
-      const routes: RouteNode[] = [{ path: '/user/{id}', fullPath: '/user/{id}', name: 'user-id' }]
+      const routes: RouteNode[] = [
+        {
+          path: '/user/{id}',
+          fullPath: '/user/{id}',
+          name: 'user-id',
+          isGroup: false,
+          filePath: ''
+        }
+      ]
       const result = generateDtsCode(routes)
       expect(result).toContain("'user-id': { params: { id: string | number } }")
     })
 
     it('应该不为动态路径生成路径索引', () => {
-      const routes: RouteNode[] = [{ path: '/user/{id}', fullPath: '/user/{id}', name: 'user-id' }]
+      const routes: RouteNode[] = [
+        {
+          path: '/user/{id}',
+          fullPath: '/user/{id}',
+          name: 'user-id',
+          isGroup: false,
+          filePath: ''
+        }
+      ]
       const result = generateDtsCode(routes)
       expect(result).not.toContain("'/user/{id}'")
     })
 
     it('应该为可选动态参数生成类型', () => {
       const routes: RouteNode[] = [
-        { path: '/page/{id?}', fullPath: '/page/{id?}', name: 'page-id' }
+        {
+          path: '/page/{id?}',
+          fullPath: '/page/{id?}',
+          name: 'page-id',
+          isGroup: false,
+          filePath: ''
+        }
       ]
       const result = generateDtsCode(routes)
       expect(result).toContain("'page-id': { params: { id: string | number } }")
@@ -70,7 +100,9 @@ describe('generator/generateTypes', () => {
         {
           path: '/user/{userId}/post/{postId}',
           fullPath: '/user/{userId}/post/{postId}',
-          name: 'user-post'
+          name: 'user-post',
+          isGroup: false,
+          filePath: ''
         }
       ]
       const result = generateDtsCode(routes)
@@ -86,7 +118,17 @@ describe('generator/generateTypes', () => {
           fullPath: '/',
           name: 'home',
           redirect: '/about',
-          children: [{ path: 'about', fullPath: '/about', name: 'about' }]
+          children: [
+            {
+              path: 'about',
+              fullPath: '/about',
+              name: 'about',
+              isGroup: false,
+              filePath: ''
+            }
+          ],
+          isGroup: false,
+          filePath: ''
         }
       ]
       const result = generateDtsCode(routes)
@@ -102,7 +144,17 @@ describe('generator/generateTypes', () => {
           path: '/',
           fullPath: '/',
           name: 'home',
-          children: [{ path: 'about', fullPath: '/about', name: 'about' }]
+          children: [
+            {
+              path: 'about',
+              fullPath: '/about',
+              name: 'about',
+              filePath: '',
+              isGroup: false
+            }
+          ],
+          filePath: '',
+          isGroup: true
         }
       ]
       const result = generateDtsCode(routes)
@@ -114,7 +166,14 @@ describe('generator/generateTypes', () => {
 
     it('应该为带别名的路由生成类型', () => {
       const routes: RouteNode[] = [
-        { path: '/home', fullPath: '/home', name: 'home', alias: '/index' }
+        {
+          path: '/home',
+          fullPath: '/home',
+          name: 'home',
+          alias: '/index',
+          isGroup: false,
+          filePath: ''
+        }
       ]
       const result = generateDtsCode(routes)
       expect(result).toContain("'home': {}")
@@ -124,7 +183,14 @@ describe('generator/generateTypes', () => {
 
     it('应该为多个别名生成类型', () => {
       const routes: RouteNode[] = [
-        { path: '/home', fullPath: '/home', name: 'home', alias: ['/index', '/start'] }
+        {
+          path: '/home',
+          fullPath: '/home',
+          name: 'home',
+          alias: ['/index', '/start'],
+          isGroup: false,
+          filePath: ''
+        }
       ]
       const result = generateDtsCode(routes)
       expect(result).toContain("'/index': {}")
@@ -138,7 +204,17 @@ describe('generator/generateTypes', () => {
           fullPath: '/admin',
           name: 'admin',
           redirect: '/admin/dashboard',
-          children: [{ path: 'dashboard', fullPath: '/admin/dashboard', name: 'admin-dashboard' }]
+          children: [
+            {
+              path: 'dashboard',
+              fullPath: '/admin/dashboard',
+              name: 'admin-dashboard',
+              isGroup: false,
+              filePath: ''
+            }
+          ],
+          isGroup: true,
+          filePath: ''
         }
       ]
       const result = generateDtsCode(routes)
@@ -153,7 +229,17 @@ describe('generator/generateTypes', () => {
         {
           path: '/admin',
           fullPath: '/admin',
-          children: [{ path: 'dashboard', fullPath: '/admin/dashboard', name: 'admin-dashboard' }]
+          children: [
+            {
+              path: 'dashboard',
+              fullPath: '/admin/dashboard',
+              name: 'admin-dashboard',
+              isGroup: false,
+              filePath: ''
+            }
+          ],
+          isGroup: true,
+          filePath: ''
         }
       ]
       const result = generateDtsCode(routes)
@@ -163,7 +249,14 @@ describe('generator/generateTypes', () => {
     })
 
     it('应该为无名称的路由生成路径索引', () => {
-      const routes: RouteNode[] = [{ path: '/about', fullPath: '/about' }]
+      const routes: RouteNode[] = [
+        {
+          path: '/about',
+          fullPath: '/about',
+          isGroup: false,
+          filePath: ''
+        }
+      ]
       const result = generateDtsCode(routes)
       expect(result).toContain("'/about': {}")
     })
@@ -174,7 +267,9 @@ describe('generator/generateTypes', () => {
           path: '/user',
           fullPath: '/user',
           name: 'user',
-          alias: 'profile'
+          alias: 'profile',
+          isGroup: false,
+          filePath: ''
         }
       ]
       const result = generateDtsCode(routes)
@@ -188,7 +283,9 @@ describe('generator/generateTypes', () => {
           path: '/user',
           fullPath: '/user',
           name: 'user',
-          alias: '/account'
+          alias: '/account',
+          isGroup: false,
+          filePath: ''
         }
       ]
       const result = generateDtsCode(routes)
@@ -201,7 +298,9 @@ describe('generator/generateTypes', () => {
           path: '/user',
           fullPath: '/user',
           name: 'user',
-          alias: '  '
+          alias: '  ',
+          isGroup: false,
+          filePath: ''
         }
       ]
       const result = generateDtsCode(routes)
@@ -222,9 +321,21 @@ describe('generator/generateTypes', () => {
               fullPath: '/user',
               name: 'user',
               redirect: '/user/{id}',
-              children: [{ path: '{id}', fullPath: '/user/{id}', name: 'user-id' }]
+              children: [
+                {
+                  path: '{id}',
+                  fullPath: '/user/{id}',
+                  name: 'user-id',
+                  isGroup: false,
+                  filePath: ''
+                }
+              ],
+              isGroup: true,
+              filePath: ''
             }
-          ]
+          ],
+          isGroup: true,
+          filePath: ''
         }
       ]
       const result = generateDtsCode(routes)
