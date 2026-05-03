@@ -3,10 +3,10 @@
  *
  * 提供核心模块测试的公共辅助函数，消除重复代码。
  */
-import { h, type Component } from 'vitarx'
+import { type Component, h } from 'vitarx'
 import { vi } from 'vitest'
-import { createMemoryRouter } from '../../src/core/shared/index.js'
 import { MemoryRouter } from '../../src/core/router/memory.js'
+import { createMemoryRouter } from '../../src/core/shared/index.js'
 import type { Route, RouterOptions } from '../../src/core/types/index.js'
 
 /**
@@ -19,7 +19,7 @@ export function createMockComponent(name?: string): Component {
   if (name) {
     return () => h('div', { 'data-testid': name }, name)
   }
-  return vi.fn()
+  return vi.fn(() => null)
 }
 
 /**
@@ -28,7 +28,9 @@ export function createMockComponent(name?: string): Component {
  * @param componentFactory - 组件工厂函数
  * @returns 路由配置数组
  */
-export function createDefaultRoutes(componentFactory: () => Component = createMockComponent): Route[] {
+export function createDefaultRoutes(
+  componentFactory: () => Component = createMockComponent
+): Route[] {
   return [
     { path: '/', component: { default: componentFactory() }, props: { default: {} } },
     { path: '/home', component: { default: componentFactory() }, props: { default: {} } },
