@@ -1,20 +1,41 @@
+# [4.0.0-beta.17](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.16...v4.0.0-beta.17) (2026-05-03)
+
+
+### Bug Fixes
+
+* **router:** 修复全局 props 注入默认值 ([75155d4](https://github.com/vitarx-lib/router/commit/75155d461d23849739a5efd3c4fa7dbbd804c019))
+* **router:** 修复重写destroy方法未调用父类问题 ([9a25079](https://github.com/vitarx-lib/router/commit/9a250795d5dced624b4f9177bb1817afed198c93))
+
+
+### Features
+
+* **router:** 添加获取页面文件完整路由路径功能 ([8f5065c](https://github.com/vitarx-lib/router/commit/8f5065c396d750b5a6a4d2af5c238d7ee394344a))
+
 # [4.0.0-beta.16](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.15...v4.0.0-beta.16) (2026-04-27)
+
+
+### Bug Fixes
+
+* **router:** 修复路由生成时缺失的 isGroup 属性 ([92b0140](https://github.com/vitarx-lib/router/commit/92b0140d3c8cedacd820015d44eefbbce81c64be))
+
+
+### Features
+
+* **router:** 添加 RouteNode 接口 isGroup 属性 ([9f61af8](https://github.com/vitarx-lib/router/commit/9f61af85a9acdcdc746689027ee1552bcb619702))
+
+# [4.0.0-beta.15](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.14...v4.0.0-beta.15) (2026-04-27)
 
 
 ### Bug Fixes
 
 * **router:** 修复 mergePageOptions 函数参数处理 ([09298db](https://github.com/vitarx-lib/router/commit/09298dbe3b03bd6ba8c1bea5f1ccfa866d16f31c))
 * **router:** 修复开发模式下路由初始化失败日志打印问题 ([a214217](https://github.com/vitarx-lib/router/commit/a214217f14d43f7779ffc1acf794ef9134c629f4))
-* **router:** 修复路由生成时缺失的 isGroup 属性 ([92b0140](https://github.com/vitarx-lib/router/commit/92b0140d3c8cedacd820015d44eefbbce81c64be))
 
 
 ### Features
 
 * **router:** 在路由生成流程中添加写入前钩子支持 ([986a509](https://github.com/vitarx-lib/router/commit/986a509292557222c8f327a1ea835913823b5565))
 * **router:** 支持路径解析返回页面选项并合并页面配置 ([86bce58](https://github.com/vitarx-lib/router/commit/86bce58ae56e38579be31b49693c79f7d30b6fed))
-* **router:** 添加 RouteNode 接口 isGroup 属性 ([9f61af8](https://github.com/vitarx-lib/router/commit/9f61af85a9acdcdc746689027ee1552bcb619702))
-
-
 
 # [4.0.0-beta.14](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.13...v4.0.0-beta.14) (2026-04-26)
 
@@ -27,8 +48,6 @@
 * **router:** 修正导航状态枚举值编号错误 ([5a5878a](https://github.com/vitarx-lib/router/commit/5a5878ad50f2037852c3fefbff933925ecfbb04c))
 * **router:** 修正路径解析结果注释描述 ([1e42734](https://github.com/vitarx-lib/router/commit/1e42734b20fed22087bead27227c9337e2250cac))
 
-
-
 # [4.0.0-beta.13](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.12...v4.0.0-beta.13) (2026-04-24)
 
 
@@ -37,8 +56,6 @@
 * **file-router:** 支持字符串字面量作为对象属性键 ([3404bec](https://github.com/vitarx-lib/router/commit/3404becd556454084fc1bd72491a1a15871e5dc1))
 * **router:** 修正 definePage 解析失败时的警告信息 ([0f50d88](https://github.com/vitarx-lib/router/commit/0f50d888363c9dd1ce073894a5532e5d65615ee2))
 
-
-
 # [4.0.0-beta.12](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.11...v4.0.0-beta.12) (2026-04-24)
 
 
@@ -46,8 +63,6 @@
 
 * **router:** 修复重复路由检测逻辑 ([1832ca2](https://github.com/vitarx-lib/router/commit/1832ca28e918d682ca9a2a1838d8fa8a893fccd2))
 * **router:** 添加哈希值修复hash配置无效问题 ([86e20c5](https://github.com/vitarx-lib/router/commit/86e20c5dd0135013e0cf4bd0b9b774ec67b3f048))
-
-
 
 # [4.0.0-beta.11](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.10...v4.0.0-beta.11) (2026-04-19)
 
@@ -58,16 +73,12 @@
 * **router:** 改进文件变更错误日志输出 ([57b285f](https://github.com/vitarx-lib/router/commit/57b285f4b95ecab4cbfba3f052bacdf425c7af25))
 * **router:** 简化路由插件错误处理逻辑 ([c636ffc](https://github.com/vitarx-lib/router/commit/c636ffc11081741ccddea0e1c4927dd193c5a8b4))
 
-
-
 # [4.0.0-beta.10](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.9...v4.0.0-beta.10) (2026-04-16)
 
 
 ### Bug Fixes
 
 * **router:** 修复vite插件导出无效BUG ([f04661a](https://github.com/vitarx-lib/router/commit/f04661abdcc41280cc54fa54140698a04261446c))
-
-
 
 # [4.0.0-beta.9](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.8...v4.0.0-beta.9) (2026-04-16)
 
@@ -82,8 +93,6 @@
 * **router:** 支持自定义函数模式的组件导入模式 ([6aeec70](https://github.com/vitarx-lib/router/commit/6aeec70381ab429c5db3f81c524144fadcffc9a0))
 * **router:** 支持路由管理器延迟加载能力 ([a5bf71f](https://github.com/vitarx-lib/router/commit/a5bf71f9afd2b417cf22dded44780cd4ee0818fa))
 
-
-
 # [4.0.0-beta.8](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.7...v4.0.0-beta.8) (2026-04-15)
 
 
@@ -96,8 +105,6 @@
 
 * **vite:** 优化文件路由插件实现并完善文档注释 ([b736c42](https://github.com/vitarx-lib/router/commit/b736c42162d2204f9b006a3ec6fa707c111a0688))
 
-
-
 # [4.0.0-beta.7](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.6...v4.0.0-beta.7) (2026-04-13)
 
 
@@ -106,16 +113,12 @@
 * **router:** 修复 group 为 true 时 prefix 结尾检查逻辑 ([0b813b3](https://github.com/vitarx-lib/router/commit/0b813b35fff330b7d186de24e22374213e36aff8))
 * **router:** 修复导出检查中函数类型判断逻辑 ([a2788bd](https://github.com/vitarx-lib/router/commit/a2788bd7becae41c86c0d38619b5c6a419597970))
 
-
-
 # [4.0.0-beta.6](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.5...v4.0.0-beta.6) (2026-04-13)
 
 
 ### Features
 
 * **router:** 导出 GenerateResult 类型以支持类型推断 ([169c171](https://github.com/vitarx-lib/router/commit/169c171d6ed1635e6d8137203228af82a67f6b7a))
-
-
 
 # [4.0.0-beta.5](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.4...v4.0.0-beta.5) (2026-04-12)
 
@@ -130,8 +133,6 @@
 * **router:** 导出并实现页面配置解析功能 ([64679df](https://github.com/vitarx-lib/router/commit/64679df0a7fbc2263622cb98b4d712719dec1f8c))
 * **router:** 支持自定义组件导入模式 ([b5cf6a7](https://github.com/vitarx-lib/router/commit/b5cf6a716d7faee76c1bc42ee4c456937abf5433))
 
-
-
 # [4.0.0-beta.4](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.3...v4.0.0-beta.4) (2026-04-10)
 
 
@@ -143,8 +144,6 @@
 ### Features
 
 * **file-router:** 支持自定义路径解析器和路径解析错误处理 ([3d2712b](https://github.com/vitarx-lib/router/commit/3d2712b95534d55237f39126a2f25cac0094761c))
-
-
 
 # [4.0.0-beta.3](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.2...v4.0.0-beta.3) (2026-04-09)
 
@@ -163,8 +162,6 @@
 
 * **router:** 支持基于 _layout.jsx 的布局路由结构 ([85d38b4](https://github.com/vitarx-lib/router/commit/85d38b444eaaa71ca565c5a9ef71ccbd78ddc5d1))
 
-
-
 # [4.0.0-beta.2](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.1...v4.0.0-beta.2) (2026-04-02)
 
 
@@ -178,8 +175,6 @@
 
 * **router:** 优化文件路由全局宏函数注释 ([6000741](https://github.com/vitarx-lib/router/commit/60007412e62a8928ae2c90f860727fbf186e12fc))
 * **router:** 重构文件路由模块并新增导出检测和过滤工具 ([421bef5](https://github.com/vitarx-lib/router/commit/421bef5c0425d4c3426d0811910877ed946b38a4))
-
-
 
 # [4.0.0-beta.1](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.0...v4.0.0-beta.1) (2026-03-26)
 
@@ -236,8 +231,6 @@
 * **router:** 添加等待视图渲染完成的方法 ([11ca02b](https://github.com/vitarx-lib/router/commit/11ca02b62c3b40a65b6bdac9973231424c32927c))
 * **router:** 添加获取解析路由记录数组的方法 ([7cda8e7](https://github.com/vitarx-lib/router/commit/7cda8e7d4002da8dbdca0fab152fcf477b9f141b))
 * **router:** 添加路由命名策略配置和支持 ([c581ac3](https://github.com/vitarx-lib/router/commit/c581ac308993448b47763ec8a030469ccf38477b))
-
-
 
 # [4.0.0-beta.0](https://github.com/vitarx-lib/router/compare/v3.0.0...v4.0.0-beta.0) (2026-03-12)
 
@@ -302,15 +295,9 @@
 * **vite:** 重新设计并优化 definePage 宏的处理逻辑 ([d0c26d0](https://github.com/vitarx-lib/router/commit/d0c26d05ffc580f5037bd152f533c8b87535121b))
 * **vite:** 重构配置处理及验证，新增配置校验功能 ([29bcd7c](https://github.com/vitarx-lib/router/commit/29bcd7cd93091758a09df4bdca0e80418b6cb2c7))
 
-
-
 # [3.0.0](https://github.com/vitarx-lib/router/compare/v2.0.1...v3.0.0) (2025-08-30)
 
-
-
 ## [2.0.1](https://github.com/vitarx-lib/router/compare/v2.0.0...v2.0.1) (2025-03-22)
-
-
 
 # [2.0.0](https://github.com/vitarx-lib/router/compare/v1.0.3...v2.0.0) (2025-03-22)
 
@@ -342,8 +329,6 @@
 * **core:** 优化属性更新逻辑 ([3661e84](https://github.com/vitarx-lib/router/commit/3661e8485cbd3541da7c15364e8a4c4a809d6c2c))
 * **core:** 优化属性更新逻辑 ([074a777](https://github.com/vitarx-lib/router/commit/074a777dcddbd23d199145dc73168e2742165ea2))
 
-
-
 ## [1.0.3](https://github.com/vitarx-lib/router/compare/v1.0.2...v1.0.3) (2025-03-12)
 
 
@@ -359,8 +344,6 @@
 
 * **RouterLink:** 增加对锚点链接的支持 ([a8384dd](https://github.com/vitarx-lib/router/commit/a8384ddb2cee1df917c040049d8dd0923c8fb508))
 
-
-
 ## [1.0.2](https://github.com/vitarx-lib/router/compare/v1.0.1...v1.0.2) (2025-03-10)
 
 
@@ -368,11 +351,7 @@
 
 * **widgets:** 修复 RouterLink 组件无法跳转外链BUG ([5ab1c43](https://github.com/vitarx-lib/router/commit/5ab1c43bd254bfc9287e9c392d47f435c400985a))
 
-
-
 ## [1.0.1](https://github.com/vitarx-lib/router/compare/v1.0.0...v1.0.1) (2025-03-09)
-
-
 
 # [1.0.0](https://github.com/vitarx-lib/router/compare/e613ac7ae110f17d6daac02409938304b97ae4e2...v1.0.0) (2025-03-08)
 
@@ -512,6 +491,4 @@
 * **router:** 优化内存路由的历史记录管理 ([f24570a](https://github.com/vitarx-lib/router/commit/f24570a491cdaf4fa4c4c4285dd70ef8e2a9604c))
 * **router:** 优化路由元数据处理 ([6b0b0b1](https://github.com/vitarx-lib/router/commit/6b0b0b15cae3f22fbc28fdb474b62904b194953f))
 * **router:** 优化路由匹配和导航逻辑 ([63ec4e1](https://github.com/vitarx-lib/router/commit/63ec4e1247e06c0715233c1a0cb7ade4e508b454))
-
-
 
