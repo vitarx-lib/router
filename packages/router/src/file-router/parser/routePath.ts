@@ -5,11 +5,12 @@
  * 支持已跟踪（在路由树中）和未跟踪（尚未扫描）两种场景。
  */
 import nodePath from 'node:path'
-import { type PageDirConfig } from '../config/index.js'
-import { isPageFileInDirs } from '../parser/index.js'
-import { type FileInfo, parsePageFile } from '../parser/parsePage.js'
+import { type PageDirConfig } from '../config/resolve.js'
 import type { PageParser, PathStrategy, ScanNode } from '../types/index.js'
-import { applyPathStrategy, normalizeRoutePath, resolvePathVariable } from './index.js'
+import { applyPathStrategy } from '../utils/pathStrategy.js'
+import { normalizeRoutePath, resolvePathVariable } from '../utils/pathUtils.js'
+import { isPageFileInDirs } from './filterUtils.js'
+import { type FileInfo, parsePageFile } from './parsePage.js'
 
 interface RouteFullPathContext {
   fileMap: Map<string, ScanNode>
@@ -74,7 +75,8 @@ export function computeRouteFullPath(
   if (!page) return null
 
   const parsed = parsePageFile(filePath, pageParser, fileInfo)
-  const pathSegment = parsed.path === 'index' ? '' : applyFullPathStrategy(parsed.path, pathStrategy)
+  const pathSegment =
+    parsed.path === 'index' ? '' : applyFullPathStrategy(parsed.path, pathStrategy)
   const segments: string[] = pathSegment ? [pathSegment] : []
 
   let dirPath = nodePath.dirname(filePath)

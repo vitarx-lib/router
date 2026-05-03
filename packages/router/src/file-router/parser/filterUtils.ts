@@ -26,8 +26,7 @@ export interface FilterOptions {
 export function isPageFile(file: string, options: FilterOptions): boolean {
   const { dir, include, exclude } = options
   if (!file.startsWith(dir)) return false
-  const relativePath = path.relative(dir, file)
-  const normalizedPath = normalizePathSeparator(relativePath)
+  const normalizedPath = normalizePathSeparator(path.relative(dir, file))
   if (include.length === 0) return true
   return micromatch.isMatch(normalizedPath, include, { dot: true, noext: true, ignore: exclude })
 }

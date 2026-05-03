@@ -11,8 +11,8 @@
  * - index 文件映射
  */
 import { describe, expect, it } from 'vitest'
+import { computeRouteFullPath } from '../../../src/file-router/parser/routePath.js'
 import type { ScanNode } from '../../../src/file-router/types/index.js'
-import { computeRouteFullPath } from '../../../src/file-router/utils/routePath.js'
 
 function createScanNode(
   overrides: Partial<ScanNode> & { path: string; filePath: string }

@@ -22,12 +22,11 @@ import {
   isPageFileInDirs
 } from './parser/index.js'
 import { extractFileInfo, type FileInfo, parsePageFile } from './parser/parsePage.js'
+import { computeRouteFullPath } from './parser/routePath.js'
 import type { FileRouterOptions, PageParseResult, ScanNode } from './types/index.js'
 import {
   applyPathStrategy,
-  computeRouteFullPath,
   info,
-  normalizePathSeparator,
   readFileContent,
   resolvePathVariable,
   validateOptions,
@@ -162,7 +161,7 @@ export class FileRouter {
     const pageMapping = new Map<string, ScanNode>()
     const children: Set<ScanNode> = new Set()
     for (const dirent of entries) {
-      const filePath = normalizePathSeparator(nodePath.resolve(dirent.parentPath, dirent.name))
+      const filePath = nodePath.resolve(dirent.parentPath, dirent.name)
       let route: ScanNode | null = null
       if (dirent.isDirectory()) {
         // 处理嵌套子目录
