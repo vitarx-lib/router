@@ -57,7 +57,7 @@
     "test:plugin-vite": "vitest run --project plugin-vite",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-    "release": "npx release-cli"
+    "release": "pnpm dlx @vitarx/release-cli"
   },
   "peerDependencies": {
     "vitarx": "^4.0.0-0",
