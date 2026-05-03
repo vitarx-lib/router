@@ -178,12 +178,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
       return props.to.index
     }
     if (isString(props.to)) {
-      if (isExternalLink(props.to)) {
-        return props.to
-      }
-      if (props.to.startsWith('/')) {
-        return props.to
-      }
+      return props.to
     }
     return 'javascript:void(0)'
   })
