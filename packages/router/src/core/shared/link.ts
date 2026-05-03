@@ -1,6 +1,5 @@
 import { type Computed, computed, isPlainObject, isString, logger } from 'vitarx'
 import { hasValidNavTarget, hasValidPath } from '../common/utils.js'
-import { useRouter } from './inject.js'
 import type {
   NavigateResult,
   NavTarget,
@@ -9,6 +8,7 @@ import type {
   RoutePath,
   URLHash
 } from '../types/index.js'
+import { useRouter } from './inject.js'
 import { cloneRouteLocation, parseQuery } from './utils.js'
 
 export type HTTPUrl = `http://${string}` | `https://${string}`
@@ -79,6 +79,16 @@ const handleTransition = async (callback: () => Promise<void>): Promise<void> =>
 }
 
 /**
+ * 判断是否为外部链接
+ *
+ * @param href - 链接地址
+ * @returns 是否为外部链接
+ */
+export function isExternalLink(href: string): boolean {
+  return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')
+}
+
+/**
  * 创建一个链接助手，用于处理路由导航、生成链接属性及判断激活状态。
  *
  * @template T - 路由索引类型，扩展自 `RouteIndex`。
@@ -95,7 +105,6 @@ const handleTransition = async (callback: () => Promise<void>): Promise<void> =>
  */
 export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLinkReturn {
   const router = useRouter()
-  const httpRegex = /^(https?):\/\/[^\s\/$.?#].\S*$/i
 
   /**
    * 计算属性：解析目标路由
@@ -110,7 +119,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
       target = to
     } else if (isString(to)) {
       // 如果是 HTTP/HTTPS 链接则返回 null
-      if (httpRegex.test(to)) return null
+      if (isExternalLink(to)) return null
       target = { index: to }
     } else if (typeof to === 'symbol') {
       target = { index: to }
@@ -169,7 +178,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
       return props.to.index
     }
     if (isString(props.to)) {
-      if (httpRegex.test(props.to)) {
+      if (isExternalLink(props.to)) {
         return props.to
       }
       if (props.to.startsWith('/')) {
