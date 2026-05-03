@@ -25,6 +25,7 @@ import { extractFileInfo, type FileInfo, parsePageFile } from './parser/parsePag
 import type { FileRouterOptions, PageParseResult, ScanNode } from './types/index.js'
 import {
   applyPathStrategy,
+  computeRouteFullPath,
   info,
   normalizePathSeparator,
   readFileContent,
@@ -410,6 +411,29 @@ export class FileRouter {
       }
     }
     return !!isPageFileInDirs(file, this.config.pages)
+  }
+  /**
+   * 获取文件的完整路由路径
+   *
+   * 判断文件是否为页面文件，如果是则计算其最终生成的路由 fullPath。
+   * 非页面文件（布局文件、配置文件等）返回 null。
+   *
+   * @param filePath - 文件绝对路径
+   * @returns 完整路由路径，非页面文件返回 null
+   */
+  public getRouteFullPath(filePath: string): string | null {
+    if (!this.isPageFile(filePath)) return null
+
+    const fileInfo = extractFileInfo(filePath)
+    const fileType = this.getPageType(filePath, fileInfo.rawName)
+    if (fileType !== 'page') return null
+
+    return computeRouteFullPath(filePath, fileInfo, {
+      fileMap: this.fileMap,
+      pages: this.config.pages,
+      pageParser: this.config.pageParser,
+      pathStrategy: this.config.pathStrategy
+    })
   }
   /**
    * 写入类型定义文件

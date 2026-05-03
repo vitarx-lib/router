@@ -756,4 +756,121 @@ describe('file-router/index (FileRouter)', () => {
       expect(adminGroup?.path).toBe('/admin')
     })
   })
+
+  describe('getRouteFullPath', () => {
+    it('应该返回页面文件的完整路由路径', () => {
+      createFile('src/pages/about.tsx', 'export default function About() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      const filePath = resolvePath('src/pages/about.tsx')
+      expect(router.getRouteFullPath(filePath)).toBe('/about')
+    })
+
+    it('应该返回 index 页面的根路径', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      const filePath = resolvePath('src/pages/index.tsx')
+      expect(router.getRouteFullPath(filePath)).toBe('/')
+    })
+
+    it('应该返回嵌套路由的完整路径', () => {
+      createFile('src/pages/users/profile.tsx', 'export default function Profile() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      const filePath = resolvePath('src/pages/users/profile.tsx')
+      expect(router.getRouteFullPath(filePath)).toBe('/users/profile')
+    })
+
+    it('应该正确处理动态路由参数', () => {
+      createFile('src/pages/users/[id].tsx', 'export default function UserDetail() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      const filePath = resolvePath('src/pages/users/[id].tsx')
+      expect(router.getRouteFullPath(filePath)).toBe('/users/{id}')
+    })
+
+    it('布局文件应返回 null', () => {
+      createFile('src/pages/_layout.tsx', 'export default function Layout() { return null }')
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      const layoutPath = resolvePath('src/pages/_layout.tsx')
+      expect(router.getRouteFullPath(layoutPath)).toBeNull()
+    })
+
+    it('非页面文件应返回 null', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+      createFile('src/utils/helper.ts', 'export function helper() {}')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      const helperPath = resolvePath('src/utils/helper.ts')
+      expect(router.getRouteFullPath(helperPath)).toBeNull()
+    })
+
+    it('未扫描的页面文件应推算 fullPath', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      createFile('src/pages/new-page.tsx', 'export default function NewPage() { return null }')
+      const newPagePath = resolvePath('src/pages/new-page.tsx')
+      expect(router.getRouteFullPath(newPagePath)).toBe('/new-page')
+    })
+
+    it('应该正确应用 kebab 路径策略', () => {
+      createFile(
+        'src/pages/UserProfile.tsx',
+        'export default function UserProfile() { return null }'
+      )
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        pathStrategy: 'kebab'
+      })
+
+      const filePath = resolvePath('src/pages/UserProfile.tsx')
+      expect(router.getRouteFullPath(filePath)).toBe('/user-profile')
+    })
+
+    it('带前缀的页面目录应正确计算 fullPath', () => {
+      createFile('src/admin/dashboard.tsx', 'export default function Dashboard() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: [{ dir: 'src/admin', prefix: '/admin/', group: false }]
+      })
+
+      const filePath = resolvePath('src/admin/dashboard.tsx')
+      expect(router.getRouteFullPath(filePath)).toBe('/admin/dashboard')
+    })
+  })
 })
