@@ -39,6 +39,7 @@ export * from './generator/index.js'
 export { mergePageOptions } from './macros/definePage.js'
 export type * from './types/index.js'
 export * from './utils/logger.js'
+export { findRoute } from './utils/findRoute.js'
 /**
  * 文件监听器事件类型
  *
