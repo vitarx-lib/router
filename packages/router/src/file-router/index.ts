@@ -27,6 +27,7 @@ import type { FileRouterOptions, PageParseResult, ScanNode } from './types/index
 import {
   applyPathStrategy,
   info,
+  normalizePathSeparator,
   readFileContent,
   resolvePathVariable,
   validateOptions,
@@ -161,7 +162,7 @@ export class FileRouter {
     const pageMapping = new Map<string, ScanNode>()
     const children: Set<ScanNode> = new Set()
     for (const dirent of entries) {
-      const filePath = nodePath.resolve(dirent.parentPath, dirent.name)
+      const filePath = normalizePathSeparator(nodePath.resolve(dirent.parentPath, dirent.name))
       let route: ScanNode | null = null
       if (dirent.isDirectory()) {
         // 处理嵌套子目录
