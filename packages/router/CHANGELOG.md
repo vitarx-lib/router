@@ -1,10 +1,8 @@
-# [4.0.0-beta.18](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.17...v4.0.0-beta.18) (2026-05-04)
+# [4.0.0-beta.19](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.18...v4.0.0-beta.19) (2026-05-04)
 
 
 ### Bug Fixes
 
-* **router:** 修复全局 props 注入默认值 ([75155d4](https://github.com/vitarx-lib/router/commit/75155d461d23849739a5efd3c4fa7dbbd804c019))
-* **router:** 修复重写destroy方法未调用父类问题 ([9a25079](https://github.com/vitarx-lib/router/commit/9a250795d5dced624b4f9177bb1817afed198c93))
 * **router:** 修复链接路径返回逻辑 ([0d9cb18](https://github.com/vitarx-lib/router/commit/0d9cb1852acd057535f63c133cf293afc203d7fd))
 * **router:** 修正文件路径分隔符统一问题 ([7de46bd](https://github.com/vitarx-lib/router/commit/7de46bd2bdd982fe1d7740556470c2352ccbcef3))
 * **router:** 修正路由全路径拼接方式 ([7f74eba](https://github.com/vitarx-lib/router/commit/7f74eba98ed5f26fc2bb5fcda16c42cccf1516b0))
@@ -12,8 +10,21 @@
 
 ### Features
 
+* **router:** 导出findRoute工具函数 ([88043e1](https://github.com/vitarx-lib/router/commit/88043e1b341b97e8ecd725bfd8028db970290eb1))
 * **router:** 添加对 findRoute 模块的导出 ([9503b32](https://github.com/vitarx-lib/router/commit/9503b32fe01d133a810a470b83183a2daf289399))
 * **router:** 添加查找路由的工具函数 ([caa85ad](https://github.com/vitarx-lib/router/commit/caa85add59fc697e7cdce97250390398ff3427d5))
+
+# [4.0.0-beta.17](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.16...v4.0.0-beta.17) (2026-05-03)
+
+
+### Bug Fixes
+
+* **router:** 修复全局 props 注入默认值 ([75155d4](https://github.com/vitarx-lib/router/commit/75155d461d23849739a5efd3c4fa7dbbd804c019))
+* **router:** 修复重写destroy方法未调用父类问题 ([9a25079](https://github.com/vitarx-lib/router/commit/9a250795d5dced624b4f9177bb1817afed198c93))
+
+
+### Features
+
 * **router:** 添加获取页面文件完整路由路径功能 ([8f5065c](https://github.com/vitarx-lib/router/commit/8f5065c396d750b5a6a4d2af5c238d7ee394344a))
 
 # [4.0.0-beta.16](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.15...v4.0.0-beta.16) (2026-04-27)
