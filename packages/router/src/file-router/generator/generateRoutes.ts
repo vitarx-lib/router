@@ -118,7 +118,7 @@ function buildRouteNode(
     isGroup: page.isGroup,
     filePath: page.filePath,
     path: page.path,
-    fullPath: parent ? normalizeRoutePath(parent.fullPath + '/' + page.path) : page.path
+    fullPath: normalizeRoutePath(parent ? `${parent.fullPath}/${page.path}` : page.path)
   }
 
   // 处理组件配置
