@@ -1113,11 +1113,16 @@ export abstract class Router {
     } else {
       match = this.manager.matchByName(matchTarget as RouteName, target.params)
     }
-    // 如果没有匹配的路由，则返回null
     if (!match) {
       const component = this.config.missing
-      if (component && hasValidPath(target.index)) {
-        return this.createMissingRoute(component, target.index, target.query, target.hash)
+      // 如果配置了缺失组件且目标是路径，则创建缺失路由
+      if (component && isPath) {
+        return this.createMissingRoute(
+          component,
+          target.index as RoutePath,
+          target.query,
+          target.hash
+        )
       }
       return null
     }
