@@ -1,4 +1,18 @@
-# [4.0.0-beta.19](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.18...v4.0.0-beta.19) (2026-05-04)
+# [4.0.0-beta.20](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.19...v4.0.0-beta.20) (2026-05-08)
+
+
+### Bug Fixes
+
+* **router:** 修复缺失路由组件的创建条件 ([e7c9ed4](https://github.com/vitarx-lib/router/commit/e7c9ed4c1df2500c33758c2840ae4ba51092ecf9))
+* **router:** 修复路由匹配逻辑中的缺失路由处理 ([83e4d8c](https://github.com/vitarx-lib/router/commit/83e4d8cbc85eef6f300761389c3e2e0f9e4c5a9b))
+
+
+### Features
+
+* **file-router:** 支持自定义分组目录解析器 groupParser ([ab75bc8](https://github.com/vitarx-lib/router/commit/ab75bc83fd21b7a07f8b044b3eec8ff5044c261c))
+* **router:** 导出findRoute工具函数 ([88043e1](https://github.com/vitarx-lib/router/commit/88043e1b341b97e8ecd725bfd8028db970290eb1))
+
+# [4.0.0-beta.18](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.17...v4.0.0-beta.18) (2026-05-04)
 
 
 ### Bug Fixes
@@ -10,7 +24,6 @@
 
 ### Features
 
-* **router:** 导出findRoute工具函数 ([88043e1](https://github.com/vitarx-lib/router/commit/88043e1b341b97e8ecd725bfd8028db970290eb1))
 * **router:** 添加对 findRoute 模块的导出 ([9503b32](https://github.com/vitarx-lib/router/commit/9503b32fe01d133a810a470b83183a2daf289399))
 * **router:** 添加查找路由的工具函数 ([caa85ad](https://github.com/vitarx-lib/router/commit/caa85add59fc697e7cdce97250390398ff3427d5))
 
