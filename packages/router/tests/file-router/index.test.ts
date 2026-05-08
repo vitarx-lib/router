@@ -757,6 +757,179 @@ describe('file-router/index (FileRouter)', () => {
     })
   })
 
+  describe('groupParser 配置', () => {
+    it('应该通过 groupParser 自定义目录路径（返回字符串）', () => {
+      createFile('src/pages/1.home/index.tsx', 'export default function Home() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        groupParser(dirName) {
+          return dirName.replace(/^\d+\./, '')
+        }
+      })
+
+      const homeRoute = router.nodeTree.find(r => r.path === '/home')
+      expect(homeRoute).toBeDefined()
+      expect(homeRoute?.isGroup).toBe(true)
+    })
+
+    it('应该通过 groupParser 自定义目录路径和选项（返回对象）', () => {
+      createFile('src/pages/1.home/index.tsx', 'export default function Home() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        groupParser(dirName) {
+          const match = dirName.match(/^(\d+)\.(.+)$/)
+          if (match) {
+            return {
+              path: match[2],
+              options: {
+                meta: { order: Number(match[1]) }
+              }
+            }
+          }
+          return dirName
+        }
+      })
+
+      const homeRoute = router.nodeTree.find(r => r.path === '/home')
+      expect(homeRoute).toBeDefined()
+      expect(homeRoute?.options).toBeDefined()
+      expect(homeRoute?.options?.meta).toEqual({ order: 1 })
+    })
+
+    it('groupParser 返回字符串时应正确应用 pathStrategy', () => {
+      createFile('src/pages/MyGroup/index.tsx', 'export default function Page() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        pathStrategy: 'kebab',
+        groupParser(dirName) {
+          return dirName
+        }
+      })
+
+      const route = router.nodeTree.find(r => r.path === '/my-group')
+      expect(route).toBeDefined()
+    })
+
+    it('groupParser 返回对象时 options 为 undefined 不应设置 route.options', () => {
+      createFile('src/pages/mygroup/index.tsx', 'export default function Page() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        groupParser(dirName) {
+          return { path: dirName }
+        }
+      })
+
+      const route = router.nodeTree.find(r => r.path === '/mygroup')
+      expect(route).toBeDefined()
+      expect(route?.options).toBeUndefined()
+    })
+
+    it('未配置 groupParser 时应使用原始目录名作为路径', () => {
+      createFile('src/pages/mygroup/index.tsx', 'export default function Page() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      const route = router.nodeTree.find(r => r.path === '/mygroup')
+      expect(route).toBeDefined()
+    })
+
+    it('groupParser 应正确处理嵌套目录', () => {
+      createFile('src/pages/1.home/index.tsx', 'export default function Home() { return null }')
+      createFile('src/pages/1.home/2.about/index.tsx', 'export default function About() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        groupParser(dirName) {
+          const match = dirName.match(/^(\d+)\.(.+)$/)
+          if (match) {
+            return {
+              path: match[2],
+              options: { meta: { order: Number(match[1]) } }
+            }
+          }
+          return dirName
+        }
+      })
+
+      const homeRoute = router.nodeTree.find(r => r.path === '/home')
+      expect(homeRoute).toBeDefined()
+      expect(homeRoute?.options?.meta).toEqual({ order: 1 })
+
+      const aboutRoute = Array.from(homeRoute?.children || []).find(r => r.path === 'about')
+      expect(aboutRoute).toBeDefined()
+      expect(aboutRoute?.options?.meta).toEqual({ order: 2 })
+    })
+
+    it('groupParser 与分组路由配置组合使用时应正确处理 prefix', () => {
+      createFile('src/admin/1.dashboard/index.tsx', 'export default function Dashboard() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: [{ dir: 'src/admin', prefix: '/admin', group: true }],
+        groupParser(dirName) {
+          return dirName.replace(/^\d+\./, '')
+        }
+      })
+
+      const adminGroup = router.nodeTree.find(r => r.path === '/admin')
+      expect(adminGroup).toBeDefined()
+
+      const dashboardRoute = Array.from(adminGroup?.children || []).find(r => r.path === 'dashboard')
+      expect(dashboardRoute).toBeDefined()
+    })
+
+    it('groupParser 生成的路由代码应包含正确的路径和选项', () => {
+      createFile('src/pages/1.home/index.tsx', 'export default function Home() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        groupParser(dirName) {
+          const match = dirName.match(/^(\d+)\.(.+)$/)
+          if (match) {
+            return {
+              path: match[2],
+              options: { meta: { order: Number(match[1]) } }
+            }
+          }
+          return dirName
+        }
+      })
+
+      const result = router.generate()
+
+      expect(result.code).toContain('path: "/home"')
+      expect(result.code).toContain('"order":1')
+    })
+
+    it('空目录经 groupParser 解析后无子路由应返回 null', () => {
+      createFile('src/pages/1.empty/.gitkeep', '')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        groupParser(dirName) {
+          return dirName.replace(/^\d+\./, '')
+        }
+      })
+
+      const emptyRoute = router.nodeTree.find(r => r.path === '/empty')
+      expect(emptyRoute).toBeUndefined()
+    })
+  })
+
   describe('getRouteFullPath', () => {
     it('应该返回页面文件的完整路由路径', () => {
       createFile('src/pages/about.tsx', 'export default function About() { return null }')

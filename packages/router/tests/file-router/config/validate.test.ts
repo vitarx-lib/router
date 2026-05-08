@@ -245,6 +245,22 @@ describe('config/validate', () => {
     })
   })
 
+  describe('validateOptions - groupParser 配置', () => {
+    it('应该接受有效的 groupParser 函数', () => {
+      expect(() => validateOptions({ groupParser: () => 'path' })).not.toThrow()
+    })
+
+    it('应该在 groupParser 为非函数时抛出错误', () => {
+      expect(() => validateOptions({ groupParser: 'wrong' as any })).toThrow(
+        'options.groupParser 必须是函数'
+      )
+    })
+
+    it('应该在 groupParser 未定义时通过验证', () => {
+      expect(() => validateOptions({})).not.toThrow()
+    })
+  })
+
   describe('validateOptions - 完整配置', () => {
     it('应该接受空配置', () => {
       expect(() => validateOptions({})).not.toThrow()

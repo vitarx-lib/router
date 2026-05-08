@@ -17,6 +17,7 @@ import type {
   CodeTransformHook,
   ExtendRouteHook,
   FileRouterOptions,
+  GroupParser,
   ImportMode,
   PageDirOptions,
   PageParser,
@@ -43,6 +44,7 @@ export interface ResolvedConfig {
   extendRoute?: ExtendRouteHook
   beforeWriteRoutes?: (routes: RouteNode[]) => void | RouteNode[]
   pageParser?: PageParser
+  groupParser?: GroupParser
 }
 
 const DEFAULT_PAGE_CONFIG: Omit<Required<PageDirOptions>, 'dir'> = {
@@ -105,7 +107,8 @@ export function resolveConfig(options: FileRouterOptions): ResolvedConfig {
     transform,
     extendRoute,
     beforeWriteRoutes,
-    pageParser
+    pageParser,
+    groupParser
   } = options
   const resolvedPages = resolvePageConfigs(pages, root)
   return {
@@ -120,6 +123,7 @@ export function resolveConfig(options: FileRouterOptions): ResolvedConfig {
     transform,
     extendRoute,
     beforeWriteRoutes,
-    pageParser
+    pageParser,
+    groupParser
   }
 }

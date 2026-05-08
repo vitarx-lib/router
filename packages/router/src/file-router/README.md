@@ -79,6 +79,7 @@ interface FileRouterOptions {
   extendRoute?: ExtendRouteHook
   beforeWriteRoutes?: BeforeWriteRoutesHook
   pageParser?: PageParser
+  groupParser?: GroupParser
 }
 ```
 
@@ -96,6 +97,7 @@ interface FileRouterOptions {
 | `extendRoute`       | `ExtendRouteHook`                        | -               | 路由扩展钩子     |
 | `beforeWriteRoutes` | `BeforeWriteRoutesHook`                  | -               | 写入路由文件前的钩子 |
 | `pageParser`        | `PageParser`                             | -               | 自定义页面解析器   |
+| `groupParser`       | `GroupParser`                            | -               | 自定义分组目录解析器 |
 
 ### PageSource
 
@@ -462,6 +464,80 @@ interface PageParseResult {
    /** 视图名称 如：home.nav.jsx -> 'nav' */
    viewName?: string
 }
+```
+
+## GroupParser 配置
+
+自定义分组目录解析器，用于控制目录名到路由路径和选项的转换逻辑。
+
+### 基本用法
+
+```typescript
+const router = new FileRouter({
+  groupParser(dirName, dirPath) {
+    // dirName: 目录名，如 '1.home'
+    // dirPath: 目录完整路径
+
+    // 示例：移除目录名中的数字前缀和点号
+    return dirName.replace(/^\d+\./, '')
+  }
+})
+```
+
+### 返回值
+
+分组目录解析器可以返回以下两种类型：
+
+1. **字符串**：直接作为路由路径
+
+2. **对象**：包含路由路径和可选的页面选项
+
+```typescript
+const router = new FileRouter({
+  groupParser(dirName) {
+    // 解析带排序前缀的目录名，如 '1.home'、'2.about'
+    const match = dirName.match(/^(\d+)\.(.+)$/)
+    if (match) {
+      return {
+        path: match[2],       // 路由路径：'home'
+        options: {
+          meta: {
+            order: Number(match[1])  // 排序：1
+          }
+        }
+      }
+    }
+    return dirName
+  }
+})
+```
+
+### GroupParser 类型定义
+
+```typescript
+type GroupParser = (dirName: string, dirPath: string) => string | GroupParseResult
+
+interface GroupParseResult {
+  /** 用于 Route 的路径，如：1.group -> 'group' */
+  path: string
+  /** 分组相关可配置选项 */
+  options?: PageOptions
+}
+```
+
+### 与分组路由配置组合使用
+
+`groupParser` 可以与 `group: true` 的 pages 配置组合使用，在分组路由内部同样会应用 groupParser 解析嵌套目录：
+
+```typescript
+const router = new FileRouter({
+  pages: [
+    { dir: 'src/admin', prefix: '/admin', group: true }
+  ],
+  groupParser(dirName) {
+    return dirName.replace(/^\d+\./, '')
+  }
+})
 ```
 
 ## 动态页面管理

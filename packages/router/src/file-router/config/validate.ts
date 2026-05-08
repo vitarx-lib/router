@@ -271,6 +271,20 @@ function validatePathParser(opts: FileRouterOptions): void {
 }
 
 /**
+ * 验证 groupParser 配置
+ *
+ * @param opts - 配置选项
+ * @throws {Error} 当配置无效时抛出错误
+ */
+function validateGroupParser(opts: FileRouterOptions): void {
+  if (opts.groupParser === undefined) return
+
+  if (typeof opts.groupParser !== 'function') {
+    throw new Error('options.groupParser 必须是函数')
+  }
+}
+
+/**
  * 验证插件配置选项
  *
  * 验证顺序：
@@ -302,4 +316,5 @@ export function validateOptions(opts: FileRouterOptions): void {
   validateExtendRoute(opts)
   validateBeforeWriteRoutes(opts)
   validatePathParser(opts)
+  validateGroupParser(opts)
 }

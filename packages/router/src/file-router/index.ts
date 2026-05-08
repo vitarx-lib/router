@@ -23,7 +23,7 @@ import {
 } from './parser/index.js'
 import { extractFileInfo, type FileInfo, parsePageFile } from './parser/parsePage.js'
 import { computeRouteFullPath } from './parser/routePath.js'
-import type { FileRouterOptions, PageParseResult, ScanNode } from './types/index.js'
+import type { FileRouterOptions, PageOptions, PageParseResult, ScanNode } from './types/index.js'
 import {
   applyPathStrategy,
   info,
@@ -38,8 +38,8 @@ export { resolvePageConfigs } from './config/resolve.js'
 export * from './generator/index.js'
 export { mergePageOptions } from './macros/definePage.js'
 export type * from './types/index.js'
-export * from './utils/logger.js'
 export { findRoute } from './utils/findRoute.js'
+export * from './utils/logger.js'
 /**
  * 文件监听器事件类型
  *
@@ -195,15 +195,40 @@ export class FileRouter {
     page: ScanDirConfig,
     parent?: ScanNode
   ): ScanNode | null {
+    const { routePath, options } = this.parseGroupResult(fileName, filePath)
     const pathPrefix = parent ? '' : page.prefix
     const route: ScanNode = {
       isGroup: true,
       parent,
       filePath,
-      path: this.applyPathStrategy(pathPrefix + fileName)
+      path: this.applyPathStrategy(pathPrefix + routePath)
     }
+    if (options) route.options = options
     route.children = this.scanPageDir({ ...page, dir: filePath, prefix: '' }, route)
     return route.children.size > 0 ? route : null
+  }
+  /**
+   * 解析分组目录的自定义路径和选项
+   *
+   * 通过 groupParser 解析目录名，支持返回字符串路径或包含路径与选项的对象。
+   *
+   * @param fileName - 目录名
+   * @param filePath - 目录完整路径
+   * @returns 解析后的路径和选项
+   * @private
+   */
+  private parseGroupResult(
+    fileName: string,
+    filePath: string
+  ): { routePath: string; options?: PageOptions } {
+    if (!this.config.groupParser) {
+      return { routePath: fileName }
+    }
+    const result = this.config.groupParser(fileName, filePath)
+    if (typeof result === 'string') {
+      return { routePath: result }
+    }
+    return { routePath: result.path, options: result.options }
   }
   /**
    * 处理文件

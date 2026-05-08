@@ -122,5 +122,27 @@ describe('config/configUtils', () => {
 
       expect(config.pages[0].dir).toBe(absolutePath)
     })
+
+    it('应该正确解析 groupParser 配置', () => {
+      createPagesDir('src/pages')
+
+      const groupParser = (dirName: string) => dirName.replace(/^\d+\./, '')
+      const config = resolveConfig({
+        root: tempDir,
+        groupParser
+      })
+
+      expect(config.groupParser).toBe(groupParser)
+    })
+
+    it('groupParser 未配置时应为 undefined', () => {
+      createPagesDir('src/pages')
+
+      const config = resolveConfig({
+        root: tempDir
+      })
+
+      expect(config.groupParser).toBeUndefined()
+    })
   })
 })
