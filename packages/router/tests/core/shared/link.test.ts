@@ -358,6 +358,16 @@ describe('shared/link', () => {
     })
 
     describe('边界情况', () => {
+      it('href应该保留尾部斜杠', async () => {
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+        await router.replace({ index: '/' })
+        mockUseRouter(router)
+
+        const { useLink } = await import('../../../src/core/shared/link.js')
+        const link = useLink({ to: '/about/' })
+        expect(link.route.value?.path).toBe('/about/')
+        expect(link.href.value).toBe('/about/')
+      })
       it('应该正确处理空路径', async () => {
         router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
