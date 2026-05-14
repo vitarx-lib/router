@@ -31,7 +31,12 @@ function extractAstLiteralValue(node: BabelTypes.Node): unknown {
       const obj: Record<string, unknown> = {}
       for (const prop of node.properties) {
         if (prop.type !== 'ObjectProperty') continue
-        const key = prop.key.type === 'Identifier' ? prop.key.name : null
+        const key =
+          prop.key.type === 'Identifier'
+            ? prop.key.name
+            : prop.key.type === 'StringLiteral'
+              ? prop.key.value
+              : null
         if (key) {
           obj[key] = extractAstLiteralValue(prop.value)
         }
