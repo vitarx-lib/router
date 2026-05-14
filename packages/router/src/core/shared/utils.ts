@@ -35,24 +35,20 @@ export function stringifyQuery(obj: Record<string, string>): `?${string}` | '' {
 /**
  * 归一化path
  *
- * 去除所有空格、替换重复的斜杠、去除尾部的斜杠
+ * 去除所有空格、替换重复的斜杠
  *
  * @example
  * normalizePath('/  foo') // '/foo'
- * normalizePath('/foo/') // '/foo'
+ * normalizePath('/foo/') // '/foo/'
  * normalizePath('/foo/bar') // '/foo/bar'
  * normalizePath('foo/') // '/foo'
  *
  * @param {string} path - 路径字符串
- * @param [hashMode = false] -  是否为hash模式，如果是则兼容`/#/`
  * @return {string} - 格式化后的路径字符串
  */
-export function normalizePath(path: string, hashMode: boolean = false): `/${string}` {
+export function normalizePath(path: string): `/${string}` {
   // 去除所有空格 处理重复//
-  const formated = `/${path.trim()}`.replace(/\s+/g, '').replace(/\/+/g, '/')
-  if (formated === '/' || (hashMode && formated === '/#/')) return formated
-
-  return formated.replace(/\/$/, '') as `/${string}`
+  return `/${path.trim()}`.replace(/\s+/g, '').replace(/\/+/g, '/') as `/${string}`
 }
 
 /**
