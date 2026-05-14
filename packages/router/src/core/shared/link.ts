@@ -200,7 +200,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
   const isExactActive = computed(() => {
     const matchedRoute = route.value
     if (!matchedRoute) return false
-    return router.route.href === matchedRoute.href
+    return router.route.path === matchedRoute.path
   })
 
   /**
