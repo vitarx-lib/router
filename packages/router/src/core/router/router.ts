@@ -1088,7 +1088,7 @@ export abstract class Router {
     const queryStr = stringifyQuery(query)
     const href = `${path}${queryStr}${hashStr}`
     return this.config.mode === 'hash'
-      ? normalizePath(`${this.config.base}/#${href}`, true)
+      ? normalizePath(`${this.config.base}#${href}`)
       : normalizePath(`${this.config.base}${href}`)
   }
   /**
