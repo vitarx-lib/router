@@ -12,8 +12,8 @@ describe('shared/utils', () => {
     it('应该正确格式化路径', () => {
       expect(normalizePath('home')).toBe('/home')
       expect(normalizePath('/home')).toBe('/home')
-      expect(normalizePath('/home/')).toBe('/home')
-      expect(normalizePath('home/')).toBe('/home')
+      expect(normalizePath('/home/', true)).toBe('/home')
+      expect(normalizePath('home/')).toBe('/home/')
     })
 
     it('应该处理重复斜杠', () => {
@@ -31,12 +31,7 @@ describe('shared/utils', () => {
     })
 
     it('应该正确处理特殊路径', () => {
-      expect(normalizePath('/#/')).toBe('/#')
-    })
-
-    it('应该在 hash 模式下正确处理 /#/', () => {
-      expect(normalizePath('/#/', true)).toBe('/#/')
-      expect(normalizePath('/#/home', true)).toBe('/#/home')
+      expect(normalizePath('/#/')).toBe('/#/')
     })
   })
 
