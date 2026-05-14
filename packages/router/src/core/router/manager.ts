@@ -163,7 +163,7 @@ export class RouteManager {
    * @returns 规范化后的路径（根据 ignoreCase 配置转换为小写）
    * @private
    */
-  private normalizePath(path: RoutePath): RoutePath {
+  private toLookupPath(path: RoutePath): RoutePath {
     return this.config.ignoreCase ? (path.toLowerCase() as RoutePath) : path
   }
 
@@ -174,7 +174,7 @@ export class RouteManager {
    * @returns 路由记录对象，如果未找到则返回 undefined
    */
   public findByPath(path: RoutePath): RouteRecord | null {
-    const normalizedPath = this.normalizePath(path)
+    const normalizedPath = this.toLookupPath(path)
     return this.staticRoutes.get(normalizedPath) ?? this.aliasRoutes.get(normalizedPath) ?? null
   }
 
@@ -221,9 +221,7 @@ export class RouteManager {
       normalizedPath = normalizedPath.slice(0, -1) as RoutePath
     }
     // 1. 标准化路径
-    const lookupPath = this.config.ignoreCase
-      ? (normalizedPath.toLowerCase() as RoutePath)
-      : normalizedPath
+    const lookupPath = this.toLookupPath(normalizedPath)
 
     // 2. 静态路由精确匹配
     const staticRoute = this.staticRoutes.get(lookupPath)
@@ -413,13 +411,13 @@ export class RouteManager {
     // 删除当前路由
     this.routes.delete(route)
     // 删除静态路由映射
-    this.staticRoutes.delete(this.normalizePath(route.path))
+    this.staticRoutes.delete(this.toLookupPath(route.path))
     // 删除命名路由映射
     if (route.name) this.namedRoutes.delete(route.name)
     // 删除别名映射
     if (route.aliases) {
       for (const alias of route.aliases) {
-        this.aliasRoutes.delete(this.normalizePath(alias))
+        this.aliasRoutes.delete(this.toLookupPath(alias))
         // 如果别名是动态路由，也需要从 dynamicRoutes 中移除
         if (isVariablePath(alias)) {
           this.removeAliasDynamicRoute(alias, route)
@@ -519,7 +517,7 @@ export class RouteManager {
       record.parent = parent
     }
     const rawPath = route.path.trim()
-    record.path = normalizePath(parent ? `${parent.path}/${rawPath}` : `/${rawPath}`)
+    record.path = normalizePath(parent ? `${parent.path}/${rawPath}` : `/${rawPath}`, true)
     if (route.name) {
       record.name = route.name
     }
@@ -579,11 +577,11 @@ export class RouteManager {
           }
           aliasPath = parent.path
         } else if (rawAlias.startsWith('/')) {
-          aliasPath = normalizePath(rawAlias) as RoutePath
+          aliasPath = normalizePath(rawAlias, true)
         } else if (!parent) {
-          aliasPath = normalizePath(`/${rawAlias}`) as RoutePath
+          aliasPath = normalizePath(`/${rawAlias}`, true)
         } else {
-          aliasPath = normalizePath(`${parent.path}/${rawAlias}`) as RoutePath
+          aliasPath = normalizePath(`${parent.path}/${rawAlias}`, true)
         }
         record.aliases.push(aliasPath)
       }
@@ -615,7 +613,7 @@ export class RouteManager {
     if (route.fullPattern) {
       this.registerDynamicRoute(route, route.fullPattern)
     } else {
-      const path = this.normalizePath(route.path)
+      const path = this.toLookupPath(route.path)
       // 检查是否已存在相同路径的路由
       if (this.staticRoutes.has(path)) {
         // 抛出错误：检测到重复的路由路径
@@ -628,7 +626,6 @@ export class RouteManager {
     // 注册别名
     if (route.aliases && route.aliases.length > 0) {
       for (const alias of route.aliases) {
-        const aliasPath = this.normalizePath(alias)
         if (isVariablePath(alias)) {
           if (!validateAliasVariables(route.pattern, alias)) {
             throw new Error(
@@ -644,6 +641,7 @@ export class RouteManager {
           )
           this.registerDynamicRoute(route, regex, alias)
         } else {
+          const aliasPath = this.toLookupPath(alias)
           if (route.pattern && route.pattern.length > 0) {
             throw new Error(
               `[Router] Alias "${alias}" for dynamic route "${route.path}" must contain variables`
