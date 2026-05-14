@@ -29,7 +29,9 @@ export interface RouteManagerOptions {
   /**
    * 是否启用严格模式
    *
-   * 启用后路径匹配将严格匹配，即路径末尾的斜杠会被视为重要字符
+   * 启用后路径匹配将严格匹配即 /user/ 结尾存在斜杠会匹配失败
+   *
+   * 禁用后路径匹配将宽匹配即 /user/ 会匹配 /user
    *
    * @default false
    */
@@ -43,8 +45,8 @@ export interface RouteManagerOptions {
   /**
    * 是否启用索引回退匹配。
    *
-   * 开启后，当访问深层路径（如 /user/index）未匹配时，
-   * 会尝试移除最后一段路径（/user）再次进行匹配。
+   * 开启后，当访问深层index路径（如 /user/index）未匹配时，
+   * 会尝试移除index路径（/user）再次进行匹配。
    * 匹配成功则渲染组件，且保持 URL 不变。
    *
    * 仅支持匹配静态路径，不做动态路径匹配！
@@ -236,15 +238,14 @@ export class RouteManager {
     }
 
     // 3. 动态路由匹配
-    const pathSegments = normalizedPath.split('/').filter(Boolean)
+    const pathSegments = path.split('/').filter(Boolean)
     const segmentCount = pathSegments.length
     const dynamicCandidates = this.dynamicRoutes.get(segmentCount)
-
     if (dynamicCandidates) {
       for (const { regex, route } of dynamicCandidates) {
         regex.lastIndex = 0
         // 执行正则匹配
-        const regexResult = regex.exec(normalizedPath)
+        const regexResult = regex.exec(path)
         if (regexResult) {
           const params: Record<string, string> = {}
           // 解析捕获组参数
@@ -263,6 +264,7 @@ export class RouteManager {
       }
     }
 
+    // 4. 结尾斜杠索引回退匹配
     if (lookupPath.endsWith('/index') && this.config.fallbackIndex) {
       const fallbackPath = lookupPath.slice(0, -6)
       const fallbackRoute = this.staticRoutes.get(fallbackPath || '/')
