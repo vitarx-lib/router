@@ -50,9 +50,12 @@ export function stringifyQuery(obj: Record<string, string>): `?${string}` | '' {
  */
 export function normalizePath(path: string, removeEndSlash: boolean = false): `/${string}` {
   // 去除所有空格 处理重复//
-  const normalizedPath = `/${path.trim()}`.replace(/\s+/g, '').replace(/\/+/g, '/')
+  let normalizedPath = `/${path.trim()}`.replace(/\s+/g, '').replace(/\/+/g, '/')
+  if (removeEndSlash && normalizedPath.endsWith('/') && normalizedPath !== '/') {
+    normalizedPath = normalizedPath.replace(/\/$/, '')
+  }
   // 去除尾随斜杠
-  return (removeEndSlash ? normalizedPath.replace(/\/$/, '') : normalizedPath) as `/${string}`
+  return normalizedPath as `/${string}`
 }
 
 /**
