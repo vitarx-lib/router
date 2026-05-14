@@ -42,13 +42,17 @@ export function stringifyQuery(obj: Record<string, string>): `?${string}` | '' {
  * normalizePath('/foo/') // '/foo/'
  * normalizePath('/foo/bar') // '/foo/bar'
  * normalizePath('foo/') // '/foo'
+ * normalizePath('/foo/',true) // '/foo'
  *
  * @param {string} path - 路径字符串
+ * @param {boolean} removeEndSlash - 是否去除尾随斜杠
  * @return {string} - 格式化后的路径字符串
  */
-export function normalizePath(path: string): `/${string}` {
+export function normalizePath(path: string, removeEndSlash: boolean = false): `/${string}` {
   // 去除所有空格 处理重复//
-  return `/${path.trim()}`.replace(/\s+/g, '').replace(/\/+/g, '/') as `/${string}`
+  const normalizedPath = `/${path.trim()}`.replace(/\s+/g, '').replace(/\/+/g, '/')
+  // 去除尾随斜杠
+  return (removeEndSlash ? normalizedPath.replace(/\/$/, '') : normalizedPath) as `/${string}`
 }
 
 /**
