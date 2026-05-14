@@ -36,34 +36,22 @@ describe('macros/definePage', () => {
     })
 
     it('应该正确合并 alias 配置', () => {
-      const result = mergePageOptions(
-        { alias: '/home' },
-        { alias: '/index' }
-      )
+      const result = mergePageOptions({ alias: '/home' }, { alias: '/index' })
       expect(result.alias).toEqual(['/home', '/index'])
     })
 
     it('应该正确合并 alias 数组', () => {
-      const result = mergePageOptions(
-        { alias: ['/home', '/main'] },
-        { alias: ['/index'] }
-      )
+      const result = mergePageOptions({ alias: ['/home', '/main'] }, { alias: ['/index'] })
       expect(result.alias).toEqual(['/home', '/main', '/index'])
     })
 
     it('应该正确合并 meta 配置', () => {
-      const result = mergePageOptions(
-        { meta: { title: 'Home' } },
-        { meta: { auth: true } }
-      )
+      const result = mergePageOptions({ meta: { title: 'Home' } }, { meta: { auth: true } })
       expect(result.meta).toEqual({ title: 'Home', auth: true })
     })
 
     it('应该正确合并 pattern 配置', () => {
-      const result = mergePageOptions(
-        { pattern: { id: /\d+/ } },
-        { pattern: { slug: /[a-z]+/ } }
-      )
+      const result = mergePageOptions({ pattern: { id: /\d+/ } }, { pattern: { slug: /[a-z]+/ } })
       expect(result.pattern).toEqual({ id: /\d+/, slug: /[a-z]+/ })
     })
 
@@ -182,6 +170,24 @@ export default () => (<div />)
 
       expect(options).toBeDefined()
       expect(options?.meta).toEqual({ title: 'test' })
+    })
+    it('应该解析复杂的 meta 配置', () => {
+      const content = `
+definePage({
+  meta:{"tocList":[{"level":2,"name":"测试","hash":"测试","children":[]},{"level":2,"name":"22","hash":"_22","children":[]}]}
+})
+export default () => (<div />)
+      `
+
+      const options = parseDefinePage(content, '/test/page.tsx')
+
+      expect(options).toBeDefined()
+      expect(options?.meta).toEqual({
+        tocList: [
+          { level: 2, name: '测试', hash: '测试', children: [] },
+          { level: 2, name: '22', hash: '_22', children: [] }
+        ]
+      })
     })
   })
 
