@@ -4,16 +4,19 @@ import { WebRouter } from '../../../src/core/router/web.js'
 import type { Route, RouterOptions } from '../../../src/core/types/index.js'
 import { createMockComponent } from '../testHelpers.js'
 
-function createTestWebRouter(options?: Partial<RouterOptions>): WebRouter {
+function createTestWebRouter(options?: Partial<RouterOptions>, autoInit?: boolean): WebRouter {
   const defaultRoutes: Route[] = [
     { path: '/', component: { default: createMockComponent() }, props: { default: {} } },
     { path: '/home', component: { default: createMockComponent() }, props: { default: {} } },
     { path: '/about', component: { default: createMockComponent() }, props: { default: {} } }
   ]
-  return createWebRouter({
-    routes: options?.routes || defaultRoutes,
-    ...options
-  })
+  return createWebRouter(
+    {
+      routes: options?.routes || defaultRoutes,
+      ...options
+    },
+    autoInit
+  )
 }
 
 describe('router/web', () => {
@@ -138,6 +141,92 @@ describe('router/web', () => {
         router = createTestWebRouter({ suffix: '.html' })
         await router!.replace({ index: '/' })
         expect(router!.config.suffix).toBe('.html')
+      })
+    })
+
+    describe('autoInit 配置', () => {
+      it('默认应自动初始化（注册事件监听并执行初始导航）', async () => {
+        const addEventSpy = vi.spyOn(window, 'addEventListener')
+        router = createTestWebRouter()
+        await router.isReady()
+        expect(addEventSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
+        expect(addEventSpy).toHaveBeenCalledWith('hashchange', expect.any(Function))
+        addEventSpy.mockRestore()
+      })
+
+      it('autoInit: true 应自动初始化', async () => {
+        const addEventSpy = vi.spyOn(window, 'addEventListener')
+        router = createTestWebRouter(undefined, true)
+        await router.isReady()
+        expect(addEventSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
+        expect(addEventSpy).toHaveBeenCalledWith('hashchange', expect.any(Function))
+        addEventSpy.mockRestore()
+      })
+
+      it('autoInit: false 不应自动初始化', () => {
+        const addEventSpy = vi.spyOn(window, 'addEventListener')
+        router = createTestWebRouter(undefined, false)
+        expect(addEventSpy).not.toHaveBeenCalledWith('popstate', expect.any(Function))
+        expect(addEventSpy).not.toHaveBeenCalledWith('hashchange', expect.any(Function))
+        addEventSpy.mockRestore()
+      })
+
+      it('autoInit: false 时手动调用 init() 应正确初始化', async () => {
+        const addEventSpy = vi.spyOn(window, 'addEventListener')
+        router = createTestWebRouter(undefined, false)
+        expect(addEventSpy).not.toHaveBeenCalledWith('popstate', expect.any(Function))
+        const result = router.init()
+        expect(result).toBe(router)
+        expect(addEventSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
+        expect(addEventSpy).toHaveBeenCalledWith('hashchange', expect.any(Function))
+        await router.isReady()
+        addEventSpy.mockRestore()
+      })
+
+      it('init() 重复调用应幂等，不会重复注册事件监听', async () => {
+        const addEventSpy = vi.spyOn(window, 'addEventListener')
+        router = createTestWebRouter(undefined, false)
+        router.init()
+        const popstateCallCount = addEventSpy.mock.calls.filter(
+          call => call[0] === 'popstate'
+        ).length
+        router.init()
+        const popstateCallCountAfterSecond = addEventSpy.mock.calls.filter(
+          call => call[0] === 'popstate'
+        ).length
+        expect(popstateCallCountAfterSecond).toBe(popstateCallCount)
+        addEventSpy.mockRestore()
+      })
+
+      it('autoInit: false 时通过 new WebRouter 创建不应自动初始化', () => {
+        const addEventSpy = vi.spyOn(window, 'addEventListener')
+        const routes: Route[] = [
+          { path: '/', component: { default: createMockComponent() }, props: { default: {} } }
+        ]
+        router = new WebRouter({ routes })
+        expect(addEventSpy).not.toHaveBeenCalledWith('popstate', expect.any(Function))
+        expect(addEventSpy).not.toHaveBeenCalledWith('hashchange', expect.any(Function))
+        addEventSpy.mockRestore()
+      })
+
+      it('autoInit: false 手动初始化后导航应正常工作', async () => {
+        router = createTestWebRouter(undefined, false)
+        router.init()
+        await router.isReady()
+        const result = await router.push({ index: '/home' })
+        expect(result.state).toBeDefined()
+        expect(router.route.path).toBe('/home')
+      })
+
+      it('autoInit: false 手动初始化后 destroy 应正确清理事件监听', async () => {
+        const removeEventSpy = vi.spyOn(window, 'removeEventListener')
+        router = createTestWebRouter(undefined, false)
+        router.init()
+        await router.isReady()
+        router.destroy()
+        expect(removeEventSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
+        expect(removeEventSpy).toHaveBeenCalledWith('hashchange', expect.any(Function))
+        removeEventSpy.mockRestore()
       })
     })
   })

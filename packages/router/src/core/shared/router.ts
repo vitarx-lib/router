@@ -31,7 +31,6 @@ export function createRouteManager(routes: Route[], options?: RouteManagerOption
  * 创建Web模式路由实例
  *
  * @param options - 路由配置选项
- * @param {RouterOptions} options - 路由配置选项
  * @param options.routes - 路由配置表或管理器
  * @param [options.base] - 基础路径
  * @param [options.mode] - URL模式
@@ -41,10 +40,13 @@ export function createRouteManager(routes: Route[], options?: RouteManagerOption
  * @param [options.afterEach] - 全局后置钩子
  * @param [options.missing] - 未匹配时要渲染的组件
  * @param [options.onNotFound] - 导航不匹配时触发的回调函数
+ * @param [autoInit=true] - 是否自动初始化路由器
  * @returns {WebRouter} 返回Web模式路由实例
  */
-export function createWebRouter(options: RouterOptions): WebRouter {
-  return new WebRouter(options)
+export function createWebRouter(options: RouterOptions, autoInit: boolean = true): WebRouter {
+  const instance = new WebRouter(options)
+  if (autoInit) instance.init()
+  return instance
 }
 
 /**
@@ -80,7 +82,7 @@ export function createMemoryRouter(options: RouterOptions): MemoryRouter {
  * @param [options.afterEach] - 全局后置钩子
  * @param [options.missing] - 未匹配时要渲染的组件
  * @param [options.onNotFound] - 导航不匹配时触发的回调函数
- * @param {boolean} [skipEnvWarn=false] - 是否跳过浏览器检查
+ * @param [skipEnvWarn=false] - 是否跳过浏览器检查
  * @returns {Router} 返回路由实例，根据环境返回不同类型的路由
  *
  */

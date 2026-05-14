@@ -21,16 +21,9 @@ interface HistoryState {
 }
 export class WebRouter extends Router {
   private readonly history = window.history
+  private initialized = false
   constructor(options: RouterOptions) {
     super(options)
-    // 初始化路由
-    this.replace(this.urlToNavigateTarget()).then(res => {
-      if (__VITARX_DEV__ && res.state !== NavState.success && res.state !== NavState.cancelled) {
-        logger.error(`[Router] Initialization failed: ${res.message}`, res)
-      }
-    })
-    // 初始化时监听 popstate 事件，处理历史记录返回时的路由恢复
-    window.addEventListener('popstate', this.onPopState)
     if (this.config.mode === 'hash') {
       const { pathname, search, hash } = window.location
       if (!hash) {
@@ -38,7 +31,34 @@ export class WebRouter extends Router {
         window.location.replace(path)
       }
     }
+  }
+  /**
+   * 初始化路由器实例。
+   *
+   * 如果实例已经初始化，则直接返回当前实例以防止重复初始化。
+   * 初始化过程中会执行以下操作：
+   * 1. 根据目标 URL 执行初始路由替换；
+   * 2. 监听 `popstate` 事件，以处理浏览器历史记录返回时的路由恢复；
+   * 3. 监听 `hashchange` 事件，以处理浏览器 hash 值变化时的路由恢复。
+   *
+   * @returns {this} 返回当前路由器实例，支持链式调用。
+   */
+  public init(): this {
+    if (this.initialized) return this
+    this.initialized = true
+    // 初始化路由
+    this.replace(this.urlToNavigateTarget()).then(res => {
+      if (__VITARX_DEV__) {
+        if (res.state !== NavState.success && res.state !== NavState.cancelled) {
+          logger.error(`[WebRouter] Initialization failed: ${res.message}`, res)
+        }
+      }
+    })
+    // 初始化时监听 popstate 事件，处理历史记录返回时的路由恢复
+    window.addEventListener('popstate', this.onPopState)
+    // 监听 hashchange 事件，处理 hash 值变化时的路由恢复
     window.addEventListener('hashchange', this.onHashChange)
+    return this
   }
   /**
    * @inheritDoc

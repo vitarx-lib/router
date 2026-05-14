@@ -112,6 +112,25 @@ import { createMemoryRouter } from 'vitarx-router'
 createMemoryRouter({ routes })
 ```
 
+### 手动初始化
+
+默认情况下，`createRouter` / `createWebRouter` 会在创建实例后自动初始化路由器（执行初始导航并注册浏览器事件监听）。如果需要延迟初始化，可以使用 `createWebRouter` 并将第二个参数 `autoInit` 设为 `false`，然后手动调用 `init()` 方法。
+
+```typescript
+const router = createWebRouter({ routes }, false)
+
+// 在合适的时机手动初始化
+router.init()
+```
+
+**适用场景：**
+
+- 需要在初始化前注册导航守卫
+- 需要在初始化前完成异步配置加载
+- 需要精确控制初始化时机
+
+> **注意：** `autoInit` 仅对 Web 路由器有效。
+
 ## 路由配置
 
 ### 基本路由
@@ -468,20 +487,21 @@ declare module 'vitarx-router' {
 
 ### Router 实例方法
 
-| 方法                         | 说明        |
-|----------------------------|-----------|
-| `push(target)`             | 跳转到新路由    |
-| `replace(target)`          | 替换当前路由    |
-| `go(delta)`                | 前进/后退指定步数 |
-| `back()`                   | 后退一步      |
-| `forward()`                | 前进一步      |
-| `addRoute(route, parent?)` | 添加路由      |
-| `removeRoute(index)`       | 移除路由      |
-| `hasRoute(index)`          | 检查路由是否存在  |
-| `matchRoute(target)`       | 匹配路由      |
-| `beforeEach(guard)`        | 添加前置守卫    |
-| `afterEach(callback)`      | 添加后置回调    |
-| `destroy()`                | 销毁路由器     |
+| 方法                         | 说明                    |
+|----------------------------|-----------------------|
+| `init()`                   | 手动初始化路由器（仅 WebRouter） |
+| `push(target)`             | 跳转到新路由                |
+| `replace(target)`          | 替换当前路由                |
+| `go(delta)`                | 前进/后退指定步数             |
+| `back()`                   | 后退一步                  |
+| `forward()`                | 前进一步                  |
+| `addRoute(route, parent?)` | 添加路由                  |
+| `removeRoute(index)`       | 移除路由                  |
+| `hasRoute(index)`          | 检查路由是否存在              |
+| `matchRoute(target)`       | 匹配路由                  |
+| `beforeEach(guard)`        | 添加前置守卫                |
+| `afterEach(callback)`      | 添加后置回调                |
+| `destroy()`                | 销毁路由器                 |
 
 ### Router 实例属性
 
