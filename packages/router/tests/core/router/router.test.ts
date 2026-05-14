@@ -466,7 +466,8 @@ describe('router/router', () => {
       router = createTestRouter({ routes, mode: 'hash', base: '/app' })
       await router.isReady()
       const url = router!.buildUrl('/home')
-      expect(url).toContain('/#')
+      expect(url).toContain('/app#/')
+      expect(router!.buildUrl('/home/')).toBe('/app#/home/')
     })
 
     it('应该正确处理 base 配置', async () => {
