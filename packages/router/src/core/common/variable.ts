@@ -117,7 +117,7 @@ export function mergePathVariable(
   })
 
   // 使用 formatPath 处理可能出现的双斜杠 (如 /user//) 或首尾斜杠问题
-  return normalizePath(fullPath)
+  return normalizePath(fullPath, true)
 }
 
 /**
