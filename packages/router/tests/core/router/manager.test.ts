@@ -129,8 +129,11 @@ describe('RouteManager', () => {
 
     it('非 strict 模式下应该允许尾部斜杠', () => {
       const routes: Route[] = [{ path: '/home', component: createMockComponent() }]
-      const manager = new RouteManager(routes, { strict: false })
-      expect(manager.matchByPath('/home/')).toBeDefined()
+      const manager = new RouteManager(routes, { strict: false, fallbackIndex: true })
+      const matched = manager.matchByPath('/home/')
+      expect(matched).not.toBeNull()
+      expect(matched?.path).toBe('/home/')
+      expect(matched?.route.path).toBe('/home')
     })
   })
 

@@ -454,6 +454,8 @@ describe('router/router', () => {
       await router.isReady()
       const url = router!.buildUrl('/home')
       expect(url).toContain('.html')
+      // 边缘情况：尾斜杠不应包含后缀
+      expect(router!.buildUrl('/home/')).not.toContain('.html')
     })
 
     it('应该正确处理 hash 模式', async () => {
