@@ -95,7 +95,7 @@ export function parseHashContent(hashContent: string): {
   const [pathname, queryString] = pathAndQuery.split('?', 2)
 
   // 3. 格式化路径
-  path = normalizePath(pathname || '/')
+  path = pathname ? normalizePath(pathname) : '/'
 
   // 4. 解析查询参数
   if (queryString) {
