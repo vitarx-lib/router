@@ -215,60 +215,61 @@ export class RouteManager {
    * @returns 匹配结果对象，包含路由记录和解析后的参数；未匹配返回 null
    */
   public matchByPath(path: RoutePath): RouteMatchResult | null {
-    if (this.config.strict && path.endsWith('/') && path !== '/') {
-      return null
+    let normalizedPath = path
+    if (normalizedPath.endsWith('/') && normalizedPath !== '/') {
+      if (this.config.strict) return null
+      normalizedPath = normalizedPath.slice(0, -1) as RoutePath
     }
     // 1. 标准化路径
-    const formattedPath = normalizePath(path)
     const lookupPath = this.config.ignoreCase
-      ? (formattedPath.toLowerCase() as RoutePath)
-      : formattedPath
+      ? (normalizedPath.toLowerCase() as RoutePath)
+      : normalizedPath
 
     // 2. 静态路由精确匹配
     const staticRoute = this.staticRoutes.get(lookupPath)
     if (staticRoute) {
-      return { path: formattedPath, route: staticRoute, params: {} }
+      return { path, route: staticRoute, params: {} }
     }
 
     // 2.5 别名路由精确匹配
     const aliasRoute = this.aliasRoutes.get(lookupPath)
     if (aliasRoute) {
-      return { path: formattedPath, route: aliasRoute, params: {} }
+      return { path, route: aliasRoute, params: {} }
     }
 
     // 3. 动态路由匹配
-    const segments = formattedPath.split('/').filter(Boolean)
-    const length = segments.length
-    const candidates = this.dynamicRoutes.get(length)
+    const pathSegments = normalizedPath.split('/').filter(Boolean)
+    const segmentCount = pathSegments.length
+    const dynamicCandidates = this.dynamicRoutes.get(segmentCount)
 
-    if (candidates) {
-      for (const { regex, route } of candidates) {
+    if (dynamicCandidates) {
+      for (const { regex, route } of dynamicCandidates) {
         regex.lastIndex = 0
         // 执行正则匹配
-        const match = regex.exec(formattedPath)
-        if (match) {
+        const regexResult = regex.exec(normalizedPath)
+        if (regexResult) {
           const params: Record<string, string> = {}
           // 解析捕获组参数
           if (route.pattern) {
             for (let i = 0; i < route.pattern.length; i++) {
               const paramDef = route.pattern[i]
-              const value = match[i + 1]
+              const capturedValue = regexResult[i + 1]
               // 仅当捕获到值时写入 params
-              if (value !== undefined) {
-                params[paramDef.name] = value
+              if (capturedValue !== undefined) {
+                params[paramDef.name] = capturedValue
               }
             }
           }
-          return { path: formattedPath, route, params }
+          return { path, route, params }
         }
       }
     }
 
-    if (formattedPath.endsWith('/index') && this.config.fallbackIndex) {
-      const shortPath = formattedPath.slice(0, -6)
-      const staticRoute = this.staticRoutes.get(shortPath || '/')
-      if (staticRoute) {
-        return { path: formattedPath, route: staticRoute, params: {} }
+    if (lookupPath.endsWith('/index') && this.config.fallbackIndex) {
+      const fallbackPath = lookupPath.slice(0, -6)
+      const fallbackRoute = this.staticRoutes.get(fallbackPath || '/')
+      if (fallbackRoute) {
+        return { path, route: fallbackRoute, params: {} }
       }
     }
     return null
