@@ -304,6 +304,20 @@ export abstract class Router {
     registerHookTool(this._hooks, 'beforeEach', guard)
   }
   /**
+   * 添加错误处理回调函数
+   * @param handler
+   */
+  public onError(handler: NavErrorListener): void {
+    registerHookTool(this._hooks, 'onError', handler)
+  }
+  /**
+   * 添加未匹配路由处理回调函数
+   * @param handler
+   */
+  public onNotFound(handler: NotFoundHandler): void {
+    registerHookTool(this._hooks, 'onNotFound', handler)
+  }
+  /**
    * 跳转指定的历史记录位置
    *
    * 如果delta == 0，则没有任何效果。
