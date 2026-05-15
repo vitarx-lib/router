@@ -1,17 +1,29 @@
-# [4.0.0-beta.22](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.21...v4.0.0-beta.22) (2026-05-14)
+# [4.0.0-beta.23](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.22...v4.0.0-beta.23) (2026-05-15)
+
+
+### Bug Fixes
+
+* **router:** 优化路径匹配逻辑及索引回退匹配说明 ([b4701f5](https://github.com/vitarx-lib/router/commit/b4701f527e05f08f08bcb9a6a12c221bc8c58ae0))
+* **router:** 优化路径格式化函数以支持去除尾随斜杠 ([496da17](https://github.com/vitarx-lib/router/commit/496da1755feb4d1e8a70fabb8feb93723e651cb6))
+* **router:** 修复 AST 属性键名解析 ([f7b3a8d](https://github.com/vitarx-lib/router/commit/f7b3a8d67eaff9c4034aeb44a51f9725ce50dc29))
+* **router:** 修复 hash 模式下路径格式化问题 ([feeacaf](https://github.com/vitarx-lib/router/commit/feeacafd7043b93abdab02b1d3b7784c764599d8))
+* **router:** 修复路径标准化处理确保正确识别双斜杠 ([8aa8304](https://github.com/vitarx-lib/router/commit/8aa83040368c01d89993c8ba0d9e8c878fe563aa))
+* **router:** 修复路径格式化逻辑 ([e977263](https://github.com/vitarx-lib/router/commit/e977263f0630a8b6fc36d2a8fbd04b34810ffc16))
+* **router:** 修复路径规范化函数尾部斜杠处理逻辑 ([05a75d6](https://github.com/vitarx-lib/router/commit/05a75d6e7acb8e16b94e54473b5ca4aaa8f8ec72))
+* **router:** 修正路由匹配判断条件 ([cd81243](https://github.com/vitarx-lib/router/commit/cd812431fcc6d1279257da8f268d3870259fc4cb))
+
+
+### Features
+
+* **router:** 改进路由未匹配（404）处理机制 ([d5cbb63](https://github.com/vitarx-lib/router/commit/d5cbb63dde7208e1eff1df7e822a584a36e43774))
+
+# [4.0.0-beta.21](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.20...v4.0.0-beta.21) (2026-05-14)
 
 
 ### Bug Fixes
 
 * **router:** 优化路径匹配逻辑，规范路径处理 ([ae6ece6](https://github.com/vitarx-lib/router/commit/ae6ece620726dcf794cdba95b85b6127c1c022b7))
-* **router:** 优化路径匹配逻辑及索引回退匹配说明 ([b4701f5](https://github.com/vitarx-lib/router/commit/b4701f527e05f08f08bcb9a6a12c221bc8c58ae0))
-* **router:** 优化路径格式化函数以支持去除尾随斜杠 ([496da17](https://github.com/vitarx-lib/router/commit/496da1755feb4d1e8a70fabb8feb93723e651cb6))
-* **router:** 修复 hash 模式下路径格式化问题 ([feeacaf](https://github.com/vitarx-lib/router/commit/feeacafd7043b93abdab02b1d3b7784c764599d8))
 * **router:** 修复核心测试项目配置错误 ([d829fae](https://github.com/vitarx-lib/router/commit/d829fae6514387a4c20dbda9f963eea8d907fa6d))
-* **router:** 修复路径标准化处理确保正确识别双斜杠 ([8aa8304](https://github.com/vitarx-lib/router/commit/8aa83040368c01d89993c8ba0d9e8c878fe563aa))
-* **router:** 修复路径格式化逻辑 ([e977263](https://github.com/vitarx-lib/router/commit/e977263f0630a8b6fc36d2a8fbd04b34810ffc16))
-* **router:** 修复路径规范化函数尾部斜杠处理逻辑 ([05a75d6](https://github.com/vitarx-lib/router/commit/05a75d6e7acb8e16b94e54473b5ca4aaa8f8ec72))
-* **router:** 修正路由匹配判断条件 ([cd81243](https://github.com/vitarx-lib/router/commit/cd812431fcc6d1279257da8f268d3870259fc4cb))
 
 
 ### Features
