@@ -1,7 +1,7 @@
 import type { MakeRequired } from 'vitarx'
 import type { RouteManager } from '../router/manager.js'
 import type { AfterCallback, NavErrorListener, NavigationGuard, NotFoundHandler } from './hooks.js'
-import type { InjectPropsHandler, Route, RouteViewComponent } from './route.js'
+import type { InjectPropsHandler, Route } from './route.js'
 import type { BeforeScrollCallback } from './scroll.js'
 
 /**
@@ -97,16 +97,6 @@ export interface RouterOptions {
    * @param from - 源路由对象
    */
   onError?: NavErrorListener | NavErrorListener[]
-
-  /**
-   * 未匹配到路由时要渲染的组件
-   *
-   * 如果你需要在未匹配到路由时重定向到指定的页面，则不应该使用`missing`选项，
-   * 而是应该使用 `onNotFound` 钩子指定重定向目标。
-   *
-   * > 注意：如果你设置了`missing`选项，`path` 导航不匹配时也会更新`URL`地址，然后渲染`missing`组件。
-   */
-  missing?: RouteViewComponent
 }
 
 export type ResolvedRouterConfig = MakeRequired<

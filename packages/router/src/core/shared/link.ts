@@ -1,5 +1,5 @@
 import { type Computed, computed, isPlainObject, isString, logger } from 'vitarx'
-import { hasValidNavTarget, hasValidPath } from '../common/utils.js'
+import { hasValidNavTarget, isValidPath } from '../common/utils.js'
 import type {
   NavigateResult,
   NavTarget,
@@ -174,7 +174,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
     if (route.value?.href) {
       return route.value.href
     }
-    if (isPlainObject(props.to) && hasValidPath(props.to.index)) {
+    if (isPlainObject(props.to) && isValidPath(props.to.index)) {
       return props.to.index
     }
     if (isString(props.to)) {

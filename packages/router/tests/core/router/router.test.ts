@@ -530,16 +530,14 @@ describe('router/router', () => {
       expect(location?.params.id).toBe('123')
     })
 
-    it('应该正确处理 missing 组件', () => {
+    it('应该对未匹配路径返回 null', () => {
       router!.destroy()
       const routes: Route[] = [
         { path: '/', component: { default: createMockComponent() }, props: { default: {} } }
       ]
-      const missingComponent = createMockComponent()
-      router = createTestRouter({ routes, missing: missingComponent })
+      router = createTestRouter({ routes })
       const location = router!.matchRoute({ index: '/nonexistent' })
-      expect(location).toBeDefined()
-      expect(location?.path).toBe('/nonexistent')
+      expect(location).toBeNull()
     })
 
     it('应该正确处理 redirectFrom', () => {
@@ -619,6 +617,25 @@ describe('router/router', () => {
       const result = await router.push({ index: '/nonexistent' })
       expect(result.state).toBe(NavState.success)
       expect(router.route.path).toBe('/home')
+    })
+
+    it('onNotFound 返回 RouteLocation 应该正确渲染', async () => {
+      const mockComponent = createMockComponent()
+      const onNotFound = vi.fn().mockReturnValue({
+        href: '/nonexistent',
+        path: '/nonexistent',
+        hash: '',
+        params: {},
+        query: {},
+        meta: { title: '页面未找到' },
+        matched: [{ path: '/nonexistent', isGroup: false, component: { default: mockComponent } }]
+      })
+      router = createTestRouter({ onNotFound })
+      await router.isReady()
+      const result = await router.push({ index: '/nonexistent' })
+      expect(result.state).toBe(NavState.success)
+      expect(router.route.path).toBe('/nonexistent')
+      expect(router.route.meta).toEqual({ title: '页面未找到' })
     })
   })
 
@@ -923,13 +940,24 @@ describe('router/router', () => {
       }).toThrow(/onError.*must be a function or an array/)
     })
 
-    it('无效的 missing 应该抛出错误', () => {
-      expect(() => {
-        new MemoryRouter({
-          routes: [{ path: '/', component: createMockComponent() }],
-          missing: 'invalid' as any
-        })
-      }).toThrow(/missing.*must be a valid component/)
+    it('name-based 导航不匹配应该抛出异常', async () => {
+      router = createTestRouter()
+      await router.isReady()
+      await expect(router.push({ index: 'nonExistentRoute' })).rejects.toThrow(
+        /Route not found/
+      )
+    })
+
+    it('name-based 导航参数校验失败应该抛出异常', async () => {
+      const routes: Route[] = [
+        { path: '/user/{id}', name: 'user', component: { default: createMockComponent() }, props: { default: {} } }
+      ]
+      const testRouter = createTestRouter({ routes })
+      await testRouter.isReady()
+      await expect(testRouter.push({ index: 'user', params: {} })).rejects.toThrow(
+        /params validation failed/
+      )
+      testRouter.destroy()
     })
 
     it('null options 应该抛出错误', () => {

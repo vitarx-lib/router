@@ -17,9 +17,20 @@ import type {
  * @returns {boolean} 如果值是一个导航目标对象则返回true，否则返回false
  */
 export function hasValidNavTarget(val: unknown): val is NavTarget {
-  // 首先检查值是否是一个普通对象
-  // 然后检查该对象是否包含 'index' 属性
   return isPlainObject(val) && 'index' in val && hasValidRouteIndex(val.index)
+}
+
+/**
+ * 检查给定的值是否为 RouteLocation 对象
+ *
+ * 通过检测 `matched` 和 `path` 属性来区分 RouteLocation 与 NavTarget，
+ * 因为 NavTarget 不包含这两个字段，而 RouteLocation 必定包含。
+ *
+ * @param val - 需要检查的值
+ * @returns {val is RouteLocation} 如果是 RouteLocation 对象则返回 true
+ */
+export function isRouteLocation(val: unknown): val is RouteLocation {
+  return isPlainObject(val) && 'matched' in val && 'path' in val
 }
 
 /**
@@ -54,7 +65,7 @@ export function hasOnlyChangeHash(route1: RouteLocation, route2: RouteLocation) 
  * @param index - 要判断的索引
  * @returns {boolean} - 如果索引为路径索引则返回true，否则返回false
  */
-export function hasValidPath(index: any): index is RoutePath {
+export function isValidPath(index: unknown): index is RoutePath {
   return isString(index) && index.startsWith('/')
 }
 

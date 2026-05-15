@@ -2,8 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   hasOnlyChangeHash,
   hasValidNavTarget,
-  hasValidPath,
   hasValidRouteIndex,
+  isRouteLocation,
+  isValidPath,
   parseHashContent,
   processGuardResult,
   registerHookTool,
@@ -39,26 +40,26 @@ describe('common/utils', () => {
 
   describe('hasValidPath', () => {
     it('应该对以 / 开头的字符串返回 true', () => {
-      expect(hasValidPath('/')).toBe(true)
-      expect(hasValidPath('/home')).toBe(true)
-      expect(hasValidPath('/user/123')).toBe(true)
-      expect(hasValidPath('/a/b/c/d')).toBe(true)
+      expect(isValidPath('/')).toBe(true)
+      expect(isValidPath('/home')).toBe(true)
+      expect(isValidPath('/user/123')).toBe(true)
+      expect(isValidPath('/a/b/c/d')).toBe(true)
     })
 
     it('应该对不以 / 开头的字符串返回 false', () => {
-      expect(hasValidPath('home')).toBe(false)
-      expect(hasValidPath('')).toBe(false)
-      expect(hasValidPath('./home')).toBe(false)
-      expect(hasValidPath('../home')).toBe(false)
+      expect(isValidPath('home')).toBe(false)
+      expect(isValidPath('')).toBe(false)
+      expect(isValidPath('./home')).toBe(false)
+      expect(isValidPath('../home')).toBe(false)
     })
 
     it('应该对非字符串返回 false', () => {
-      expect(hasValidPath(123 as any)).toBe(false)
-      expect(hasValidPath(null as any)).toBe(false)
-      expect(hasValidPath(undefined as any)).toBe(false)
-      expect(hasValidPath({} as any)).toBe(false)
-      expect(hasValidPath([] as any)).toBe(false)
-      expect(hasValidPath(true as any)).toBe(false)
+      expect(isValidPath(123 as any)).toBe(false)
+      expect(isValidPath(null as any)).toBe(false)
+      expect(isValidPath(undefined as any)).toBe(false)
+      expect(isValidPath({} as any)).toBe(false)
+      expect(isValidPath([] as any)).toBe(false)
+      expect(isValidPath(true as any)).toBe(false)
     })
   })
 
@@ -83,6 +84,52 @@ describe('common/utils', () => {
       expect(hasValidNavTarget(123)).toBe(false)
       expect(hasValidNavTarget(undefined)).toBe(false)
       expect(hasValidNavTarget([])).toBe(false)
+    })
+  })
+
+  describe('isRouteLocation', () => {
+    it('应该对有效的 RouteLocation 返回 true', () => {
+      expect(
+        isRouteLocation({
+          path: '/home',
+          matched: [],
+          href: '/home',
+          hash: '',
+          params: {},
+          query: {},
+          meta: {}
+        })
+      ).toBe(true)
+      expect(
+        isRouteLocation({
+          path: '/user',
+          matched: [{ path: '/user' } as unknown as RouteRecord],
+          href: '/user',
+          hash: '',
+          params: {},
+          query: {},
+          meta: {}
+        })
+      ).toBe(true)
+    })
+
+    it('应该对缺少 path 或 matched 的对象返回 false', () => {
+      expect(isRouteLocation({ matched: [] })).toBe(false)
+      expect(isRouteLocation({ path: '/home' })).toBe(false)
+      expect(isRouteLocation({ href: '/home', path: '/home' })).toBe(false)
+    })
+
+    it('应该对 NavTarget 返回 false', () => {
+      expect(isRouteLocation({ index: '/home' })).toBe(false)
+      expect(isRouteLocation({ index: 'userDetail', params: { id: '1' } })).toBe(false)
+    })
+
+    it('应该对非对象值返回 false', () => {
+      expect(isRouteLocation(null)).toBe(false)
+      expect(isRouteLocation(undefined)).toBe(false)
+      expect(isRouteLocation('/home')).toBe(false)
+      expect(isRouteLocation(123)).toBe(false)
+      expect(isRouteLocation([])).toBe(false)
     })
   })
 

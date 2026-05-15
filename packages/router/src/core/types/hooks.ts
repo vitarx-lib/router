@@ -1,6 +1,6 @@
 import type { Router } from '../router/router.js'
 import type { NavTarget, RouteLocation } from './navigation.js'
-import type { RouteIndex } from './route.js'
+import type { RouteIndex, RoutePath } from './route.js'
 
 /**
  * 守卫结果
@@ -46,16 +46,28 @@ export type NavigationGuard = (
 export type AfterCallback = (this: Router, to: RouteLocation, from: RouteLocation) => void
 
 /**
+ * 未匹配路由目标类型
+ */
+export type NotFoundTarget = NavTarget<RoutePath>
+/**
  * 路由未匹配钩子
  *
  * 触发时机: 路由匹配失败 (404) 时。
- * 用途: 可用于统一跳转 404 页面或记录错误日志。
+ * 用途: 可用于统一跳转 404 页面、渲染 404 组件或记录错误日志。
+ *
+ * 返回值说明:
+ * - NavTarget | RouteIndex: 重定向到新目标
+ * - RouteLocation: 作为未匹配路由的位置对象（可配合 createMissingRoute 使用）
+ * - void: 不处理，返回 notfound 状态
  *
  * @param this - 路由器实例
  * @param target - 用户的原始导航意图
- * @returns {NavTarget | RouteIndex | void} 返回新目标表示重定向，无返回值则抛出错误
+ * @returns {NavTarget | RouteIndex | RouteLocation | void} 返回新目标表示重定向，返回 RouteLocation 表示渲染指定组件，无返回值则返回 notfound 状态
  */
-export type NotFoundHandler = (this: Router, target: NavTarget) => NavTarget | RouteIndex | void
+export type NotFoundHandler = (
+  this: Router,
+  target: NotFoundTarget
+) => NavTarget | RouteIndex | RouteLocation | void
 
 /**
  * 路由错误处理钩子

@@ -292,6 +292,70 @@ if (hasSuccess(result)) {
 | `duplicated` | 8  | 重复导航     |
 | `notfound`   | 16 | 路由未匹配    |
 
+## 路由未匹配处理
+
+当路由匹配失败（404）时，可以通过 `onNotFound` 钩子进行自定义处理。
+
+### onNotFound 钩子
+
+```typescript
+import { createRouter } from 'vitarx-router'
+
+const router = createRouter({
+  routes: [],
+  onNotFound(target) {
+    // target.index 为用户尝试访问的目标
+    console.log('路由未匹配:', target.index)
+  }
+})
+```
+
+**返回值说明：**
+
+| 返回值                        | 说明                   |
+|----------------------------|----------------------|
+| `NavTarget` / `RouteIndex` | 重定向到新目标              |
+| `RouteLocation`            | 作为未匹配路由的位置对象（渲染指定组件） |
+| `void`                     | 不处理，返回 `notfound` 状态 |
+
+### 重定向到 404 页面
+
+```typescript
+import { createRouter } from 'vitarx-router'
+
+const router = createRouter({
+  routes: [],
+  onNotFound(target) {
+    return { index: '/404' }
+  }
+})
+```
+
+### 渲染 404 组件（使用 createMissingRoute）
+
+```typescript
+import { createRouter, createMissingRoute } from 'vitarx-router'
+import NotFoundPage from './pages/NotFound.jsx'
+
+const router = createRouter({
+  routes: [],
+  onNotFound(target) {
+    return createMissingRoute(NotFoundPage, target, {
+      title: '页面未找到'
+    })
+  }
+})
+```
+
+### 名称导航不匹配
+
+名称导航（name-based）匹配失败时，路由器会直接抛出错误，因为名称导航是编程式调用，name 不存在属于代码 bug：
+
+```typescript
+// 如果 'userDetail' 路由不存在，将抛出错误
+router.push({ index: 'userDetail', params: { id: '123' } })
+```
+
 ## 导航守卫
 
 ### 全局前置守卫
@@ -472,18 +536,20 @@ declare module 'vitarx-router' {
 
 ### 助手函数
 
-| 函数                                     | 说明              |
-|----------------------------------------|-----------------|
-| `createRouter(options)`                | 创建路由器实例         |
-| `createWebRouter(options)`             | 创建 Web 模式路由器    |
-| `createMemoryRouter(options)`          | 创建 Memory 模式路由器 |
-| `createRouteManager(routes, options?)` | 创建路由管理器         |
-| `defineRoutes(...routes)`              | 定义路由表           |
-| `useRouter()`                          | 获取路由器实例         |
-| `useRoute(global?)`                    | 获取当前路由信息        |
-| `useLink(options)`                     | 创建链接助手          |
-| `onBeforeRouteLeave(guard)`            | 注册离开守卫          |
-| `onBeforeRouteUpdate(callback)`        | 注册更新钩子          |
+| 函数                                             | 说明                     |
+|------------------------------------------------|------------------------|
+| `createRouter(options)`                        | 创建路由器实例                |
+| `createWebRouter(options)`                     | 创建 Web 模式路由器           |
+| `createMemoryRouter(options)`                  | 创建 Memory 模式路由器        |
+| `createRouteManager(routes, options?)`         | 创建路由管理器                |
+| `defineRoutes(...routes)`                      | 定义路由表                  |
+| `createMissingRoute(component, target, meta?)` | 创建未匹配路由的 RouteLocation |
+| `useRouter()`                                  | 获取路由器实例                |
+| `useRoute(global?)`                            | 获取当前路由信息               |
+| `useLink(options)`                             | 创建链接助手                 |
+| `onBeforeRouteLeave(guard)`                    | 注册离开守卫                 |
+| `onBeforeRouteUpdate(callback)`                | 注册更新钩子                 |
+| `removePathEndSlash(path)`                     | 删除路径末尾的斜杠              |
 
 ### Router 实例方法
 

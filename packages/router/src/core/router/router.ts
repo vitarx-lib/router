@@ -19,8 +19,9 @@ import { updateRouteLocation } from '../common/update.js'
 import {
   hasOnlyChangeHash,
   hasValidNavTarget,
-  hasValidPath,
   hasValidRouteIndex,
+  isRouteLocation,
+  isValidPath,
   processGuardResult,
   registerHookTool,
   removePathSuffix,
@@ -35,6 +36,7 @@ import type {
   NavOptions,
   NavTarget,
   NotFoundHandler,
+  NotFoundTarget,
   ResolvedRouterConfig,
   Route,
   RouteIndex,
@@ -44,7 +46,6 @@ import type {
   RoutePath,
   RouteRecord,
   RouterOptions,
-  RouteViewComponent,
   ScrollPosition,
   ScrollTarget,
   URLHash,
@@ -529,6 +530,20 @@ export abstract class Router {
     }
     // 解析目标路由
     const to = this.matchRoute(target, redirectFrom)
+    // name-based 导航匹配失败视为编程错误，直接抛出异常
+    // 因为名称导航是编程式调用，name 不存在或参数校验失败属于代码 bug
+    if (!to && !isValidPath(target.index)) {
+      const name = target.index
+      const route = this.manager.findByName(name as RouteName)
+      if (route) {
+        throw new Error(
+          `[Router] Route "${String(name)}" matched but params validation failed. Check required params and their formats.`
+        )
+      }
+      throw new Error(
+        `[Router] Route not found: "${String(name)}". Name-based navigation must target a registered route.`
+      )
+    }
     // 确定来源路由
     const from = fromRoute ?? cloneRouteLocation(this._routeLocation)
     // 构建导航结果基础对象
@@ -572,24 +587,60 @@ export abstract class Router {
   }
 
   /**
+   * 执行导航流程
+   *
+   * 统一处理重复路由检测、hash 变化、重定向、守卫和导航完成。
+   * 被 navigate 和 handleNotFound（onNotFound 返回 RouteLocation 时）共用。
+   *
+   * @param context - 导航上下文
+   * @returns 导航结果
+   */
+  private async processNavigation(context: NavigationContext): Promise<NavigateResult> {
+    // 首次导航后才需检测重复和 hash 变化（首次导航无 from，不存在重复场景）
+    if (context.from.matched.length) {
+      // 重复路由：目标与当前路由完全一致，直接返回
+      const duplicatedResult = this.handleDuplicatedRoute(context)
+      if (duplicatedResult) return duplicatedResult
+      // 仅 hash 变化：路径和参数不变，仅 hash 不同，走轻量处理
+      const hashOnlyResult = this.handleHashOnlyChange(context)
+      if (hashOnlyResult) return hashOnlyResult
+    }
+    // 重定向：路由配置了 redirect，递归导航到新目标
+    const redirectResult = await this.handleRedirect(context)
+    if (redirectResult) return redirectResult
+    // 守卫流程：执行 beforeEach 和 beforeEnter，可能中止导航
+    const guardResult = await this.executeGuards(context)
+    if (guardResult) return guardResult
+    // 守卫通过，完成导航：更新状态、触发 afterEach、渲染组件
+    return this.finalizeNavigation(context)
+  }
+
+  /**
    * 处理路由未匹配（404）场景
    *
    * 当目标路由无法匹配时执行：
    * 1. 触发全局 onNotFound 钩子
-   * 2. 如果钩子返回了新的导航目标，进行重定向
-   * 3. 否则返回 notfound 状态
+   * 2. 如果钩子返回了 RouteLocation，将其设为导航目标继续正常导航流程
+   * 3. 如果钩子返回了新的导航目标（NavTarget），进行重定向
+   * 4. 否则返回 notfound 状态
    *
    * @param context - 导航上下文
    * @param target - 原始导航目标
    * @returns 导航结果
    */
-  private handleNotFound(
+  private async handleNotFound(
     context: NavigationContext,
-    target: NavTarget
-  ): Promise<NavigateResult> | NavigateResult {
+    target: NotFoundTarget
+  ): Promise<NavigateResult> {
     const notFoundResult = this.runNotFoundHook(target)
-    // 钩子返回了新的导航目标，进行重定向
     if (notFoundResult) {
+      // 钩子返回了 RouteLocation，将其设为导航目标，继续正常导航流程
+      if (isRouteLocation(notFoundResult)) {
+        context.to = notFoundResult
+        context.result.to = notFoundResult
+        return this.processNavigation(context)
+      }
+      // 钩子返回了 NavTarget，进行重定向
       context.checkRedirectLoop(String(notFoundResult.index))
       return this.navigate(notFoundResult, context.from)
     }
@@ -796,27 +847,12 @@ export abstract class Router {
   ): Promise<NavigateResult> {
     // 创建导航上下文
     const context = this.createNavigationContext(target, fromRoute, redirectFrom)
-    // 场景1: 路由未匹配 (404)
+    // 路由未匹配 (404)
     if (!context.to) {
-      return this.handleNotFound(context, target)
+      return this.handleNotFound(context, target as NotFoundTarget)
     }
-    // 仅在路由第一次路由后检测重复路由
-    if (context.from.matched.length) {
-      // 场景2: 重复路由
-      const duplicatedResult = this.handleDuplicatedRoute(context)
-      if (duplicatedResult) return duplicatedResult
-      // 场景3: 仅hash变化
-      const hashOnlyResult = this.handleHashOnlyChange(context)
-      if (hashOnlyResult) return hashOnlyResult
-    }
-    // 场景4: 路由重定向
-    const redirectResult = await this.handleRedirect(context)
-    if (redirectResult) return redirectResult
-    // 场景5: 执行守卫流程
-    const guardResult = await this.executeGuards(context)
-    if (guardResult) return guardResult
-    // 场景6: 完成导航
-    return this.finalizeNavigation(context)
+    // 处理导航
+    return this.processNavigation(context)
   }
 
   // ============================================================
@@ -891,15 +927,29 @@ export abstract class Router {
 
   /**
    * 处理 404 错误
+   *
+   * 执行 onNotFound 钩子链，按注册顺序依次调用，
+   * 第一个返回有效值的钩子会终止遍历。
+   *
+   * 返回值类型：
+   * - RouteLocation: 作为未匹配路由的位置对象（优先判断，因为结构更具体）
+   * - NavTarget: 重定向到新目标
+   * - string | symbol: 包装为 NavTarget 后重定向
+   * - void: 继续执行下一个钩子
+   *
    * @param target - 导航目标对象
    * @returns - 返回处理结果
    */
-  private runNotFoundHook(target: NavTarget): NavTarget | void {
+  private runNotFoundHook(target: NotFoundTarget): NavTarget | RouteLocation | void {
     if (!this._hooks.onNotFound) return
     for (const hook of this._hooks.onNotFound) {
       try {
         const result = hook.call(this, target)
+        // 优先判断 RouteLocation（有 matched 和 path 属性）
+        if (isRouteLocation(result)) return result
+        // 判断 NavTarget（有 index 属性）
         if (hasValidNavTarget(result)) return result
+        // 字符串或 symbol 包装为 NavTarget
         if (isString(result) || typeof result === 'symbol') {
           return {
             index: result
@@ -1047,30 +1097,6 @@ export abstract class Router {
   // ============================================================
 
   /**
-   * 创建缺失的路由
-   * @param component - 路由组件
-   * @param path - 路径
-   * @param query - 查询参数
-   * @param hash - 哈希值
-   * @returns {RouteLocation} - 返回创建的路由位置对象
-   */
-  private createMissingRoute(
-    component: RouteViewComponent,
-    path: RouteLocation['path'],
-    query: RouteLocation['query'] = {},
-    hash: RouteLocation['hash'] = ''
-  ): RouteLocation {
-    return {
-      href: this.buildUrl(path, query, hash),
-      path,
-      hash,
-      params: {},
-      query,
-      meta: {},
-      matched: [{ path, isGroup: false, component: { default: component } }]
-    }
-  }
-  /**
    * 构建完整URL路径
    *
    * @param path - 路径
@@ -1100,7 +1126,7 @@ export abstract class Router {
    */
   public matchRoute(target: NavTarget, redirectFrom?: RouteLocation): RouteLocation | null {
     let matchTarget = target.index
-    const isPath = hasValidPath(matchTarget)
+    const isPath = isValidPath(matchTarget)
     // 如果配置了后缀且目标是路径，则去除后缀
     if (this.config.suffix && isPath) {
       // 去除路径后缀
@@ -1110,14 +1136,6 @@ export abstract class Router {
     let match: RouteMatchResult | null
     if (isPath) {
       match = this.manager.matchByPath(matchTarget as RoutePath)
-      if (!match && this.config.missing) {
-        return this.createMissingRoute(
-          this.config.missing,
-          matchTarget as RoutePath,
-          target.query,
-          target.hash
-        )
-      }
     } else {
       match = this.manager.matchByName(matchTarget as RouteName, target.params)
     }

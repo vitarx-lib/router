@@ -1,4 +1,4 @@
-import { isComponent, isFunction } from 'vitarx'
+import { isFunction } from 'vitarx'
 import { RouteManager } from './manager.js'
 import type { RouterOptions, URLMode } from '../types/index.js'
 
@@ -130,12 +130,6 @@ export const checkRouterOptions = (options: RouterOptions): void => {
           )
         }
       })
-    }
-  }
-  // 9. 检查 missing 组件的类型
-  if ('missing' in options && options.missing !== undefined) {
-    if (!isComponent(options.missing)) {
-      throw new Error('[Router] "missing" must be a valid component.')
     }
   }
 }

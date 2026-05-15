@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   cloneRouteLocation,
+  createMissingRoute,
   normalizePath,
   parseQuery,
   removePathEndSlash,
   stringifyQuery
 } from '../../../src/core/shared/utils.js'
-import type { RouteLocation, RouteRecord } from '../../../src/core/types/index.js'
+import type { NotFoundTarget, RouteLocation, RouteRecord } from '../../../src/core/types/index.js'
 
 describe('shared/utils', () => {
   describe('normalizePath', () => {
@@ -132,6 +133,48 @@ describe('shared/utils', () => {
 
       expect(cloned.matched).toEqual([matchedItem])
       expect(cloned.matched).not.toBe(route.matched)
+    })
+  })
+
+  describe('createMissingRoute', () => {
+    const mockComponent = {} as any
+
+    it('应该创建有效的 RouteLocation', () => {
+      const target: NotFoundTarget = { index: '/not-found' }
+      const result = createMissingRoute(mockComponent, target)
+
+      expect(result.path).toBe('/not-found')
+      expect(result.href).toBe('/not-found')
+      expect(result.hash).toBe('')
+      expect(result.params).toEqual({})
+      expect(result.query).toEqual({})
+      expect(result.meta).toEqual({})
+      expect(result.matched).toHaveLength(1)
+      expect(result.matched[0].path).toBe('/not-found')
+      expect(result.matched[0].component).toEqual({ default: mockComponent })
+    })
+
+    it('应该支持自定义 meta', () => {
+      const target: NotFoundTarget = { index: '/404' }
+      const meta = { title: '页面未找到', statusCode: 404 }
+      const result = createMissingRoute(mockComponent, target, meta)
+
+      expect(result.meta).toEqual(meta)
+    })
+
+    it('应该保留 target 中的 query 和 hash', () => {
+      const target: NotFoundTarget = { index: '/missing', query: { q: 'test' }, hash: '#section' }
+      const result = createMissingRoute(mockComponent, target)
+
+      expect(result.query).toEqual({ q: 'test' })
+      expect(result.hash).toBe('#section')
+    })
+
+    it('应该保留 target 中的 params', () => {
+      const target: NotFoundTarget = { index: '/missing', params: { id: '123' } }
+      const result = createMissingRoute(mockComponent, target)
+
+      expect(result.params).toEqual({ id: '123' })
     })
   })
 })

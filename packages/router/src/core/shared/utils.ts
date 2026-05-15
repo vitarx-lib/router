@@ -1,5 +1,11 @@
 import { deepClone, type DeepReadonly, toRaw } from 'vitarx'
-import type { RouteLocation } from '../types/index.js'
+import type {
+  NotFoundTarget,
+  RouteLocation,
+  RouteMetaData,
+  RoutePath,
+  RouteViewComponent
+} from '../types/index.js'
 
 /**
  * 将 query 字符串转为对象
@@ -20,6 +26,7 @@ export function parseQuery(queryString: string): Record<string, string> {
 
   return obj
 }
+
 /**
  * 将对象转换为 query 字符串
  *
@@ -84,4 +91,47 @@ export function cloneRouteLocation(
 ): RouteLocation {
   const { matched, ...rest } = toRaw(route)
   return Object.assign(deepClone(rest), { matched: Array.from(matched) })
+}
+
+/**
+ * 创建未匹配路由的 RouteLocation 对象
+ *
+ * 用于在 onNotFound 钩子中快速创建一个可渲染的 RouteLocation，
+ * 使路由匹配失败时仍能渲染指定组件（如 404 页面）。
+ *
+ * 该函数要求 target.index 必须为路径（以 `/` 开头），
+ * 因为名称导航（name-based）匹配失败属于编程错误，应直接抛出异常，
+ * 而非创建伪路由位置。
+ *
+ * @example
+ * ```ts
+ * // 在 onNotFound 钩子中使用
+ * onNotFound(target) {
+ *   return createMissingRoute(NotFoundPage, target, { title: '页面未找到' })
+ * }
+ * ```
+ *
+ * @param component - 未匹配时要渲染的组件
+ * @param target - 用户的原始导航意图（index 必须为路径）
+ * @param meta - 可选的自定义 meta 信息，默认为空对象
+ * @returns {RouteLocation} 可在 onNotFound 钩子中直接返回的 RouteLocation
+ */
+export function createMissingRoute(
+  component: RouteViewComponent,
+  target: NotFoundTarget,
+  meta?: RouteMetaData
+): RouteLocation {
+  const path = target.index as RoutePath
+  const query = target.query ?? {}
+  const hash = target.hash ?? ''
+  const params = target.params ?? {}
+  return {
+    href: path,
+    path,
+    hash,
+    params,
+    query,
+    meta: meta || {},
+    matched: [{ path, isGroup: false, component: { default: component } }]
+  }
 }
