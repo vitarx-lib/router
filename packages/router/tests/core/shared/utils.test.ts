@@ -3,6 +3,7 @@ import {
   cloneRouteLocation,
   normalizePath,
   parseQuery,
+  removePathEndSlash,
   stringifyQuery
 } from '../../../src/core/shared/utils.js'
 import type { RouteLocation, RouteRecord } from '../../../src/core/types/index.js'
@@ -72,6 +73,27 @@ describe('shared/utils', () => {
 
     it('应该对空对象返回空字符串', () => {
       expect(stringifyQuery({})).toBe('')
+    })
+  })
+
+  describe('removePathEndSlash', () => {
+    it('应该去除路径末尾的斜杠', () => {
+      expect(removePathEndSlash('/foo/')).toBe('/foo')
+      expect(removePathEndSlash('/foo/bar/')).toBe('/foo/bar')
+    })
+
+    it('应该对没有末尾斜杠的路径原样返回', () => {
+      expect(removePathEndSlash('/foo')).toBe('/foo')
+      expect(removePathEndSlash('/foo/bar')).toBe('/foo/bar')
+    })
+
+    it('应该对根路径原样返回', () => {
+      expect(removePathEndSlash('/')).toBe('/')
+    })
+
+    it('应该保持类型推断', () => {
+      const result = removePathEndSlash('/foo/')
+      expect(typeof result).toBe('string')
     })
   })
 
