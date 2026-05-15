@@ -33,6 +33,21 @@ export function stringifyQuery(obj: Record<string, string>): `?${string}` | '' {
 }
 
 /**
+ * 去除路径末尾的斜杠
+ *
+ * @example
+ * removePathEndSlash('/foo/') // '/foo'
+ * removePathEndSlash('/foo') // '/foo'
+ *
+ * @param {string} str - 路径字符串
+ * @return {string} - 去除末尾斜杠后的路径字符串
+ */
+export function removePathEndSlash<T extends string>(str: T): T {
+  if (str === '/') return str
+  return str.endsWith('/') ? (str.slice(0, -1) as T) : str
+}
+
+/**
  * 归一化path
  *
  * 去除所有空格、替换重复的斜杠
@@ -51,8 +66,8 @@ export function stringifyQuery(obj: Record<string, string>): `?${string}` | '' {
 export function normalizePath(path: string, removeEndSlash: boolean = false): `/${string}` {
   // 去除所有空格 处理重复//
   let normalizedPath = `/${path.trim()}`.replace(/\s+/g, '').replace(/\/+/g, '/')
-  if (removeEndSlash && normalizedPath.endsWith('/') && normalizedPath !== '/') {
-    normalizedPath = normalizedPath.replace(/\/$/, '')
+  if (removeEndSlash) {
+    normalizedPath = removePathEndSlash(normalizedPath)
   }
   // 去除尾随斜杠
   return normalizedPath as `/${string}`
