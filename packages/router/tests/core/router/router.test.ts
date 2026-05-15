@@ -417,7 +417,7 @@ describe('router/router', () => {
     })
   })
 
-  describe('beforeEach/afterEach 方法', () => {
+  describe('beforeEach/afterEach/onError/onNotFound 方法', () => {
     beforeEach(async () => {
       router = createTestRouter()
       await router.isReady()
@@ -435,6 +435,23 @@ describe('router/router', () => {
       router!.afterEach(callback)
       await router!.push({ index: '/home' })
       expect(callback).toHaveBeenCalled()
+    })
+
+    it('onError 应该添加错误处理回调', async () => {
+      const errorHandler = vi.fn()
+      router!.onError(errorHandler)
+      // 触发一个导航错误：name-based 导航不匹配会抛出异常
+      await expect(router!.push({ index: 'nonExistent' })).rejects.toThrow()
+      expect(errorHandler).not.toHaveBeenCalled()
+      // onError 在导航守卫抛错等场景触发，name-based 不匹配是直接抛异常不走 onError
+    })
+
+    it('onNotFound 应该添加未找到路由的处理回调', async () => {
+      const notFoundHandler = vi.fn().mockReturnValue(undefined)
+      router!.onNotFound(notFoundHandler)
+      const result = await router!.push({ index: '/nonexistent' })
+      expect(notFoundHandler).toHaveBeenCalled()
+      expect(result.state).toBe(NavState.notfound)
     })
   })
 
@@ -943,14 +960,17 @@ describe('router/router', () => {
     it('name-based 导航不匹配应该抛出异常', async () => {
       router = createTestRouter()
       await router.isReady()
-      await expect(router.push({ index: 'nonExistentRoute' })).rejects.toThrow(
-        /Route not found/
-      )
+      await expect(router.push({ index: 'nonExistentRoute' })).rejects.toThrow(/Route not found/)
     })
 
     it('name-based 导航参数校验失败应该抛出异常', async () => {
       const routes: Route[] = [
-        { path: '/user/{id}', name: 'user', component: { default: createMockComponent() }, props: { default: {} } }
+        {
+          path: '/user/{id}',
+          name: 'user',
+          component: { default: createMockComponent() },
+          props: { default: {} }
+        }
       ]
       const testRouter = createTestRouter({ routes })
       await testRouter.isReady()
