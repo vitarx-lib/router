@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   hasOnlyChangeHash,
-  hasValidNavTarget,
-  hasValidRouteIndex,
+  isExternalLink,
+  isNavIndex,
+  isNavTarget,
   isRouteLocation,
-  isValidPath,
+  isRoutePath,
   parseHashContent,
   processGuardResult,
   registerHookTool,
@@ -14,76 +15,76 @@ import {
 import type { NavTarget, RouteLocation, RouteRecord } from '../../../src/core/types/index.js'
 
 describe('common/utils', () => {
-  describe('hasValidRouteIndex', () => {
+  describe('isNavIndex', () => {
     it('应该对字符串路径返回 true', () => {
-      expect(hasValidRouteIndex('/home')).toBe(true)
-      expect(hasValidRouteIndex('/user/123')).toBe(true)
-      expect(hasValidRouteIndex('home')).toBe(true)
-      expect(hasValidRouteIndex('')).toBe(true)
+      expect(isNavIndex('/home')).toBe(true)
+      expect(isNavIndex('/user/123')).toBe(true)
+      expect(isNavIndex('home')).toBe(true)
+      expect(isNavIndex('')).toBe(true)
     })
 
     it('应该对 symbol 返回 true', () => {
       const sym = Symbol('route')
-      expect(hasValidRouteIndex(sym)).toBe(true)
+      expect(isNavIndex(sym)).toBe(true)
     })
 
     it('应该对其他类型返回 false', () => {
-      expect(hasValidRouteIndex(123)).toBe(false)
-      expect(hasValidRouteIndex(null)).toBe(false)
-      expect(hasValidRouteIndex(undefined)).toBe(false)
-      expect(hasValidRouteIndex({})).toBe(false)
-      expect(hasValidRouteIndex([])).toBe(false)
-      expect(hasValidRouteIndex(true)).toBe(false)
-      expect(hasValidRouteIndex(false)).toBe(false)
+      expect(isNavIndex(123)).toBe(false)
+      expect(isNavIndex(null)).toBe(false)
+      expect(isNavIndex(undefined)).toBe(false)
+      expect(isNavIndex({})).toBe(false)
+      expect(isNavIndex([])).toBe(false)
+      expect(isNavIndex(true)).toBe(false)
+      expect(isNavIndex(false)).toBe(false)
     })
   })
 
-  describe('hasValidPath', () => {
+  describe('isRoutePath', () => {
     it('应该对以 / 开头的字符串返回 true', () => {
-      expect(isValidPath('/')).toBe(true)
-      expect(isValidPath('/home')).toBe(true)
-      expect(isValidPath('/user/123')).toBe(true)
-      expect(isValidPath('/a/b/c/d')).toBe(true)
+      expect(isRoutePath('/')).toBe(true)
+      expect(isRoutePath('/home')).toBe(true)
+      expect(isRoutePath('/user/123')).toBe(true)
+      expect(isRoutePath('/a/b/c/d')).toBe(true)
     })
 
     it('应该对不以 / 开头的字符串返回 false', () => {
-      expect(isValidPath('home')).toBe(false)
-      expect(isValidPath('')).toBe(false)
-      expect(isValidPath('./home')).toBe(false)
-      expect(isValidPath('../home')).toBe(false)
+      expect(isRoutePath('home')).toBe(false)
+      expect(isRoutePath('')).toBe(false)
+      expect(isRoutePath('./home')).toBe(false)
+      expect(isRoutePath('../home')).toBe(false)
     })
 
     it('应该对非字符串返回 false', () => {
-      expect(isValidPath(123 as any)).toBe(false)
-      expect(isValidPath(null as any)).toBe(false)
-      expect(isValidPath(undefined as any)).toBe(false)
-      expect(isValidPath({} as any)).toBe(false)
-      expect(isValidPath([] as any)).toBe(false)
-      expect(isValidPath(true as any)).toBe(false)
+      expect(isRoutePath(123 as any)).toBe(false)
+      expect(isRoutePath(null as any)).toBe(false)
+      expect(isRoutePath(undefined as any)).toBe(false)
+      expect(isRoutePath({} as any)).toBe(false)
+      expect(isRoutePath([] as any)).toBe(false)
+      expect(isRoutePath(true as any)).toBe(false)
     })
   })
 
-  describe('hasValidNavTarget', () => {
+  describe('isNavTarget', () => {
     it('应该对有效的导航目标返回 true', () => {
-      expect(hasValidNavTarget({ index: '/home' })).toBe(true)
-      expect(hasValidNavTarget({ index: 'home', params: { id: '1' } })).toBe(true)
-      expect(hasValidNavTarget({ index: Symbol('route') })).toBe(true)
-      expect(hasValidNavTarget({ index: '/home', query: { search: 'test' } })).toBe(true)
-      expect(hasValidNavTarget({ index: '/home', hash: '#section' })).toBe(true)
+      expect(isNavTarget({ index: '/home' })).toBe(true)
+      expect(isNavTarget({ index: 'home', params: { id: '1' } })).toBe(true)
+      expect(isNavTarget({ index: Symbol('route') })).toBe(true)
+      expect(isNavTarget({ index: '/home', query: { search: 'test' } })).toBe(true)
+      expect(isNavTarget({ index: '/home', hash: '#section' })).toBe(true)
     })
 
     it('应该对无效的导航目标返回 false', () => {
-      expect(hasValidNavTarget({})).toBe(false)
-      expect(hasValidNavTarget({ index: 123 })).toBe(false)
-      expect(hasValidNavTarget({ index: null })).toBe(false)
-      expect(hasValidNavTarget({ index: undefined })).toBe(false)
-      expect(hasValidNavTarget({ index: {} })).toBe(false)
-      expect(hasValidNavTarget({ index: [] })).toBe(false)
-      expect(hasValidNavTarget(null)).toBe(false)
-      expect(hasValidNavTarget('/home')).toBe(false)
-      expect(hasValidNavTarget(123)).toBe(false)
-      expect(hasValidNavTarget(undefined)).toBe(false)
-      expect(hasValidNavTarget([])).toBe(false)
+      expect(isNavTarget({})).toBe(false)
+      expect(isNavTarget({ index: 123 })).toBe(false)
+      expect(isNavTarget({ index: null })).toBe(false)
+      expect(isNavTarget({ index: undefined })).toBe(false)
+      expect(isNavTarget({ index: {} })).toBe(false)
+      expect(isNavTarget({ index: [] })).toBe(false)
+      expect(isNavTarget(null)).toBe(false)
+      expect(isNavTarget('/home')).toBe(false)
+      expect(isNavTarget(123)).toBe(false)
+      expect(isNavTarget(undefined)).toBe(false)
+      expect(isNavTarget([])).toBe(false)
     })
   })
 
@@ -485,6 +486,15 @@ describe('common/utils', () => {
       registerHookTool(hooks, 'beforeEach', hook)
       registerHookTool(hooks, 'beforeEach', hook)
       expect(hooks.beforeEach!.size).toBe(1)
+    })
+  })
+
+  describe('isExternalLink', () => {
+    it('应该正确识别外部 URL', () => {
+      expect(isExternalLink('https://www.example.com')).toBe(true)
+      expect(isExternalLink('http://www.example.com')).toBe(true)
+      expect(isExternalLink('//www.example.com')).toBe(true)
+      expect(isExternalLink('/home')).toBe(false)
     })
   })
 })
