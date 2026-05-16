@@ -132,7 +132,7 @@ export interface NavigateResult {
   /**
    * 目标路由位置
    *
-   * `state !== NavState.notfound` 时存在
+   * `state !== NavState.notfound` 和 `state !== NavState.external` 时存在
    */
   to: RouteLocation | null
   /**
