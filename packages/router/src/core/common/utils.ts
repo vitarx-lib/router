@@ -11,13 +11,23 @@ import type {
 } from '../types/index.js'
 
 /**
+ * 判断是否为外部链接
+ *
+ * @param href - 链接地址
+ * @returns 是否为外部链接
+ */
+export function isExternalLink(href: string): boolean {
+  return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')
+}
+
+/**
  * 检查给定的值是否为一个合法的导航配置对象
  *
  * @param val 要检查的未知类型值
  * @returns {boolean} 如果值是一个导航目标对象则返回true，否则返回false
  */
-export function hasValidNavTarget(val: unknown): val is NavTarget {
-  return isPlainObject(val) && 'index' in val && hasValidRouteIndex(val.index)
+export function isNavTarget(val: unknown): val is NavTarget {
+  return isPlainObject(val) && 'index' in val && isNavIndex(val.index)
 }
 
 /**
@@ -40,7 +50,7 @@ export function isRouteLocation(val: unknown): val is RouteLocation {
  * @returns {boolean} 返回一个布尔值，表示值是否为有效的路由索引
  * 同时使用类型谓词(val is RouteIndex)来缩小类型范围
  */
-export function hasValidRouteIndex(val: unknown): val is RouteIndex {
+export function isNavIndex(val: unknown): val is RouteIndex {
   // 检查值是否为字符串类型或者是否为symbol类型
   return isString(val) || typeof val === 'symbol'
 }
@@ -65,7 +75,7 @@ export function hasOnlyChangeHash(route1: RouteLocation, route2: RouteLocation) 
  * @param index - 要判断的索引
  * @returns {boolean} - 如果索引为路径索引则返回true，否则返回false
  */
-export function isValidPath(index: unknown): index is RoutePath {
+export function isRoutePath(index: unknown): index is RoutePath {
   return isString(index) && index.startsWith('/')
 }
 
@@ -125,7 +135,7 @@ export function processGuardResult(res: GuardResult): boolean | NavTarget | void
   if ((res && isString(res)) || typeof res === 'symbol') {
     return { index: res }
   }
-  if (hasValidNavTarget(res)) return res
+  if (isNavTarget(res)) return res
   return true
 }
 
@@ -138,7 +148,7 @@ export function resolveNavTarget(index: NavTarget | RouteIndex | RouteLocation):
   if (isString(index) || typeof index === 'symbol') {
     return { index }
   }
-  if (hasValidNavTarget(index)) {
+  if (isNavTarget(index)) {
     return index
   }
   if (isPlainObject(index) && index.path && index.matched) {
