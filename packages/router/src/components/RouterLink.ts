@@ -44,6 +44,18 @@ export interface RouterLinkProps extends UseLinkOptions, WithProps<'a'> {
   ariaCurrentValue?: 'page' | 'step' | 'location' | 'date' | 'time' | 'true' | 'false'
 }
 
+const EXTRA_PROPS = [
+  'to',
+  'replace',
+  'viewTransition',
+  'disabled',
+  'callback',
+  'onclick',
+  'activeClass',
+  'exactActiveClass',
+  'ariaCurrentValue'
+] as const
+
 /**
  * 路由链接组件，渲染为一个 `<a>` 标签，用于在应用内进行声明式导航。
  *
@@ -80,6 +92,7 @@ export function RouterLink(props: RouterLinkProps, location?: CodeLocation): Ele
       )
     }
   }
+
   const isDisabled = () => props.disabled ?? false
 
   const navigate = async (e: MouseEvent): Promise<void> => {
@@ -91,10 +104,7 @@ export function RouterLink(props: RouterLinkProps, location?: CodeLocation): Ele
   const aProps = {
     onClick: navigate,
     children: props.children,
-    'v-bind': [
-      props,
-      ['to', 'children', 'href', 'disabled', 'callback', 'onClick', 'onclick', 'aria-current']
-    ],
+    'v-bind': [props, EXTRA_PROPS],
     get class() {
       return [
         !isDisabled() && link.isActive.value ? props.activeClass : undefined,
