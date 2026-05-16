@@ -4,7 +4,7 @@ import {
   createMissingRoute,
   normalizePath,
   parseQuery,
-  removePathEndSlash,
+  removeTrailingSlash,
   stringifyQuery
 } from '../../../src/core/shared/utils.js'
 import type { NotFoundTarget, RouteLocation, RouteRecord } from '../../../src/core/types/index.js'
@@ -77,23 +77,23 @@ describe('shared/utils', () => {
     })
   })
 
-  describe('removePathEndSlash', () => {
+  describe('removeTrailingSlash', () => {
     it('应该去除路径末尾的斜杠', () => {
-      expect(removePathEndSlash('/foo/')).toBe('/foo')
-      expect(removePathEndSlash('/foo/bar/')).toBe('/foo/bar')
+      expect(removeTrailingSlash('/foo/')).toBe('/foo')
+      expect(removeTrailingSlash('/foo/bar/')).toBe('/foo/bar')
     })
 
     it('应该对没有末尾斜杠的路径原样返回', () => {
-      expect(removePathEndSlash('/foo')).toBe('/foo')
-      expect(removePathEndSlash('/foo/bar')).toBe('/foo/bar')
+      expect(removeTrailingSlash('/foo')).toBe('/foo')
+      expect(removeTrailingSlash('/foo/bar')).toBe('/foo/bar')
     })
 
     it('应该对根路径原样返回', () => {
-      expect(removePathEndSlash('/')).toBe('/')
+      expect(removeTrailingSlash('/')).toBe('/')
     })
 
     it('应该保持类型推断', () => {
-      const result = removePathEndSlash('/foo/')
+      const result = removeTrailingSlash('/foo/')
       expect(typeof result).toBe('string')
     })
   })
