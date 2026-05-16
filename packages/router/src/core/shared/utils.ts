@@ -49,7 +49,7 @@ export function stringifyQuery(obj: Record<string, string>): `?${string}` | '' {
  * @param {string} str - 路径字符串
  * @return {string} - 去除末尾斜杠后的路径字符串
  */
-export function removePathEndSlash<T extends string>(str: T): T {
+export function removeTrailingSlash<T extends string>(str: T): T {
   if (str === '/') return str
   return str.endsWith('/') ? (str.slice(0, -1) as T) : str
 }
@@ -74,7 +74,7 @@ export function normalizePath(path: string, removeEndSlash: boolean = false): `/
   // 去除所有空格 处理重复//
   let normalizedPath = `/${path.trim()}`.replace(/\s+/g, '').replace(/\/+/g, '/')
   if (removeEndSlash) {
-    normalizedPath = removePathEndSlash(normalizedPath)
+    normalizedPath = removeTrailingSlash(normalizedPath)
   }
   // 去除尾随斜杠
   return normalizedPath as `/${string}`
