@@ -18,10 +18,11 @@ import { __ROUTER_KEY__, NavState } from '../common/constant.js'
 import { updateRouteLocation } from '../common/update.js'
 import {
   hasOnlyChangeHash,
-  hasValidNavTarget,
-  hasValidRouteIndex,
+  isExternalLink,
+  isNavIndex,
+  isNavTarget,
   isRouteLocation,
-  isValidPath,
+  isRoutePath,
   processGuardResult,
   registerHookTool,
   removePathSuffix,
@@ -242,8 +243,8 @@ export abstract class Router {
   /**
    * 判断路由器是否已准备就绪
    *
-   * 返回一个 Promise，它会在路由器完成初始导航之后被解析，
-   * 如果初始导航已经完成，则该 Promise 会被立刻解析。
+   * 返回一个 Promise，它会在路由器完成首次导航之后被解析，
+   * 如果首次导航已经完成，则该 Promise 会被立刻解析。
    *
    * @returns {Promise<void>} - 导航结果
    */
@@ -546,7 +547,7 @@ export abstract class Router {
     const to = this.matchRoute(target, redirectFrom)
     // name-based 导航匹配失败视为编程错误，直接抛出异常
     // 因为名称导航是编程式调用，name 不存在或参数校验失败属于代码 bug
-    if (!to && !isValidPath(target.index)) {
+    if (!to && !isRoutePath(target.index)) {
       const name = target.index
       const route = this.manager.findByName(name as RouteName)
       if (route) {
@@ -730,12 +731,12 @@ export abstract class Router {
       : matched.redirect
     if (!redirect) return null
     // 重定向目标为路由索引（路径或名称）
-    if (hasValidRouteIndex(redirect)) {
+    if (isNavIndex(redirect)) {
       context.checkRedirectLoop(String(redirect))
       return this.navigate({ index: redirect }, context.from, context.redirectFrom ?? to)
     }
     // 重定向目标为完整的导航目标对象
-    if (hasValidNavTarget(redirect)) {
+    if (isNavTarget(redirect)) {
       context.checkRedirectLoop(String(redirect.index))
       return this.navigate(redirect, context.from, context.redirectFrom ?? to)
     }
@@ -808,7 +809,7 @@ export abstract class Router {
       return context.result
     }
     // 守卫重定向
-    if (hasValidNavTarget(guardResult)) {
+    if (isNavTarget(guardResult)) {
       context.checkRedirectLoop(String(guardResult.index))
       return this.navigate(
         guardResult,
@@ -841,6 +842,7 @@ export abstract class Router {
    * 导航到指定位置
    *
    * 作为导航流程的编排器，按顺序协调各场景处理方法的执行：
+   * 0. 处理外部链接
    * 1. 创建导航上下文（路由匹配、并发控制初始化）
    * 2. 处理 404 场景（路由未匹配）
    * 3. 处理重复路由场景
@@ -859,6 +861,14 @@ export abstract class Router {
     fromRoute?: RouteLocation,
     redirectFrom?: RouteLocation
   ): Promise<NavigateResult> {
+    if (isString(target.index) && isExternalLink(target.index)) {
+      return {
+        state: NavState.external,
+        message: `Navigate to the external link ${target.index}`,
+        to: null,
+        from: fromRoute ?? cloneRouteLocation(this._routeLocation)
+      }
+    }
     // 创建导航上下文
     const context = this.createNavigationContext(target, fromRoute, redirectFrom)
     // 路由未匹配 (404)
@@ -962,7 +972,7 @@ export abstract class Router {
         // 优先判断 RouteLocation（有 matched 和 path 属性）
         if (isRouteLocation(result)) return result
         // 判断 NavTarget（有 index 属性）
-        if (hasValidNavTarget(result)) return result
+        if (isNavTarget(result)) return result
         // 字符串或 symbol 包装为 NavTarget
         if (isString(result) || typeof result === 'symbol') {
           return {
@@ -1140,7 +1150,7 @@ export abstract class Router {
    */
   public matchRoute(target: NavTarget, redirectFrom?: RouteLocation): RouteLocation | null {
     let matchTarget = target.index
-    const isPath = isValidPath(matchTarget)
+    const isPath = isRoutePath(matchTarget)
     // 如果配置了后缀且目标是路径，则去除后缀
     if (this.config.suffix && isPath) {
       // 去除路径后缀
