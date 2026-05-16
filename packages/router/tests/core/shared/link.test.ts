@@ -1,7 +1,13 @@
 import { logger } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as inject from '../../../src/core/shared/inject.js'
-import { createMemoryRouter, defineRoutes, type Route } from '../../../src/index.js'
+import {
+  createMemoryRouter,
+  defineRoutes,
+  NavState,
+  type Route,
+  useLink
+} from '../../../src/index.js'
 
 import { createMockComponent } from '../testHelpers.js'
 
@@ -50,7 +56,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about' })
         expect(link.href.value).toBe('/about')
       })
@@ -60,7 +65,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about?a=1&b=2' })
         expect(link.route.value?.query).toEqual({ a: '1', b: '2' })
       })
@@ -70,7 +74,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about#section' })
         expect(link.route.value?.hash).toBe('#section')
       })
@@ -80,7 +83,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: 'https://example.com' })
         expect(link.href.value).toBe('https://example.com')
       })
@@ -90,7 +92,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: 'http://example.com' })
         expect(link.href.value).toBe('http://example.com')
       })
@@ -101,7 +102,7 @@ describe('shared/link', () => {
         mockUseRouter(router)
 
         const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-        const { useLink } = await import('../../../src/core/shared/link.js')
+
         const link = useLink({ to: {} as any })
         expect(link.href.value).toBe('javascript:void(0)')
         warnSpy.mockRestore()
@@ -113,7 +114,7 @@ describe('shared/link', () => {
         mockUseRouter(router)
 
         const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-        const { useLink } = await import('../../../src/core/shared/link.js')
+
         const link = useLink({ to: 123 as any })
         expect(link.href.value).toBe('javascript:void(0)')
         warnSpy.mockRestore()
@@ -124,7 +125,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: { index: '/about' } })
         expect(link.href.value).toBe('/about')
       })
@@ -136,7 +136,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about' })
         expect(link.route.value?.path).toBe('/about')
       })
@@ -146,7 +145,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: { index: 'user', params: { id: '123' } } })
         expect(link.route.value?.path).toBe('/user/123')
         expect(link.route.value?.params.id).toBe('123')
@@ -158,7 +156,7 @@ describe('shared/link', () => {
         mockUseRouter(router)
 
         const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-        const { useLink } = await import('../../../src/core/shared/link.js')
+
         const link = useLink({ to: '/nonexistent' })
         expect(link.route.value).toBeNull()
         warnSpy.mockRestore()
@@ -169,7 +167,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const sym = Symbol('route')
         const link = useLink({ to: sym })
@@ -182,7 +179,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '#section' })
         expect(link.route.value?.hash).toBe('#section')
       })
@@ -192,7 +188,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: { index: '/about', query: { a: '1' } } })
         expect(link.route.value?.query.a).toBe('1')
       })
@@ -202,7 +197,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: { index: '/about', hash: '#section' } })
         expect(link.route.value?.hash).toBe('#section')
       })
@@ -214,7 +208,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/about' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about' })
         expect(link.isActive.value).toBe(true)
       })
@@ -224,7 +217,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about' })
         expect(link.isActive.value).toBe(false)
       })
@@ -234,7 +226,7 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
         const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-        const { useLink } = await import('../../../src/core/shared/link.js')
+
         const link = useLink({ to: '/nonexistent' })
         expect(link.isActive.value).toBe(false)
         warnSpy.mockRestore()
@@ -247,7 +239,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/about' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about' })
         expect(link.isExactActive.value).toBe(true)
       })
@@ -257,7 +248,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/about' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/' })
         expect(link.isExactActive.value).toBe(false)
       })
@@ -268,7 +258,7 @@ describe('shared/link', () => {
         mockUseRouter(router)
 
         const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-        const { useLink } = await import('../../../src/core/shared/link.js')
+
         const link = useLink({ to: '/nonexistent' })
         expect(link.isExactActive.value).toBe(false)
         warnSpy.mockRestore()
@@ -281,7 +271,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about' })
         await link.navigate()
         expect(router.route.path).toBe('/about')
@@ -292,7 +281,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about' })
         await link.navigate()
         expect(router.route.path).toBe('/about')
@@ -303,7 +291,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about', replace: true })
         await link.navigate()
         expect(router.route.path).toBe('/about')
@@ -314,22 +301,21 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: { index: '/about', replace: true }, replace: false })
         await link.navigate()
         expect(router.route.path).toBe('/about')
       })
 
-      it('没有匹配路由时应该不导航', async () => {
+      it('没有匹配路由时应该进行导航', async () => {
         router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
         const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-        const { useLink } = await import('../../../src/core/shared/link.js')
+
         const link = useLink({ to: '/nonexistent' })
         const result = await link.navigate()
-        expect(result).toBeUndefined()
+        expect(result).toBeDefined()
         warnSpy.mockRestore()
       })
 
@@ -338,22 +324,20 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about' })
         const event = { preventDefault: vi.fn() } as unknown as MouseEvent
         await link.navigate(event)
         expect(event.preventDefault).toHaveBeenCalled()
       })
 
-      it('HTTP 链接应该不导航', async () => {
+      it('HTTP 链接应该返回外部导航状态', async () => {
         router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: 'https://example.com' })
         const result = await link.navigate()
-        expect(result).toBeUndefined()
+        expect(result.state === NavState.external).toBe(true)
       })
     })
 
@@ -363,7 +347,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about/' })
         expect(link.route.value?.path).toBe('/about/')
         expect(link.href.value).toBe('/about/')
@@ -373,7 +356,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/' })
         expect(link.route.value?.path).toBe('/')
       })
@@ -383,7 +365,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: { index: 'user', params: { id: '456' } } })
         expect(link.route.value?.params.id).toBe('456')
       })
@@ -393,7 +374,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about?a=1#section' })
         expect(link.route.value?.query.a).toBe('1')
         expect(link.route.value?.hash).toBe('#section')
@@ -404,7 +384,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about?a=1' })
         expect(link.route.value?.query.a).toBe('1')
       })
@@ -414,7 +393,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about#section' })
         expect(link.route.value?.hash).toBe('#section')
       })
@@ -424,7 +402,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about#' })
         expect(link.route.value?.path).toBe('/about')
       })
@@ -434,7 +411,6 @@ describe('shared/link', () => {
         await router.replace({ index: '/' })
         mockUseRouter(router)
 
-        const { useLink } = await import('../../../src/core/shared/link.js')
         const link = useLink({ to: '/about?' })
         expect(link.route.value?.path).toBe('/about')
       })
