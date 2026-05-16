@@ -291,6 +291,7 @@ if (hasSuccess(result)) {
 | `cancelled`  | 4  | 导航被新导航取消 |
 | `duplicated` | 8  | 重复导航     |
 | `notfound`   | 16 | 路由未匹配    |
+| `external`   | 32 | 外部跳转     |
 
 ## 路由未匹配处理
 
@@ -536,20 +537,29 @@ declare module 'vitarx-router' {
 
 ### 助手函数
 
-| 函数                                             | 说明                     |
-|------------------------------------------------|------------------------|
-| `createRouter(options)`                        | 创建路由器实例                |
-| `createWebRouter(options)`                     | 创建 Web 模式路由器           |
-| `createMemoryRouter(options)`                  | 创建 Memory 模式路由器        |
-| `createRouteManager(routes, options?)`         | 创建路由管理器                |
-| `defineRoutes(...routes)`                      | 定义路由表                  |
-| `createMissingRoute(component, target, meta?)` | 创建未匹配路由的 RouteLocation |
-| `useRouter()`                                  | 获取路由器实例                |
-| `useRoute(global?)`                            | 获取当前路由信息               |
-| `useLink(options)`                             | 创建链接助手                 |
-| `onBeforeRouteLeave(guard)`                    | 注册离开守卫                 |
-| `onBeforeRouteUpdate(callback)`                | 注册更新钩子                 |
-| `removePathEndSlash(path)`                     | 删除路径末尾的斜杠              |
+| 函数                                             | 说明                        |
+|------------------------------------------------|---------------------------|
+| `createRouter(options)`                        | 创建路由器实例                   |
+| `createWebRouter(options)`                     | 创建 Web 模式路由器              |
+| `createMemoryRouter(options)`                  | 创建 Memory 模式路由器           |
+| `createRouteManager(routes, options?)`         | 创建路由管理器                   |
+| `defineRoutes(...routes)`                      | 定义路由表                     |
+| `createMissingRoute(component, target, meta?)` | 创建未匹配路由的 RouteLocation    |
+| `cloneRouteLocation(location)`                 | 克隆 RouteLocation          |
+| `useRouter()`                                  | 获取路由器实例                   |
+| `useRoute(global?)`                            | 获取当前路由信息                  |
+| `useLink(options)`                             | 创建链接助手                    |
+| `onBeforeRouteLeave(guard)`                    | 注册离开守卫                    |
+| `onBeforeRouteUpdate(callback)`                | 注册更新钩子                    |
+| `removeTrailingSlash(path)`                    | 删除路径末尾的斜杠                 |
+| `normalizePath(path, removeTrailingSlash?)`    | 规范化路径                     |
+| `parseQuery(queryString)`                      | 解析查询字符串                   |
+| `stringifyQuery(query)`                        | 序列化查询对象                   |
+| `isNavTarget(value)`                           | 检查一个值是否为导航目标对象            |
+| `isNavIndex(value)`                            | 检查一个值是否为有效的导航索引           |
+| `isRouteLocation(value)`                       | 检查一个值是否为 RouteLocation 对象 |
+| `isRoutePath(index)`                           | 检查一个值是否为有效的路由路径           |
+| `isExternalLink(href)`                         | 检查一个值是否为外部链接              |
 
 ### Router 实例方法
 
