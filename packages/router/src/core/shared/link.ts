@@ -1,5 +1,6 @@
 import { type Computed, computed, isPlainObject, isString, logger } from 'vitarx'
-import { hasValidNavTarget, isValidPath } from '../common/utils.js'
+import { NavState } from '../common/constant.js'
+import { isExternalLink, isNavTarget, isRoutePath } from '../common/utils.js'
 import type {
   NavigateResult,
   NavTarget,
@@ -62,7 +63,7 @@ export interface UseLinkReturn {
    *
    * @param [e] 点击事件
    */
-  navigate: (e?: MouseEvent) => Promise<NavigateResult | void>
+  navigate: (e?: MouseEvent) => Promise<NavigateResult>
 }
 
 /**
@@ -76,16 +77,6 @@ const handleTransition = async (callback: () => Promise<void>): Promise<void> =>
   }
   const transition = document.startViewTransition(callback)
   await transition.finished
-}
-
-/**
- * 判断是否为外部链接
- *
- * @param href - 链接地址
- * @returns 是否为外部链接
- */
-export function isExternalLink(href: string): boolean {
-  return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')
 }
 
 /**
@@ -115,7 +106,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
     let target: NavTarget | null = null
 
     // 验证目标类型
-    if (hasValidNavTarget(to)) {
+    if (isNavTarget(to)) {
       target = to
     } else if (isString(to)) {
       // 如果是 HTTP/HTTPS 链接则返回 null
@@ -171,15 +162,9 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
    * @returns 返回路由的 href 或原始字符串，默认返回 'javascript:void(0)'
    */
   const href = computed(() => {
-    if (route.value?.href) {
-      return route.value.href
-    }
-    if (isPlainObject(props.to) && isValidPath(props.to.index)) {
-      return props.to.index
-    }
-    if (isString(props.to)) {
-      return props.to
-    }
+    if (route.value?.href) return route.value.href
+    if (isPlainObject(props.to) && isRoutePath(props.to.index)) return props.to.index
+    if (isString(props.to)) return props.to
     return 'javascript:void(0)'
   })
 
@@ -206,40 +191,45 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
   /**
    * 导航处理函数
    * @param e - 可选的鼠标事件对象
-   * @returns 返回导航结果，如果没有匹配路由则返回 undefined
+   * @returns {Promise<NavigateResult | void>} 如果
    */
-  const navigate = async (e?: MouseEvent): Promise<NavigateResult | void> => {
-    const matchedRoute = route.value
+  const navigate = async (e?: MouseEvent): Promise<NavigateResult> => {
+    const routeHref = href.value
 
-    // 如果没有匹配的路由，则返回 void 0
-    if (!matchedRoute) {
-      if (href.value === 'javascript:void(0)') {
-        logger.warn(
-          `[RouterLink] No match found for to ${isPlainObject(props.to) ? JSON.stringify(props.to) : String(props.to)}`
-        )
-        e?.preventDefault()
+    // 如果是无效的链接或外部链接都返回模拟的未匹配路由结果
+    if (routeHref === 'javascript:void(0)') {
+      return {
+        state: NavState.notfound,
+        message: `No match found for target: ${isPlainObject(props.to) ? JSON.stringify(props.to) : String(props.to)}`,
+        to: null,
+        from: cloneRouteLocation(router.route)
       }
-      return void 0
+    }
+    if (isExternalLink(routeHref)) {
+      return {
+        state: NavState.external,
+        message: `Open External link ${routeHref}`,
+        to: null,
+        from: cloneRouteLocation(router.route)
+      }
     }
 
     // 阻止默认行为
     e?.preventDefault()
 
     const defaultReplace = props.replace ?? false
-    const isReplace = hasValidNavTarget(props.to)
-      ? (props.to.replace ?? defaultReplace)
-      : defaultReplace
+    const isReplace = isNavTarget(props.to) ? (props.to.replace ?? defaultReplace) : defaultReplace
 
     let result: NavigateResult
-
+    const routeTarget = route.value || routeHref
     // 处理视图过渡
     if (!__VITARX_SSR__ && props.viewTransition) {
       await handleTransition(async () => {
-        result = isReplace ? await router.replace(matchedRoute) : await router.push(matchedRoute)
+        result = isReplace ? await router.replace(routeTarget) : await router.push(routeTarget)
         await router.waitViewRender()
       })
     } else {
-      result = isReplace ? await router.replace(matchedRoute) : await router.push(matchedRoute)
+      result = isReplace ? await router.replace(routeTarget) : await router.push(routeTarget)
     }
 
     return result!
