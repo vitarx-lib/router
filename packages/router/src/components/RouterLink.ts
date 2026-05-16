@@ -1,4 +1,13 @@
-import { createView, ElementView, isFunction, type ValidChildren, type WithProps } from 'vitarx'
+import {
+  type CodeLocation,
+  createView,
+  ElementView,
+  isFunction,
+  isPlainObject,
+  logger,
+  type ValidChildren,
+  type WithProps
+} from 'vitarx'
 import { type NavigateResult } from '../core/index.js'
 import { useLink, type UseLinkOptions } from '../core/shared/index.js'
 
@@ -42,6 +51,7 @@ export interface RouterLinkProps extends UseLinkOptions, WithProps<'a'> {
  * 动态设置激活状态类名、`href` 属性以及 `aria-current` 无障碍属性。
  *
  * @param {RouterLinkProps} props - 组件属性
+ * @param {CodeLocation} [location] - 代码位置信息
  * @returns {ElementView<'a'>} 返回一个锚点元素视图
  *
  * @example
@@ -56,10 +66,20 @@ export interface RouterLinkProps extends UseLinkOptions, WithProps<'a'> {
  * <RouterLink to="/about" disabled>关于我们</RouterLink>
  * // 透传属性
  * <RouterLink to="/about" class="nav-link">关于我们</RouterLink>
+ * // 带参数的导航
+ * <RouterLink to={{ index: '/user', query: { id: 123 } }}>用户信息</RouterLink>
  * ```
  */
-export function RouterLink(props: RouterLinkProps): ElementView<'a'> {
+export function RouterLink(props: RouterLinkProps, location?: CodeLocation): ElementView<'a'> {
   const link = useLink(props)
+  if (__VITARX_DEV__) {
+    if (!link.route.value) {
+      logger.warn(
+        `[RouterLink] No match found for to: ${isPlainObject(props.to) ? JSON.stringify(props.to) : String(props.to)}`,
+        location
+      )
+    }
+  }
   const isDisabled = () => props.disabled ?? false
 
   const navigate = async (e: MouseEvent): Promise<void> => {
