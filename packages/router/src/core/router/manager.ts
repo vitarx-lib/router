@@ -1,6 +1,6 @@
 import { isArray, isFunction, isString, logger, markRaw } from 'vitarx'
 import { resolveComponent, resolvePattern, resolveProps } from '../common/resolve.js'
-import { hasValidNavTarget, hasValidRouteIndex, isValidPath } from '../common/utils.js'
+import { isNavIndex, isNavTarget, isRoutePath } from '../common/utils.js'
 import {
   isVariablePath,
   mergePathVariable,
@@ -348,7 +348,7 @@ export class RouteManager {
     index: RouteIndex,
     params?: Record<string, string | number>
   ): RouteMatchResult | null {
-    if (isValidPath(index)) {
+    if (isRoutePath(index)) {
       return this.matchByPath(index)
     }
     return this.matchByName(index, params)
@@ -533,9 +533,7 @@ export class RouteManager {
     }
     if (
       route.redirect &&
-      (isFunction(route.redirect) ||
-        hasValidRouteIndex(route.redirect) ||
-        hasValidNavTarget(route.redirect))
+      (isFunction(route.redirect) || isNavIndex(route.redirect) || isNavTarget(route.redirect))
     ) {
       record.redirect = route.redirect
     }
