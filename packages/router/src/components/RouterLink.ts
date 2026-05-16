@@ -5,7 +5,7 @@ import {
   isFunction,
   isPlainObject,
   logger,
-  type ValidChildren,
+  type RenderChildren,
   type WithProps
 } from 'vitarx'
 import { type NavigateResult } from '../core/index.js'
@@ -15,7 +15,7 @@ export interface RouterLinkProps extends UseLinkOptions, WithProps<'a'> {
   /**
    * 子节点插槽
    */
-  children?: ValidChildren
+  children?: RenderChildren
   /**
    * 是否禁用
    *
@@ -37,6 +37,10 @@ export interface RouterLinkProps extends UseLinkOptions, WithProps<'a'> {
    */
   exactActiveClass?: string
   /**
+   * 当链接禁用时应用的类名
+   */
+  disabledClass?: string
+  /**
    * Value passed to the attribute `aria-current` when the link is exact active.
    *
    * @defaultValue `'page'`
@@ -53,6 +57,7 @@ const EXTRA_PROPS = [
   'onclick',
   'activeClass',
   'exactActiveClass',
+  'disabledClass',
   'ariaCurrentValue'
 ] as const
 
@@ -107,9 +112,10 @@ export function RouterLink(props: RouterLinkProps, location?: CodeLocation): Ele
     'v-bind': [props, EXTRA_PROPS],
     get class() {
       return [
-        !isDisabled() && link.isActive.value ? props.activeClass : undefined,
-        !isDisabled() && link.isExactActive.value ? props.exactActiveClass : undefined
-      ].filter(Boolean) as string[]
+        props.activeClass && link.isActive.value ? props.activeClass : undefined,
+        props.exactActiveClass && link.isExactActive.value ? props.exactActiveClass : undefined,
+        props.disabledClass && isDisabled() ? props.disabledClass : undefined
+      ].filter(Boolean)
     },
     get href() {
       return link.href.value
@@ -119,9 +125,6 @@ export function RouterLink(props: RouterLinkProps, location?: CodeLocation): Ele
     },
     get 'aria-current'() {
       return link.isActive.value && !isDisabled() ? props.ariaCurrentValue || 'page' : undefined
-    },
-    get disabled() {
-      return isDisabled() ? '' : undefined
     }
   }
   return createView('a', aProps)
