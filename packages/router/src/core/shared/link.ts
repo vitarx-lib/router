@@ -1,4 +1,4 @@
-import { type Computed, computed, isPlainObject, isString, logger } from 'vitarx'
+import { type Computed, computed, isPlainObject, isString } from 'vitarx'
 import { NavState } from '../common/constant.js'
 import { isExternalLink, isNavTarget, isRoutePath } from '../common/utils.js'
 import type {
@@ -115,11 +115,6 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
     } else if (typeof to === 'symbol') {
       target = { index: to }
     } else {
-      if (__VITARX_DEV__) {
-        logger.warn(
-          `[RouterLink] Invalid "to" prop: ${isPlainObject(to) ? JSON.stringify(to) : String(to)}`
-        )
-      }
       return null
     }
 
@@ -146,15 +141,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
       }
     }
 
-    const route = router.matchRoute(target)
-    if (route) return route
-
-    if (__VITARX_DEV__) {
-      logger.warn(
-        `[RouterLink] No match found for to ${isPlainObject(to) ? JSON.stringify(to) : String(to)}`
-      )
-    }
-    return null
+    return router.matchRoute(target)
   })
 
   /**
