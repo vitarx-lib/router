@@ -1,6 +1,7 @@
 import { logger } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as inject from '../../../src/core/shared/inject.js'
+import { isPathExactMatch, isPathPrefixMatch } from '../../../src/core/shared/link.js'
 import {
   createMemoryRouter,
   defineRoutes,
@@ -47,6 +48,87 @@ describe('shared/link', () => {
       router = null
     }
     restoreUseRouter(originalUseRouter)
+  })
+
+  describe('isPathPrefixMatch', () => {
+    it('路径完全相同时应返回 true', () => {
+      expect(isPathPrefixMatch('/users', '/users')).toBe(true)
+    })
+
+    it('当前路径是目标路径的子路径时应返回 true', () => {
+      expect(isPathPrefixMatch('/users/123', '/users')).toBe(true)
+      expect(isPathPrefixMatch('/users/123/detail', '/users')).toBe(true)
+    })
+
+    it('仅前缀相似但非路径段匹配时应返回 false', () => {
+      expect(isPathPrefixMatch('/users-admin', '/users')).toBe(false)
+      expect(isPathPrefixMatch('/users123', '/users')).toBe(false)
+      expect(isPathPrefixMatch('/usersAdmin', '/users')).toBe(false)
+    })
+
+    it('完全不同的路径应返回 false', () => {
+      expect(isPathPrefixMatch('/about', '/users')).toBe(false)
+      expect(isPathPrefixMatch('/settings', '/users')).toBe(false)
+    })
+
+    it('根路径匹配根路径应返回 true', () => {
+      expect(isPathPrefixMatch('/', '/')).toBe(true)
+    })
+
+    it('根路径作为目标时任何路径都应匹配', () => {
+      expect(isPathPrefixMatch('/users', '/')).toBe(true)
+      expect(isPathPrefixMatch('/users/123', '/')).toBe(true)
+    })
+
+    it('应正确处理尾部斜杠', () => {
+      expect(isPathPrefixMatch('/users/', '/users')).toBe(true)
+      expect(isPathPrefixMatch('/users', '/users/')).toBe(true)
+      expect(isPathPrefixMatch('/users/', '/users/')).toBe(true)
+    })
+
+    it('深层嵌套子路径应匹配', () => {
+      expect(isPathPrefixMatch('/a/b/c/d', '/a/b')).toBe(true)
+      expect(isPathPrefixMatch('/a/b/c/d', '/a/b/c')).toBe(true)
+    })
+
+    it('目标路径更长时应返回 false', () => {
+      expect(isPathPrefixMatch('/users', '/users/123')).toBe(false)
+    })
+  })
+
+  describe('isPathExactMatch', () => {
+    it('路径完全相同时应返回 true', () => {
+      expect(isPathExactMatch('/users', '/users')).toBe(true)
+    })
+
+    it('尾部斜杠不影响匹配结果', () => {
+      expect(isPathExactMatch('/users/', '/users')).toBe(true)
+      expect(isPathExactMatch('/users', '/users/')).toBe(true)
+      expect(isPathExactMatch('/users/', '/users/')).toBe(true)
+    })
+
+    it('子路径不应匹配', () => {
+      expect(isPathExactMatch('/users/123', '/users')).toBe(false)
+      expect(isPathExactMatch('/users/123/detail', '/users')).toBe(false)
+    })
+
+    it('根路径匹配根路径应返回 true', () => {
+      expect(isPathExactMatch('/', '/')).toBe(true)
+    })
+
+    it('不同路径不应匹配', () => {
+      expect(isPathExactMatch('/about', '/users')).toBe(false)
+    })
+
+    it('仅前缀相似但非完全匹配应返回 false', () => {
+      expect(isPathExactMatch('/users-admin', '/users')).toBe(false)
+      expect(isPathExactMatch('/users123', '/users')).toBe(false)
+    })
+
+    it('根路径与子路径不应匹配', () => {
+      expect(isPathExactMatch('/', '/users')).toBe(false)
+      expect(isPathExactMatch('/users', '/')).toBe(false)
+    })
   })
 
   describe('useLink', () => {
