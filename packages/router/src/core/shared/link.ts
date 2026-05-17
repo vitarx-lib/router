@@ -94,9 +94,10 @@ async function handleTransition(callback: () => Promise<void>): Promise<void> {
  * @param targetPath - 目标路由路径
  * @returns 是否为前缀匹配
  */
-function isPathPrefixMatch(currentPath: string, targetPath: string): boolean {
+export function isPathPrefixMatch(currentPath: string, targetPath: string): boolean {
   const current = removeTrailingSlash(currentPath)
   const target = removeTrailingSlash(targetPath)
+  if (target === '/') return current.startsWith('/')
   return current === target || current.startsWith(target + '/')
 }
 
@@ -114,7 +115,7 @@ function isPathPrefixMatch(currentPath: string, targetPath: string): boolean {
  * @param targetPath - 目标路由路径
  * @returns 是否为精确匹配
  */
-function isPathExactMatch(currentPath: string, targetPath: string): boolean {
+export function isPathExactMatch(currentPath: string, targetPath: string): boolean {
   return removeTrailingSlash(currentPath) === removeTrailingSlash(targetPath)
 }
 
