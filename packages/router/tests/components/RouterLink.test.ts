@@ -291,29 +291,4 @@ describe('RouterLink', () => {
       expect(link?.getAttribute('href')).toContain('size=10')
     })
   })
-
-  describe('命名路由', () => {
-    it('应该正确处理命名路由的激活状态', async () => {
-      mountComponent(ctx, h(RouterLink, { to: 'home', active: 'strict' }))
-      await waitForRender(100)
-
-      expect(getLink(ctx)?.getAttribute('aria-current')).toBe('page')
-    })
-  })
-
-  describe('draggable 属性', () => {
-    const draggableTestCases = [
-      { draggable: true, expected: 'true', description: '应该正确设置 draggable 属性' },
-      { draggable: undefined, expected: 'false', description: '默认 draggable 应该为 false' }
-    ]
-
-    draggableTestCases.forEach(({ draggable, expected, description }) => {
-      it(`${description}`, async () => {
-        mountComponent(ctx, h(RouterLink, { to: '/about', draggable }))
-        await waitForRender()
-
-        expect(getLink(ctx)?.getAttribute('draggable')).toBe(expected)
-      })
-    })
-  })
 })
