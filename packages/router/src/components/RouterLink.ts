@@ -42,8 +42,6 @@ export interface RouterLinkProps extends UseLinkOptions, WithProps<'a'> {
   disabledClass?: string
   /**
    * Value passed to the attribute `aria-current` when the link is exact active.
-   *
-   * @defaultValue `'page'`
    */
   ariaCurrentValue?: 'page' | 'step' | 'location' | 'date' | 'time' | 'true' | 'false'
 }
@@ -119,13 +117,16 @@ export function RouterLink(props: RouterLinkProps, location?: CodeLocation): Ele
     },
     get href() {
       return link.href.value
-    },
-    get draggable() {
-      return props.draggable ?? false
-    },
-    get 'aria-current'() {
-      return link.isActive.value && !isDisabled() ? props.ariaCurrentValue || 'page' : undefined
     }
+  }
+  if ('ariaCurrentValue' in props) {
+    Object.defineProperty(aProps, 'aria-current', {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return link.isExactActive.value ? props.ariaCurrentValue : undefined
+      }
+    })
   }
   return createView('a', aProps)
 }
