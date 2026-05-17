@@ -172,11 +172,14 @@ describe('RouterLink', () => {
   })
 
   describe('disabled 属性', () => {
-    it('禁用时应该设置 disabled 属性', async () => {
-      mountComponent(ctx, h(RouterLink, { to: '/about', disabled: true }))
+    it('禁用时应该设置 disabledClass 属性', async () => {
+      mountComponent(
+        ctx,
+        h(RouterLink, { to: '/about', disabled: true, disabledClass: 'disabled' })
+      )
       await waitForRender()
 
-      expect(getLink(ctx)?.hasAttribute('disabled')).toBe(true)
+      expect(getLink(ctx)?.classList.contains('disabled')).toBe(true)
     })
 
     it('禁用时点击不应该导航', async () => {
