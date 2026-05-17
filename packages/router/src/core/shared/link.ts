@@ -10,7 +10,7 @@ import type {
   URLHash
 } from '../types/index.js'
 import { useRouter } from './inject.js'
-import { cloneRouteLocation, parseQuery } from './utils.js'
+import { cloneRouteLocation, parseQuery, removeTrailingSlash } from './utils.js'
 
 export type HTTPUrl = `http://${string}` | `https://${string}`
 type LinkToTarget<T extends RouteIndex = RouteIndex> =
@@ -70,13 +70,52 @@ export interface UseLinkReturn {
  * 处理视图转换
  * @param callback
  */
-const handleTransition = async (callback: () => Promise<void>): Promise<void> => {
+async function handleTransition(callback: () => Promise<void>): Promise<void> {
   if (typeof document === 'undefined' || typeof document.startViewTransition !== 'function') {
     await callback()
     return
   }
   const transition = document.startViewTransition(callback)
   await transition.finished
+}
+/**
+ * 判断当前路径是否以目标路径为前缀（路径段级别匹配）
+ *
+ * 去除尾部斜杠后，判断 currentPath 是否等于 targetPath 或以 targetPath/ 开头，
+ * 避免如 `/users-admin` 错误匹配 `/users` 的问题。
+ *
+ * @example
+ * isPathPrefixMatch('/users/123', '/users') // true
+ * isPathPrefixMatch('/users', '/users') // true
+ * isPathPrefixMatch('/users-admin', '/users') // false
+ * isPathPrefixMatch('/', '/') // true
+ *
+ * @param currentPath - 当前路由路径
+ * @param targetPath - 目标路由路径
+ * @returns 是否为前缀匹配
+ */
+function isPathPrefixMatch(currentPath: string, targetPath: string): boolean {
+  const current = removeTrailingSlash(currentPath)
+  const target = removeTrailingSlash(targetPath)
+  return current === target || current.startsWith(target + '/')
+}
+
+/**
+ * 判断当前路径是否与目标路径完全匹配
+ *
+ * 去除尾部斜杠后进行严格相等比较。
+ *
+ * @example
+ * isPathExactMatch('/users', '/users') // true
+ * isPathExactMatch('/users/', '/users') // true
+ * isPathExactMatch('/users/123', '/users') // false
+ *
+ * @param currentPath - 当前路由路径
+ * @param targetPath - 目标路由路径
+ * @returns 是否为精确匹配
+ */
+function isPathExactMatch(currentPath: string, targetPath: string): boolean {
+  return removeTrailingSlash(currentPath) === removeTrailingSlash(targetPath)
 }
 
 /**
@@ -162,7 +201,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
   const isActive = computed(() => {
     const matchedRoute = route.value
     if (!matchedRoute) return false
-    return router.route.href.startsWith(matchedRoute.path)
+    return isPathPrefixMatch(router.route.path, matchedRoute.path)
   })
 
   /**
@@ -172,7 +211,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
   const isExactActive = computed(() => {
     const matchedRoute = route.value
     if (!matchedRoute) return false
-    return router.route.path === matchedRoute.path
+    return isPathExactMatch(router.route.path, matchedRoute.path)
   })
 
   /**
