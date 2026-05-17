@@ -231,6 +231,42 @@ describe('shared/link', () => {
         expect(link.isActive.value).toBe(false)
         warnSpy.mockRestore()
       })
+
+      it('当前路由带查询参数时仍应基于路径匹配', async () => {
+        router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+        await router.replace({ index: '/about', query: { tab: '1' } })
+        mockUseRouter(router)
+
+        const link = useLink({ to: '/about' })
+        expect(link.isActive.value).toBe(true)
+      })
+
+      it('路径段边界：相似前缀但非子路径不应匹配', async () => {
+        const routes: Route[] = defineRoutes(
+          { path: '/', component: createMockComponent(), name: 'home' },
+          { path: '/about', component: createMockComponent(), name: 'about' },
+          { path: '/about-us', component: createMockComponent(), name: 'about-us' }
+        )
+        router = createMemoryRouter({ routes, mode: 'path' })
+        await router.replace({ index: '/about-us' })
+        mockUseRouter(router)
+
+        const link = useLink({ to: '/about' })
+        expect(link.isActive.value).toBe(false)
+      })
+
+      it('子路径应匹配父路径', async () => {
+        const routes: Route[] = defineRoutes(
+          { path: '/', component: createMockComponent(), name: 'home' },
+          { path: '/user/{id}', component: createMockComponent(), name: 'user' }
+        )
+        router = createMemoryRouter({ routes, mode: 'path' })
+        await router.replace({ index: '/user/123' })
+        mockUseRouter(router)
+
+        const link = useLink({ to: '/user/123' })
+        expect(link.isActive.value).toBe(true)
+      })
     })
 
     describe('isExactActive 计算', () => {
