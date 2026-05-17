@@ -1,4 +1,22 @@
-# [4.0.0-beta.24](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.23...v4.0.0-beta.24) (2026-05-15)
+# [4.0.0-beta.25](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.24...v4.0.0-beta.25) (2026-05-17)
+
+
+### Bug Fixes
+
+* **router:** 优化 RouterView 组件的渲染参数类型和注释 ([785df67](https://github.com/vitarx-lib/router/commit/785df671ccc7f3cfa89d9b7c25525a609564c8a0))
+* **router:** 修正 RouterLink 组件 aria-current 属性处理 ([b719911](https://github.com/vitarx-lib/router/commit/b719911e9f474385894236e5f1c40c52de4daee1))
+* **router:** 修正导航目标路由状态判断逻辑 ([5258b99](https://github.com/vitarx-lib/router/commit/5258b99c49d42db40b5c84a6956e98b43a41776b))
+
+
+### Features
+
+* **router:** 增加 RouterLink 组件的代码位置信息支持及导航提示 ([b4ed721](https://github.com/vitarx-lib/router/commit/b4ed721cc40bb8a99b2ba5fc1e5d9e146127b079))
+* **router:** 导出路由相关的辅助类型判断函数 ([3a94bec](https://github.com/vitarx-lib/router/commit/3a94bec1852152b837de7996b27fe5df4e7f0f95))
+* **router:** 新增外部链接导航状态枚举 ([b2f3cc1](https://github.com/vitarx-lib/router/commit/b2f3cc12ba391a58441e2d213e0795b2b2f69e6c))
+* **router:** 添加RouterLink组件禁用状态类名支持 ([9bd9fd0](https://github.com/vitarx-lib/router/commit/9bd9fd08be8b5137be40caba954453de16464b21))
+* **router:** 添加错误和未匹配路由处理回调注册方法 ([702395d](https://github.com/vitarx-lib/router/commit/702395d5712b9ed9f904ae5d9becc9df1164bf92))
+
+# [4.0.0-beta.23](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.22...v4.0.0-beta.23) (2026-05-15)
 
 
 ### Bug Fixes
@@ -9,7 +27,6 @@
 ### Features
 
 * **router:** 改进路由未匹配（404）处理机制 ([d5cbb63](https://github.com/vitarx-lib/router/commit/d5cbb63dde7208e1eff1df7e822a584a36e43774))
-* **router:** 添加错误和未匹配路由处理回调注册方法 ([702395d](https://github.com/vitarx-lib/router/commit/702395d5712b9ed9f904ae5d9becc9df1164bf92))
 
 # [4.0.0-beta.22](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.21...v4.0.0-beta.22) (2026-05-14)
 
