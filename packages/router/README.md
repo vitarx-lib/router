@@ -560,6 +560,8 @@ declare module 'vitarx-router' {
 | `isRouteLocation(value)`                       | 检查一个值是否为 RouteLocation 对象 |
 | `isRoutePath(index)`                           | 检查一个值是否为有效的路由路径           |
 | `isExternalLink(href)`                         | 检查一个值是否为外部链接              |
+| `isPathExactMatch(currentPath, targetPath)`    | 判断路径是否完全匹配                |
+| `isPathPrefixMatch(currentPath, targetPath)`   | 判断路径是否前缀匹配                |
 
 ### Router 实例方法
 
