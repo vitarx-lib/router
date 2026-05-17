@@ -25,17 +25,18 @@ export interface RouterViewOptions {
    */
   name?: string
   /**
-   * 渲染页面组件
+   * 自定义渲染当前路由匹配到的组件
    *
-   * 接收两个参数：
+   * 接收三个参数：
    *  - `component: Computed<Component | null>`：当前要渲染的组件，
    *  - `props: Computed<AnyProps | null>`：要注入给组件的属性对象
+   *  - `route: Computed<RouteRecord | null>`：当前匹配的路由记录
    *
    *  @example
    *  ```jsx
    *  // 搭配 Freeze 使用
    *  <RouterView>
-   *    {(component, props, path) => <Freeze is={component} props={props}/>}
+   *    {(component, props) => <Freeze is={component} props={props}/>}
    *  </RouterView>
    *  ```
    *
@@ -86,9 +87,12 @@ export function RouterView(props: RouterViewOptions): View {
   const parentIndex = inject(__ROUTER_VIEW_DEPTH_KEY__, -1) // 从依赖注入中获取父级索引，默认为 -1
   const index = parentIndex + 1 // 计算当前视图的索引
   provide(__ROUTER_VIEW_DEPTH_KEY__, index) // 向子组件提供当前索引
+
   // 匹配的路由线路
   const viewName = computed(() => props.name || 'default')
-  const matchedRoute = computed((): RouteRecord => {
+
+  // 匹配的路由记录
+  const matchedRoute = computed((): RouteRecord | null => {
     return router.route.matched[index] ?? null
   })
 
