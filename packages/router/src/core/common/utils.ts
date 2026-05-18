@@ -64,7 +64,7 @@ export function isNavIndex(val: unknown): val is RouteIndex {
 export function hasOnlyChangeHash(route1: RouteLocation, route2: RouteLocation) {
   return (
     route1.hash !== route2.hash &&
-    route1.path === route2.path &&
+    route1.matched.at(-1) === route2.matched.at(-1) &&
     isDeepEqual(route1.query, route2.query)
   )
 }
