@@ -6,19 +6,13 @@ import type {
   NavTarget,
   RouteIndex,
   RouteLocation,
-  RoutePath,
   URLHash
 } from '../types/index.js'
 import { useRouter } from './inject.js'
-import { cloneRouteLocation, parseQuery, removeTrailingSlash } from './utils.js'
+import { cloneRouteLocation, parseQuery, removeTrailingSlash, stringifyQuery } from './utils.js'
 
-export type HTTPUrl = `http://${string}` | `https://${string}`
-type LinkToTarget<T extends RouteIndex = RouteIndex> =
-  | NavTarget<T>
-  | T
-  | `${RoutePath}?${string}`
-  | URLHash
-  | HTTPUrl
+type LinkToTarget<T extends RouteIndex = RouteIndex> = NavTarget<T> | T | string
+export type LinkExactMatchMode = 'path' | 'href' | 'hash' | 'query'
 export interface UseLinkOptions<T extends RouteIndex = RouteIndex> {
   /**
    * 要跳转的目标
@@ -40,6 +34,17 @@ export interface UseLinkOptions<T extends RouteIndex = RouteIndex> {
    * @default false
    */
   viewTransition?: boolean
+  /**
+   * 精确匹配模式
+   *
+   * - 'path'：精确匹配路径
+   * - 'href'：精确匹配完整链接
+   * - 'hash'：精确匹配路径和锚点
+   * - 'query'：精确匹配路径和查询参数
+   *
+   * @default 'path'
+   */
+  exactMatchMode?: LinkExactMatchMode
 }
 export interface UseLinkReturn {
   /**
@@ -127,6 +132,7 @@ export function isPathExactMatch(currentPath: string, targetPath: string): boole
  * @param props.to - 要跳转的目标，可以是路由目标对象、路由索引、带查询参数的路径字符串、哈希值或 HTTP/HTTPS 链接。
  * @param [props.replace] - 是否使用 `router.replace()` 而不是 `router.push()`。优先级低于 `to.replace`。默认为 `false`。
  * @param [props.viewTransition] - 如果支持则使用 `document.startViewTransition()` 进行视图过渡。默认为 `false`。
+ * @param [props.exactMatchMode] - 精确匹配模式。可选值有：'path'、'href'、'hash'、'query'。默认为 'path'。
  * @returns 返回一个包含链接属性和导航方法的对象。
  * @returns {Computed<string>} returns.href - 链接的 `href` 属性值。
  * @returns {Computed<RouteLocation | null>} returns.route - 匹配的路由信息，如果未匹配则返回 `null`。
@@ -158,7 +164,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
       return null
     }
 
-    // 处理字符串目标
+    // 处理路由路径
     if (isString(target.index)) {
       // 兼容纯锚点连接跳转
       if (target.index.startsWith('#')) {
@@ -212,7 +218,19 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
   const isExactActive = computed(() => {
     const matchedRoute = route.value
     if (!matchedRoute) return false
-    return isPathExactMatch(router.route.path, matchedRoute.path)
+    const isMatched = isPathExactMatch(router.route.path, matchedRoute.path)
+    if (!isMatched) return false
+    const mode = props.exactMatchMode || 'path'
+    switch (mode) {
+      case 'href':
+        return router.route.href === matchedRoute.href
+      case 'hash':
+        return router.route.hash === matchedRoute.hash
+      case 'query':
+        return stringifyQuery(router.route.query) === stringifyQuery(matchedRoute.query)
+      default:
+        return true
+    }
   })
 
   /**

@@ -50,6 +50,7 @@ const EXTRA_PROPS = [
   'to',
   'replace',
   'viewTransition',
+  'exactMatchMode',
   'disabled',
   'callback',
   'onclick',
