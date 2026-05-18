@@ -381,6 +381,250 @@ describe('shared/link', () => {
         expect(link.isExactActive.value).toBe(false)
         warnSpy.mockRestore()
       })
+
+      describe('path 模式（默认）', () => {
+        it('路径相同时应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('路径相同但 query 不同时仍应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { tab: '1' } })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('路径相同但 hash 不同时仍应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', hash: '#section' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('路径相同但 query 和 hash 都不同时仍应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { tab: '1' }, hash: '#section' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('不指定 exactMatchMode 时应默认使用 path 模式', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { tab: '1' } })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+      })
+
+      describe('href 模式', () => {
+        it('href 完全一致时应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about', exactMatchMode: 'href' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('路径相同但 query 不同时应返回 false', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { tab: '1' } })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about', exactMatchMode: 'href' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+
+        it('路径相同但 hash 不同时应返回 false', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', hash: '#section' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about', exactMatchMode: 'href' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+
+        it('路径和 query 都一致时应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { tab: '1' } })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about?tab=1', exactMatchMode: 'href' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('路径和 hash 都一致时应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', hash: '#section' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about#section', exactMatchMode: 'href' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+      })
+
+      describe('hash 模式', () => {
+        it('路径和 hash 都一致时应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', hash: '#section' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about#section', exactMatchMode: 'hash' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('路径相同但 hash 不同时应返回 false', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', hash: '#other' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about#section', exactMatchMode: 'hash' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+
+        it('路径相同且都没有 hash 时应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about', exactMatchMode: 'hash' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('路径相同但 query 不同时仍应返回 true（hash 模式不比较 query）', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { tab: '1' } })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about', exactMatchMode: 'hash' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('当前有 hash 但目标没有 hash 时应返回 false', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', hash: '#section' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about', exactMatchMode: 'hash' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+      })
+
+      describe('query 模式', () => {
+        it('路径和 query 都一致时应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { tab: '1' } })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about?tab=1', exactMatchMode: 'query' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('路径相同但 query 不同时应返回 false', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { tab: '2' } })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about?tab=1', exactMatchMode: 'query' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+
+        it('路径相同且都没有 query 时应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about', exactMatchMode: 'query' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('路径相同但 hash 不同时仍应返回 true（query 模式不比较 hash）', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', hash: '#section' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about', exactMatchMode: 'query' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('当前有 query 但目标没有 query 时应返回 false', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { tab: '1' } })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about', exactMatchMode: 'query' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+
+        it('query 参数顺序一致且内容相同时应返回 true', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { a: '1', b: '2' } })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about?a=1&b=2', exactMatchMode: 'query' })
+          expect(link.isExactActive.value).toBe(true)
+        })
+
+        it('query 参数顺序不同时序列化结果不同应返回 false', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about', query: { a: '1', b: '2' } })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/about?b=2&a=1', exactMatchMode: 'query' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+      })
+
+      describe('路径不匹配时所有模式都应返回 false', () => {
+        it('path 模式', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/', exactMatchMode: 'path' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+
+        it('href 模式', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/', exactMatchMode: 'href' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+
+        it('hash 模式', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/', exactMatchMode: 'hash' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+
+        it('query 模式', async () => {
+          router = createMemoryRouter({ routes: basicRoutes, mode: 'path' })
+          await router.replace({ index: '/about' })
+          mockUseRouter(router)
+
+          const link = useLink({ to: '/', exactMatchMode: 'query' })
+          expect(link.isExactActive.value).toBe(false)
+        })
+      })
     })
 
     describe('navigate 方法', () => {
