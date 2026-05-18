@@ -699,6 +699,8 @@ export abstract class Router {
   private handleHashOnlyChange(context: NavigationContext): NavigateResult | null {
     if (!context.to) return null
     if (hasOnlyChangeHash(context.to, context.from)) {
+      // 更新路由位置的 hash 值并触发 hashUpdate 回调
+      this._routeLocation.hash = context.to.hash
       this._routeLocation.href = context.to.href
       this.hashUpdate?.(context.to)
       context.result.state = NavState.success
