@@ -837,6 +837,97 @@ describe('router/router', () => {
       const result = await router!.push({ index: '/home', hash: '#section' })
       expect(result.state).toBe(NavState.success)
     })
+
+    it('仅 hash 变化应该更新 route.hash', async () => {
+      await router!.push({ index: '/home' })
+      expect(router!.route.hash).toBe('')
+      await router!.push({ index: '/home', hash: '#section' })
+      expect(router!.route.hash).toBe('#section')
+    })
+
+    it('仅 hash 变化应该更新 route.href', async () => {
+      await router!.push({ index: '/home' })
+      const hrefBefore = router!.route.href
+      await router!.push({ index: '/home', hash: '#section' })
+      expect(router!.route.href).not.toBe(hrefBefore)
+      expect(router!.route.href).toContain('#section')
+    })
+
+    it('仅 hash 变化时 matched 应保持不变', async () => {
+      await router!.push({ index: '/home' })
+      const matchedBefore = router!.route.matched
+      await router!.push({ index: '/home', hash: '#section' })
+      expect(router!.route.matched).toEqual(matchedBefore)
+    })
+
+    it('仅 hash 变化时 path 应保持不变', async () => {
+      await router!.push({ index: '/home' })
+      await router!.push({ index: '/home', hash: '#section' })
+      expect(router!.route.path).toBe('/home')
+    })
+
+    it('仅 hash 变化时 query 应保持不变', async () => {
+      await router!.push({ index: '/home', query: { tab: '1' } })
+      await router!.push({ index: '/home', query: { tab: '1' }, hash: '#section' })
+      expect(router!.route.query).toEqual({ tab: '1' })
+    })
+
+    it('仅 hash 变化应跳过 beforeEach 守卫', async () => {
+      const beforeEach = vi.fn().mockReturnValue(true)
+      router!.beforeEach(beforeEach)
+      await router!.push({ index: '/home' })
+      const callCountBefore = beforeEach.mock.calls.length
+      await router!.push({ index: '/home', hash: '#section' })
+      expect(beforeEach.mock.calls.length).toBe(callCountBefore)
+    })
+
+    it('仅 hash 变化应跳过 afterEach 守卫', async () => {
+      const afterEach = vi.fn()
+      router!.afterEach(afterEach)
+      await router!.push({ index: '/home' })
+      const callCountBefore = afterEach.mock.calls.length
+      await router!.push({ index: '/home', hash: '#section' })
+      expect(afterEach.mock.calls.length).toBe(callCountBefore)
+    })
+
+    it('hash 从有到无也应正确更新', async () => {
+      await router!.push({ index: '/home', hash: '#section' })
+      expect(router!.route.hash).toBe('#section')
+      await router!.push({ index: '/home' })
+      expect(router!.route.hash).toBe('')
+    })
+
+    it('hash 从一个值变为另一个值应正确更新', async () => {
+      await router!.push({ index: '/home', hash: '#section1' })
+      expect(router!.route.hash).toBe('#section1')
+      await router!.push({ index: '/home', hash: '#section2' })
+      expect(router!.route.hash).toBe('#section2')
+    })
+
+    it('replace 方式仅 hash 变化也应正确更新', async () => {
+      await router!.push({ index: '/home' })
+      await router!.replace({ index: '/home', hash: '#section' })
+      expect(router!.route.hash).toBe('#section')
+    })
+
+    it('路径和 hash 同时变化不应走 hash-only 逻辑', async () => {
+      await router!.push({ index: '/home' })
+      const result = await router!.push({ index: '/about', hash: '#section' })
+      expect(result.state).toBe(NavState.success)
+      expect(router!.route.path).toBe('/about')
+      expect(router!.route.hash).toBe('#section')
+    })
+
+    it('query 和 hash 同时变化不应走 hash-only 逻辑', async () => {
+      const beforeEach = vi.fn().mockReturnValue(true)
+      router!.beforeEach(beforeEach)
+      await router!.push({ index: '/home' })
+      const callCountBefore = beforeEach.mock.calls.length
+      await router!.push({ index: '/home', query: { tab: '1' }, hash: '#section' })
+      expect(beforeEach.mock.calls.length).toBe(callCountBefore + 1)
+      expect(router!.route.hash).toBe('#section')
+      expect(router!.route.query).toEqual({ tab: '1' })
+    })
   })
 
   describe('配置验证', () => {
