@@ -66,6 +66,9 @@
   "peerDependenciesMeta": {
     "vite": {
       "optional": true
+    },
+    "vitarx": {
+      "optional": true
     }
   },
   "dependencies": {
