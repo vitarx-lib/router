@@ -106,9 +106,13 @@ export class WebRouter extends Router {
       if ('el' in target && target.el) {
         const { el, ...rest } = target
         if (isString(el)) {
-          // 对选择器字符串进行转义
-          const escapedSelector = el.replace(/([!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~])/g, '\\$1')
-          const element = document.querySelector(escapedSelector)
+          let element: Element | null = null
+          try {
+            element = document.querySelector(el)
+          } catch (e) {
+            logger.warn(`[Router] Invalid selector "${el}", skipping scroll to element`, e)
+            return
+          }
           if (element) {
             if (element.scrollIntoView) {
               element.scrollIntoView(rest)
