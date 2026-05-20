@@ -8,7 +8,7 @@ import {
   type RenderChildren,
   type WithProps
 } from 'vitarx'
-import { type NavigateResult } from '../core/index.js'
+import { isExternalLink, type NavigateResult } from '../core/index.js'
 import { useLink, type UseLinkOptions } from '../core/shared/index.js'
 
 export interface RouterLinkProps extends UseLinkOptions, WithProps<'a'> {
@@ -89,7 +89,7 @@ const EXTRA_PROPS = [
 export function RouterLink(props: RouterLinkProps, location?: CodeLocation): ElementView<'a'> {
   const link = useLink(props)
   if (__VITARX_DEV__) {
-    if (!link.route.value) {
+    if (!link.route.value && !isExternalLink(link.href.value)) {
       logger.warn(
         `[RouterLink] No match found for to: ${isPlainObject(props.to) ? JSON.stringify(props.to) : String(props.to)}`,
         location
