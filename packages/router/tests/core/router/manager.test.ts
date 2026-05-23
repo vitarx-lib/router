@@ -287,6 +287,53 @@ describe('RouteManager', () => {
         manager.addRoute({ path: 'child', component: createMockComponent() }, '/nonexistent')
       }).toThrow(/Parent route.*not found/)
     })
+
+    it('应该递归注册带 children 的路由', () => {
+      const manager = new RouteManager([])
+      manager.addRoute({
+        path: '/parent',
+        component: createMockComponent(),
+        children: [
+          { path: 'child1', component: createMockComponent() },
+          { path: 'child2', component: createMockComponent() }
+        ]
+      })
+      expect(manager.findByPath('/parent')).toBeDefined()
+      expect(manager.findByPath('/parent/child1')).toBeDefined()
+      expect(manager.findByPath('/parent/child2')).toBeDefined()
+    })
+
+    it('应该递归注册多层嵌套 children 的路由', () => {
+      const manager = new RouteManager([])
+      manager.addRoute({
+        path: '/parent',
+        component: createMockComponent(),
+        children: [
+          {
+            path: 'child',
+            component: createMockComponent(),
+            children: [{ path: 'grandchild', component: createMockComponent() }]
+          }
+        ]
+      })
+      expect(manager.findByPath('/parent')).toBeDefined()
+      expect(manager.findByPath('/parent/child')).toBeDefined()
+      expect(manager.findByPath('/parent/child/grandchild')).toBeDefined()
+    })
+
+    it('带 children 的路由添加到父路由下应正确注册所有子路由', () => {
+      const manager = new RouteManager([{ path: '/root', component: createMockComponent() }])
+      manager.addRoute(
+        {
+          path: 'parent',
+          component: createMockComponent(),
+          children: [{ path: 'child', component: createMockComponent() }]
+        },
+        '/root'
+      )
+      expect(manager.findByPath('/root/parent')).toBeDefined()
+      expect(manager.findByPath('/root/parent/child')).toBeDefined()
+    })
   })
 
   describe('removeRoute', () => {

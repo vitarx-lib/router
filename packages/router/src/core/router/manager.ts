@@ -373,6 +373,10 @@ export class RouteManager {
       routeRecord = this.parseRoute(route)
     }
     this.registerRoute(routeRecord)
+    // 递归注册子路由
+    if (route.children) {
+      this.parseRoutes(route.children, routeRecord)
+    }
   }
 
   /**
