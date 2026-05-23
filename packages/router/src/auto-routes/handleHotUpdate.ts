@@ -37,10 +37,10 @@ export function handleHotUpdate(
   onRoutesUpdated?: (newRoutes: Route[]) => void
 ): void {
   if (import.meta.hot) {
-    import.meta.hot!.accept('virtual:vitarx-router:routes', newRoutes => {
-      if (newRoutes && typeof newRoutes === 'object' && 'default' in newRoutes) {
-        const routes = newRoutes.default as Route[]
-
+    import.meta.hot.on('vitarx-router:routes-change', async () => {
+      const modules = await import('virtual:vitarx-router:routes')
+      const routes = modules.default
+      if (routes && typeof routes === 'object') {
         router.manager.clearRoutes()
 
         for (const route of routes) {
@@ -51,16 +51,6 @@ export function handleHotUpdate(
         if (onRoutesUpdated) {
           onRoutesUpdated(routes)
         }
-
-        // 强制重新导航到当前路由，跳过重复检查
-        router
-          .replace({
-            index: router.route.matched.at(-1)?.name || router.route.path,
-            params: { ...router.route.params },
-            query: { ...router.route.query },
-            hash: router.route.hash
-          })
-          .then()
       }
     })
   }

@@ -41,7 +41,7 @@
  * @module vite
  * @see {@link https://router.vitarx.cn 官方文档}
  */
-import type { Plugin } from 'vite'
+import { type Plugin } from 'vite'
 
 import {
   FileRouter,
@@ -245,13 +245,16 @@ export default function vitarxRouter(options: RouterPluginOptions = {}): Plugin 
       const router = state.router
       state.watcherHandler = setupWatcher(state.router, server, (event, file) => {
         try {
-          const mod = server.moduleGraph.getModuleById(RESOLVED_ROUTES_ID)
-          if (!mod) return
-
           const isRouteAffected = router.handleChange(event, file)
-          if (isRouteAffected) {
-            server.moduleGraph.invalidateModule(mod)
-          }
+          if (!isRouteAffected) return
+          // 1. 获取虚拟模块在依赖图中的节点
+          const virtualMod = server.moduleGraph.getModuleById(RESOLVED_ROUTES_ID)
+          if (!virtualMod || virtualMod.importers.size === 0) return
+
+          // 2. 使虚拟模块缓存失效
+          server.moduleGraph.invalidateModule(virtualMod)
+          // 3. 向客户端发送自定义 HMR 更新信号
+          server.ws.send({ type: 'custom', event: 'vitarx-router:routes-change' })
         } catch (error) {
           warn(`Failed to handle file change for ${file}:`, error)
         }
