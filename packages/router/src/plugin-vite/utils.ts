@@ -1,4 +1,4 @@
-import type { ViteDevServer } from 'vite'
+import type { ModuleNode, ViteDevServer } from 'vite'
 import { FileRouter, type FileWatcherEvent } from '../file-router/index.js'
 
 /**
@@ -80,4 +80,40 @@ export function setupWatcher(
   server.watcher.on('all', handler)
 
   return handler
+}
+
+/**
+ * 递归收集模块的所有物理文件依赖者
+ *
+ * 从指定模块出发，沿着 importer 链向上递归遍历，
+ * 收集所有物理文件模块（排除虚拟模块和带查询参数的模块）。
+ * 用于 HMR 更新时找到所有需要接收更新通知的物理文件。
+ *
+ * 例如对于依赖链：`router/index.ts → auto-routes/index.ts → virtual:routes`
+ * 从 `virtual:routes` 出发，会收集到 `auto-routes/index.ts` 和 `router/index.ts`
+ *
+ * @param mod - 起始模块节点
+ * @param [visited] - 已访问模块集合，防止循环引用
+ * @returns 物理文件模块节点数组
+ */
+export function collectPhysicalImporters(
+  mod: ModuleNode,
+  visited: Set<ModuleNode> = new Set()
+): ModuleNode[] {
+  const result: ModuleNode[] = []
+
+  for (const importer of mod.importers) {
+    if (visited.has(importer)) continue
+    visited.add(importer)
+
+    const isPhysical = !importer.url.startsWith('\0') && !importer.url.includes('?')
+    if (isPhysical) {
+      result.push(importer)
+    }
+
+    // 继续向上递归查找（无论当前是否为物理文件，都继续遍历）
+    result.push(...collectPhysicalImporters(importer, visited))
+  }
+
+  return result
 }
