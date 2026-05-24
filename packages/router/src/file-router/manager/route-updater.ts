@@ -215,7 +215,7 @@ export function updatePage(filePath: string, context: UpdaterContext): boolean {
       return true
     }
     // 选项未变化，无需更新
-    if (isEqualPageOptions(route.options || null, newOptions)) {
+    if (isEqualPageOptions(route.options || null, newOptions || null)) {
       return false
     }
     // 更新路由选项
