@@ -445,6 +445,134 @@ export function Test() { return null }`
     })
   })
 
+  describe('Bug 修复验证: updatePage 丢失 PageParser 返回的 meta', () => {
+    it('更新页面时应保留 PageParser 返回的 meta 数据', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        pageParser(basename) {
+          return {
+            path: basename,
+            options: { meta: { title: 'Home Page', order: 1 } }
+          }
+        }
+      })
+
+      const filePath = resolvePath('src/pages/index.tsx')
+      const route = router.fileMap.get(filePath)
+      expect(route?.options?.meta).toEqual({ title: 'Home Page', order: 1 })
+
+      // 更新文件内容（添加 definePage）
+      createFile(
+        'src/pages/index.tsx',
+        `definePage({ name: 'home' })
+export default function Home() { return null }`
+      )
+      router.updatePage(filePath)
+
+      // PageParser 返回的 meta 应保留，definePage 的 name 应合并
+      const updatedRoute = router.fileMap.get(filePath)
+      expect(updatedRoute?.options?.meta).toEqual({ title: 'Home Page', order: 1 })
+      expect(updatedRoute?.options?.name).toBe('home')
+    })
+
+    it('更新页面时 PageParser 返回的 meta 不应被 definePage 覆盖', () => {
+      createFile('src/pages/about.tsx', 'export default function About() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        pageParser(basename) {
+          return {
+            path: basename,
+            options: { meta: { title: 'About Page' } }
+          }
+        }
+      })
+
+      const filePath = resolvePath('src/pages/about.tsx')
+
+      // 更新文件：definePage 中也有 meta，应与 PageParser 的 meta 合并
+      createFile(
+        'src/pages/about.tsx',
+        `definePage({ meta: { requiresAuth: true } })
+export default function About() { return null }`
+      )
+      router.updatePage(filePath)
+
+      const updatedRoute = router.fileMap.get(filePath)
+      // PageParser 的 meta 和 definePage 的 meta 都应保留
+      expect(updatedRoute?.options?.meta?.title).toBe('About Page')
+      expect(updatedRoute?.options?.meta?.requiresAuth).toBe(true)
+    })
+
+    it('仅修改 definePage 时 PageParser 的 meta 不应丢失', () => {
+      createFile(
+        'src/pages/contact.tsx',
+        `definePage({ name: 'contact' })
+export default function Contact() { return null }`
+      )
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages',
+        pageParser(basename) {
+          return {
+            path: basename,
+            options: { meta: { title: 'Contact Page', icon: 'email' } }
+          }
+        }
+      })
+
+      const filePath = resolvePath('src/pages/contact.tsx')
+      // 初始状态：PageParser meta + definePage name
+      const route = router.fileMap.get(filePath)
+      expect(route?.options?.meta).toEqual({ title: 'Contact Page', icon: 'email' })
+      expect(route?.options?.name).toBe('contact')
+
+      // 仅修改 definePage 的 name
+      createFile(
+        'src/pages/contact.tsx',
+        `definePage({ name: 'contact-us' })
+export default function Contact() { return null }`
+      )
+      router.updatePage(filePath)
+
+      const updatedRoute = router.fileMap.get(filePath)
+      // PageParser 的 meta 应保留
+      expect(updatedRoute?.options?.meta).toEqual({ title: 'Contact Page', icon: 'email' })
+      // definePage 的 name 应更新
+      expect(updatedRoute?.options?.name).toBe('contact-us')
+    })
+
+    it('无 PageParser 时更新页面应正常工作', () => {
+      createFile(
+        'src/pages/simple.tsx',
+        `definePage({ name: 'simple' })
+export default function Simple() { return null }`
+      )
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      const filePath = resolvePath('src/pages/simple.tsx')
+
+      createFile(
+        'src/pages/simple.tsx',
+        `definePage({ name: 'simple-updated' })
+export default function Simple() { return null }`
+      )
+      router.updatePage(filePath)
+
+      const updatedRoute = router.fileMap.get(filePath)
+      expect(updatedRoute?.options?.name).toBe('simple-updated')
+    })
+  })
+
   describe('Bug 修复验证: removePage 叶子节点 fileMap 残留', () => {
     it('移除叶子页面节点后，fileMap 中不应残留该文件映射', () => {
       createFile('src/pages/test.tsx', 'export default function Test() { return null }')

@@ -10,7 +10,7 @@
  */
 import nodePath from 'node:path'
 import { type PageDirConfig } from '../config/index.js'
-import { isEqualPageOptions, parseDefinePage } from '../macros/index.js'
+import { isEqualPageOptions, mergePageOptions, parseDefinePage } from '../macros/index.js'
 import { checkDefaultExport, isPageFileInDirs } from '../parser/index.js'
 import { parsePageFile } from '../parser/parsePage.js'
 import type { ScanNode } from '../types/index.js'
@@ -208,7 +208,9 @@ export function updatePage(filePath: string, context: UpdaterContext): boolean {
   const route = context.fileMap.get(filePath)
   if (route) {
     const content = context.readFile(filePath)
-    const newOptions = parseDefinePage(content, filePath)
+    const definePageOptions = parseDefinePage(content, filePath)
+    const parsed = parsePageFile(filePath, context.config.pageParser)
+    const newOptions = mergePageOptions(parsed.options, definePageOptions)
     // 不具备默认导出且无重定向的文件应从路由树中移除
     if (!newOptions?.redirect && !checkDefaultExport(content, filePath)) {
       removePage(filePath, context)
@@ -219,7 +221,7 @@ export function updatePage(filePath: string, context: UpdaterContext): boolean {
       return false
     }
     // 更新路由选项
-    if (newOptions) {
+    if (newOptions && Object.keys(newOptions).length) {
       route.options = newOptions
     } else {
       delete route.options
