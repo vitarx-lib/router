@@ -10,12 +10,18 @@
  */
 import nodePath from 'node:path'
 import { type PageDirConfig } from '../config/index.js'
-import { type ProcessorContext, type ScanDirConfig, processConfigFile, processLayoutFile, processPageFile } from './file-processor.js'
-import { resolveFile } from './file-classifier.js'
 import { isEqualPageOptions, parseDefinePage } from '../macros/index.js'
 import { checkDefaultExport, isPageFileInDirs } from '../parser/index.js'
 import { parsePageFile } from '../parser/parsePage.js'
 import type { ScanNode } from '../types/index.js'
+import { resolveFile } from './file-classifier.js'
+import {
+  processConfigFile,
+  processLayoutFile,
+  type ProcessorContext,
+  processPageFile,
+  type ScanDirConfig
+} from './file-processor.js'
 
 /**
  * 增量更新上下文
@@ -209,7 +215,7 @@ export function updatePage(filePath: string, context: UpdaterContext): boolean {
       return true
     }
     // 选项未变化，无需更新
-    if (isEqualPageOptions(route.options, newOptions)) {
+    if (isEqualPageOptions(route.options || null, newOptions)) {
       return false
     }
     // 更新路由选项
