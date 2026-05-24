@@ -1,14 +1,22 @@
-# [4.0.0-beta.27](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.26...v4.0.0-beta.27) (2026-05-24)
+# [4.0.0-beta.28](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.27...v4.0.0-beta.28) (2026-05-24)
+
+
+### Bug Fixes
+
+* **router:** 修复 addRoute 遗漏 children BUG ([0581769](https://github.com/vitarx-lib/router/commit/05817699b0d082a38f9cb99fb49a36217c57cccf))
+* **router:** 修复热更新时强制重新导航当前路由问题 ([00425f3](https://github.com/vitarx-lib/router/commit/00425f3509a59dbda89114ee89e42c5ced0c8212))
+* **router:** 修复热更新路由处理逻辑 ([44dbd87](https://github.com/vitarx-lib/router/commit/44dbd879159d40e9f1acb3e5047acc5e2ef5ec03))
+* **router:** 修复路由树中节点添加和移除逻辑 ([1e0d7d0](https://github.com/vitarx-lib/router/commit/1e0d7d0ff4f17d994fa2ad3514ffbb8410b2275c))
+* **router:** 修复路由选项比较的空值处理 ([c1dce6d](https://github.com/vitarx-lib/router/commit/c1dce6de5767dae26333be993982a77664ca4da1))
+
+# [4.0.0-beta.26](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.25...v4.0.0-beta.26) (2026-05-22)
 
 
 ### Bug Fixes
 
 * **router:** 优化元素选择器滚动处理的异常捕获 ([84bb91d](https://github.com/vitarx-lib/router/commit/84bb91d5f980d800bc6a0eef936fe386f9b85f36))
-* **router:** 修复 addRoute 遗漏 children BUG ([0581769](https://github.com/vitarx-lib/router/commit/05817699b0d082a38f9cb99fb49a36217c57cccf))
 * **router:** 修复 hash 改变时路由位置未更新问题 ([89f8e8d](https://github.com/vitarx-lib/router/commit/89f8e8d949a07a2dc9189dbaff04d2676d9aa107))
 * **router:** 修复 RouterLink 对外部链接的匹配警告问题 ([a1d6216](https://github.com/vitarx-lib/router/commit/a1d62166e48bd2d8bb09bf9aff0700aa84c54ec7))
-* **router:** 修复热更新路由处理逻辑 ([44dbd87](https://github.com/vitarx-lib/router/commit/44dbd879159d40e9f1acb3e5047acc5e2ef5ec03))
-* **router:** 修复路由树中节点添加和移除逻辑 ([1e0d7d0](https://github.com/vitarx-lib/router/commit/1e0d7d0ff4f17d994fa2ad3514ffbb8410b2275c))
 * **router:** 修正哈希变化判断逻辑 ([413d83a](https://github.com/vitarx-lib/router/commit/413d83a40c1b06a0cfd6f2d6db59d7f370920e33))
 
 
