@@ -1,4 +1,4 @@
-import type { ModuleNode, Update, ViteDevServer } from 'vite'
+import type { Update, ViteDevServer } from 'vite'
 import { FileRouter, type FileWatcherEvent } from '../file-router/index.js'
 
 /**
@@ -83,42 +83,6 @@ export function setupWatcher(
 }
 
 /**
- * 递归收集模块的所有物理文件依赖者
- *
- * 从指定模块出发，沿着 importer 链向上递归遍历，
- * 收集所有物理文件模块（排除虚拟模块和带查询参数的模块）。
- * 用于 HMR 更新时找到所有需要接收更新通知的物理文件。
- *
- * 例如对于依赖链：`router/index.ts → auto-routes/index.ts → virtual:routes`
- * 从 `virtual:routes` 出发，会收集到 `auto-routes/index.ts` 和 `router/index.ts`
- *
- * @param mod - 起始模块节点
- * @param [visited] - 已访问模块集合，防止循环引用
- * @returns 物理文件模块节点数组
- */
-export function collectPhysicalImporters(
-  mod: ModuleNode,
-  visited: Set<ModuleNode> = new Set()
-): ModuleNode[] {
-  const result: ModuleNode[] = []
-
-  for (const importer of mod.importers) {
-    if (visited.has(importer)) continue
-    visited.add(importer)
-
-    const isPhysical = !importer.url.startsWith('\0') && !importer.url.includes('?')
-    if (isPhysical) {
-      result.push(importer)
-    }
-
-    // 继续向上递归查找（无论当前是否为物理文件，都继续遍历）
-    result.push(...collectPhysicalImporters(importer, visited))
-  }
-
-  return result
-}
-
-/**
  * 触发虚拟路由模块的 HMR 更新
  *
  * 使虚拟模块缓存失效，并递归收集所有物理文件依赖者，
@@ -142,11 +106,7 @@ export function invalidateVirtualModule(server: ViteDevServer, virtualId: string
   // 2. 使虚拟模块缓存失效
   server.moduleGraph.invalidateModule(virtualMod)
 
-  // 3. 递归收集虚拟模块的所有物理文件依赖者
-  const physicalImporters = collectPhysicalImporters(virtualMod)
-  if (physicalImporters.length === 0) return false
-
-  // 4. 向每个物理文件依赖者发送 HMR 更新信号
+  // 3. 向每个物理文件依赖者发送 HMR 更新信号
   // acceptedPath 必须与 Vite 客户端内部的模块 ID 转换规则一致：
   // 客户端 import.meta.hot.accept('virtual:xxx', cb) 注册时，
   // Vite 会将 'virtual:xxx' 转换为 '/@id/__x00__virtual:xxx' 作为 accept 的 key，
@@ -154,7 +114,7 @@ export function invalidateVirtualModule(server: ViteDevServer, virtualId: string
   // 注意：/@id/ 和 __x00__ 是 Vite 内部约定，非公开 API，升级时需验证。
   const acceptedPath = `/@id/__x00__${virtualId}`
   const timestamp = Date.now()
-  const updates: Update[] = physicalImporters.map(importer => ({
+  const updates: Update[] = Array.from(virtualMod.importers).map(importer => ({
     type: 'js-update' as const,
     path: importer.url,
     acceptedPath,
