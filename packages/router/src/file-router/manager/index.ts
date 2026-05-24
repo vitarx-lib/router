@@ -21,11 +21,17 @@ import { type FilterOptions } from '../parser/index.js'
 import { extractFileInfo } from '../parser/parsePage.js'
 import { computeRouteFullPath } from '../parser/routePath.js'
 import type { FileRouterOptions, ScanNode } from '../types/index.js'
-import { applyPathStrategy, info, readFileContent, resolvePathVariable, validateOptions } from '../utils/index.js'
+import {
+  applyPathStrategy,
+  info,
+  readFileContent,
+  resolvePathVariable,
+  validateOptions
+} from '../utils/index.js'
 import { checkIsPageFile, getPageType } from './file-classifier.js'
 import { type ProcessorContext } from './file-processor.js'
+import { addPage, removePage, updatePage, type UpdaterContext } from './route-updater.js'
 import { scanPages } from './scanner.js'
-import { type UpdaterContext, addPage, removePage, updatePage } from './route-updater.js'
 
 /**
  * 文件监听器事件类型
