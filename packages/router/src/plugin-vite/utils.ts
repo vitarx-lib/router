@@ -1,4 +1,4 @@
-import type { ModuleNode, ViteDevServer } from 'vite'
+import type { ModuleNode, Update, ViteDevServer } from 'vite'
 import { FileRouter, type FileWatcherEvent } from '../file-router/index.js'
 
 /**
@@ -116,4 +116,51 @@ export function collectPhysicalImporters(
   }
 
   return result
+}
+
+/**
+ * 触发虚拟路由模块的 HMR 更新
+ *
+ * 使虚拟模块缓存失效，并递归收集所有物理文件依赖者，
+ * 向它们发送 HMR 更新信号，使客户端能接收到路由变化。
+ *
+ * 处理流程：
+ * 1. 获取虚拟模块在依赖图中的节点
+ * 2. 使虚拟模块缓存失效
+ * 3. 递归收集所有物理文件依赖者（支持 barrel 文件 re-export 场景）
+ * 4. 向每个物理文件依赖者发送 js-update 信号
+ *
+ * @param server - Vite 开发服务器实例
+ * @param virtualId - 虚拟模块的原始 ID（如 `virtual:vitarx-router:routes`）
+ * @returns 是否成功发送了 HMR 更新
+ */
+export function invalidateVirtualModule(server: ViteDevServer, virtualId: string): boolean {
+  // 1. 获取虚拟模块在依赖图中的节点
+  const virtualMod = server.moduleGraph.getModuleById(`\0${virtualId}`)
+  if (!virtualMod || virtualMod.importers.size === 0) return false
+
+  // 2. 使虚拟模块缓存失效
+  server.moduleGraph.invalidateModule(virtualMod)
+
+  // 3. 递归收集虚拟模块的所有物理文件依赖者
+  const physicalImporters = collectPhysicalImporters(virtualMod)
+  if (physicalImporters.length === 0) return false
+
+  // 4. 向每个物理文件依赖者发送 HMR 更新信号
+  // acceptedPath 必须与 Vite 客户端内部的模块 ID 转换规则一致：
+  // 客户端 import.meta.hot.accept('virtual:xxx', cb) 注册时，
+  // Vite 会将 'virtual:xxx' 转换为 '/@id/__x00__virtual:xxx' 作为 accept 的 key，
+  // 所以 HMR update 中的 acceptedPath 也必须使用这个转换后的路径。
+  // 注意：/@id/ 和 __x00__ 是 Vite 内部约定，非公开 API，升级时需验证。
+  const acceptedPath = `/@id/__x00__${virtualId}`
+  const timestamp = Date.now()
+  const updates: Update[] = physicalImporters.map(importer => ({
+    type: 'js-update' as const,
+    path: importer.url,
+    acceptedPath,
+    timestamp
+  }))
+
+  server.ws.send({ type: 'update', updates })
+  return true
 }

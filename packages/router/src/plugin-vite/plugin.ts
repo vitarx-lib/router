@@ -41,7 +41,7 @@
  * @module vite
  * @see {@link https://router.vitarx.cn 官方文档}
  */
-import { type Plugin, type Update } from 'vite'
+import { type Plugin } from 'vite'
 
 import {
   FileRouter,
@@ -51,7 +51,7 @@ import {
   warn
 } from '../file-router/index.js'
 import { RESOLVED_ROUTES_ID, VIRTUAL_ROUTES_ID } from './constant.js'
-import { collectPhysicalImporters, setupWatcher } from './utils.js'
+import { invalidateVirtualModule, setupWatcher } from './utils.js'
 
 /** 插件名称，用于日志输出和调试 */
 const PLUGIN_NAME = 'vite-plugin-vitarx-router'
@@ -247,30 +247,7 @@ export default function vitarxRouter(options: RouterPluginOptions = {}): Plugin 
         try {
           const isRouteAffected = router.handleChange(event, file)
           if (!isRouteAffected) return
-          // 1. 获取虚拟模块在依赖图中的节点
-          const virtualMod = server.moduleGraph.getModuleById(RESOLVED_ROUTES_ID)
-          if (!virtualMod || virtualMod.importers.size === 0) return
-
-          // 2. 使虚拟模块缓存失效
-          server.moduleGraph.invalidateModule(virtualMod)
-
-          // 3. 递归收集虚拟模块的所有物理文件依赖者
-          // 包括直接依赖者和间接依赖者（如通过 barrel 文件 re-export 的场景）
-          const physicalImporters = collectPhysicalImporters(virtualMod)
-          if (physicalImporters.length === 0) return
-
-          // 4. 向每个物理文件依赖者发送 HMR 更新信号
-          const acceptedPath = `/@id/__x00__${VIRTUAL_ROUTES_ID}`
-          const timestamp = Date.now()
-          const updates: Update[] = physicalImporters.map(importer => ({
-            type: 'js-update' as const,
-            path: importer.url,
-            acceptedPath,
-            timestamp
-          }))
-          if (updates.length > 0) {
-            server.ws.send({ type: 'update', updates })
-          }
+          invalidateVirtualModule(server, VIRTUAL_ROUTES_ID)
         } catch (error) {
           warn(`Failed to handle file change for ${file}:`, error)
         }
