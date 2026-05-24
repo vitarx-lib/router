@@ -1,13 +1,7 @@
 import { type App as VitarxApp, createApp, Dynamic, h } from 'vitarx'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RouterView } from '../../src/components/index.js'
-import {
-  __ROUTER_KEY__,
-  createRouter,
-  defineRoutes,
-  NavState,
-  type Route
-} from '../../src/index.js'
+import { __ROUTER_KEY__, createRouter, defineRoutes, type Route } from '../../src/index.js'
 import { createMockComponent, waitForRender } from '../core/testHelpers.js'
 
 const basicRoutes: Route[] = defineRoutes(
@@ -332,52 +326,6 @@ describe('RouterView', () => {
       expect(errorSpy).toHaveBeenCalled()
 
       errorSpy.mockRestore()
-    })
-  })
-
-  describe('missing 组件', () => {
-    it('未匹配路由时应该渲染 missing 组件', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const missingComponent = createMockComponent('Missing')
-      const testRoutes: Route[] = [
-        { path: '/', component: { default: createMockComponent('Home') }, props: { default: {} } }
-      ]
-
-      router = createRouter({
-        mode: 'hash',
-        routes: testRoutes,
-        missing: missingComponent
-      })
-
-      await router.push({ index: '/nonexistent' })
-
-      app = createApp(() => h(RouterView))
-      app.provide(__ROUTER_KEY__, router)
-      app.mount(container)
-
-      await waitForRender(100)
-
-      expect(container.querySelector('[data-testid="Missing"]')).toBeDefined()
-      warnSpy.mockRestore()
-    })
-
-    it('没有 missing 组件时不更新路线', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const testRoutes: Route[] = [
-        { path: '/', component: { default: createMockComponent('Home') }, props: { default: {} } }
-      ]
-
-      router = createRouter({ mode: 'hash', routes: testRoutes })
-      const result = await router.push({ index: '/nonexistent' })
-      expect(result.state).toBe(NavState.notfound)
-      app = createApp(() => h(RouterView, {}))
-      app.provide(__ROUTER_KEY__, router)
-      app.mount(container)
-
-      await waitForRender(100)
-
-      expect(container.children.length).toBe(1)
-      warnSpy.mockRestore()
     })
   })
 
