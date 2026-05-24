@@ -1,6 +1,11 @@
 import { createRouter } from 'vitarx-router'
-import { routes } from 'vitarx-router/auto-routes'
+import { handleHotUpdate, routes } from 'vitarx-router/auto-routes'
 
 export const router = createRouter({
   routes
 })
+
+// Hot module replacement
+if (import.meta.hot) {
+  handleHotUpdate(router)
+}
