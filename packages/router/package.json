@@ -50,7 +50,7 @@
   },
   "scripts": {
     "build": "rimraf dist && vitest run && tsc -p tsconfig.build.json && pnpm check:circular",
-    "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:circular": "madge --extensions js --circular dist --warning --exclude '.*\\.d\\.ts$'",
     "test": "vitest run",
     "test:core": "vitest run --project core",
