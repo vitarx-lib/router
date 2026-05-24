@@ -1,14 +1,28 @@
-# [4.0.0-beta.26](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.25...v4.0.0-beta.26) (2026-05-22)
+# [4.0.0-beta.27](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.26...v4.0.0-beta.27) (2026-05-24)
+
+
+### Bug Fixes
+
+* **router:** 优化元素选择器滚动处理的异常捕获 ([84bb91d](https://github.com/vitarx-lib/router/commit/84bb91d5f980d800bc6a0eef936fe386f9b85f36))
+* **router:** 修复 addRoute 遗漏 children BUG ([0581769](https://github.com/vitarx-lib/router/commit/05817699b0d082a38f9cb99fb49a36217c57cccf))
+* **router:** 修复 hash 改变时路由位置未更新问题 ([89f8e8d](https://github.com/vitarx-lib/router/commit/89f8e8d949a07a2dc9189dbaff04d2676d9aa107))
+* **router:** 修复 RouterLink 对外部链接的匹配警告问题 ([a1d6216](https://github.com/vitarx-lib/router/commit/a1d62166e48bd2d8bb09bf9aff0700aa84c54ec7))
+* **router:** 修复热更新路由处理逻辑 ([44dbd87](https://github.com/vitarx-lib/router/commit/44dbd879159d40e9f1acb3e5047acc5e2ef5ec03))
+* **router:** 修复路由树中节点添加和移除逻辑 ([1e0d7d0](https://github.com/vitarx-lib/router/commit/1e0d7d0ff4f17d994fa2ad3514ffbb8410b2275c))
+* **router:** 修正哈希变化判断逻辑 ([413d83a](https://github.com/vitarx-lib/router/commit/413d83a40c1b06a0cfd6f2d6db59d7f370920e33))
+
+
+### Features
+
+* **router:** 添加链接精准匹配模式支持 ([e65d742](https://github.com/vitarx-lib/router/commit/e65d74213b1646eb2601ec5988d163f11870afd9))
+
+# [4.0.0-beta.25](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.24...v4.0.0-beta.25) (2026-05-17)
 
 
 ### Bug Fixes
 
 * **router:** 优化 RouterView 组件的渲染参数类型和注释 ([785df67](https://github.com/vitarx-lib/router/commit/785df671ccc7f3cfa89d9b7c25525a609564c8a0))
-* **router:** 优化元素选择器滚动处理的异常捕获 ([84bb91d](https://github.com/vitarx-lib/router/commit/84bb91d5f980d800bc6a0eef936fe386f9b85f36))
-* **router:** 修复 hash 改变时路由位置未更新问题 ([89f8e8d](https://github.com/vitarx-lib/router/commit/89f8e8d949a07a2dc9189dbaff04d2676d9aa107))
-* **router:** 修复 RouterLink 对外部链接的匹配警告问题 ([a1d6216](https://github.com/vitarx-lib/router/commit/a1d62166e48bd2d8bb09bf9aff0700aa84c54ec7))
 * **router:** 修正 RouterLink 组件 aria-current 属性处理 ([b719911](https://github.com/vitarx-lib/router/commit/b719911e9f474385894236e5f1c40c52de4daee1))
-* **router:** 修正哈希变化判断逻辑 ([413d83a](https://github.com/vitarx-lib/router/commit/413d83a40c1b06a0cfd6f2d6db59d7f370920e33))
 * **router:** 修正导航目标路由状态判断逻辑 ([5258b99](https://github.com/vitarx-lib/router/commit/5258b99c49d42db40b5c84a6956e98b43a41776b))
 
 
@@ -18,7 +32,6 @@
 * **router:** 导出路由相关的辅助类型判断函数 ([3a94bec](https://github.com/vitarx-lib/router/commit/3a94bec1852152b837de7996b27fe5df4e7f0f95))
 * **router:** 新增外部链接导航状态枚举 ([b2f3cc1](https://github.com/vitarx-lib/router/commit/b2f3cc12ba391a58441e2d213e0795b2b2f69e6c))
 * **router:** 添加RouterLink组件禁用状态类名支持 ([9bd9fd0](https://github.com/vitarx-lib/router/commit/9bd9fd08be8b5137be40caba954453de16464b21))
-* **router:** 添加链接精准匹配模式支持 ([e65d742](https://github.com/vitarx-lib/router/commit/e65d74213b1646eb2601ec5988d163f11870afd9))
 
 # [4.0.0-beta.24](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.23...v4.0.0-beta.24) (2026-05-15)
 
