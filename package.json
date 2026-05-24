@@ -11,14 +11,14 @@
     "@commitlint/config-conventional": "^20.5.0",
     "@commitlint/types": "^20.5.0",
     "@types/node": "25.4.0",
-    "@vitarx/plugin-vite": "0.0.1-beta.7",
+    "@vitarx/plugin-vite": "1.0.0-beta.8",
     "@vitest/browser-playwright": "^4.1.4",
     "@vitest/coverage-v8": "^4.1.4",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
     "prettier": "^3.8.2",
     "typescript": "^6.0.2",
-    "vitarx": "4.0.0-beta.18",
+    "vitarx": "4.0.0-beta.19",
     "vite": "8.0.5",
     "vitest": "^4.1.4"
   },
@@ -28,8 +28,8 @@
       "@types/node": "25.4.0",
       "rollup": "4.53.3",
       "vite": "8.0.5",
-      "@vitarx/plugin-vite": "0.0.1-beta.7",
-      "vitarx": "4.0.0-beta.18"
+      "@vitarx/plugin-vite": "1.0.0-beta.8",
+      "vitarx": "4.0.0-beta.19"
     }
   }
 }
