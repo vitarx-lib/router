@@ -563,6 +563,13 @@ export class FileRouter {
         )
         if (route) {
           this.fileMap.set(filePath, route)
+          // 将新路由添加到父级的 children 或顶层 nodeTree
+          if (parent) {
+            parent.children ??= new Set()
+            parent.children.add(route)
+          } else {
+            this.#nodeTree.push(route)
+          }
           return true
         }
         return false
@@ -600,8 +607,15 @@ export class FileRouter {
           this.removePage(child.filePath)
         })
       }
-      // 从父级移除
-      route.parent?.children?.delete(route)
+      // 从父级或顶层 nodeTree 移除
+      if (route.parent) {
+        route.parent.children?.delete(route)
+      } else {
+        const index = this.#nodeTree.indexOf(route)
+        if (index > -1) {
+          this.#nodeTree.splice(index, 1)
+        }
+      }
       return true
     }
     return false

@@ -355,6 +355,9 @@ describe('file-router/index (FileRouter)', () => {
 
       expect(result).toBe(true)
       expect(router.fileMap.has(resolvePath('src/pages/new.tsx'))).toBe(true)
+      // 新路由应出现在 nodeTree 中
+      const paths = router.nodeTree.map(n => n.path)
+      expect(paths).toContain('/new')
     })
 
     it('添加非页面文件应该返回 false', () => {
@@ -380,11 +383,14 @@ describe('file-router/index (FileRouter)', () => {
 
       const filePath = resolvePath('src/pages/test.tsx')
       expect(router.fileMap.has(filePath)).toBe(true)
+      expect(router.nodeTree.length).toBe(1)
 
       const result = router.removePage(filePath)
 
       expect(result).toBe(true)
       expect(router.fileMap.has(filePath)).toBe(false)
+      // 顶层路由应从 nodeTree 中移除
+      expect(router.nodeTree.length).toBe(0)
     })
 
     it('移除不存在的文件应该返回 false', () => {
@@ -436,6 +442,55 @@ describe('file-router/index (FileRouter)', () => {
 
       expect(result).toBe(true)
       expect(router.fileMap.has(filePath)).toBe(true)
+      // updatePage 内部调用 addPage，新路由应出现在 nodeTree 中
+      const paths = router.nodeTree.map(n => n.path)
+      expect(paths).toContain('/new')
+    })
+
+    it('添加页面到子目录应添加到父级 children', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+      // user 目录在初始化时就存在，这样 fileMap 中会有 user 目录的映射
+      createFile('src/pages/user/list.tsx', 'export default function UserList() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      // 确认 user 目录已在 nodeTree 中
+      const userDir = router.nodeTree.find(n => n.path === '/user')
+      expect(userDir).toBeDefined()
+
+      // 添加子目录下的新页面
+      createFile('src/pages/user/profile.tsx', 'export default function Profile() { return null }')
+      const result = router.addPage(resolvePath('src/pages/user/profile.tsx'))
+
+      expect(result).toBe(true)
+      expect(router.fileMap.has(resolvePath('src/pages/user/profile.tsx'))).toBe(true)
+      // 新页面应添加到父级 children 中
+      expect(userDir!.children?.size).toBeGreaterThan(1)
+    })
+
+    it('移除子目录页面应从父级 children 中移除', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+      createFile('src/pages/user/profile.tsx', 'export default function Profile() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      const profilePath = resolvePath('src/pages/user/profile.tsx')
+      const userDir = router.nodeTree.find(n => n.path === '/user')
+      expect(userDir).toBeDefined()
+      expect(userDir!.children?.size).toBe(1)
+
+      const result = router.removePage(profilePath)
+
+      expect(result).toBe(true)
+      expect(router.fileMap.has(profilePath)).toBe(false)
+      // 子路由应从父级 children 中移除
+      expect(userDir!.children?.size).toBe(0)
     })
   })
 
@@ -846,7 +901,10 @@ describe('file-router/index (FileRouter)', () => {
 
     it('groupParser 应正确处理嵌套目录', () => {
       createFile('src/pages/1.home/index.tsx', 'export default function Home() { return null }')
-      createFile('src/pages/1.home/2.about/index.tsx', 'export default function About() { return null }')
+      createFile(
+        'src/pages/1.home/2.about/index.tsx',
+        'export default function About() { return null }'
+      )
 
       const router = new FileRouter({
         root: tempDir,
@@ -873,7 +931,10 @@ describe('file-router/index (FileRouter)', () => {
     })
 
     it('groupParser 与分组路由配置组合使用时应正确处理 prefix', () => {
-      createFile('src/admin/1.dashboard/index.tsx', 'export default function Dashboard() { return null }')
+      createFile(
+        'src/admin/1.dashboard/index.tsx',
+        'export default function Dashboard() { return null }'
+      )
 
       const router = new FileRouter({
         root: tempDir,
@@ -886,7 +947,9 @@ describe('file-router/index (FileRouter)', () => {
       const adminGroup = router.nodeTree.find(r => r.path === '/admin')
       expect(adminGroup).toBeDefined()
 
-      const dashboardRoute = Array.from(adminGroup?.children || []).find(r => r.path === 'dashboard')
+      const dashboardRoute = Array.from(adminGroup?.children || []).find(
+        r => r.path === 'dashboard'
+      )
       expect(dashboardRoute).toBeDefined()
     })
 
