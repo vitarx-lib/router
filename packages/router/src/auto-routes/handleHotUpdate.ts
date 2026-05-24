@@ -1,5 +1,6 @@
 import type { Route, Router } from '../core/index.js'
 
+export { default as routes } from 'virtual:vitarx-router:routes'
 /**
  * 处理路由热更新函数
  *
@@ -37,9 +38,9 @@ export function handleHotUpdate(
   onRoutesUpdated?: (newRoutes: Route[]) => void
 ): void {
   if (import.meta.hot) {
-    import.meta.hot.on('vitarx-router:routes-change', async () => {
-      const modules = await import('virtual:vitarx-router:routes')
-      const routes = modules.default
+    import.meta.hot.accept('virtual:vitarx-router:routes', newModule => {
+      if (!newModule) return
+      const routes = newModule.default
       if (routes && typeof routes === 'object') {
         router.manager.clearRoutes()
 

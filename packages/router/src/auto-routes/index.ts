@@ -15,5 +15,4 @@
  * }
  * ```
  */
-export { default as routes } from 'virtual:vitarx-router:routes'
-export { handleHotUpdate } from './handleHotUpdate.js'
+export { handleHotUpdate, routes } from './handleHotUpdate.js'
