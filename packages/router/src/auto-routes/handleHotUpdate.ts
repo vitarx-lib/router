@@ -52,6 +52,16 @@ export function handleHotUpdate(
         if (onRoutesUpdated) {
           onRoutesUpdated(routes)
         }
+
+        // 强制重新导航到当前路由
+        router
+          .replace({
+            index: router.route.matched.at(-1)?.name || router.route.path,
+            params: { ...router.route.params },
+            query: { ...router.route.query },
+            hash: router.route.hash
+          })
+          .then()
       }
     })
   }
