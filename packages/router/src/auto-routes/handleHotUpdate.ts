@@ -52,16 +52,27 @@ export function handleHotUpdate(
         if (onRoutesUpdated) {
           onRoutesUpdated(routes)
         }
-
-        // 强制重新导航到当前路由
-        router
-          .replace({
-            index: router.route.matched.at(-1)?.name || router.route.path,
-            params: { ...router.route.params },
-            query: { ...router.route.query },
-            hash: router.route.hash
-          })
-          .then()
+        if (typeof window === 'undefined') return
+        const matchedRoute = router.matchRoute({
+          index: router.route.matched.at(-1)?.name || router.route.path,
+          params: { ...router.route.params },
+          query: { ...router.route.query },
+          hash: router.route.hash
+        })
+        // 如果没有匹配到路由，则重新加载页面
+        if (!matchedRoute) {
+          return window.location.reload()
+        }
+        // 热更新meta信息
+        const meta = router['_routeLocation'].meta
+        for (const key in meta) {
+          if (!(key in matchedRoute.meta)) {
+            delete meta[key]
+          }
+        }
+        for (const key in matchedRoute.meta) {
+          meta[key] = matchedRoute.meta[key]
+        }
       }
     })
   }
