@@ -42,18 +42,6 @@ export interface RouteManagerOptions {
    * @default false
    */
   ignoreCase?: boolean
-  /**
-   * 是否启用索引回退匹配。
-   *
-   * 开启后，当访问深层index路径（如 /user/index）未匹配时，
-   * 会尝试移除index路径（/user）再次进行匹配。
-   * 匹配成功则渲染组件，且保持 URL 不变。
-   *
-   * 仅支持匹配静态路径，不做动态路径匹配！
-   *
-   * @default false
-   */
-  fallbackIndex?: boolean
 }
 
 /**
@@ -154,7 +142,6 @@ export class RouteManager {
       pattern: /[^/]+/,
       ignoreCase: false,
       strict: false,
-      fallbackIndex: false,
       ...options
     })
     this.parseRoutes(routes)
@@ -264,14 +251,6 @@ export class RouteManager {
       }
     }
 
-    // 4. 结尾斜杠索引回退匹配
-    if (lookupPath.endsWith('/index') && this.config.fallbackIndex) {
-      const fallbackPath = lookupPath.slice(0, -6)
-      const fallbackRoute = this.staticRoutes.get(fallbackPath || '/')
-      if (fallbackRoute) {
-        return { path, route: fallbackRoute, params: {} }
-      }
-    }
     return null
   }
   /**

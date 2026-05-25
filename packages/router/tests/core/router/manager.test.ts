@@ -16,20 +16,17 @@ describe('RouteManager', () => {
       expect(manager.config.pattern).toEqual(/[^/]+/)
       expect(manager.config.strict).toBe(false)
       expect(manager.config.ignoreCase).toBe(false)
-      expect(manager.config.fallbackIndex).toBe(false)
     })
 
     it('应该接受自定义配置', () => {
       const manager = new RouteManager([], {
         pattern: /\d+/,
         strict: true,
-        ignoreCase: true,
-        fallbackIndex: true
+        ignoreCase: true
       })
       expect(manager.config.pattern).toEqual(/\d+/)
       expect(manager.config.strict).toBe(true)
       expect(manager.config.ignoreCase).toBe(true)
-      expect(manager.config.fallbackIndex).toBe(true)
     })
 
     it('配置应该是只读的', () => {
@@ -129,7 +126,7 @@ describe('RouteManager', () => {
 
     it('非 strict 模式下应该允许尾部斜杠', () => {
       const routes: Route[] = [{ path: '/home', component: createMockComponent() }]
-      const manager = new RouteManager(routes, { strict: false, fallbackIndex: true })
+      const manager = new RouteManager(routes, { strict: false })
       const matched = manager.matchByPath('/home/')
       expect(matched).not.toBeNull()
       expect(matched?.path).toBe('/home/')
@@ -178,22 +175,6 @@ describe('RouteManager', () => {
       const manager = new RouteManager(routes)
       expect(manager.matchByPath('/users/123')).toBeDefined()
       expect(manager.matchByPath('/users/abc')).toBeNull()
-    })
-  })
-
-  describe('matchByPath - fallbackIndex', () => {
-    it('应该在 fallbackIndex 模式下回退匹配', () => {
-      const routes: Route[] = [{ path: '/users', component: createMockComponent() }]
-      const manager = new RouteManager(routes, { fallbackIndex: true })
-      const result = manager.matchByPath('/users/index')
-      expect(result).toBeDefined()
-      expect(result?.route.path).toBe('/users')
-    })
-
-    it('非 fallbackIndex 模式下不应该回退匹配', () => {
-      const routes: Route[] = [{ path: '/users', component: createMockComponent() }]
-      const manager = new RouteManager(routes, { fallbackIndex: false })
-      expect(manager.matchByPath('/users/index')).toBeNull()
     })
   })
 
@@ -1592,28 +1573,6 @@ describe('RouteManager', () => {
       const manager = new RouteManager(routes, { strict: true })
       expect(manager.matchByPath('/users/123')).toBeDefined()
       expect(manager.matchByPath('/users/123/')).toBeNull()
-    })
-  })
-
-  describe('fallbackIndex - 高级测试', () => {
-    it('fallbackIndex 不应该匹配动态路由', () => {
-      const routes: Route[] = [{ path: '/users/{id}', component: createMockComponent() }]
-      const manager = new RouteManager(routes, { fallbackIndex: true })
-      expect(manager.matchByPath('/users/{id}/index')).toBeNull()
-    })
-
-    it('fallbackIndex 应该正确处理根路径', () => {
-      const routes: Route[] = [{ path: '/', component: createMockComponent() }]
-      const manager = new RouteManager(routes, { fallbackIndex: true })
-      expect(manager.matchByPath('/index')).toBeDefined()
-      expect(manager.matchByPath('/index')?.route.path).toBe('/')
-    })
-
-    it('fallbackIndex 应该正确处理多层路径', () => {
-      const routes: Route[] = [{ path: '/admin/users', component: createMockComponent() }]
-      const manager = new RouteManager(routes, { fallbackIndex: true })
-      expect(manager.matchByPath('/admin/users/index')).toBeDefined()
-      expect(manager.matchByPath('/admin/users/index')?.route.path).toBe('/admin/users')
     })
   })
 })
