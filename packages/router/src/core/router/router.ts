@@ -971,6 +971,8 @@ export abstract class Router {
     for (const hook of this._hooks.onNotFound) {
       try {
         const result = hook.call(this, target)
+        // 如果没有返回值，则继续执行下一个钩子
+        if (!result) continue
         // 优先判断 RouteLocation（有 matched 和 path 属性）
         if (isRouteLocation(result)) return result
         // 判断 NavTarget（有 index 属性）
