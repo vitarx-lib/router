@@ -196,14 +196,6 @@ pnpm test -- --coverage
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 创建 Pull Request
 
-## 版本发布
-
-```bash
-cd packages/router
-pnpm version [patch|minor|major]
-pnpm publish
-```
-
 ## 相关链接
 
 - [Vitarx 官网](https://vitarx.cn/)
