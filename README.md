@@ -47,10 +47,10 @@ pnpm build
 
 ## 技术栈
 
-- **构建工具**: [Vite](https://vitejs.dev/) 7.x
+- **构建工具**: [Vite](https://vitejs.dev/) 8.x
 - **包管理**: [pnpm](https://pnpm.io/) 10.x
 - **测试框架**: [Vitest](https://vitest.dev/) 4.x
-- **类型检查**: [TypeScript](https://www.typescriptlang.org/) 5.x
+- **类型检查**: [TypeScript](https://www.typescriptlang.org/) 6.x
 - **代码规范**: [Prettier](https://prettier.io/)
 - **提交规范**: [Commitlint](https://commitlint.js.org/) + [Husky](https://typicode.github.io/husky/)
 
