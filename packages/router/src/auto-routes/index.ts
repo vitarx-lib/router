@@ -15,9 +15,13 @@
  * }
  * ```
  */
+import virtualRoutes from 'virtual:vitarx-router:routes'
 import type { Route, Router } from '../core/index.js'
 
-export { default as routes } from 'virtual:vitarx-router:routes'
+/**
+ * 自动生成的路线配置
+ */
+export const routes: Route[] = virtualRoutes
 
 /**
  * 处理路由热更新函数
