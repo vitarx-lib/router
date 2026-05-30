@@ -57,7 +57,7 @@
     "test:plugin-vite": "vitest run --project plugin-vite",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-    "release": "release-cli"
+    "release": "npx change-push"
   },
   "peerDependencies": {
     "vitarx": "^4.0.0",
@@ -83,7 +83,8 @@
     "@types/babel__generator": "^7.6.0",
     "@types/babel__traverse": "^7.20.0",
     "@types/micromatch": "^4.0.9",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "change-push": "^1.0.0"
   },
   "files": [
     "dist",
