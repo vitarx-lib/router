@@ -1,18 +1,32 @@
+## [4.0.1](https://github.com/vitarx-lib/router/compare/v4.0.0...v4.0.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* **router:** 修复 routes 类型解析为any问题 ([b4fb598](https://github.com/vitarx-lib/router/commit/b4fb5986bae0b6a1a9daa4790744df4bd041cc09))
+* **router:** 修正 createRouter 返回类型为 Router ([6e8dc54](https://github.com/vitarx-lib/router/commit/6e8dc544be6ffa80770cf217aa22b10f1b1dafdd))
+
 # [4.0.0](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.28...v4.0.0) (2026-05-27)
 
 
 ### Bug Fixes
 
 * **router:** 修复热更新后无法正确导航的问题 ([6c84a27](https://github.com/vitarx-lib/router/commit/6c84a271ac6d0fa472946dd2897e02be11ae7dc2))
-* **router:** 修复热更新时强制重新导航当前路由问题 ([00425f3](https://github.com/vitarx-lib/router/commit/00425f3509a59dbda89114ee89e42c5ced0c8212))
 * **router:** 修复路由更新时页面配置合并问题 ([ee7bc96](https://github.com/vitarx-lib/router/commit/ee7bc96195257a75a052e4775875113dfc194428))
 * **router:** 修复路由选项比较时的空值处理 ([5108a78](https://github.com/vitarx-lib/router/commit/5108a78e0f22301195e72fb6e75625a3cccbee54))
-* **router:** 修复路由选项比较的空值处理 ([c1dce6d](https://github.com/vitarx-lib/router/commit/c1dce6de5767dae26333be993982a77664ca4da1))
 
 
 ### Features
 
 * **demo:** 添加HMR示例 ([fcdd6f5](https://github.com/vitarx-lib/router/commit/fcdd6f53605d57b4dd02c7bef30c802314cb70de))
+
+# [4.0.0-beta.28](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.27...v4.0.0-beta.28) (2026-05-24)
+
+
+### Bug Fixes
+
+* **router:** 修复热更新时强制重新导航当前路由问题 ([00425f3](https://github.com/vitarx-lib/router/commit/00425f3509a59dbda89114ee89e42c5ced0c8212))
+* **router:** 修复路由选项比较的空值处理 ([c1dce6d](https://github.com/vitarx-lib/router/commit/c1dce6de5767dae26333be993982a77664ca4da1))
 
 # [4.0.0-beta.27](https://github.com/vitarx-lib/router/compare/v4.0.0-beta.26...v4.0.0-beta.27) (2026-05-24)
 
