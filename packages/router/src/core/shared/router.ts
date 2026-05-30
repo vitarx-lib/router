@@ -1,4 +1,5 @@
 import { logger } from 'vitarx'
+import { Router } from '../router/index.js'
 import { RouteManager, type RouteManagerOptions } from '../router/manager.js'
 import { MemoryRouter } from '../router/memory.js'
 import { WebRouter } from '../router/web.js'
@@ -84,12 +85,8 @@ export function createMemoryRouter(options: RouterOptions): MemoryRouter {
  * @param [options.onNotFound] - 导航不匹配时触发的回调函数
  * @param [skipEnvWarn=false] - 是否跳过浏览器检查
  * @returns {Router} 返回路由实例，根据环境返回不同类型的路由
- *
  */
-export function createRouter(
-  options: RouterOptions,
-  skipEnvWarn: boolean = false
-): WebRouter | MemoryRouter {
+export function createRouter(options: RouterOptions, skipEnvWarn: boolean = false): Router {
   if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') {
     if (!skipEnvWarn) {
       logger.warn(
