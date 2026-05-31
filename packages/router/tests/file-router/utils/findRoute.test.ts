@@ -9,8 +9,8 @@
  * - 空路由列表
  */
 import { describe, expect, it } from 'vitest'
-import { findRoute } from '../../../src/file-router/utils/findRoute.js'
 import type { RouteNode } from '../../../src/file-router/types/index.js'
+import { findRoute } from '../../../src/file-router/utils/findRoute.js'
 
 function createRoute(overrides: Partial<RouteNode> & { fullPath: string }): RouteNode {
   return {
@@ -36,9 +36,7 @@ describe('utils/findRoute', () => {
     })
 
     it('应该匹配根路径', () => {
-      const routes: RouteNode[] = [
-        createRoute({ fullPath: '/', path: '/' })
-      ]
+      const routes: RouteNode[] = [createRoute({ fullPath: '/', path: '/' })]
 
       const result = findRoute(routes, '/')
       expect(result).not.toBeNull()
@@ -71,7 +69,7 @@ describe('utils/findRoute', () => {
 
       const result = findRoute(routes, '/admin/dashboard')
       expect(result).not.toBeNull()
-      expect(result!.fullPath).toBe('/admin')
+      expect(result!.fullPath).toBe('/admin/dashboard')
     })
 
     it('应该在分组路由中匹配第二个子路由', () => {
@@ -89,7 +87,7 @@ describe('utils/findRoute', () => {
 
       const result = findRoute(routes, '/admin/settings')
       expect(result).not.toBeNull()
-      expect(result!.fullPath).toBe('/admin')
+      expect(result!.fullPath).toBe('/admin/settings')
     })
 
     it('分组路由无 children 时不应匹配', () => {
@@ -142,9 +140,7 @@ describe('utils/findRoute', () => {
               fullPath: '/admin/users',
               path: 'users',
               isGroup: true,
-              children: [
-                createRoute({ fullPath: '/admin/users/list', path: 'list' })
-              ]
+              children: [createRoute({ fullPath: '/admin/users/list', path: 'list' })]
             })
           ]
         })
@@ -165,14 +161,12 @@ describe('utils/findRoute', () => {
           fullPath: '/admin',
           path: '/admin',
           isGroup: true,
-          children: [
-            createRoute({ fullPath: '/admin/dashboard', path: 'dashboard' })
-          ]
+          children: [createRoute({ fullPath: '/admin/dashboard', path: 'dashboard' })]
         })
       ]
 
       expect(findRoute(routes, '/about')!.fullPath).toBe('/about')
-      expect(findRoute(routes, '/admin/dashboard')!.fullPath).toBe('/admin')
+      expect(findRoute(routes, '/admin/dashboard')!.fullPath).toBe('/admin/dashboard')
       expect(findRoute(routes, '/not-exist')).toBeNull()
     })
   })
@@ -183,9 +177,7 @@ describe('utils/findRoute', () => {
     })
 
     it('路径不匹配时应返回 null', () => {
-      const routes: RouteNode[] = [
-        createRoute({ fullPath: '/about', path: '/about' })
-      ]
+      const routes: RouteNode[] = [createRoute({ fullPath: '/about', path: '/about' })]
 
       expect(findRoute(routes, '/about-us')).toBeNull()
     })
