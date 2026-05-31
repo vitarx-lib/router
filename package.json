@@ -1,7 +1,8 @@
 {
-  "name": "@vitarx/router-root",
+  "name": "vitarx-router",
   "author": "ZhuChongLin <8210856@qq.com>",
   "type": "module",
+  "private": true,
   "scripts": {
     "test": "cd packages/router && pnpm test",
     "test:watch": "cd packages/router && pnpm test:watch"
