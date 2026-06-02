@@ -11,7 +11,7 @@ import type { NodePath } from '@babel/traverse'
 import type { CallExpression } from '@babel/types'
 import type { PageOptions, RedirectConfig } from '../types/index.js'
 import { babelGenerate, babelTraverse, error, parseCode, warn } from '../utils/index.js'
-import { extractPageOptions } from './astValueExtractor.js'
+import { extractPageOptions, type UnsupportedNodeWarning } from './astValueExtractor.js'
 
 type Falsy = false | null | undefined | 0 | ''
 /**
@@ -61,6 +61,7 @@ export function parseDefinePage(content: string, filePath: string): PageOptions 
   try {
     const ast = parseCode(content)
     const routeOptionsList: PageOptions[] = []
+    const warnings: UnsupportedNodeWarning[] = []
 
     babelTraverse(ast, {
       CallExpression(nodePath: NodePath<CallExpression>) {
@@ -75,7 +76,7 @@ export function parseDefinePage(content: string, filePath: string): PageOptions 
           return
         }
 
-        const options = extractPageOptions(arg)
+        const options = extractPageOptions(arg, warnings)
         routeOptionsList.push(options)
       }
     })
@@ -87,6 +88,14 @@ export function parseDefinePage(content: string, filePath: string): PageOptions 
     if (routeOptionsList.length > 1) {
       warn(
         '检测到多个 definePage 调用，将合并所有配置，建议每个文件只调用一次 definePage',
+        `in ${filePath}`
+      )
+    }
+
+    // 输出不支持节点的警告
+    for (const w of warnings) {
+      warn(
+        `definePage 配置解析警告: 路径 "${w.path}" 处遇到不支持的 ${w.nodeType} 节点，该属性值将被忽略。${w.suggestion}`,
         `in ${filePath}`
       )
     }
