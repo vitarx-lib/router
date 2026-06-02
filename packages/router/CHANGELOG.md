@@ -1,9 +1,20 @@
-## [4.0.2](https://github.com/vitarx-lib/router/compare/v4.0.1...v4.0.2) (2026-06-01)
+## [4.0.3](https://github.com/vitarx-lib/router/compare/v4.0.2...v4.0.3) (2026-06-02)
 
 
 ### Bug Fixes
 
 * **router:** 修复 findRoute 函数处理嵌套路由的问题 ([c7e80f3](https://github.com/vitarx-lib/router/commit/c7e80f389ed24385787e0a0e7e0f89dbd01652e6))
+
+
+### Features
+
+* **router:** 增强 definePage 字面量提取并添加不支持节点警告机制 ([a3b5aa7](https://github.com/vitarx-lib/router/commit/a3b5aa7bf05c2afb9d636faf50446608c9308c7a))
+
+## [4.0.1](https://github.com/vitarx-lib/router/compare/v4.0.0...v4.0.1) (2026-05-30)
+
+
+### Bug Fixes
+
 * **router:** 修复 routes 类型解析为any问题 ([b4fb598](https://github.com/vitarx-lib/router/commit/b4fb5986bae0b6a1a9daa4790744df4bd041cc09))
 * **router:** 修正 createRouter 返回类型为 Router ([6e8dc54](https://github.com/vitarx-lib/router/commit/6e8dc544be6ffa80770cf217aa22b10f1b1dafdd))
 
