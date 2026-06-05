@@ -91,7 +91,7 @@ export function computeRouteFullPath(
       // 目录已在路由树中，直接复用其 fullPath 作为前缀，无需继续向上遍历
       const parentFullPath = computeNodeFullPath(dirNode)
       segments.unshift(parentFullPath)
-      break
+      return normalizeRoutePath(applyFullPathStrategy(segments.join('/'), pathStrategy))
     }
     // 目录未被跟踪，通过 groupParser 解析目录名（如 "1.user" → "user"），再作为路径段
     const dirName = nodePath.basename(dirPath)
