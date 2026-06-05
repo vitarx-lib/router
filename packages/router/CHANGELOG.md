@@ -1,14 +1,22 @@
-## [4.0.3](https://github.com/vitarx-lib/router/compare/v4.0.2...v4.0.3) (2026-06-02)
+## [4.0.4](https://github.com/vitarx-lib/router/compare/v4.0.3...v4.0.4) (2026-06-05)
+
+
+### Bug Fixes
+
+* **router:** 修复目录路由路径规范化错误 ([5dc82ce](https://github.com/vitarx-lib/router/commit/5dc82ce22e92a1bc08631f0040976afe687dce4e))
+
+
+### Features
+
+* **router:** 优化未扫描文件的路由路径计算逻辑 ([9be7ac8](https://github.com/vitarx-lib/router/commit/9be7ac8d5e76d0a05f3033f75be705e8af1c4be1))
+* **router:** 增强 definePage 字面量提取并添加不支持节点警告机制 ([a3b5aa7](https://github.com/vitarx-lib/router/commit/a3b5aa7bf05c2afb9d636faf50446608c9308c7a))
+
+## [4.0.2](https://github.com/vitarx-lib/router/compare/v4.0.1...v4.0.2) (2026-06-01)
 
 
 ### Bug Fixes
 
 * **router:** 修复 findRoute 函数处理嵌套路由的问题 ([c7e80f3](https://github.com/vitarx-lib/router/commit/c7e80f389ed24385787e0a0e7e0f89dbd01652e6))
-
-
-### Features
-
-* **router:** 增强 definePage 字面量提取并添加不支持节点警告机制 ([a3b5aa7](https://github.com/vitarx-lib/router/commit/a3b5aa7bf05c2afb9d636faf50446608c9308c7a))
 
 ## [4.0.1](https://github.com/vitarx-lib/router/compare/v4.0.0...v4.0.1) (2026-05-30)
 
