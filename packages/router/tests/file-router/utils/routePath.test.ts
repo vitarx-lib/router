@@ -12,7 +12,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { computeRouteFullPath } from '../../../src/file-router/parser/routePath.js'
-import type { ScanNode } from '../../../src/file-router/types/index.js'
+import type { GroupParser, ScanNode } from '../../../src/file-router/types/index.js'
 
 function createScanNode(
   overrides: Partial<ScanNode> & { path: string; filePath: string }
@@ -28,12 +28,14 @@ function createContext(overrides: {
   pagesDir?: string
   prefix?: string
   pathStrategy?: 'kebab' | 'lowercase' | 'raw'
+  groupParser?: GroupParser
 }) {
   const {
     fileMap = new Map(),
     pagesDir = '/src/pages',
     prefix = '',
-    pathStrategy = 'kebab'
+    pathStrategy = 'kebab',
+    groupParser
   } = overrides
   return {
     fileMap,
@@ -46,7 +48,8 @@ function createContext(overrides: {
         group: false
       }
     ],
-    pathStrategy
+    pathStrategy,
+    ...(groupParser ? { groupParser } : {})
   }
 }
 
@@ -363,6 +366,140 @@ describe('utils/routePath', () => {
         )
 
         expect(result).toBe('/about')
+      })
+    })
+
+    describe('groupParser 分组解析', () => {
+      it('未配置 groupParser 时应使用原始目录名', () => {
+        const result = computeRouteFullPath(
+          '/src/pages/1.user/profile.tsx',
+          { basename: 'profile', rawName: 'profile', viewName: undefined },
+          createContext({ pagesDir: '/src/pages' })
+        )
+
+        // 无 groupParser，"1.user" 直接作为路径段
+        expect(result).toBe('/1.user/profile')
+      })
+
+      it('groupParser 返回字符串时应使用解析后的路径', () => {
+        const groupParser: GroupParser = dirName => {
+          const match = dirName.match(/^\d+\.(.+)$/)
+          return match ? match[1] : dirName
+        }
+
+        const result = computeRouteFullPath(
+          '/src/pages/1.user/profile.tsx',
+          { basename: 'profile', rawName: 'profile', viewName: undefined },
+          createContext({ pagesDir: '/src/pages', groupParser })
+        )
+
+        expect(result).toBe('/user/profile')
+      })
+
+      it('groupParser 返回对象时应使用解析后的 path 字段', () => {
+        const groupParser: GroupParser = dirName => {
+          const match = dirName.match(/^(\d+)\.(.+)$/)
+          if (match) {
+            return {
+              path: match[2],
+              options: { meta: { order: Number(match[1]) } }
+            }
+          }
+          return { path: dirName }
+        }
+
+        const result = computeRouteFullPath(
+          '/src/pages/2.admin/dashboard.tsx',
+          { basename: 'dashboard', rawName: 'dashboard', viewName: undefined },
+          createContext({ pagesDir: '/src/pages', groupParser })
+        )
+
+        expect(result).toBe('/admin/dashboard')
+      })
+
+      it('groupParser 应逐级应用于多层未跟踪目录', () => {
+        const groupParser: GroupParser = dirName => {
+          const match = dirName.match(/^\d+\.(.+)$/)
+          return match ? match[1] : dirName
+        }
+
+        const result = computeRouteFullPath(
+          '/src/pages/1.system/2.settings.tsx',
+          { basename: 'settings', rawName: 'settings', viewName: undefined },
+          createContext({ pagesDir: '/src/pages', groupParser })
+        )
+
+        expect(result).toBe('/system/settings')
+      })
+
+      it('groupParser 应与已知父节点配合使用', () => {
+        const groupParser: GroupParser = dirName => {
+          const match = dirName.match(/^\d+\.(.+)$/)
+          return match ? match[1] : dirName
+        }
+
+        // /src/pages/users 已在 fileMap 中，但 /src/pages/users/1.detail 不在
+        const usersNode = createScanNode({
+          path: '/users',
+          filePath: '/src/pages/users',
+          isGroup: true
+        })
+        const fileMap = new Map([['/src/pages/users', usersNode]])
+
+        const result = computeRouteFullPath(
+          '/src/pages/users/1.detail/info.tsx',
+          { basename: 'info', rawName: 'info', viewName: undefined },
+          createContext({ fileMap, pagesDir: '/src/pages', groupParser })
+        )
+
+        // 遇到已跟踪的 users 节点后停止向上遍历，1.detail 由 groupParser 解析为 detail
+        expect(result).toBe('/users/detail/info')
+      })
+
+      it('groupParser 返回空字符串时目录不产生路径段', () => {
+        const groupParser: GroupParser = dirName => {
+          // 以 _ 开头的目录视为分组，不产生路径段
+          return dirName.startsWith('_') ? '' : dirName
+        }
+
+        const result = computeRouteFullPath(
+          '/src/pages/_auth/login.tsx',
+          { basename: 'login', rawName: 'login', viewName: undefined },
+          createContext({ pagesDir: '/src/pages', groupParser })
+        )
+
+        expect(result).toBe('/login')
+      })
+
+      it('groupParser 应与 prefix 配合使用', () => {
+        const groupParser: GroupParser = dirName => {
+          const match = dirName.match(/^\d+\.(.+)$/)
+          return match ? match[1] : dirName
+        }
+
+        const result = computeRouteFullPath(
+          '/src/admin/1.dashboard/index.tsx',
+          { basename: 'index', rawName: 'index', viewName: undefined },
+          createContext({ pagesDir: '/src/admin', prefix: '/admin', groupParser })
+        )
+
+        expect(result).toBe('/admin/dashboard')
+      })
+
+      it('groupParser 应与路径策略配合使用', () => {
+        const groupParser: GroupParser = dirName => {
+          const match = dirName.match(/^\d+\.(.+)$/)
+          return match ? match[1] : dirName
+        }
+
+        const result = computeRouteFullPath(
+          '/src/pages/1.UserProfile/detail.tsx',
+          { basename: 'detail', rawName: 'detail', viewName: undefined },
+          createContext({ pagesDir: '/src/pages', pathStrategy: 'kebab', groupParser })
+        )
+
+        // groupParser 解析为 "UserProfile"，再由 kebab 策略转为 "user-profile"
+        expect(result).toBe('/user-profile/detail')
       })
     })
   })
