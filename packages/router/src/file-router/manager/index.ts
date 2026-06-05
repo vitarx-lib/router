@@ -131,6 +131,7 @@ export class FileRouter {
       fileMap: this.fileMap,
       pages: this.config.pages,
       pageParser: this.config.pageParser,
+      groupParser: this.config.groupParser,
       pathStrategy: this.config.pathStrategy
     })
   }
