@@ -520,7 +520,7 @@ export class RouteManager {
     ) {
       record.redirect = route.redirect
     }
-    if (!component && !route.redirect && !isGroup) {
+    if (!component && !record.redirect && !isGroup) {
       throw new Error(
         `[Router] Route component or redirect or children it cannot be empty at the same time for route "${record.path}"`
       )
