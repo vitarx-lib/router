@@ -1,6 +1,5 @@
 import type { AnyProps, Component, DeepReadonly } from 'vitarx'
 import {
-  type AfterCallback,
   type NavigationGuard,
   type NavOptions,
   RouteLeaveGuard,
@@ -156,16 +155,8 @@ export interface Route {
   props?: InjectProps | NamedInjectProps
   /**
    * 路由进入前的钩子函数，用于权限控制或数据预加载
-   *
-   * 默认继承`RouterOptions.beforeEach`
    */
   beforeEnter?: NavigationGuard
-  /**
-   * 路由进入后的钩子函数，用于处理进入路由后的逻辑
-   *
-   * 默认继承`RouterOptions.afterEach`
-   */
-  afterEnter?: AfterCallback
 }
 
 /**
