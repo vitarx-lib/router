@@ -169,7 +169,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
       // 兼容纯锚点连接跳转
       if (target.index.startsWith('#')) {
         const route = cloneRouteLocation(router.route)
-        route.hash = target.index as URLHash
+        route.hash = decodeURIComponent(target.index) as URLHash
         route.href = router.buildUrl(route.path, route.query, route.hash)
         return route
       }
@@ -177,7 +177,7 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
       if (target.index.includes('#')) {
         const [index, hash] = target.index.split('#', 2)
         target.index = index
-        target.hash = hash ? `#${hash}` : ''
+        target.hash = hash ? `#${decodeURIComponent(hash)}` : ''
       }
       // 解析查询参数
       if (target.index.includes('?')) {

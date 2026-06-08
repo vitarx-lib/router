@@ -108,7 +108,9 @@ export class WebRouter extends Router {
         if (isString(el)) {
           let element: Element | null = null
           try {
-            element = document.querySelector(el)
+            // 如果选择器以 # 开头，则进行解码
+            const selector = el.startsWith('#') ? decodeURIComponent(el) : el
+            element = document.querySelector(selector)
           } catch (e) {
             logger.warn(`[Router] Invalid selector "${el}", skipping scroll to element`, e)
             return
