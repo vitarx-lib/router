@@ -60,7 +60,6 @@ export default function MultiViewSidebar(): View {
         >
           {quickLinks.map((link, idx) => (
             <RouterLink
-              key={idx}
               to={link.path}
               style={{
                 display: 'block',

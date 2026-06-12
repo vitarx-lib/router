@@ -31,7 +31,6 @@ export default function AdminDashboard(): View {
       >
         {stats.map((stat, idx) => (
           <div
-            key={idx}
             style={{
               padding: '20px',
               backgroundColor: 'white',
@@ -41,7 +40,9 @@ export default function AdminDashboard(): View {
           >
             <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>{stat.label}</div>
             <div style={{ fontSize: '28px', fontWeight: '700', color: '#333' }}>{stat.value}</div>
-            <div style={{ fontSize: '12px', color: stat.color, marginTop: '5px' }}>{stat.change}</div>
+            <div style={{ fontSize: '12px', color: stat.color, marginTop: '5px' }}>
+              {stat.change}
+            </div>
           </div>
         ))}
       </div>

@@ -80,8 +80,11 @@ export default function UsersList(): View {
         </div>
 
         <p style={{ fontSize: '15px', color: '#666', lineHeight: '1.8', marginBottom: '20px' }}>
-          这是 <code style={{ backgroundColor: '#f0f0f5', padding: '2px 6px', borderRadius: '4px' }}>users</code> 目录下的索引页面。
-          目录结构会自动映射为嵌套路由。
+          这是{' '}
+          <code style={{ backgroundColor: '#f0f0f5', padding: '2px 6px', borderRadius: '4px' }}>
+            users
+          </code>{' '}
+          目录下的索引页面。 目录结构会自动映射为嵌套路由。
         </p>
 
         <div
@@ -92,13 +95,14 @@ export default function UsersList(): View {
             marginBottom: '20px'
           }}
         >
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1565c0', marginBottom: '15px' }}>
+          <h3
+            style={{ fontSize: '16px', fontWeight: '600', color: '#1565c0', marginBottom: '15px' }}
+          >
             用户列表
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {users.map(user => (
               <div
-                key={user.id}
                 style={{
                   padding: '15px',
                   backgroundColor: '#fff',
@@ -139,7 +143,9 @@ export default function UsersList(): View {
             marginBottom: '20px'
           }}
         >
-          <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#e65100', marginBottom: '10px' }}>
+          <h4
+            style={{ fontSize: '14px', fontWeight: '600', color: '#e65100', marginBottom: '10px' }}
+          >
             📁 目录结构
           </h4>
           <pre

@@ -157,9 +157,8 @@ export default function About(): View {
       </p>
 
       <div style={gridStyle}>
-        {apis.map((api) => (
+        {apis.map(api => (
           <div
-            key={api.name}
             style={cardStyle}
             onMouseEnter={(e: any) => {
               ;(e.currentTarget as any).style.transform = 'translateY(-4px)'
@@ -189,9 +188,8 @@ export default function About(): View {
       <div style={{ marginBottom: '30px', textAlign: 'left' }}>
         <h3 style={sectionTitleStyle}>核心组件</h3>
         <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-          {components.map((comp) => (
+          {components.map(comp => (
             <div
-              key={comp.name}
               style={{
                 flex: '1',
                 minWidth: '200px',

@@ -58,20 +58,46 @@ export default function AdminUsers(): View {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ backgroundColor: '#f8f9fa' }}>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}>ID</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}>姓名</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}>邮箱</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}>角色</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}>状态</th>
+              <th
+                style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}
+              >
+                ID
+              </th>
+              <th
+                style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}
+              >
+                姓名
+              </th>
+              <th
+                style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}
+              >
+                邮箱
+              </th>
+              <th
+                style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}
+              >
+                角色
+              </th>
+              <th
+                style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}
+              >
+                状态
+              </th>
             </tr>
           </thead>
           <tbody>
             {users.map(user => (
-              <tr key={user.id} style={{ borderTop: '1px solid #eee' }}>
+              <tr style={{ borderTop: '1px solid #eee' }}>
                 <td style={{ padding: '12px 16px', fontSize: '14px', color: '#333' }}>{user.id}</td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#333' }}>{user.name}</td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>{user.email}</td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>{user.role}</td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#333' }}>
+                  {user.name}
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>
+                  {user.email}
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>
+                  {user.role}
+                </td>
                 <td style={{ padding: '12px 16px' }}>
                   <span
                     style={{

@@ -102,9 +102,8 @@ export default function Home(): View {
       <p style={subtitleStyle}>Vitarx 框架的官方路由解决方案</p>
 
       <div style={gridStyle}>
-        {features.map((feature) => (
+        {features.map(feature => (
           <div
-            key={feature.title}
             style={cardStyle}
             onMouseEnter={(e: any) => {
               ;(e.currentTarget as any).style.transform = 'translateY(-4px)'

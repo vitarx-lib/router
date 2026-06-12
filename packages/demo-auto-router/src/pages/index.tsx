@@ -103,7 +103,6 @@ export default function Home(): View {
 
         {routeCategories.map((category, idx) => (
           <div
-            key={idx}
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
               borderRadius: '16px',
@@ -140,7 +139,6 @@ export default function Home(): View {
             >
               {category.routes.map((route, ridx) => (
                 <RouterLink
-                  key={ridx}
                   to={route.path}
                   style={{
                     display: 'inline-flex',

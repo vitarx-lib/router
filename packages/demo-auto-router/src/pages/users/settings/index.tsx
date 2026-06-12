@@ -85,18 +85,44 @@ export default function UserSettings(): View {
             marginBottom: '20px'
           }}
         >
-          <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#c2185b', marginBottom: '15px' }}>
+          <h4
+            style={{ fontSize: '14px', fontWeight: '600', color: '#c2185b', marginBottom: '15px' }}
+          >
             设置选项
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#666' }}>
-              <input type="checkbox" defaultChecked /> 接收邮件通知
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                fontSize: '14px',
+                color: '#666'
+              }}
+            >
+              <input type="checkbox" checked /> 接收邮件通知
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#666' }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                fontSize: '14px',
+                color: '#666'
+              }}
+            >
               <input type="checkbox" /> 接收短信通知
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#666' }}>
-              <input type="checkbox" defaultChecked /> 公开个人资料
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                fontSize: '14px',
+                color: '#666'
+              }}
+            >
+              <input type="checkbox" checked /> 公开个人资料
             </label>
           </div>
         </div>
@@ -109,10 +135,20 @@ export default function UserSettings(): View {
             marginBottom: '20px'
           }}
         >
-          <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#e65100', marginBottom: '10px' }}>
+          <h4
+            style={{ fontSize: '14px', fontWeight: '600', color: '#e65100', marginBottom: '10px' }}
+          >
             💡 嵌套路由规则
           </h4>
-          <ul style={{ margin: 0, paddingLeft: '20px', color: '#666', fontSize: '14px', lineHeight: '1.8' }}>
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: '20px',
+              color: '#666',
+              fontSize: '14px',
+              lineHeight: '1.8'
+            }}
+          >
             <li>目录结构直接映射为路由层级</li>
             <li>每个目录的 index.tsx 作为该层级的默认路由</li>
             <li>支持任意深度的嵌套</li>

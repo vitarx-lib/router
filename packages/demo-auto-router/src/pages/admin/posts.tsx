@@ -58,20 +58,46 @@ export default function AdminPosts(): View {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ backgroundColor: '#f8f9fa' }}>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}>ID</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}>标题</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}>作者</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}>日期</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}>状态</th>
+              <th
+                style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}
+              >
+                ID
+              </th>
+              <th
+                style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}
+              >
+                标题
+              </th>
+              <th
+                style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}
+              >
+                作者
+              </th>
+              <th
+                style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}
+              >
+                日期
+              </th>
+              <th
+                style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', color: '#666' }}
+              >
+                状态
+              </th>
             </tr>
           </thead>
           <tbody>
             {posts.map(post => (
-              <tr key={post.id} style={{ borderTop: '1px solid #eee' }}>
+              <tr style={{ borderTop: '1px solid #eee' }}>
                 <td style={{ padding: '12px 16px', fontSize: '14px', color: '#333' }}>{post.id}</td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#333' }}>{post.title}</td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>{post.author}</td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>{post.date}</td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#333' }}>
+                  {post.title}
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>
+                  {post.author}
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#666' }}>
+                  {post.date}
+                </td>
                 <td style={{ padding: '12px 16px' }}>
                   <span
                     style={{

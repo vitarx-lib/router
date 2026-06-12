@@ -48,7 +48,6 @@ export default function AdminLayout(): View {
           <nav>
             {menuItems.map(item => (
               <RouterLink
-                key={item.path}
                 to={item.path}
                 style={{
                   display: 'flex',
