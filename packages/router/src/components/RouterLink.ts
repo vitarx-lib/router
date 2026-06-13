@@ -11,7 +11,7 @@ import {
 import { isExternalLink, type NavigateResult } from '../core/index.js'
 import { useLink, type UseLinkOptions } from '../core/shared/index.js'
 
-export interface RouterLinkProps extends UseLinkOptions, WithProps<'a'> {
+export interface RouterLinkProps extends UseLinkOptions, Omit<WithProps<'a'>, 'href' | 'onClick'> {
   /**
    * 子节点插槽
    */
