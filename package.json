@@ -5,21 +5,30 @@
   "private": true,
   "scripts": {
     "test": "cd packages/router && pnpm test",
-    "test:watch": "cd packages/router && pnpm test:watch"
+    "test:watch": "cd packages/router && pnpm test:watch",
+    "dev:docs": "vita-site dev",
+    "dev:docs:force": "vita-site dev --force",
+    "build:docs": "rm -rf .vita-site/dist && vita-site build",
+    "preview:docs": "vita-site preview",
+    "lint:docs": "prettier --write ./docs"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@commitlint/types": "^20.5.0",
     "@types/node": "25.4.0",
+    "@vita-site/theme-default": "^1.1.0",
     "@vitarx/plugin-vite": "1.0.2",
     "@vitest/browser-playwright": "^4.1.4",
     "@vitest/coverage-v8": "^4.1.4",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
     "prettier": "^3.8.2",
+    "sass-embedded": "1.70.0",
     "typescript": "^6.0.2",
+    "vita-site": "^1.0.5",
     "vitarx": "4.0.2",
+    "vitarx-router": "^4.0.5",
     "vite": "8.0.5",
     "vitest": "^4.1.4"
   },
