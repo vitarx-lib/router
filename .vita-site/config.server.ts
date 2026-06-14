@@ -79,7 +79,7 @@ export default defineConfig({
         }
       ],
       footer:
-        '<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" style="color: var(--color-primary)">黔ICP备2024032832号</a>'
+        '<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">黔ICP备2024032832号</a>'
     })
   ],
   vite: defineViteConfig({
