@@ -1,11 +1,18 @@
-## [4.0.5](https://github.com/vitarx-lib/router/compare/v4.0.4...v4.0.5) (2026-06-08)
+## [4.0.6](https://github.com/vitarx-lib/router/compare/v4.0.5...v4.0.6) (2026-06-14)
+
+
+### Bug Fixes
+
+* **router:** 修复路由跳转中URL hash和选择器解码问题 ([f94b853](https://github.com/vitarx-lib/router/commit/f94b85358c549681d70628a470985ded5d047c71))
+* **router:** 修复路由重定向判断逻辑错误 ([0c764b4](https://github.com/vitarx-lib/router/commit/0c764b41fb53efcb690a109d13f95ae157ebf4dd))
+* **router:** 限制 removeDefinePage 仅处理指定文件类型 ([de8f6ca](https://github.com/vitarx-lib/router/commit/de8f6caa784de3840071878f3799a3e9d2e688d9))
+
+## [4.0.4](https://github.com/vitarx-lib/router/compare/v4.0.3...v4.0.4) (2026-06-05)
 
 
 ### Bug Fixes
 
 * **router:** 修复目录路由路径规范化错误 ([5dc82ce](https://github.com/vitarx-lib/router/commit/5dc82ce22e92a1bc08631f0040976afe687dce4e))
-* **router:** 修复路由跳转中URL hash和选择器解码问题 ([f94b853](https://github.com/vitarx-lib/router/commit/f94b85358c549681d70628a470985ded5d047c71))
-* **router:** 修复路由重定向判断逻辑错误 ([0c764b4](https://github.com/vitarx-lib/router/commit/0c764b41fb53efcb690a109d13f95ae157ebf4dd))
 
 
 ### Features
