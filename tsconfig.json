@@ -34,5 +34,6 @@
     // 允许使用类字段
     "useDefineForClassFields": true,
     "types": ["vitest/globals", "vite/client", "node"]
-  }
+  },
+  "include": [".vita-site/**/*.ts"]
 }
