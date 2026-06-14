@@ -118,6 +118,16 @@ export function parseDefinePage(content: string, filePath: string): PageOptions 
  * @returns 转换后的代码，无需转换返回 null
  */
 export function removeDefinePage(code: string, filename: string): GeneratorResult | null {
+  // 只处理 ts tsx js jsx 文件
+  if (
+    !filename.endsWith('.ts') &&
+    !filename.endsWith('.tsx') &&
+    !filename.endsWith('.js') &&
+    !filename.endsWith('.jsx')
+  ) {
+    return null
+  }
+
   if (!code.includes('definePage')) {
     return null
   }
