@@ -28,7 +28,7 @@
     "typescript": "^6.0.2",
     "vita-site": "^1.0.5",
     "vitarx": "4.0.2",
-    "vitarx-router": "^4.0.5",
+    "vitarx-router": "^4.0.6",
     "vite": "8.0.5",
     "vitest": "^4.1.4"
   },
