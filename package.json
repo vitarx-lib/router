@@ -17,7 +17,7 @@
     "@commitlint/config-conventional": "^20.5.0",
     "@commitlint/types": "^20.5.0",
     "@types/node": "25.4.0",
-    "@vita-site/theme-default": "^1.1.0",
+    "@vita-site/theme-default": "^1.1.1",
     "@vitarx/plugin-vite": "1.0.2",
     "@vitest/browser-playwright": "^4.1.4",
     "@vitest/coverage-v8": "^4.1.4",
