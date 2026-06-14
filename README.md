@@ -155,6 +155,29 @@ vitarx-router/
 │       │   │   └── users/     # 用户列表
 │       │   └── router/        # 路由配置
 │       └── package.json
+├── docs/                       # 文档源文件
+│   ├── api/                   # API 参考文档
+│   │   ├── 1.router-factory.md
+│   │   ├── 2.router-instance.md
+│   │   ├── 3.route-location.md
+│   │   ├── 4.components.md
+│   │   ├── 5.hooks.md
+│   │   ├── 6.navigation.md
+│   │   ├── 7.file-router.md
+│   │   ├── 8.vite-plugin.md
+│   │   └── index.md
+│   └── guide/                 # 使用指南
+│       ├── 1.getting-started/ # 快速开始
+│       ├── 2.route-config/    # 路由配置
+│       ├── 3.navigation/      # 导航
+│       ├── 4.navigation-guards/ # 导航守卫
+│       ├── 5.file-router/     # 文件系统路由
+│       ├── 6.advanced/        # 进阶
+│       └── index.md
+├── .vita-site/                 # 文档站点配置
+│   ├── public/                # 静态资源
+│   ├── config.client.ts       # 客户端配置
+│   └── config.server.ts       # 服务端配置
 ├── package.json               # 根 package.json
 ├── pnpm-workspace.yaml        # pnpm workspace 配置
 └── tsconfig.json              # TypeScript 配置
@@ -200,7 +223,7 @@ pnpm test -- --coverage
 
 - [Vitarx 官网](https://vitarx.cn/)
 - [路由文档](https://router.vitarx.cn/)
-- [GitHub Issues](https://github.com/vitarx/vitarx-router/issues)
+- [GitHub Issues](https://github.com/vitarx-lib/router/issues)
 
 ## License
 
