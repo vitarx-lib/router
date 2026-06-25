@@ -1,4 +1,4 @@
-import { type AnyCallback, isDeepEqual, isPlainObject, isString } from 'vitarx'
+import { type AnyCallback, isDeepEqual, isPlainObject, isString, logger } from 'vitarx'
 import { normalizePath, parseQuery } from '../shared/utils.js'
 import type {
   GuardResult,
@@ -6,6 +6,7 @@ import type {
   RouteIndex,
   RouteLocation,
   RoutePath,
+  ScrollTarget,
   URLHash,
   URLQuery
 } from '../types/index.js'
@@ -179,5 +180,46 @@ export function registerHookTool<T extends { [key: string]: any }>(
     hooks[type] = new Set([hook]) as any as T[keyof T]
   } else {
     set.add(hook)
+  }
+}
+
+/**
+ * web 滚动到指定位置
+ *
+ * @param target - 滚动目标
+ */
+export function webScrollTo(target: ScrollTarget): void {
+  try {
+    if ('el' in target && target.el) {
+      const { el, ...rest } = target
+      if (isString(el)) {
+        let element: Element | null = null
+        try {
+          // 如果选择器以 # 开头，则进行解码
+          const selector = el.startsWith('#') ? decodeURIComponent(el) : el
+          element = document.querySelector(selector)
+        } catch (e) {
+          logger.warn(`[Router] Invalid selector "${el}", skipping scroll to element`, e)
+          return
+        }
+        if (element) {
+          if (element.scrollIntoView) {
+            element.scrollIntoView(rest)
+          } else {
+            window.scrollTo({
+              top: element.getBoundingClientRect().top + window.scrollY,
+              left: element.getBoundingClientRect().left + window.scrollX
+            })
+          }
+        }
+      }
+    } else {
+      window.scrollTo(target)
+    }
+  } catch (e) {
+    logger.warn(
+      `[Router] Failed to scroll to specified position, please check scroll target parameters: ${JSON.stringify(target)}`,
+      e
+    )
   }
 }

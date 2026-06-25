@@ -1,6 +1,6 @@
-import { isString, logger } from 'vitarx'
+import { logger } from 'vitarx'
 import { NavState } from '../common/constant.js'
-import { parseHashContent } from '../common/utils.js'
+import { parseHashContent, webScrollTo } from '../common/utils.js'
 import { normalizePath, parseQuery } from '../shared/utils.js'
 import type {
   NavTarget,
@@ -102,39 +102,7 @@ export class WebRouter extends Router {
    * @inheritDoc
    */
   protected override scrollTo(target: ScrollTarget): void {
-    try {
-      if ('el' in target && target.el) {
-        const { el, ...rest } = target
-        if (isString(el)) {
-          let element: Element | null = null
-          try {
-            // 如果选择器以 # 开头，则进行解码
-            const selector = el.startsWith('#') ? decodeURIComponent(el) : el
-            element = document.querySelector(selector)
-          } catch (e) {
-            logger.warn(`[Router] Invalid selector "${el}", skipping scroll to element`, e)
-            return
-          }
-          if (element) {
-            if (element.scrollIntoView) {
-              element.scrollIntoView(rest)
-            } else {
-              window.scrollTo({
-                top: element.getBoundingClientRect().top + window.scrollY,
-                left: element.getBoundingClientRect().left + window.scrollX
-              })
-            }
-          }
-        }
-      } else {
-        window.scrollTo(target)
-      }
-    } catch (e) {
-      logger.warn(
-        `[Router] Failed to scroll to specified position, please check scroll target parameters: ${JSON.stringify(target)}`,
-        e
-      )
-    }
+    webScrollTo(target)
   }
   /**
    * 将当前 URL 转换为 NavigateTarget 对象

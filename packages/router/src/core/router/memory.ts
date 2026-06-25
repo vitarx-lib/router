@@ -1,4 +1,5 @@
-import type { RouteLocation } from '../types/index.js'
+import { webScrollTo } from '../common/utils.js'
+import type { RouteLocation, RouterOptions } from '../types/index.js'
 import { Router } from './router.js'
 
 /**
@@ -14,8 +15,16 @@ export class MemoryRouter extends Router {
   // 标记是否有go方法触发的导航
   protected _pendingGo: number | null = null
 
-  /// 当前历史路由索引
+  // 当前历史路由索引
   private _currentIndex: number = -1
+
+  constructor(options: RouterOptions) {
+    super(options)
+    // 兼容在electron 中使用内存路由器时享有滚动行为
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      this.scrollTo = webScrollTo
+    }
+  }
 
   /**
    * 当前历史路由索引
