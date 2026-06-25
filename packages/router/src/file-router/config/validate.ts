@@ -10,49 +10,62 @@ import type { FileRouterOptions, ImportMode, PathStrategy } from '../types/index
 /**
  * 验证 pages 配置
  *
+ * pages 支持 string（单目录路径）、PageDirOptions（单目录配置对象）以及
+ * 它们的数组形式，此处对应每种形态分别校验，与 FileRouterOptions.pages 类型保持一致。
+ *
  * @param opts - 配置选项
  * @throws {Error} 当配置无效时抛出错误
  */
 function validatePagesDir(opts: FileRouterOptions): void {
   if (opts.pages === undefined) return
 
+  // 字符串形式：单个页面目录路径
   if (typeof opts.pages === 'string') {
-    if (opts.pages.trim() === '') {
-      throw new Error('options.pages 不能为空字符串')
-    }
+    validatePageSource(opts.pages, 'options.pages')
     return
   }
 
+  // 数组形式：多个页面来源
   if (Array.isArray(opts.pages)) {
     if (opts.pages.length === 0) {
       throw new Error('options.pages 数组不能为空')
     }
     opts.pages.forEach((item, i) => {
-      validatePagesDirItem(item, i)
+      validatePageSource(item, `options.pages[${i}]`)
     })
     return
   }
 
-  throw new Error('options.pages 必须是字符串、字符串数组或对象数组')
+  // 对象形式：单个页面目录配置（PageDirOptions）
+  if (typeof opts.pages === 'object' && opts.pages !== null) {
+    validatePageSource(opts.pages, 'options.pages')
+    return
+  }
+
+  throw new Error('options.pages 必须是字符串、对象或字符串/对象数组')
 }
 
 /**
- * 验证 pages 数组中的单个项目
+ * 验证单个页面来源配置
  *
- * @param item - 数组项
- * @param index - 数组索引
+ * 同时用于单对象配置（fieldPrefix 为 'options.pages'）与数组项
+ * （fieldPrefix 为 'options.pages[i]'）的校验，通过 fieldPrefix 拼接出
+ * 准确的错误定位信息，避免单对象与数组两套校验逻辑的重复实现。
+ *
+ * @param source - 页面来源，可为字符串或 PageDirOptions 对象
+ * @param fieldPrefix - 错误信息字段前缀
  * @throws {Error} 当配置无效时抛出错误
  */
-function validatePagesDirItem(item: unknown, index: number): void {
-  if (typeof item === 'string') {
-    if (item.trim() === '') {
-      throw new Error(`options.pages[${index}] 不能为空字符串`)
+function validatePageSource(source: unknown, fieldPrefix: string): void {
+  if (typeof source === 'string') {
+    if (source.trim() === '') {
+      throw new Error(`${fieldPrefix} 不能为空字符串`)
     }
     return
   }
 
-  if (typeof item === 'object' && item !== null) {
-    const config = item as {
+  if (typeof source === 'object' && source !== null) {
+    const config = source as {
       dir?: unknown
       include?: unknown
       exclude?: unknown
@@ -61,15 +74,15 @@ function validatePagesDirItem(item: unknown, index: number): void {
     }
 
     if (!config.dir || typeof config.dir !== 'string' || config.dir.trim() === '') {
-      throw new Error(`options.pages[${index}].dir 必须是非空字符串`)
+      throw new Error(`${fieldPrefix}.dir 必须是非空字符串`)
     }
 
     if (config.include !== undefined && !Array.isArray(config.include)) {
-      throw new Error(`options.pages[${index}].include 必须是数组`)
+      throw new Error(`${fieldPrefix}.include 必须是数组`)
     }
 
     if (config.exclude !== undefined && !Array.isArray(config.exclude)) {
-      throw new Error(`options.pages[${index}].exclude 必须是数组`)
+      throw new Error(`${fieldPrefix}.exclude 必须是数组`)
     }
 
     if (
@@ -80,14 +93,14 @@ function validatePagesDirItem(item: unknown, index: number): void {
       config.prefix.endsWith('/')
     ) {
       throw new Error(
-        `options.pages[${index}].prefix 当 group 为 true 时不能以 '/' 结尾，请使用 '${config.prefix.slice(0, -1)}'`
+        `${fieldPrefix}.prefix 当 group 为 true 时不能以 '/' 结尾，请使用 '${config.prefix.slice(0, -1)}'`
       )
     }
 
     return
   }
 
-  throw new Error(`options.pages[${index}] 必须是字符串或对象`)
+  throw new Error(`${fieldPrefix} 必须是字符串或对象`)
 }
 
 /**
