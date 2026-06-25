@@ -156,6 +156,12 @@ export default function vitarxRouter(options: RouterPluginOptions = {}): Plugin 
      */
     config(_config, env) {
       state.isPreview = !!env.isPreview
+      return {
+        optimizeDeps: {
+          // 排除自动路由生成模块，兼容 esbuild，修复 vite < 8.0.0 版本兼容性问题
+          exclude: ['vitarx-router/auto-routes']
+        }
+      }
     },
 
     /**
