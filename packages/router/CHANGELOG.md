@@ -1,3 +1,15 @@
+## [4.0.8](https://github.com/vitarx-lib/router/compare/v4.0.7...v4.0.8) (2026-06-25)
+
+
+### Bug Fixes
+
+* **router:** 优化 pages 配置校验逻辑并明确错误提示 ([312f6f6](https://github.com/vitarx-lib/router/commit/312f6f65ffc0d886d323b91d80a5a280dcc3df70))
+
+
+### Features
+
+* **router:** 实现统一的滚动行为封装及内存路由滚动支持 ([ed12237](https://github.com/vitarx-lib/router/commit/ed1223709a92028052a20aaf1b780cafd3981a40))
+
 ## [4.0.7](https://github.com/vitarx-lib/router/compare/v4.0.6...v4.0.7) (2026-06-25)
 
 
