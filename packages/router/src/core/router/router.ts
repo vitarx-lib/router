@@ -920,27 +920,25 @@ export abstract class Router {
     // 如果在 SSR 环境下，或者没有配置 scrollTo 函数，则直接返回
     if (__VITARX_SSR__) return
     const defaultTarget = to.hash ? { el: to.hash } : { top: 0, left: 0 }
-    // 初始化目标滚动位置为保存的位置
-    let target: ScrollTarget = savedPosition || defaultTarget
-    // 检查是否配置了自定义滚动行为函数
-    if (isFunction(this.config.scrollBehavior)) {
-      try {
-        // 调用自定义滚动行为函数
-        const result = this.config.scrollBehavior(to, from, savedPosition)
-        if (result === false) return // 如果返回 false，则不进行滚动
-        if (isPlainObject(result)) target = result // 如果有返回值，则更新目标位置
-      } catch (e) {
-        // 捕获并记录自定义滚动行为函数中的错误
-        logger.error('[Router] Error in scrollBehavior callback:', e)
-      }
-    }
-    // 没有滚动行为函数，则直接返回
-    if (!this.scrollTo) return
     const id = ++this._scrollTaskID
     // 等待路由组件解析完成后滚动
     this.waitViewRender().then(async () => {
       // 确保滚动目标未改变
       if (id === this._scrollTaskID) {
+        // 初始化目标滚动位置为保存的位置
+        let target: ScrollTarget = savedPosition || defaultTarget
+        // 检查是否配置了自定义滚动行为函数
+        if (isFunction(this.config.scrollBehavior)) {
+          try {
+            // 调用自定义滚动行为函数
+            const result = this.config.scrollBehavior(to, from, savedPosition)
+            if (result === false) return // 如果返回 false，则不进行滚动
+            if (isPlainObject(result)) target = result // 如果有返回值，则更新目标位置
+          } catch (e) {
+            // 捕获并记录自定义滚动行为函数中的错误
+            logger.error('[Router] Error in scrollBehavior callback:', e)
+          }
+        }
         // 执行滚动到目标位置
         this.scrollTo?.(target)
       }
