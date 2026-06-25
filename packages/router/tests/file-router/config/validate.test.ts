@@ -90,7 +90,7 @@ describe('config/validate', () => {
 
     it('应该在 pages 为无效类型时抛出错误', () => {
       expect(() => validateOptions({ pages: 123 as any })).toThrow(
-        'options.pages 必须是字符串、字符串数组或对象数组'
+        'options.pages 必须是字符串、对象或字符串/对象数组'
       )
     })
 
@@ -98,6 +98,42 @@ describe('config/validate', () => {
       expect(() => validateOptions({ pages: [123 as any] })).toThrow(
         'options.pages[0] 必须是字符串或对象'
       )
+    })
+
+    it('应该接受有效的 pages 单对象配置', () => {
+      expect(() =>
+        validateOptions({ pages: { dir: 'src/pages', include: ['**/*.tsx'] } })
+      ).not.toThrow()
+    })
+
+    it('应该在 pages 单对象缺少 dir 时抛出错误', () => {
+      expect(() => validateOptions({ pages: { include: ['**/*.tsx'] } as any })).toThrow(
+        'options.pages.dir 必须是非空字符串'
+      )
+    })
+
+    it('应该在 pages 单对象 dir 为空字符串时抛出错误', () => {
+      expect(() => validateOptions({ pages: { dir: '' } })).toThrow(
+        'options.pages.dir 必须是非空字符串'
+      )
+    })
+
+    it('应该在 pages 单对象 include 非数组时抛出错误', () => {
+      expect(() =>
+        validateOptions({ pages: { dir: 'src/pages', include: 'wrong' as any } })
+      ).toThrow('options.pages.include 必须是数组')
+    })
+
+    it('应该在 pages 单对象 exclude 非数组时抛出错误', () => {
+      expect(() =>
+        validateOptions({ pages: { dir: 'src/pages', exclude: 'wrong' as any } })
+      ).toThrow('options.pages.exclude 必须是数组')
+    })
+
+    it('应该在 pages 单对象 group 为 true 且 prefix 以 / 结尾时抛出错误', () => {
+      expect(() =>
+        validateOptions({ pages: { dir: 'src/pages', group: true, prefix: 'admin/' } })
+      ).toThrow("options.pages.prefix 当 group 为 true 时不能以 '/' 结尾，请使用 'admin'")
     })
   })
 
