@@ -11,7 +11,7 @@ import type {
 import { useRouter } from './inject.js'
 import { cloneRouteLocation, parseQuery, removeTrailingSlash, stringifyQuery } from './utils.js'
 
-type LinkToTarget<T extends RouteIndex = RouteIndex> = NavTarget<T> | T | string
+type LinkToTarget<T extends RouteIndex = RouteIndex> = NavTarget<T> | T | (string & {})
 export type LinkExactMatchMode = 'path' | 'href' | 'hash' | 'query'
 export interface UseLinkOptions<T extends RouteIndex = RouteIndex> {
   /**
@@ -196,7 +196,9 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
    */
   const href = computed(() => {
     if (route.value?.href) return route.value.href
-    if (isPlainObject(props.to) && isRoutePath(props.to.index)) return props.to.index
+    if (isPlainObject(props.to) && 'index' in props.to && isRoutePath(props.to.index)) {
+      return props.to.index
+    }
     if (isString(props.to)) return props.to
     return 'javascript:void(0)'
   })
