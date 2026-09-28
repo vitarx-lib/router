@@ -10,8 +10,12 @@ import { babelTraverse, debug, parseCode, warn } from '../utils/index.js'
 
 /**
  * 变量声明类型
+ *
+ * - `function` / `arrow`：本文件定义的函数
+ * - `unknown`：本文件定义的非函数值
+ * - `import`：从其他模块导入的标识符（转发场景，见 createVariableDeclarationVisitor）
  */
-type VariableType = 'function' | 'arrow' | 'unknown'
+type VariableType = 'function' | 'arrow' | 'unknown' | 'import'
 
 /**
  * 收集变量声明
@@ -45,6 +49,19 @@ function createVariableDeclarationVisitor(
       if (node.id) {
         variableDeclarations.set(node.id.name, 'function')
       }
+    },
+    ImportDefaultSpecifier(nodePath: NodePath<BabelTypes.ImportDefaultSpecifier>) {
+      // 导入标识符记录为 'import'：页面/布局文件中 `export default SomeImported`
+      // 是转发组件文件的合法写法（如 _layout.tsx 转发布局组件），
+      // 来源必然是其他模块的导出，默认导出场景下应视为有效函数组件。
+      // 此前不收集 import 声明会导致转发写法被静默判定为「非函数」而跳过注册。
+      variableDeclarations.set(nodePath.node.local.name, 'import')
+    },
+    ImportSpecifier(nodePath: NodePath<BabelTypes.ImportSpecifier>) {
+      variableDeclarations.set(nodePath.node.local.name, 'import')
+    },
+    ImportNamespaceSpecifier(nodePath: NodePath<BabelTypes.ImportNamespaceSpecifier>) {
+      variableDeclarations.set(nodePath.node.local.name, 'import')
     }
   }
 }
@@ -80,7 +97,7 @@ function createExportDeclarationVisitor(
 
         case 'Identifier':
           const varType = variableDeclarations.get(declaration.name)
-          if (varType === 'function' || varType === 'arrow') {
+          if (varType === 'function' || varType === 'arrow' || varType === 'import') {
             result.isFunction = true
           }
           break
@@ -171,7 +188,7 @@ function processExportSpecifiers(
         result.hasDefaultExport = true
 
         const varType = variableDeclarations.get(specifier.local.name)
-        if (varType === 'function' || varType === 'arrow') {
+        if (varType === 'function' || varType === 'arrow' || varType === 'import') {
           result.isFunction = true
         }
       }
@@ -187,8 +204,11 @@ function processExportSpecifiers(
  * @returns {boolean} 检测结果
  */
 export function checkDefaultExport(content: string, file: string): boolean {
-  // 快速检测，避免对文件进行复杂的解析
-  if (!content.includes('export default')) {
+  // 快速检测，避免对文件进行复杂的解析。
+  // 除 `export default` 外还需放行 `export { X as default }` 形式——
+  // 该写法不含 'export default' 字面子串，此前被快速通道误拦导致
+  // traverse 从未执行（specifiers 分支的判定逻辑形同虚设）。
+  if (!content.includes('export default') && !/as\s+default\b/.test(content)) {
     debug(
       `⚠️ 未检测到默认导出 (default export)，该文件可能被跳过。请确保导出一个函数组件。`,
       `in ${file}`
