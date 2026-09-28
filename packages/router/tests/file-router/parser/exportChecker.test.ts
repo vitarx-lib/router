@@ -1,86 +1,93 @@
 /**
- * @fileoverview checkDefaultExport 函数测试
+ * @fileoverview 导出检测模块测试
  *
- * 测试默认导出函数组件检测，重点覆盖「导入组件转发」场景：
- * `_layout.tsx` 与页面文件使用 `export default SomeImportedComponent`
- * 转发写法时，应被判定为有效的函数组件默认导出（历史上曾因
- * variableDeclarations 不收集 import 声明而被静默判定为无效）。
+ * 测试文件默认导出函数组件的检测功能，包括：
+ * - export default function 声明
+ * - export default 箭头函数
+ * - export default 函数表达式
+ * - export default 标识符引用（本文件声明 / 导入转发）
+ * - export { X as default } 形式（本文件声明 / 导入转发）
+ * - 无默认导出的文件
+ * - 非函数默认导出
+ *
+ * 注：`export { X as default }` 与「导入组件转发」曾因快速通道字面量
+ * 检测与 variableDeclarations 不收集 import 声明而被判无效（静默跳过
+ * 布局注册），现已支持，相关用例断言为 true。
  */
 import { describe, expect, it } from 'vitest'
-import { checkDefaultExport } from '../../../src/file-router/parser/exportChecker.js'
+import { checkDefaultExport } from '../../../src/file-router/parser/index.js'
 
 describe('parser/exportChecker', () => {
-  describe('快速通道', () => {
-    it('不含 export default 的文件：无效', () => {
-      expect(checkDefaultExport('export const a = 1', 'a.tsx')).toBe(false)
+  describe('checkDefaultExport - 有效默认导出', () => {
+    it.each([
+      [
+        'export default call() 声明',
+        'import {builder} from "vitarx"\nexport default builder(()=><div/>)'
+      ],
+      ['export default function 声明', 'export default function Home() { return <div>Home</div> }'],
+      ['export default 箭头函数', 'export default () => <div>Home</div>'],
+      ['export default 函数表达式', 'export default function() { return <div>Home</div> }'],
+      [
+        'export default 引用函数声明',
+        `function Home() { return <div>Home</div> }\nexport default Home`
+      ],
+      ['export default 引用箭头函数', `const Home = () => <div>Home</div>\nexport default Home`],
+      [
+        'export default 转发导入的默认导出',
+        `import AdminLayout from './AdminLayout'\nexport default AdminLayout`
+      ],
+      [
+        'export default 转发导入的命名成员',
+        `import { Layout } from './Layout'\nexport default Layout`
+      ],
+      [
+        'export { X as default } 转发函数声明',
+        `function Home() { return <div>Home</div> }\nexport { Home as default }`
+      ],
+      [
+        'export { X as default } 转发箭头函数',
+        `const Home = () => <div>Home</div>\nexport { Home as default }`
+      ],
+      [
+        'export { X as default } 转发导入的组件',
+        `import AdminLayout from './AdminLayout'\nexport { AdminLayout as default }`
+      ],
+      [
+        '包含 definePage 宏的文件',
+        `definePage({ name: 'home' })\nexport default function Home() { return <div>Home</div> }`
+      ],
+      [
+        '包含 TypeScript 类型的文件',
+        `interface Props { title: string }\nexport default function Home(props: Props) { return <div>{props.title}</div> }`
+      ],
+      [
+        '包含 JSX 的文件',
+        `export default function Home() {\n  return (\n    <div>\n      <h1>Hello</h1>\n    </div>\n  )\n}`
+      ]
+    ] as const)('应该检测 %s', (_, code) => {
+      expect(checkDefaultExport(code, 'Home.tsx')).toBe(true)
     })
   })
 
-  describe('直接默认导出函数', () => {
-    it('函数声明：有效', () => {
-      const code = 'export default function Entry() { return null }'
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(true)
+  describe('checkDefaultExport - 无效默认导出', () => {
+    it.each([
+      ['无 export default', 'const Home = () => <div>Home</div>'],
+      ['默认导出对象', "export default { name: 'Home' }"],
+      ['默认导出字符串', "export default 'Home'"],
+      ['默认导出数字', 'export default 42'],
+      [
+        'export { X as default } 中 X 为非函数',
+        "const config = { name: 'Home' }\nexport { config as default }"
+      ],
+      ['默认导出标识符引用非函数变量', "const config = { name: 'Home' }\nexport default config"],
+      ['export default class（非函数）', 'export default class MyClass {}'],
+      ['仅命名导出非 default 成员', "import Home from './Home'\nexport { Home }"]
+    ] as const)('应该在 %s 时返回 false', (_, code) => {
+      expect(checkDefaultExport(code, 'Home.tsx')).toBe(false)
     })
 
-    it('箭头函数：有效', () => {
-      const code = 'export default (() => null)'
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(true)
-    })
-
-    it('函数表达式：有效', () => {
-      const code = 'export default (function Entry() { return null })'
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(true)
-    })
-
-    it('调用表达式（高阶组件包装）：有效', () => {
-      const code = 'export default memo(Entry)'
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(true)
-    })
-  })
-
-  describe('本文件声明的标识符转发', () => {
-    it('转发箭头函数变量：有效', () => {
-      const code = 'const Entry = () => null\nexport default Entry'
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(true)
-    })
-
-    it('转发函数声明：有效', () => {
-      const code = 'function Entry() { return null }\nexport { Entry as default }'
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(true)
-    })
-  })
-
-  describe('导入组件转发', () => {
-    it('导入默认导出转发：有效', () => {
-      const code = "import AdminLayout from './AdminLayout'\nexport default AdminLayout"
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(true)
-    })
-
-    it('导入命名成员转发：有效', () => {
-      const code = "import { Layout } from './Layout'\nexport default Layout"
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(true)
-    })
-
-    it('命名导出转发导入成员（export { X as default }）：有效', () => {
-      const code = "import AdminLayout from './AdminLayout'\nexport { AdminLayout as default }"
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(true)
-    })
-  })
-
-  describe('无效场景', () => {
-    it('默认导出对象字面量：无效', () => {
-      const code = 'export default { a: 1 }'
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(false)
-    })
-
-    it('默认导出原始值：无效', () => {
-      const code = "const config = 'text'\nexport default config"
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(false)
-    })
-
-    it('仅命名导出非 default 成员：无效', () => {
-      const code = "import AdminLayout from './AdminLayout'\nexport { AdminLayout }"
-      expect(checkDefaultExport(code, 'a.tsx')).toBe(false)
+    it('应该在内容不包含 export default 字符串时快速返回 false', () => {
+      expect(checkDefaultExport('const x = 1', 'test.ts')).toBe(false)
     })
   })
 })
