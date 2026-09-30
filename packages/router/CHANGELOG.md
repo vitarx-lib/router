@@ -1,4 +1,9 @@
-## [4.0.9](https://github.com/vitarx-lib/router/compare/v4.0.8...v4.0.9) (2026-08-10)
+## [4.0.10](https://github.com/vitarx-lib/router/compare/v4.0.9...v4.0.10) (2026-09-30)
+
+
+### Bug Fixes
+
+* **router:** 修复默认导出检测对导入转发与 as default 形式的误判 ([d14d3b8](https://github.com/vitarx-lib/router/commit/d14d3b872196231be42e369386341e1e81dbfcbc))
 
 ## [4.0.8](https://github.com/vitarx-lib/router/compare/v4.0.7...v4.0.8) (2026-06-25)
 
