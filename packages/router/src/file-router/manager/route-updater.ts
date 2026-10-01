@@ -14,6 +14,8 @@ import { isEqualPageOptions, mergePageOptions, parseDefinePage } from '../macros
 import { checkDefaultExport, isPageFileInDirs } from '../parser/index.js'
 import { parsePageFile } from '../parser/parsePage.js'
 import type { ScanNode } from '../types/index.js'
+import { normalizePathSeparator } from '../utils/index.js'
+import { parseGroupResult } from '../utils/groupParser.js'
 import { resolveFile } from './file-classifier.js'
 import {
   processConfigFile,
@@ -35,6 +37,75 @@ export interface UpdaterContext extends ProcessorContext {
 }
 
 /**
+ * 确保目标目录的祖先目录节点链存在，返回目标目录对应的路由节点
+ *
+ * 场景：dev server 运行期间新增目录及页面文件时，增量更新不会重新
+ * 全量扫描，新目录在 nodeTree/fileMap 中没有对应节点。若直接以
+ * undefined 作为父级挂载，页面会丢失目录前缀被错误挂到路由树顶层
+ * （如 src/pages/admin/monitor/index.tsx → '/'，并与根页面路径冲突）。
+ *
+ * 节点创建方式与扫描器 processDirEntry 保持一致：目录解析为分组节点
+ * （isGroup），逐级挂入路由树并登记 fileMap。
+ *
+ * @param dirPath - 页面文件所在目录绝对路径
+ * @param page - 命中的页面目录配置
+ * @param context - 增量更新上下文
+ * @returns 目标目录对应的路由节点；目录即页面根目录时返回 undefined
+ */
+function ensureDirNodes(
+  dirPath: string,
+  page: PageDirConfig,
+  context: UpdaterContext
+): ScanNode | undefined {
+  const existing = context.fileMap.get(dirPath)
+  if (existing) return existing
+
+  const pageDir = normalizePathSeparator(nodePath.resolve(page.dir))
+  const targetDir = normalizePathSeparator(nodePath.resolve(dirPath))
+  // 目录不在页面根目录之下（即页面根目录自身），交由顶层挂载逻辑处理
+  if (!targetDir.startsWith(`${pageDir}/`)) return undefined
+
+  // 自目标目录向上收集缺失的目录链（含目标目录自身），直到最近的已存在祖先
+  // 节点或页面根目录（页面根目录本身不作为路由节点，视为已到达）
+  const missingDirs: string[] = []
+  let cursor = targetDir
+  let parent = context.fileMap.get(cursor)
+  while (!parent && cursor.startsWith(`${pageDir}/`)) {
+    missingDirs.unshift(cursor)
+    cursor = nodePath.dirname(cursor)
+    parent = context.fileMap.get(cursor)
+  }
+
+  // 自外向内逐级补建分组节点（含 children 集合，避免空分组残留）
+  for (const dir of missingDirs) {
+    const { routePath, options } = parseGroupResult(
+      nodePath.basename(dir),
+      dir,
+      context.config.groupParser
+    )
+    // 顶层路由拼接 prefix，嵌套路由不需要（与扫描器一致）
+    const pathPrefix = parent ? '' : page.prefix
+    const node: ScanNode = {
+      isGroup: true,
+      parent,
+      filePath: dir,
+      path: context.applyPathStrategy(pathPrefix + routePath)
+    }
+    if (options) node.options = options
+    node.children = new Set()
+    if (parent) {
+      parent.children ??= new Set()
+      parent.children.add(node)
+    } else {
+      context.nodeTree.push(node)
+    }
+    context.fileMap.set(dir, node)
+    parent = node
+  }
+  return parent
+}
+
+/**
  * 添加页面文件到路由树
  *
  * 根据文件类型直接调用对应处理器，避免重复类型判断和文件解析。
@@ -49,26 +120,28 @@ export function addPage(filePath: string, context: UpdaterContext): boolean {
   if (!page) return false
 
   const dirPath = nodePath.dirname(filePath)
-  const parent = context.fileMap.get(dirPath)
-  const prefix = parent ? '' : page.prefix
   const { fileInfo, fileType } = resolveFile(filePath, page, context.config)
-  const pageConfig: ScanDirConfig = {
-    dir: dirPath,
-    include: page.include,
-    exclude: page.exclude,
-    prefix
-  }
 
   switch (fileType) {
     case 'ignore':
       return false
     case 'config':
-      processConfigFile(filePath, parent, context)
+      processConfigFile(filePath, context.fileMap.get(dirPath), context)
       return false
     case 'layout':
-      processLayoutFile(filePath, fileInfo, parent, context)
+      processLayoutFile(filePath, fileInfo, context.fileMap.get(dirPath), context)
       return false
     case 'page': {
+      // 运行期间新增目录时，父目录节点链尚未建立——先补建目录链，
+      // 否则页面会丢失目录前缀被错误挂到路由树顶层
+      const parent = ensureDirNodes(dirPath, page, context)
+      const prefix = parent ? '' : page.prefix
+      const pageConfig: ScanDirConfig = {
+        dir: dirPath,
+        include: page.include,
+        exclude: page.exclude,
+        prefix
+      }
       const parsed = parsePageFile(filePath, context.config.pageParser, fileInfo)
       const pageMapping = new Map<string, ScanNode>()
       // 检查是否已存在同路径路由，以便合并命名视图

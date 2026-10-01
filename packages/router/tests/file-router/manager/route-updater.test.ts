@@ -650,4 +650,60 @@ export default function Simple() { return null }`
       expect(router.fileMap.has(usersIdPath)).toBe(false)
     })
   })
+
+  describe('Bug 修复验证: addPage 父目录节点缺失', () => {
+    it('运行期间在新增嵌套目录中创建页面，应补建目录链并挂载到正确前缀', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      // 模拟 dev server 运行期间新增 admin/monitor 目录及其页面文件
+      createFile('src/pages/admin/monitor/index.tsx', 'export default function Monitor() { return null }')
+      const result = router.addPage(resolvePath('src/pages/admin/monitor/index.tsx'))
+
+      expect(result).toBe(true)
+      // 页面应挂载到 /admin/monitor，而不是丢失目录前缀落到顶层 '/'
+      expect(router.getRouteFullPath(resolvePath('src/pages/admin/monitor/index.tsx'))).toBe('/admin/monitor')
+      // 补建的目录链节点应登记到 fileMap
+      expect(router.fileMap.has(resolvePath('src/pages/admin'))).toBe(true)
+      expect(router.fileMap.has(resolvePath('src/pages/admin/monitor'))).toBe(true)
+      // 顶层不应出现补建目录前的错误残留（path 为空串的顶层节点）
+      const topLevelPaths = router.nodeTree.map(node => node.path)
+      expect(topLevelPaths.filter(path => path === '')).toHaveLength(0)
+    })
+
+    it('页面根目录下新增单层目录页面，应挂载到顶层并保留正确路径', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      createFile('src/pages/monitor/index.tsx', 'export default function Monitor() { return null }')
+      const result = router.addPage(resolvePath('src/pages/monitor/index.tsx'))
+
+      expect(result).toBe(true)
+      expect(router.getRouteFullPath(resolvePath('src/pages/monitor/index.tsx'))).toBe('/monitor')
+      expect(router.fileMap.has(resolvePath('src/pages/monitor'))).toBe(true)
+    })
+
+    it('在已存在的目录中新增页面，不应重复创建目录节点', () => {
+      createFile('src/pages/users/index.tsx', 'export default function Users() { return null }')
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      createFile('src/pages/users/roles.tsx', 'export default function Roles() { return null }')
+      const result = router.addPage(resolvePath('src/pages/users/roles.tsx'))
+
+      expect(result).toBe(true)
+      expect(router.getRouteFullPath(resolvePath('src/pages/users/roles.tsx'))).toBe('/users/roles')
+      // users 目录节点应保持唯一（未重复补建）
+      const usersDirNodes = router.nodeTree.filter(node => node.filePath === resolvePath('src/pages/users'))
+      expect(usersDirNodes).toHaveLength(1)
+    })
+  })
 })
