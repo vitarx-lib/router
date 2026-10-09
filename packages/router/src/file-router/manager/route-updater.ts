@@ -11,7 +11,7 @@
 import nodePath from 'node:path'
 import { type PageDirConfig } from '../config/index.js'
 import { isEqualPageOptions, mergePageOptions, parseDefinePage } from '../macros/index.js'
-import { checkDefaultExport, isPageFileInDirs } from '../parser/index.js'
+import { checkDefaultExport, isInExcludedDir, isPageFileInDirs } from '../parser/index.js'
 import { parsePageFile } from '../parser/parsePage.js'
 import type { ScanNode } from '../types/index.js'
 import { normalizePathSeparator } from '../utils/index.js'
@@ -46,6 +46,10 @@ export interface UpdaterContext extends ProcessorContext {
  *
  * 节点创建方式与扫描器 processDirEntry 保持一致：目录解析为分组节点
  * （isGroup），逐级挂入路由树并登记 fileMap。
+ *
+ * 排除前提：目录级排除（isInExcludedDir）已在唯一调用方 addPage 入口
+ * 拦截，被排除目录不会进入本函数，故此处不做排除检查；若未来出现其他
+ * 调用方，需将排除检查下移至此。
  *
  * @param dirPath - 页面文件所在目录绝对路径
  * @param page - 命中的页面目录配置
@@ -118,6 +122,10 @@ function ensureDirNodes(
 export function addPage(filePath: string, context: UpdaterContext): boolean {
   const page = isPageFileInDirs(filePath, context.config.pages) as PageDirConfig | false
   if (!page) return false
+  // 文件级 exclude 按文件相对路径匹配，拦不住「位于被排除目录内的文件」
+  // （目录名形态的规则无尾随 /**，如 '**/.*' 匹配不了 '.cache/index.tsx'），
+  // 需按祖先目录链判定——否则 dev 增量会注册全量扫描已剪枝的幽灵路由
+  if (isInExcludedDir(nodePath.dirname(filePath), page)) return false
 
   const dirPath = nodePath.dirname(filePath)
   const { fileInfo, fileType } = resolveFile(filePath, page, context.config)
@@ -137,7 +145,8 @@ export function addPage(filePath: string, context: UpdaterContext): boolean {
       const parent = ensureDirNodes(dirPath, page, context)
       const prefix = parent ? '' : page.prefix
       const pageConfig: ScanDirConfig = {
-        dir: dirPath,
+        dir: page.dir,
+        scanDir: dirPath,
         include: page.include,
         exclude: page.exclude,
         prefix

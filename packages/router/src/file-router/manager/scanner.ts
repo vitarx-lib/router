@@ -9,11 +9,18 @@
  */
 import { existsSync, readdirSync } from 'node:fs'
 import nodePath from 'node:path'
-import { type ResolvedConfig } from '../config/index.js'
-import { type ProcessorContext, type ScanDirConfig, parseGroupResult, processConfigFile, processLayoutFile, processPageFile } from './file-processor.js'
-import { resolveFile } from './file-classifier.js'
+import { isExcludedDir } from '../parser/index.js'
 import type { ScanNode } from '../types/index.js'
 import { normalizePathSeparator, warn } from '../utils/index.js'
+import { resolveFile } from './file-classifier.js'
+import {
+  parseGroupResult,
+  processConfigFile,
+  processLayoutFile,
+  type ProcessorContext,
+  processPageFile,
+  type ScanDirConfig
+} from './file-processor.js'
 
 /**
  * 扫描所有页面目录，构建路由节点树
@@ -32,6 +39,8 @@ export function scanPages(context: ProcessorContext): ScanNode[] {
       warn(`Directory ${page.dir} does not exist, please check your configuration.`)
       continue
     }
+    // dir 始终为页面根目录（include/exclude 的匹配基准），当前下钻目录记在 scanDir
+    const pageConfig: ScanDirConfig = { ...page, scanDir: page.dir }
     // 分组路由：创建包装节点，子路由嵌套在 children 中
     if (page.group && page.prefix) {
       const route: ScanNode = {
@@ -39,7 +48,7 @@ export function scanPages(context: ProcessorContext): ScanNode[] {
         filePath: page.dir,
         path: context.applyPathStrategy(page.prefix)
       }
-      route.children = scanPageDir({ ...page, prefix: '' }, route, context)
+      route.children = scanPageDir({ ...pageConfig, prefix: '' }, route, context)
       // 空目录不生成路由节点
       if (route.children.size > 0) {
         pages.push(route)
@@ -48,7 +57,7 @@ export function scanPages(context: ProcessorContext): ScanNode[] {
       continue
     }
     // 非分组路由：子路由直接平铺
-    const children = scanPageDir(page, undefined, context)
+    const children = scanPageDir(pageConfig, undefined, context)
     pages.push(...children.values())
   }
   return pages
@@ -70,7 +79,7 @@ function scanPageDir(
   parent: ScanNode | undefined,
   context: ProcessorContext
 ): Set<ScanNode> {
-  const entries = readdirSync(page.dir, { withFileTypes: true })
+  const entries = readdirSync(page.scanDir, { withFileTypes: true })
   // 直接子路由映射，键为解析后的路径（不含 @视图命名），用于合并命名视图
   const pageMapping = new Map<string, ScanNode>()
   const children: Set<ScanNode> = new Set()
@@ -99,12 +108,16 @@ function scanPageDir(
  * 解析目录名（可能经过 groupParser 转换），创建分组路由节点，
  * 然后递归扫描子目录。空目录不生成路由节点。
  *
+ * 排除规则：命中的目录连同整棵子树一起跳过（相对页面根目录匹配），
+ * 保证 exclude 对目录同样生效——否则子目录内的页面、布局、配置文件
+ * 仍会被逐一处理并注册。
+ *
  * @param filePath - 目录绝对路径
  * @param fileName - 目录名
  * @param page - 所属页面目录配置
  * @param parent - 父路由节点
  * @param context - 文件处理上下文
- * @returns 分组路由节点，空目录返回 null
+ * @returns 分组路由节点，空目录或被排除时返回 null
  */
 function processDirEntry(
   filePath: string,
@@ -113,6 +126,8 @@ function processDirEntry(
   parent: ScanNode | undefined,
   context: ProcessorContext
 ): ScanNode | null {
+  if (isExcludedDir(filePath, page)) return null
+
   const { routePath, options } = parseGroupResult(fileName, filePath, context.config.groupParser)
   // 顶层路由拼接 prefix，嵌套路由不需要
   const pathPrefix = parent ? '' : page.prefix
@@ -123,7 +138,7 @@ function processDirEntry(
     path: context.applyPathStrategy(pathPrefix + routePath)
   }
   if (options) route.options = options
-  route.children = scanPageDir({ ...page, dir: filePath, prefix: '' }, route, context)
+  route.children = scanPageDir({ ...page, scanDir: filePath, prefix: '' }, route, context)
   return route.children.size > 0 ? route : null
 }
 
@@ -161,9 +176,6 @@ function processFileEntry(
       processLayoutFile(filePath, fileInfo, parent, context)
       return null
     case 'page':
-      return processPageFile(
-        { filePath, fileInfo, page, pageMapping, parent },
-        context
-      )
+      return processPageFile({ filePath, fileInfo, page, pageMapping, parent }, context)
   }
 }

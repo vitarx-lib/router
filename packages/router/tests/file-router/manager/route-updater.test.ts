@@ -170,6 +170,82 @@ describe('file-router/manager/route-updater', () => {
     })
   })
 
+  describe('目录排除（增量更新与全量扫描一致性）', () => {
+    it('被排除目录内新增文件不应注册路由（精确目录名规则）', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: { dir: 'src/pages', exclude: ['components'] }
+      })
+
+      // 目录名形态的规则无尾随 /**，文件级 exclude 匹配不到目录内的文件，
+      // 必须由目录级排除拦截（否则 dev 期间产生全量扫描会剪枝的幽灵路由）
+      createFile('src/pages/components/new.tsx', 'export default function New() { return null }')
+      const result = router.addPage(resolvePath('src/pages/components/new.tsx'))
+
+      expect(result).toBe(false)
+      expect(router.fileMap.has(resolvePath('src/pages/components/new.tsx'))).toBe(false)
+      expect(router.nodeTree.map(n => n.path)).toEqual(['/'])
+    })
+
+    it('祖先目录被排除时深层文件不应注册路由', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+
+      // 目录名形态规则只命中 'admin/components' 自身，深层文件
+      // 'admin/components/sub/new.tsx' 的拦截完全依赖祖先链逐级检查
+      const router = new FileRouter({
+        root: tempDir,
+        pages: { dir: 'src/pages', exclude: ['admin/components'] }
+      })
+
+      createFile(
+        'src/pages/admin/components/sub/new.tsx',
+        'export default function New() { return null }'
+      )
+      const filePath = resolvePath('src/pages/admin/components/sub/new.tsx')
+      const result = router.updatePage(filePath)
+
+      expect(result).toBe(false)
+      expect(router.fileMap.has(filePath)).toBe(false)
+      expect(router.nodeTree.map(n => n.path)).toEqual(['/'])
+    })
+
+    it('默认排除规则下点目录内新增文件不应注册路由', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      // 默认 exclude 的 '**/.*' 只匹配单段点路径，拦不住 '.cache/index.tsx'，
+      // 依赖目录级排除命中 '.cache' 目录自身
+      createFile('src/pages/.cache/new.tsx', 'export default function New() { return null }')
+      const filePath = resolvePath('src/pages/.cache/new.tsx')
+      const result = router.addPage(filePath)
+
+      expect(result).toBe(false)
+      expect(router.fileMap.has(filePath)).toBe(false)
+      expect(router.nodeTree.map(n => n.path)).toEqual(['/'])
+    })
+
+    it('未命中排除规则的目录内新增文件应正常注册', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: { dir: 'src/pages', exclude: ['components'] }
+      })
+
+      createFile('src/pages/user/new.tsx', 'export default function New() { return null }')
+      const result = router.addPage(resolvePath('src/pages/user/new.tsx'))
+
+      expect(result).toBe(true)
+      expect(router.fileMap.has(resolvePath('src/pages/user/new.tsx'))).toBe(true)
+    })
+  })
+
   describe('文件变化处理', () => {
     it('应该正确处理文件添加事件', () => {
       createFile('src/pages/index.tsx', 'export default function Home() { return null }')
@@ -369,10 +445,7 @@ export function Test() { return null }`
     })
 
     it('删除子目录配置文件不应移除整个父路由及其子页面', () => {
-      createFile(
-        'src/pages/user/_config.ts',
-        `definePage({ meta: { requiresAuth: true } })`
-      )
+      createFile('src/pages/user/_config.ts', `definePage({ meta: { requiresAuth: true } })`)
       createFile('src/pages/user/index.tsx', 'export default function UserHome() { return null }')
       createFile('src/pages/user/profile.tsx', 'export default function Profile() { return null }')
       const router = new FileRouter({
@@ -660,12 +733,17 @@ export default function Simple() { return null }`
       })
 
       // 模拟 dev server 运行期间新增 admin/monitor 目录及其页面文件
-      createFile('src/pages/admin/monitor/index.tsx', 'export default function Monitor() { return null }')
+      createFile(
+        'src/pages/admin/monitor/index.tsx',
+        'export default function Monitor() { return null }'
+      )
       const result = router.addPage(resolvePath('src/pages/admin/monitor/index.tsx'))
 
       expect(result).toBe(true)
       // 页面应挂载到 /admin/monitor，而不是丢失目录前缀落到顶层 '/'
-      expect(router.getRouteFullPath(resolvePath('src/pages/admin/monitor/index.tsx'))).toBe('/admin/monitor')
+      expect(router.getRouteFullPath(resolvePath('src/pages/admin/monitor/index.tsx'))).toBe(
+        '/admin/monitor'
+      )
       // 补建的目录链节点应登记到 fileMap
       expect(router.fileMap.has(resolvePath('src/pages/admin'))).toBe(true)
       expect(router.fileMap.has(resolvePath('src/pages/admin/monitor'))).toBe(true)
@@ -702,7 +780,9 @@ export default function Simple() { return null }`
       expect(result).toBe(true)
       expect(router.getRouteFullPath(resolvePath('src/pages/users/roles.tsx'))).toBe('/users/roles')
       // users 目录节点应保持唯一（未重复补建）
-      const usersDirNodes = router.nodeTree.filter(node => node.filePath === resolvePath('src/pages/users'))
+      const usersDirNodes = router.nodeTree.filter(
+        node => node.filePath === resolvePath('src/pages/users')
+      )
       expect(usersDirNodes).toHaveLength(1)
     })
   })

@@ -9,7 +9,7 @@
  * - groupParser 配置
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { FileRouter } from '../../../src/file-router/index.js'
+import { FileRouter, type ScanNode } from '../../../src/file-router/index.js'
 import { createTestHelpers } from '../testUtils.js'
 
 const { tempDir, createTestDir, cleanupTestDir, createFile, resolvePath } =
@@ -73,6 +73,92 @@ describe('file-router/manager/scanner', () => {
       })
 
       expect(router.fileMap.size).toBe(5)
+    })
+  })
+
+  describe('目录排除', () => {
+    /** 递归收集路由树中所有节点的路径段（用于断言被排除目录未产出任何节点） */
+    function collectSegments(nodes: readonly ScanNode[], acc: string[] = []): string[] {
+      for (const node of nodes) {
+        acc.push(node.path)
+        if (node.children) collectSegments([...node.children], acc)
+      }
+      return acc
+    }
+
+    it('exclude 命中的目录（含嵌套层级）及其子文件不应生成路由', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+      createFile(
+        'src/pages/admin/roles/index.tsx',
+        'export default function Roles() { return null }'
+      )
+      createFile(
+        'src/pages/admin/roles/components/grant-drawer.tsx',
+        'export default function GrantDrawer() { return null }'
+      )
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: { dir: 'src/pages', exclude: ['**/components/**'] }
+      })
+
+      const segments = collectSegments(router.nodeTree)
+      expect(segments).toContain('/admin')
+      expect(segments).toContain('roles')
+      expect(segments).not.toContain('components')
+      expect(segments).not.toContain('grant-drawer')
+      expect(
+        router.fileMap.has(resolvePath('src/pages/admin/roles/components/grant-drawer.tsx'))
+      ).toBe(false)
+    })
+
+    it('默认排除规则应跳过 node_modules / dist 目录', () => {
+      createFile('src/pages/index.tsx', 'export default function Home() { return null }')
+      createFile(
+        'src/pages/node_modules/pkg/index.tsx',
+        'export default function Pkg() { return null }'
+      )
+      createFile('src/pages/dist/index.tsx', 'export default function Dist() { return null }')
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: 'src/pages'
+      })
+
+      expect(collectSegments(router.nodeTree)).toEqual(['/'])
+      expect(router.fileMap.size).toBe(1)
+    })
+
+    it('文件级排除规则应相对页面根目录匹配（而非当前子目录）', () => {
+      createFile('src/pages/admin/index.tsx', 'export default function Admin() { return null }')
+      createFile(
+        'src/pages/admin/legacy/index.tsx',
+        'export default function Legacy() { return null }'
+      )
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: { dir: 'src/pages', exclude: ['admin/legacy/**'] }
+      })
+
+      const segments = collectSegments(router.nodeTree)
+      expect(segments).toContain('/admin')
+      expect(segments).not.toContain('legacy')
+    })
+
+    it('未命中 exclude 的目录不受影响', () => {
+      createFile('src/pages/admin/index.tsx', 'export default function Admin() { return null }')
+      createFile(
+        'src/pages/admin/utils/index.tsx',
+        'export default function Utils() { return null }'
+      )
+
+      const router = new FileRouter({
+        root: tempDir,
+        pages: { dir: 'src/pages', exclude: ['**/components/**'] }
+      })
+
+      expect(collectSegments(router.nodeTree)).toContain('utils')
     })
   })
 

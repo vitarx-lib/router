@@ -142,6 +142,7 @@ describe('file-router/manager/file-processor', () => {
       const pageMapping = new Map<string, ScanNode>()
       const page: ScanDirConfig = {
         dir: '/test/src/pages',
+        scanDir: '/test/src/pages',
         include: ['**/*.{jsx,tsx}'],
         exclude: ['**/node_modules/**', '**/dist/**', '**/.*'],
         prefix: ''
@@ -165,6 +166,7 @@ describe('file-router/manager/file-processor', () => {
       const pageMapping = new Map<string, ScanNode>()
       const page: ScanDirConfig = {
         dir: '/test/src/pages',
+        scanDir: '/test/src/pages',
         include: ['**/*.{jsx,tsx}'],
         exclude: ['**/node_modules/**', '**/dist/**', '**/.*'],
         prefix: ''
@@ -191,6 +193,7 @@ describe('file-router/manager/file-processor', () => {
       const pageMapping = new Map<string, ScanNode>([['index', existingRoute]])
       const page: ScanDirConfig = {
         dir: '/test/src/pages',
+        scanDir: '/test/src/pages',
         include: ['**/*.{jsx,tsx}'],
         exclude: ['**/node_modules/**', '**/dist/**', '**/.*'],
         prefix: ''
@@ -213,6 +216,7 @@ describe('file-router/manager/file-processor', () => {
       const pageMapping = new Map<string, ScanNode>()
       const page: ScanDirConfig = {
         dir: '/test/src/pages',
+        scanDir: '/test/src/pages',
         include: ['**/*.{jsx,tsx}'],
         exclude: ['**/node_modules/**', '**/dist/**', '**/.*'],
         prefix: ''

@@ -18,8 +18,17 @@ import type { PageParseResult, ScanNode } from '../types/index.js'
  *
  * 从 PageDirConfig 中移除 group 字段，因为分组信息在扫描入口处已处理，
  * 递归扫描子目录时不再需要。
+ *
+ * 额外携带 `scanDir` 表示「当前正在扫描的目录」：`dir` 始终保持为页面
+ * 根目录，作为 include/exclude 的匹配基准。递归下钻时若直接重置 `dir`，
+ * 排除规则就退化为相对子目录匹配——形如「任意层级同名目录」的目录级
+ * 排除将永远无法命中（子目录名会被 path.relative 吃掉），框架默认的
+ * node_modules / dist 排除规则也因此形同虚设。
  */
-export type ScanDirConfig = Omit<PageDirConfig, 'group'>
+export type ScanDirConfig = Omit<PageDirConfig, 'group'> & {
+  /** 当前正在扫描的目录（顶层即 dir，递归下钻时更新） */
+  scanDir: string
+}
 
 /**
  * 文件处理上下文
