@@ -1,9 +1,22 @@
+# [4.1.0](https://github.com/vitarx-lib/router/compare/v4.0.12...v4.1.0) (2026-11-17)
+
+
+### Features
+
+* **router:** 支持导航路径携带查询参数和锚点 ([0451c35](https://github.com/vitarx-lib/router/commit/0451c358929e02e2f087a709c5de637ffd3237eb))
+
 ## [4.0.12](https://github.com/vitarx-lib/router/compare/v4.0.11...v4.0.12) (2026-10-09)
 
 
 ### Bug Fixes
 
 * **router:** 修复 exclude 对目录级排除不生效的问题 ([45f2395](https://github.com/vitarx-lib/router/commit/45f2395f7fdb2ecc41fdf48f76f2c962ccec8b81))
+
+## [4.0.11](https://github.com/vitarx-lib/router/compare/v4.0.10...v4.0.11) (2026-10-01)
+
+
+### Bug Fixes
+
 * **router:** 修复新增页面父目录节点缺失问题 ([600b7cd](https://github.com/vitarx-lib/router/commit/600b7cdc72a7adab2fdecb7e8da35aff43b97f59))
 
 ## [4.0.10](https://github.com/vitarx-lib/router/compare/v4.0.9...v4.0.10) (2026-09-30)
@@ -669,7 +682,7 @@
 * **router:** 增加路由后缀配置并优化相关文档 ([e7e717e](https://github.com/vitarx-lib/router/commit/e7e717e738129e38f02f5b5bd31021ee536cbb34))
 * **router:** 增加路由模式的兼容性处理 ([db5bc4c](https://github.com/vitarx-lib/router/commit/db5bc4cf7edc42ab8593c66a83f884dc1caa4a9b))
 * **router:** 增加路由重定向功能并优化路由配置 ([fad8a9e](https://github.com/vitarx-lib/router/commit/fad8a9e0fb97f043e0da6204149d817014a96cf5))
-* **router:** 完善路由守卫功能并优化配置项类型定义 ([ac7ad4d](https://github.com/vitarx-lib/router/commit/ac7ad4d51f2edc2b435ea2dee30afeb48336db4e))
+* **router:** 完善路由守卫功能并优化配置项类型定义 ([ac7ad4d](https://github.com/vitarx-lib/router/commit/ac7ad4d51f2edc2b435ea2dee30afeb48336db4e)), closes [#options](https://github.com/vitarx-lib/router/issues/options)
 * **router:** 完善路由跳转逻辑 ([2c9a32c](https://github.com/vitarx-lib/router/commit/2c9a32c9f5ef8bec3f1361ec5925f7b5e4bc9b45))
 * **router:** 实现 HashRouter 的 go 方法并优化路由跳转逻辑 ([678dc4a](https://github.com/vitarx-lib/router/commit/678dc4ad4e0653a1d270fe659d8930ce898a8538))
 * **router:** 实现基于 window.history 的路由器 ([597d1fe](https://github.com/vitarx-lib/router/commit/597d1fedacd92af4041d65a8f83e9985a4bca050))
@@ -719,4 +732,3 @@
 * **router:** 优化内存路由的历史记录管理 ([f24570a](https://github.com/vitarx-lib/router/commit/f24570a491cdaf4fa4c4c4285dd70ef8e2a9604c))
 * **router:** 优化路由元数据处理 ([6b0b0b1](https://github.com/vitarx-lib/router/commit/6b0b0b15cae3f22fbc28fdb474b62904b194953f))
 * **router:** 优化路由匹配和导航逻辑 ([63ec4e1](https://github.com/vitarx-lib/router/commit/63ec4e1247e06c0715233c1a0cb7ade4e508b454))
-
