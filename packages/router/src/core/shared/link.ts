@@ -1,3 +1,6 @@
+/**
+ * 职责：生成路由链接并处理激活状态和点击导航；路径解析交由公共匹配入口。
+ */
 import { type Computed, computed, isPlainObject, isString } from 'vitarx'
 import { NavState } from '../common/constant.js'
 import { isExternalLink, isNavTarget, isRoutePath } from '../common/utils.js'
@@ -9,7 +12,7 @@ import type {
   URLHash
 } from '../types/index.js'
 import { useRouter } from './inject.js'
-import { cloneRouteLocation, parseQuery, removeTrailingSlash, stringifyQuery } from './utils.js'
+import { cloneRouteLocation, removeTrailingSlash, stringifyQuery } from './utils.js'
 
 type LinkToTarget<T extends RouteIndex = RouteIndex> = NavTarget<T> | T | (string & {})
 export type LinkExactMatchMode = 'path' | 'href' | 'hash' | 'query'
@@ -172,18 +175,6 @@ export function useLink<T extends RouteIndex>(props: UseLinkOptions<T>): UseLink
         route.hash = decodeURIComponent(target.index) as URLHash
         route.href = router.buildUrl(route.path, route.query, route.hash)
         return route
-      }
-      // 解析片段标识符
-      if (target.index.includes('#')) {
-        const [index, hash] = target.index.split('#', 2)
-        target.index = index
-        target.hash = hash ? `#${decodeURIComponent(hash)}` : ''
-      }
-      // 解析查询参数
-      if (target.index.includes('?')) {
-        const [index, queryString] = target.index.split('?', 2)
-        target.index = index
-        target.query = parseQuery(queryString)
       }
     }
 

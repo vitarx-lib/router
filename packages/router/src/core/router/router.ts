@@ -1,3 +1,6 @@
+/**
+ * 职责：协调路由匹配、导航与生命周期；历史记录由具体路由器实现。
+ */
 import {
   App,
   type Component,
@@ -28,6 +31,7 @@ import {
   removePathSuffix,
   resolveNavTarget
 } from '../common/utils.js'
+import { normalizePathTarget } from '../shared/target.js'
 import { cloneRouteLocation, normalizePath, stringifyQuery } from '../shared/utils.js'
 import type {
   AfterCallback,
@@ -1151,6 +1155,7 @@ export abstract class Router {
    * @returns {RouteLocation | null} 返回路由位置对象，如果无法匹配则返回null
    */
   public matchRoute(target: NavTarget, redirectFrom?: RouteLocation): RouteLocation | null {
+    target = normalizePathTarget(target)
     let matchTarget = target.index
     const isPath = isRoutePath(matchTarget)
     // 如果配置了后缀且目标是路径，则去除后缀

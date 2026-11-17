@@ -1,3 +1,6 @@
+/**
+ * 职责：验证路由共享数据工具的输入输出；不执行导航或渲染视图。
+ */
 import { describe, expect, it } from 'vitest'
 import {
   cloneRouteLocation,
@@ -56,6 +59,18 @@ describe('shared/utils', () => {
 
     it('应该正确解码URI编码', () => {
       expect(parseQuery('?name=%E4%B8%AD%E6%96%87')).toEqual({ name: '中文' })
+    })
+
+    it.each([
+      ['value=a%26b', { value: 'a&b' }],
+      ['value=%2B', { value: '+' }],
+      ['value=%252F', { value: '%2F' }],
+      ['value=a%3Db', { value: 'a=b' }],
+      ['key%26name=value', { 'key&name': 'value' }],
+      ['value=a+b', { value: 'a b' }],
+      ['value=100%', { value: '100%' }]
+    ] as const)('查询字符串 %s 仅解码一次', (query, expected): void => {
+      expect(parseQuery(query)).toEqual(expected)
     })
 
     it('应该正确处理重复的键', () => {

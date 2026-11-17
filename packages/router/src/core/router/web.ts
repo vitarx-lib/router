@@ -1,6 +1,10 @@
+/**
+ * 职责：衔接浏览器地址、历史记录与路由导航；不负责路由记录匹配。
+ */
 import { logger } from 'vitarx'
 import { NavState } from '../common/constant.js'
 import { parseHashContent, webScrollTo } from '../common/utils.js'
+import { createResolvedPathTarget } from '../shared/target.js'
 import { normalizePath, parseQuery } from '../shared/utils.js'
 import type {
   NavTarget,
@@ -148,7 +152,7 @@ export class WebRouter extends Router {
       }
     }
 
-    return { index: path, hash, query }
+    return createResolvedPathTarget({ index: path, hash, query })
   }
   /**
    * 处理浏览器历史记录的返回/前进事件
@@ -156,11 +160,11 @@ export class WebRouter extends Router {
   private onPopState = (event: PopStateEvent): void => {
     let newTarget: NavTarget
     if (event.state?.path) {
-      newTarget = {
+      newTarget = createResolvedPathTarget({
         index: event.state.path,
         hash: event.state.hash,
         query: event.state.query
-      }
+      })
     } else {
       newTarget = this.urlToNavigateTarget()
     }

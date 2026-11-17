@@ -1,3 +1,6 @@
+/**
+ * 职责：提供路由地址与位置对象的纯数据工具；不执行导航或操作历史记录。
+ */
 import { deepClone, type DeepReadonly, toRaw } from 'vitarx'
 import type {
   NotFoundTarget,
@@ -14,7 +17,7 @@ import type {
  * @return {Record<string, string>} - 转换后的对象
  */
 export function parseQuery(queryString: string): Record<string, string> {
-  queryString = decodeURIComponent(queryString)
+  // URLSearchParams 自行解码，提前解码会把值中的 %26、%2B 误当作分隔符或空格。
   // 去除前导的 "?" 符号，分割为键值对
   const params = new URLSearchParams(
     queryString.startsWith('?') ? queryString.substring(1) : queryString
