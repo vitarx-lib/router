@@ -13,24 +13,24 @@
     "lint:docs": "prettier --write ./docs"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.5.0",
-    "@commitlint/config-conventional": "^20.5.0",
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
     "@commitlint/types": "^20.5.0",
     "@types/node": "25.4.0",
     "@vita-site/theme-default": "^1.1.1",
     "@vitarx/plugin-vite": "1.0.2",
-    "@vitest/browser-playwright": "^4.1.4",
-    "@vitest/coverage-v8": "^4.1.4",
+    "@vitest/browser-playwright": "^4.1.12",
+    "@vitest/coverage-v8": "^4.1.12",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
-    "prettier": "^3.8.2",
+    "prettier": "^3.10.1",
     "sass-embedded": "1.70.0",
-    "typescript": "^6.0.2",
-    "vita-site": "^1.0.5",
+    "typescript": "^6.0.3",
+    "vita-site": "^1.0.6",
     "vitarx": "4.0.2",
-    "vitarx-router": "^4.0.6",
-    "vite": "8.0.5",
-    "vitest": "^4.1.4"
+    "vitarx-router": "^4.0.12",
+    "vite": "8.3.3",
+    "vitest": "^4.1.12"
   },
   "packageManager": "pnpm@10.30.3",
   "pnpm": {
@@ -40,6 +40,9 @@
       "vite": "8.0.5",
       "@vitarx/plugin-vite": "1.0.2",
       "vitarx": "4.0.2"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@parcel/watcher"
+    ]
   }
 }
