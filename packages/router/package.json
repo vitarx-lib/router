@@ -85,6 +85,7 @@
     "@types/micromatch": "^4.0.9",
     "@types/node": "^25.4.0",
     "change-push": "^1.0.0",
+    "conventional-changelog-cli": "^5.0.0",
     "madge": "^8.0.0",
     "rimraf": "^6.1.4"
   },
